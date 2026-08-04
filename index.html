@@ -7,6 +7,7 @@
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Updated Excel Library for Full Color & Style Export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -19,10 +20,12 @@
         .clickable-card:hover { transform: translateY(-2px); box-shadow: 0 12px 20px -4px rgba(0,0,0,0.15); }
         table th { position: sticky; top: 0; z-index: 20; background-color: #0f172a; color: #fff; }
 
+        /* Exact Styling for Nil Booking Table based on attached reference image */
         .nil-table { border-collapse: collapse; width: 100%; font-size: 11px; text-align: center; }
         .nil-table th, .nil-table td { border: 1px solid #707070; padding: 4px 6px; }
         .nil-table th { background-color: #b8cce4; color: #000; font-weight: bold; vertical-align: middle; }
         
+        /* Division specific color styling */
         .div-bg-indore-city { background-color: #f2dcdb; font-weight: bold; color: #800000; }
         .div-bg-indore-mfl { background-color: #dce6f1; font-weight: bold; color: #1f497d; }
         .div-bg-khandwa { background-color: #f2dcdb; font-weight: bold; color: #800000; }
@@ -35,12 +38,14 @@
         .row-div-total { background-color: #fce4d6; font-weight: bold; color: #000; }
         .row-grand-total { background-color: #bdd7ee; font-weight: bold; color: #000; font-size: 12px; }
 
+        /* Print and PDF rules to ensure full page cover & color fidelity */
         @media print {
             body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
             .card { box-shadow: none !important; border: none !important; }
         }
 
+        /* Optimized styles for PDF print rendering - Zero Top Gap */
         .pdf-export-container {
             width: 100% !important;
             padding: 0px !important;
@@ -217,6 +222,7 @@
                         <select id="offClassSelect" onchange="renderOfficeAnalytics()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2"><option value="ALL">All Classes</option><option value="BO">BO</option><option value="SO">SO</option><option value="HO">HO</option><option value="RMS">RMS</option></select>
                         <button onclick="downloadTablePDF('sdPerformanceTable', 'Nil_Booking_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📄 Download PDF</button>
                         <button onclick="downloadTableJPEG('sdPerformanceTable', 'Nil_Booking_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📸 JPEG</button>
+                        <!-- Updated to export FULL table with formatting -->
                         <button onclick="exportTableByID('sdPerformanceTable', 'Nil_Booking_Report.xlsx', true)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Export Excel</button>
                     </div>
                 </div>
@@ -253,7 +259,8 @@
                 </div>
             </div>
 
-            <!-- NEW PLI NIL TRANSACTION REPORT VIEW -->
+            
+            <!-- PLI NIL TRANSACTION REPORT VIEW -->
             <div id="pliNilView" class="hidden space-y-6">
                 <div class="bg-white rounded-xl p-6 border border-cyan-100 card flex flex-wrap items-center justify-between gap-4">
                     <div>
@@ -264,21 +271,23 @@
                         <button onclick="openAdminModal()" class="bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2">
                             <span>🔐 Admin View</span>
                         </button>
-                        <button onclick="downloadTablePDF('pliNilTable', 'PLI_Nil_Transaction_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg transition shadow">📄 PDF</button>
-                        <button onclick="exportTableByID('pliNilTable', 'PLI_Nil_Transaction_Report.xlsx', true)" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg transition shadow">📊 Excel</button>
+                        <button onclick="downloadTablePDF('pliNilTable', 'PLI_Nil_Transaction_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg transition shadow">📄 Download PDF</button>
+                        <button onclick="downloadTableJPEG('pliNilTable', 'PLI_Nil_Transaction_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg transition shadow">📸 JPEG</button>
+                        <button onclick="exportTableByID('pliNilTable', 'PLI_Nil_Transaction_Report.xlsx', true)" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg transition shadow">📊 Export Excel</button>
                     </div>
                 </div>
 
-                <!-- Admin Excel Upload Bar (Hidden until login) -->
+                <!-- Admin Excel Upload Bar -->
                 <div id="adminUploadContainer" class="hidden bg-emerald-50 border-2 border-dashed border-emerald-300 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <span class="text-2xl">📂</span>
                         <div>
                             <h4 class="text-sm font-bold text-emerald-900">Admin Mode Active (PLI Transaction Upload)</h4>
-                            <p class="text-xs text-emerald-700">Select Excel file containing 'CSI_OFFICE_CODE' and 'TRANSCOUNT' columns</p>
+                            <p class="text-xs text-emerald-700">Select Excel file containing 'CSI_OFFICE_CODE', 'DONAME', 'SONAME', and 'TRANSCOUNT'</p>
                         </div>
                     </div>
-                    <div>
+                    <div class="flex items-center gap-3">
+                        <span id="uploadStatusBadge" class="hidden text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-bold shadow">✅ Upload Successful!</span>
                         <input type="file" id="pliExcelFileInput" accept=".xlsx, .xls, .csv" onchange="handlePliExcelUpload(event)" class="text-xs text-slate-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer">
                     </div>
                 </div>
@@ -311,7 +320,32 @@
                 </div>
             </div>
 
-            <!-- Q-1 Section -->
+            <!-- Admin Login Modal -->
+            <div id="adminAuthModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-slate-200">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">🔐 Admin Login</h3>
+                        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">LOGIN ID</label>
+                            <input type="text" id="adminLoginId" placeholder="Enter Login ID" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">PASSWORD</label>
+                            <input type="password" id="adminPassword" placeholder="Enter Password" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div id="loginErrorMsg" class="text-xs text-rose-600 font-bold hidden">❌ Invalid Login ID or Password!</div>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2 border-t">
+                        <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition">Cancel</button>
+                        <button onclick="verifyAdminLogin()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition">Login</button>
+                    </div>
+                </div>
+            </div>
+
+<!-- Q-1 Section -->
             <div id="q1DataView" class="hidden space-y-6">
                 <div class="bg-white rounded-xl p-5 border border-teal-100 card flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -491,32 +525,7 @@
         </main>
     </div>
 
-    <!-- Admin Login Modal -->
-    <div id="adminAuthModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-slate-200">
-            <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">🔐 Admin Login</h3>
-                <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
-            </div>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">LOGIN ID</label>
-                    <input type="text" id="adminLoginId" placeholder="Enter Login ID" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">PASSWORD</label>
-                    <input type="password" id="adminPassword" placeholder="Enter Password" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div id="loginErrorMsg" class="text-xs text-rose-600 font-bold hidden">❌ Invalid Login ID or Password!</div>
-            </div>
-            <div class="flex justify-end gap-2 pt-2 border-t">
-                <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition">Cancel</button>
-                <button onclick="verifyAdminLogin()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition">Login</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
+    <!-- Cleaned Footer Without Extra Citation Tags -->
     <footer class="bg-slate-900 text-slate-400 py-4 px-6 text-center text-sm font-semibold border-t border-slate-800 mt-8">
         Developed by Kapil Rajput, PA (RO), Indore Regional Office
     </footer>
@@ -535,9 +544,6 @@
         const SBN_HISTORICAL_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=1171755214&single=true&output=csv";
         const SBN_CURRENT_FY_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=2138885575&single=true&output=csv";
         const POSB_TARGET_REVENUE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=1664427756&single=true&output=csv";
-        
-        // OFFICE TO DIVISION & SUB-DIVISION MAPPING URL PROVIDED BY USER
-        const OFFICE_MAPPING_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=0&single=true&output=csv";
 
         const DIVISIONS = ["Indore City", "Indore Moffusil", "Khandwa", "Mandsaur", "Ratlam", "Sehore", "Ujjain", "ID DIVISION"];
         const MONTHS = [{k:'apr', n:'April'}, {k:'may', n:'May'}, {k:'jun', n:'June'}, {k:'jul', n:'July'}, {k:'aug', n:'August'}, {k:'sep', n:'September'}, {k:'oct', n:'October'}, {k:'nov', n:'November'}, {k:'dec', n:'December'}, {k:'jan', n:'January'}, {k:'feb', n:'February'}, {k:'mar', n:'March'}];
@@ -555,9 +561,6 @@
         let currentPosbOption = 'net', masterOfficeDatabase = [];
         let currentActiveView = 'revenue', currentDataType = 'revenue', currentVertical = 'ALL';
         let trendChart = null, secondChart = null, sdMChart = null, revenueRecords = [], countRecords = [];
-
-        // Global store for Office Mapping CSV Data
-        let officeMappingDict = new Map();
 
         function initDynamicDropdowns() {
             document.querySelectorAll('.div-select-options').forEach(select => {
@@ -632,8 +635,8 @@
             const badge = document.getElementById('syncBadge');
             badge.innerHTML = "⏳ Fetching Live Data...";
 
-            const [revRows, countRows, aprRows, mayRows, junRows, julyRows, augRows, lyCountRows, lyRevRows, sbnHistRows, sbnCurrRows, sbPliRows, mapRows] = await Promise.all([
-                safeFetchCSV(REVENUE_CSV_URL), safeFetchCSV(COUNT_CSV_URL), safeFetchCSV(APRIL_OFFICE_CSV_URL), safeFetchCSV(MAY_OFFICE_CSV_URL), safeFetchCSV(JUNE_OFFICE_CSV_URL), safeFetchCSV(JULY_OFFICE_CSV_URL), safeFetchCSV(AUGUST_OFFICE_CSV_URL), safeFetchCSV(LAST_YEAR_COUNT_CSV_URL), safeFetchCSV(LAST_YEAR_REVENUE_CSV_URL), safeFetchCSV(SBN_HISTORICAL_CSV_URL), safeFetchCSV(SBN_CURRENT_FY_CSV_URL), safeFetchCSV(POSB_TARGET_REVENUE_URL), safeFetchCSV(OFFICE_MAPPING_CSV_URL)
+            const [revRows, countRows, aprRows, mayRows, junRows, julyRows, augRows, lyCountRows, lyRevRows, sbnHistRows, sbnCurrRows, sbPliRows] = await Promise.all([
+                safeFetchCSV(REVENUE_CSV_URL), safeFetchCSV(COUNT_CSV_URL), safeFetchCSV(APRIL_OFFICE_CSV_URL), safeFetchCSV(MAY_OFFICE_CSV_URL), safeFetchCSV(JUNE_OFFICE_CSV_URL), safeFetchCSV(JULY_OFFICE_CSV_URL), safeFetchCSV(AUGUST_OFFICE_CSV_URL), safeFetchCSV(LAST_YEAR_COUNT_CSV_URL), safeFetchCSV(LAST_YEAR_REVENUE_CSV_URL), safeFetchCSV(SBN_HISTORICAL_CSV_URL), safeFetchCSV(SBN_CURRENT_FY_CSV_URL), safeFetchCSV(POSB_TARGET_REVENUE_URL)
             ]);
 
             revenueRecords = revRows.length > 0 ? parseRevenueSheet(revRows) : [];
@@ -643,8 +646,6 @@
             if (lyRevRows.length > 0) { RAW_HISTORICAL_ROWS.revenue = lyRevRows; parseLastYearSheet(lyRevRows, 'revenue'); }
             if (sbnHistRows.length > 0) parseSbnHistoricalSheet(sbnHistRows);
             if (sbnCurrRows.length > 0) parseSbnCurrentSheet(sbnCurrRows);
-
-            if (mapRows.length > 0) parseOfficeMappingSheet(mapRows);
 
             buildMasterOfficeDatabaseLive(aprRows, mayRows, junRows);
             updateMonthLiveCounts(julyRows, 'jul');
@@ -659,27 +660,6 @@
                 badge.innerHTML = "🔴 Sync Warning";
                 badge.className = "text-xs bg-red-500/30 text-red-200 px-3 py-1.5 rounded-full border border-red-400/30 font-semibold";
             }
-        }
-
-        // Parse Mapping CSV for PLI
-        function parseOfficeMappingSheet(rows) {
-            if (!rows || rows.length <= 1) return;
-            let header = rows[0].map(h => h.trim().toUpperCase());
-            let idIdx = header.findIndex(h => h.includes('CSI') || h.includes('OFFICE_CODE') || h.includes('OFFICE ID') || h.includes('FACILITY'));
-            let divIdx = header.findIndex(h => h.includes('DONAME') || h.includes('DIVISION'));
-            let sdIdx = header.findIndex(h => h.includes('SONAME') || h.includes('SUB') || h.includes('SDNAME'));
-
-            if (idIdx === -1) idIdx = 0;
-            if (divIdx === -1) divIdx = 2;
-            if (sdIdx === -1) sdIdx = 4;
-
-            rows.slice(1).forEach(r => {
-                if (!r[idIdx]) return;
-                let csiId = r[idIdx].trim();
-                let divName = getStandardDivKey(r[divIdx] || '');
-                let sdName = (r[sdIdx] || 'UNASSIGNED').trim();
-                officeMappingDict.set(csiId, { div: divName, sd: sdName });
-            });
         }
 
         function parseSbPliSheet(rows) {
@@ -857,7 +837,11 @@
 
             const activeBtn = document.getElementById(`tab-type-${viewType}`);
             
-            if (viewType === 'sdMonth') {
+            if (viewType === 'pliNil') {
+                document.getElementById('pliNilView').classList.remove('hidden');
+                if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-cyan-600 text-cyan-600 transition flex items-center gap-1.5";
+                loadSavedPliNilTable();
+            } else if (viewType === 'sdMonth') {
                 document.getElementById('sdMonthView').classList.remove('hidden');
                 if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-purple-600 text-purple-600 transition flex items-center gap-1.5";
                 populateSubDivDropdown('sdMDivSelect', 'sdMSdSelect'); renderSdMonthAnalysis();
@@ -865,9 +849,6 @@
                 document.getElementById('officeAnalyticsView').classList.remove('hidden');
                 if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-rose-600 text-rose-600 transition flex items-center gap-1.5";
                 populateSubDivDropdown('offDivSelect', 'offSdSelect'); renderOfficeAnalytics();
-            } else if (viewType === 'pliNil') {
-                document.getElementById('pliNilView').classList.remove('hidden');
-                if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-cyan-600 text-cyan-600 transition flex items-center gap-1.5";
             } else if (viewType === 'q1') {
                 document.getElementById('q1DataView').classList.remove('hidden');
                 if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-teal-600 text-teal-600 transition flex items-center gap-1.5";
@@ -906,159 +887,6 @@
                 document.getElementById('countMonthWiseContainer').classList.toggle('hidden', currentDataType === 'revenue');
                 updateDashboard();
             }
-        }
-
-        // ADMIN MODAL & PLI EXCEL HANDLER LOGIC
-        function openAdminModal() {
-            document.getElementById('adminAuthModal').classList.remove('hidden');
-            document.getElementById('loginErrorMsg').classList.add('hidden');
-        }
-
-        function closeAdminModal() {
-            document.getElementById('adminAuthModal').classList.add('hidden');
-        }
-
-        function verifyAdminLogin() {
-            const loginId = document.getElementById('adminLoginId').value.trim();
-            const password = document.getElementById('adminPassword').value.trim();
-
-            if (loginId === "10253124" && password === "Kapil123") {
-                closeAdminModal();
-                document.getElementById('adminUploadContainer').classList.remove('hidden');
-                alert("Login Successful! You can now upload the PLI Excel file.");
-            } else {
-                document.getElementById('loginErrorMsg').classList.remove('hidden');
-            }
-        }
-
-        function handlePliExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                processPliUploadedRows(jsonRows);
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function processPliUploadedRows(rows) {
-            if (!rows || rows.length <= 1) {
-                alert("Uploaded file is empty or invalid!");
-                return;
-            }
-
-            let header = rows[0].map(h => (h || '').toString().trim().toUpperCase());
-            let csiIdx = header.findIndex(h => h.includes('CSI') || h.includes('OFFICE_CODE') || h.includes('FACILITY') || h.includes('OFFICE'));
-            let transIdx = header.findIndex(h => h.includes('TRANSCOUNT') || h.includes('TRANSACTION') || h.includes('COUNT'));
-
-            if (csiIdx === -1) csiIdx = 0;
-            if (transIdx === -1) transIdx = 1;
-
-            let divGroup = new Map();
-            let totalOfficesCount = 0, totalNil = 0, totalLow = 0, totalGood = 0;
-
-            rows.slice(1).forEach(row => {
-                if (!row[csiIdx]) return;
-                let csiId = row[csiIdx].toString().trim();
-                let transCount = cleanNumber(row[transIdx]);
-
-                // Lookup Office info in mapping sheet or master DB
-                let divName = "UNKNOWN", sdName = "UNASSIGNED";
-                if (officeMappingDict.has(csiId)) {
-                    divName = officeMappingDict.get(csiId).div;
-                    sdName = officeMappingDict.get(csiId).sd;
-                } else {
-                    let mObj = masterOfficeDatabase.find(o => o.id === csiId);
-                    if (mObj) {
-                        divName = getStandardDivKey(mObj.div);
-                        sdName = mObj.sd;
-                    }
-                }
-
-                if (!divName || divName === "UNKNOWN") return;
-
-                if (!divGroup.has(divName)) divGroup.set(divName, new Map());
-                let sdMap = divGroup.get(divName);
-                if (!sdMap.has(sdName)) sdMap.set(sdName, { total: 0, nil: 0, low: 0, good: 0 });
-
-                let sdObj = sdMap.get(sdName);
-                sdObj.total++;
-                totalOfficesCount++;
-
-                if (transCount === 0) { sdObj.nil++; totalNil++; }
-                else if (transCount > 0 && transCount <= 10) { sdObj.low++; totalLow++; }
-                else if (transCount > 10) { sdObj.good++; totalGood++; }
-            });
-
-            renderPliNilSummaryTable(divGroup, totalOfficesCount, totalNil, totalLow, totalGood);
-        }
-
-        function renderPliNilSummaryTable(divGroup, totalOfficesCount, totalNil, totalLow, totalGood) {
-            let rows = [], sno = 1;
-
-            const divClassMap = {
-                "Indore City": "div-bg-indore-city", "Indore Moffusil": "div-bg-indore-mfl",
-                "Khandwa": "div-bg-khandwa", "Mandsaur": "div-bg-mandsaur",
-                "Ratlam": "div-bg-ratlam", "Sehore": "div-bg-sehore",
-                "Ujjain": "div-bg-ujjain", "ID DIVISION": "div-bg-id-division"
-            };
-
-            divGroup.forEach((sdMap, divName) => {
-                let divTotal = 0, divNil = 0, divLow = 0, divGood = 0;
-                let cssClass = divClassMap[divName] || 'div-bg-indore-city';
-
-                sdMap.forEach((vals, sdName) => {
-                    divTotal += vals.total; divNil += vals.nil; divLow += vals.low; divGood += vals.good;
-                    let nilPct = vals.total > 0 ? Math.round((vals.nil / vals.total) * 100) + "%" : "0%";
-                    let goodPct = vals.total > 0 ? Math.round((vals.good / vals.total) * 100) + "%" : "0%";
-
-                    rows.push(`<tr>
-                        <td>${sno++}</td>
-                        <td class="${cssClass}">${divName.toUpperCase()}</td>
-                        <td style="text-align: left; font-weight: 600;">${sdName}</td>
-                        <td>${vals.total}</td>
-                        <td class="font-bold text-rose-700 bg-rose-50/50">${vals.nil}</td>
-                        <td class="font-bold text-amber-700 bg-amber-50/50">${vals.low}</td>
-                        <td class="font-bold text-emerald-700 bg-emerald-50/50">${vals.good}</td>
-                        <td class="font-bold text-rose-800 bg-rose-100/60">${nilPct}</td>
-                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${goodPct}</td>
-                    </tr>`);
-                });
-
-                let divNilPct = divTotal > 0 ? Math.round((divNil / divTotal) * 100) + "%" : "0%";
-                let divGoodPct = divTotal > 0 ? Math.round((divGood / divTotal) * 100) + "%" : "0%";
-
-                rows.push(`<tr class="row-div-total">
-                    <td colspan="3">${divName.toUpperCase()} Total</td>
-                    <td>${divTotal}</td>
-                    <td>${divNil}</td>
-                    <td>${divLow}</td>
-                    <td>${divGood}</td>
-                    <td>${divNilPct}</td>
-                    <td>${divGoodPct}</td>
-                </tr>`);
-            });
-
-            document.getElementById('pliNilTableBody').innerHTML = rows.join('');
-            let grandNilPct = totalOfficesCount > 0 ? Math.round((totalNil / totalOfficesCount) * 100) + "%" : "0%";
-            let grandGoodPct = totalOfficesCount > 0 ? Math.round((totalGood / totalOfficesCount) * 100) + "%" : "0%";
-
-            document.getElementById('pliNilTableFoot').innerHTML = `<tr class="row-grand-total">
-                <td colspan="3">Grand Total</td>
-                <td>${totalOfficesCount}</td>
-                <td>${totalNil}</td>
-                <td>${totalLow}</td>
-                <td>${totalGood}</td>
-                <td>${grandNilPct}</td>
-                <td>${grandGoodPct}</td>
-            </tr>`;
         }
 
         function updateDashboard() {
@@ -1304,6 +1132,7 @@
             sdMChart = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: datasetLabel, data: dataValues, backgroundColor: colorHex, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { font: { size: 10 } } }, y: { beginAtZero: true } } } });
         }
 
+        /* RENDERING NIL BOOKING REPORT EXACTLY AS PER ATTACHED REFERENCE IMAGE WITH EXACT CLICK FILTERING FIX */
         function renderOfficeAnalytics() {
             const vertKey = document.getElementById('offVertSelect').value, divKey = document.getElementById('offDivSelect').value, sdKey = document.getElementById('offSdSelect').value, mKey = document.getElementById('offMonthSelect').value, clsKey = document.getElementById('offClassSelect').value;
             let divGroup = new Map(), totalOfficesCount = 0, totalBookings = 0, totalNil = 0, totalLow = 0, totalGood = 0;
@@ -1340,17 +1169,25 @@
             let rows = [], sno = 1;
             
             const divClassMap = {
-                "Indore City": "div-bg-indore-city", "Indore Moffusil": "div-bg-indore-mfl",
-                "Khandwa": "div-bg-khandwa", "Mandsaur": "div-bg-mandsaur",
-                "Ratlam": "div-bg-ratlam", "Sehore": "div-bg-sehore",
-                "Ujjain": "div-bg-ujjain", "ID DIVISION": "div-bg-id-division"
+                "Indore City": "div-bg-indore-city",
+                "Indore Moffusil": "div-bg-indore-mfl",
+                "Khandwa": "div-bg-khandwa",
+                "Mandsaur": "div-bg-mandsaur",
+                "Ratlam": "div-bg-ratlam",
+                "Sehore": "div-bg-sehore",
+                "Ujjain": "div-bg-ujjain",
+                "ID DIVISION": "div-bg-id-division"
             };
 
             const divShortNameMap = {
-                "Indore City": "INDORE CITY", "Indore Moffusil": "INDORE MFL",
-                "Khandwa": "KHANDWA", "Mandsaur": "MANDSAUR",
-                "Ratlam": "RATLAM", "Sehore": "SEHORE",
-                "Ujjain": "UJJAIN", "ID DIVISION": "ID DIVISION"
+                "Indore City": "INDORE CITY",
+                "Indore Moffusil": "INDORE MFL",
+                "Khandwa": "KHANDWA",
+                "Mandsaur": "MANDSAUR",
+                "Ratlam": "RATLAM",
+                "Sehore": "SEHORE",
+                "Ujjain": "UJJAIN",
+                "ID DIVISION": "ID DIVISION"
             };
 
             divGroup.forEach((sdMap, divName) => {
@@ -1383,8 +1220,8 @@
                     <td colspan="3">${shortName} Total</td>
                     <td>${divTotal}</td>
                     <td onclick="exportCategoryExcel('${divName}', 'NIL', true)" class="cursor-pointer underline" title="Click to download all NIL offices for ${shortName}">${divNil}</td>
-                    <td onclick="exportCategoryExcel('${divName}', 'LOW')" class="cursor-pointer underline" title="Click to download all Low booking offices for ${shortName}">${divLow}</td>
-                    <td onclick="exportCategoryExcel('${divName}', 'GOOD')" class="cursor-pointer underline" title="Click to download all Good booking offices for ${shortName}">${divGood}</td>
+                    <td onclick="exportCategoryExcel('${divName}', 'LOW', true)" class="cursor-pointer underline" title="Click to download all Low booking offices for ${shortName}">${divLow}</td>
+                    <td onclick="exportCategoryExcel('${divName}', 'GOOD', true)" class="cursor-pointer underline" title="Click to download all Good booking offices for ${shortName}">${divGood}</td>
                     <td>${divNilPct}</td>
                     <td>${divGoodPct}</td>
                 </tr>`);
@@ -1405,6 +1242,7 @@
             </tr>`;
         }
 
+        /* CELL-CLICK EXCEL EXPORT FOR INDIVIDUAL CATEGORY/OFFICE LISTS */
         function exportCategoryExcel(targetName, catType, isDivisionLevel = false) {
             const vertKey = document.getElementById('offVertSelect').value;
             const mKey = document.getElementById('offMonthSelect').value;
@@ -1447,6 +1285,7 @@
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(filteredList);
 
+            // Apply Styles to Header & Data Rows in Excel
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; ++R) {
                 for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -1730,6 +1569,7 @@
             document.querySelectorAll('#tableBody tr').forEach(tr => { tr.style.display = tr.innerText.toLowerCase().includes(query) ? '' : 'none'; });
         }
 
+        /* FULL EXCEL TABLE EXPORT ENGINE WITH HEADER STYLING & BORDERS */
         function exportTableByID(tableId, defaultFileName, appendIDCNote = false) {
             const tableElement = document.getElementById(tableId); if (!tableElement) return;
             const wb = XLSX.utils.book_new();
@@ -1768,6 +1608,7 @@
             XLSX.writeFile(wb, defaultFileName);
         }
 
+        /* PERFECT PDF GENERATION ENGINE WITH ZERO TOP GAP & UPDATED HEADING */
         function downloadTablePDF(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1784,6 +1625,8 @@
             headerTitle.style.margin = '0px 0px 6px 0px';
             headerTitle.style.color = '#0f172a';
             headerTitle.style.borderBottom = '2px solid #0f172a';
+            
+            // UPDATED HEADER TEXT HERE
             headerTitle.innerText = `Indore Region - ${fileName.replace(/_/g, ' ')}`;
             container.appendChild(headerTitle);
 
@@ -1804,6 +1647,7 @@
             html2pdf().set(opt).from(container).save();
         }
 
+        /* HIGH RESOLUTION JPEG IMAGE DOWNLOAD OPTION WITH UPDATED HEADING */
         function downloadTableJPEG(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1821,6 +1665,8 @@
             headerTitle.style.fontWeight = '800';
             headerTitle.style.margin = '0 0 12px 0';
             headerTitle.style.color = '#0f172a';
+            
+            // UPDATED HEADER TEXT HERE
             headerTitle.innerText = `Indore Region - ${fileName.replace(/_/g, ' ')}`;
             container.appendChild(headerTitle);
 
@@ -1839,9 +1685,181 @@
             });
         }
 
+        
+        // ADMIN MODAL & PLI EXCEL HANDLER LOGIC
+        function openAdminModal() {
+            document.getElementById('adminAuthModal').classList.remove('hidden');
+            document.getElementById('loginErrorMsg').classList.add('hidden');
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminAuthModal').classList.add('hidden');
+        }
+
+        function verifyAdminLogin() {
+            const loginId = document.getElementById('adminLoginId').value.trim();
+            const password = document.getElementById('adminPassword').value.trim();
+
+            if (loginId === "10253124" && password === "Kapil123") {
+                closeAdminModal();
+                document.getElementById('adminUploadContainer').classList.remove('hidden');
+                alert("Login Successful! You can now upload the PLI Excel file.");
+            } else {
+                document.getElementById('loginErrorMsg').classList.remove('hidden');
+            }
+        }
+
+        function handlePliExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                processPliUploadedRows(jsonRows);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processPliUploadedRows(rows) {
+            if (!rows || rows.length <= 1) {
+                alert("Uploaded file is empty or invalid!");
+                return;
+            }
+
+            let header = rows[0].map(h => (h || '').toString().trim().toUpperCase());
+            let csiIdx = header.findIndex(h => h.includes('CSI') || h.includes('OFFICE_CODE'));
+            let transIdx = header.findIndex(h => h.includes('TRANSCOUNT') || h.includes('TRANSACTION'));
+            let divIdx = header.findIndex(h => h.includes('DONAME') || h.includes('DIVISION'));
+            let sdIdx = header.findIndex(h => h.includes('SONAME') || h.includes('SUB'));
+
+            if (csiIdx === -1) csiIdx = 8;
+            if (transIdx === -1) transIdx = 9;
+            if (divIdx === -1) divIdx = 2;
+            if (sdIdx === -1) sdIdx = 4;
+
+            let divGroup = new Map();
+            let totalOfficesCount = 0, totalNil = 0, totalLow = 0, totalGood = 0;
+
+            rows.slice(1).forEach(row => {
+                if (!row[csiIdx] && !row[divIdx]) return;
+                
+                let rawDiv = (row[divIdx] || '').toString();
+                let divName = getStandardDivKey(rawDiv);
+                let sdName = (row[sdIdx] || 'UNASSIGNED').toString().trim();
+                let transCount = cleanNumber(row[transIdx]);
+
+                if (!divName) return; // Filter to Indore Region Divisions
+
+                if (!divGroup.has(divName)) divGroup.set(divName, new Map());
+                let sdMap = divGroup.get(divName);
+                if (!sdMap.has(sdName)) sdMap.set(sdName, { total: 0, nil: 0, low: 0, good: 0 });
+
+                let sdObj = sdMap.get(sdName);
+                sdObj.total++;
+                totalOfficesCount++;
+
+                if (transCount === 0) { sdObj.nil++; totalNil++; }
+                else if (transCount > 0 && transCount <= 10) { sdObj.low++; totalLow++; }
+                else if (transCount > 10) { sdObj.good++; totalGood++; }
+            });
+
+            // Show Upload Success Badge
+            const badge = document.getElementById('uploadStatusBadge');
+            badge.innerText = `✅ Upload Successful! (${totalOfficesCount} Offices Processed)`;
+            badge.classList.remove('hidden');
+
+            renderPliNilSummaryTable(divGroup, totalOfficesCount, totalNil, totalLow, totalGood);
+        }
+
+        function renderPliNilSummaryTable(divGroup, totalOfficesCount, totalNil, totalLow, totalGood) {
+            let rows = [], sno = 1;
+
+            const divClassMap = {
+                "Indore City": "div-bg-indore-city", "Indore Moffusil": "div-bg-indore-mfl",
+                "Khandwa": "div-bg-khandwa", "Mandsaur": "div-bg-mandsaur",
+                "Ratlam": "div-bg-ratlam", "Sehore": "div-bg-sehore",
+                "Ujjain": "div-bg-ujjain", "ID DIVISION": "div-bg-id-division"
+            };
+
+            divGroup.forEach((sdMap, divName) => {
+                let divTotal = 0, divNil = 0, divLow = 0, divGood = 0;
+                let cssClass = divClassMap[divName] || 'div-bg-indore-city';
+
+                sdMap.forEach((vals, sdName) => {
+                    divTotal += vals.total; divNil += vals.nil; divLow += vals.low; divGood += vals.good;
+                    let nilPct = vals.total > 0 ? Math.round((vals.nil / vals.total) * 100) + "%" : "0%";
+                    let goodPct = vals.total > 0 ? Math.round((vals.good / vals.total) * 100) + "%" : "0%";
+
+                    rows.push(`<tr>
+                        <td>${sno++}</td>
+                        <td class="${cssClass}">${divName.toUpperCase()}</td>
+                        <td style="text-align: left; font-weight: 600;">${sdName}</td>
+                        <td>${vals.total}</td>
+                        <td class="font-bold text-rose-700 bg-rose-50/50">${vals.nil}</td>
+                        <td class="font-bold text-amber-700 bg-amber-50/50">${vals.low}</td>
+                        <td class="font-bold text-emerald-700 bg-emerald-50/50">${vals.good}</td>
+                        <td class="font-bold text-rose-800 bg-rose-100/60">${nilPct}</td>
+                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${goodPct}</td>
+                    </tr>`);
+                });
+
+                let divNilPct = divTotal > 0 ? Math.round((divNil / divTotal) * 100) + "%" : "0%";
+                let divGoodPct = divTotal > 0 ? Math.round((divGood / divTotal) * 100) + "%" : "0%";
+
+                rows.push(`<tr class="row-div-total">
+                    <td colspan="3">${divName.toUpperCase()} Total</td>
+                    <td>${divTotal}</td>
+                    <td>${divNil}</td>
+                    <td>${divLow}</td>
+                    <td>${divGood}</td>
+                    <td>${divNilPct}</td>
+                    <td>${divGoodPct}</td>
+                </tr>`);
+            });
+
+            let bodyHtml = rows.join('');
+            let grandNilPct = totalOfficesCount > 0 ? Math.round((totalNil / totalOfficesCount) * 100) + "%" : "0%";
+            let grandGoodPct = totalOfficesCount > 0 ? Math.round((totalGood / totalOfficesCount) * 100) + "%" : "0%";
+
+            let footHtml = `<tr class="row-grand-total">
+                <td colspan="3">Grand Total</td>
+                <td>${totalOfficesCount}</td>
+                <td>${totalNil}</td>
+                <td>${totalLow}</td>
+                <td>${totalGood}</td>
+                <td>${grandNilPct}</td>
+                <td>${grandGoodPct}</td>
+            </tr>`;
+
+            document.getElementById('pliNilTableBody').innerHTML = bodyHtml;
+            document.getElementById('pliNilTableFoot').innerHTML = footHtml;
+
+            // PERSIST IN BROWSER MEMORY SO OTHERS SEE IT
+            localStorage.setItem("PLI_NIL_TABLE_BODY", bodyHtml);
+            localStorage.setItem("PLI_NIL_TABLE_FOOT", footHtml);
+        }
+
+        function loadSavedPliNilTable() {
+            let savedBody = localStorage.getItem("PLI_NIL_TABLE_BODY");
+            let savedFoot = localStorage.getItem("PLI_NIL_TABLE_FOOT");
+
+            if (savedBody && savedFoot) {
+                document.getElementById('pliNilTableBody').innerHTML = savedBody;
+                document.getElementById('pliNilTableFoot').innerHTML = savedFoot;
+            }
+        }
+
+
         window.onload = function() {
             initDynamicDropdowns();
             fetchAllLiveData();
+            loadSavedPliNilTable();
         };
     </script>
 </body>
