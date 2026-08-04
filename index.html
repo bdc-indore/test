@@ -211,15 +211,15 @@
                         <table id="sdPerformanceTable" class="nil-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 5%;">S.No.</th>
-                                    <th style="width: 15%;">Name of Division</th>
-                                    <th style="width: 20%;">Name of Sub Dn</th>
-                                    <th style="width: 12%;">Total No of Offices in Sub Dn</th>
-                                    <th style="width: 12%;">Total No of NIL (0) Offices</th>
-                                    <th style="width: 12%;">Low Booking (1-10) Offices*</th>
-                                    <th style="width: 12%;">Good Booking (>10) Offices</th>
-                                    <th style="width: 12%;">% of NIL Offices in Sub Dn</th>
-                                    <th style="width: 12%;">% OF OFFICES WITH MORE THAN 10 BOOKING</th>
+                                    <th style="width: 4%;">S.No.</th>
+                                    <th style="width: 12%;">Name of Division</th>
+                                    <th style="width: 15%;">Name of Sub Dn</th>
+                                    <th style="width: 11%;">Total Offices in Sub Dn</th>
+                                    <th style="width: 11%;">NIL (0) Offices</th>
+                                    <th style="width: 11%;">Low Booking (1-10)*</th>
+                                    <th style="width: 11%;">Good Booking (>10)</th>
+                                    <th style="width: 12%;">% NIL Offices in Sub Dn</th>
+                                    <th style="width: 13%;">% Offices with >10 Booking</th>
                                 </tr>
                             </thead>
                             <tbody id="sdPerformanceTableBody"></tbody>
@@ -1070,13 +1070,13 @@
                     rows.push(`<tr>
                         <td>${sno++}</td>
                         <td class="${cssClass}">${shortName}</td>
-                        <td>${sdName}</td>
+                        <td style="text-align: left; font-weight: 600;">${sdName}</td>
                         <td>${vals.total}</td>
-                        <td>${vals.nil}</td>
-                        <td>${vals.low}</td>
-                        <td>${vals.good}</td>
-                        <td>${nilPct}</td>
-                        <td>${goodPct}</td>
+                        <td onclick="exportCategoryExcel('NIL')" class="cursor-pointer font-bold text-rose-700 bg-rose-50/50 hover:underline" title="Click to download NIL offices list">${vals.nil}</td>
+                        <td onclick="exportCategoryExcel('LOW')" class="cursor-pointer font-bold text-amber-700 bg-amber-50/50 hover:underline" title="Click to download Low booking offices list">${vals.low}</td>
+                        <td onclick="exportCategoryExcel('GOOD')" class="cursor-pointer font-bold text-emerald-700 bg-emerald-50/50 hover:underline" title="Click to download Good booking offices list">${vals.good}</td>
+                        <td class="font-bold text-rose-800 bg-rose-100/60">${nilPct}</td>
+                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${goodPct}</td>
                     </tr>`);
                 });
 
@@ -1381,36 +1381,49 @@
             XLSX.writeFile(wb, defaultFileName);
         }
 
-        /* PDF GENERATION FOR ALL TABLES WITH FULL COLOUR FORMATTING & PAGE FIT */
+        /* PDF GENERATION FOR ALL TABLES WITH PERFECT PAGE MARGIN & CELL FIT */
         function downloadTablePDF(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
 
-            // Clone container to apply PDF print styling
             const container = document.createElement('div');
-            container.style.padding = '10px';
+            container.style.padding = '0px';
+            container.style.margin = '0px';
             container.style.background = '#ffffff';
+            container.style.width = '100%';
 
             const headerTitle = document.createElement('h2');
             headerTitle.style.textAlign = 'center';
             headerTitle.style.fontFamily = 'Inter, sans-serif';
-            headerTitle.style.fontSize = '16px';
-            headerTitle.style.fontWeight = 'bold';
-            headerTitle.style.marginBottom = '10px';
-            headerTitle.innerText = `Department of Posts - ${fileName.replace(/_/g, ' ')}`;
+            headerTitle.style.fontSize = '14px';
+            headerTitle.style.fontWeight = '800';
+            headerTitle.style.padding = '6px 0';
+            headerTitle.style.margin = '0 0 8px 0';
+            headerTitle.style.color = '#0f172a';
+            headerTitle.style.borderBottom = '2px solid #0f172a';
+            headerTitle.innerText = `DEPARTMENT OF POSTS - ${fileName.replace(/_/g, ' ')}`;
             container.appendChild(headerTitle);
 
             const clonedTable = tableElement.cloneNode(true);
             clonedTable.style.width = '100%';
             clonedTable.style.maxHeight = 'none';
+            clonedTable.style.fontSize = '10px';
+
+            // Ensure full width and table layout fit inside PDF
+            clonedTable.querySelectorAll('th, td').forEach(cell => {
+                cell.style.padding = '5px 4px';
+                cell.style.wordBreak = 'break-word';
+            });
+
             container.appendChild(clonedTable);
 
             const opt = {
-                margin:       [0.3, 0.3, 0.3, 0.3],
+                margin:       [0.15, 0.2, 0.15, 0.2],
                 filename:     `${fileName}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+                html2canvas:  { scale: 2, useCORS: true, logging: false, windowWidth: 1200 },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
             html2pdf().set(opt).from(container).save();
