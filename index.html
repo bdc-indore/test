@@ -1699,7 +1699,7 @@
             reader.readAsArrayBuffer(file);
         }
 
-        /* UPDATED ALL-INDIA EXCEL PARSER FOR INDORE REGION WITH ACCURATE SUB-DIVISION MAPPING & SPECIFIED COLUMNS */
+        /* UPDATED EXCEL PARSER: STRICTLY MAPS CSI OFFICE ID WITH MASTER SPREADSHEET */
         function processPliUploadedRows(rows) {
             if (!rows || rows.length <= 1) {
                 alert("Uploaded file is empty or invalid!");
@@ -1708,34 +1708,36 @@
 
             let header = rows[0].map(h => (h || '').toString().trim().toUpperCase());
             
-            // Auto-detect Column Indexes
-            let csiIdx = header.findIndex(h => h.includes('CSI') || h.includes('OFFICE_CODE') || h.includes('FACILITY') || h.includes('OFFICE ID'));
+            // Detect Column Indexes in Uploaded Excel
+            let csiIdx = header.findIndex(h => h.includes('CSI') || h.includes('OFFICE_CODE') || h.includes('FACILITY') || h.includes('OFFICE ID') || h.includes('OFFICE_ID'));
             let transIdx = header.findIndex(h => h.includes('TRANSCOUNT') || h.includes('TRANSACTION') || h.includes('COUNT') || h.includes('TXN'));
-            let divIdx = header.findIndex(h => h.includes('DONAME') || h.includes('DIVISION'));
-            let sdIdx = header.findIndex(h => h.includes('SONAME') || h.includes('SUB') || h.includes('SD'));
 
+            // Fallback Column Indexes if Header Not Auto-Detected
             if (csiIdx === -1) csiIdx = 0;
             if (transIdx === -1) transIdx = 9;
-            if (divIdx === -1) divIdx = 2;
-            if (sdIdx === -1) sdIdx = 4;
 
             let divGroup = new Map();
             let totalOfficesCount = 0, totalNil = 0, totalLow = 0, totalGood = 0;
 
             rows.slice(1).forEach(row => {
-                let rawDiv = (row[divIdx] || '').toString();
-                let divName = getStandardDivKey(rawDiv);
-                
-                // FILTER: Only Process Offices belonging to Indore Region Divisions
+                let officeId = (row[csiIdx] || '').toString().trim();
+                if (!officeId) return;
+
+                // 1. MATCH CSI OFFICE ID WITH YOUR MASTER SPREADSHEET DATA
+                let masterOffice = masterOfficeDatabase.find(o => o.id === officeId);
+
+                // 2. IF OFFICE ID NOT FOUND IN YOUR SPREADSHEET, SKIP IT (Not in Indore Region)
+                if (!masterOffice) return;
+
+                // 3. FETCH DIVISION & SUB-DIVISION STRICTLY FROM YOUR SPREADSHEET
+                let divName = getStandardDivKey(masterOffice.div);
+                let sdName = masterOffice.sd || 'UNASSIGNED';
+
                 if (!divName) return;
 
-                let officeId = (row[csiIdx] || '').toString().trim();
                 let transCount = cleanNumber(row[transIdx]);
-                
-                // MAP SUB-DIVISION FROM SPREADSHEET (masterOfficeDatabase) USING CSI OFFICE ID
-                let masterOffice = masterOfficeDatabase.find(o => o.id === officeId);
-                let sdName = masterOffice ? masterOffice.sd : ((row[sdIdx] || 'UNASSIGNED').toString().trim());
 
+                // Grouping Data Division and Sub-Division wise
                 if (!divGroup.has(divName)) divGroup.set(divName, new Map());
                 let sdMap = divGroup.get(divName);
                 if (!sdMap.has(sdName)) sdMap.set(sdName, { total: 0, nil: 0, low: 0, good: 0 });
@@ -1756,10 +1758,16 @@
                 }
             });
 
+            if (totalOfficesCount === 0) {
+                alert("No matching Office IDs found for Indore Region in the uploaded Excel!");
+                return;
+            }
+
             const badge = document.getElementById('uploadStatusBadge');
-            badge.innerText = `✅ Upload Successful! (${totalOfficesCount} Indore Region Offices Processed)`;
+            badge.innerText = `✅ Upload Successful! (${totalOfficesCount} Matched Offices Processed)`;
             badge.classList.remove('hidden');
 
+            // Generate Final Table using Mapped Sub-Divisions and Divisions
             renderPliNilSummaryTable(divGroup, totalOfficesCount, totalNil, totalLow, totalGood);
         }
 
