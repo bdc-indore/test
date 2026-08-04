@@ -1699,37 +1699,52 @@
             reader.readAsArrayBuffer(file);
         }
 
-        /* UPDATED EXCEL PARSER: STRICTLY MAPS CSI OFFICE ID WITH MASTER SPREADSHEET */
+        /* STRICT FIX FOR CSI_OFFICE_CODE MATCHING (HANDLES TEXT & NUMBER TYPES) */
         function processPliUploadedRows(rows) {
             if (!rows || rows.length <= 1) {
                 alert("Uploaded file is empty or invalid!");
                 return;
             }
 
+            if (!masterOfficeDatabase || masterOfficeDatabase.length === 0) {
+                alert("⚠️ Master Office Data is still loading from Google Sheet. Please wait 5 seconds and try again!");
+                return;
+            }
+
+            // 1. Clean Header Row
             let header = rows[0].map(h => (h || '').toString().trim().toUpperCase());
             
-            // Detect Column Indexes in Uploaded Excel
-            let csiIdx = header.findIndex(h => h.includes('CSI') || h.includes('OFFICE_CODE') || h.includes('FACILITY') || h.includes('OFFICE ID') || h.includes('OFFICE_ID'));
-            let transIdx = header.findIndex(h => h.includes('TRANSCOUNT') || h.includes('TRANSACTION') || h.includes('COUNT') || h.includes('TXN'));
+            // 2. Find exact column index for CSI_OFFICE_CODE and TRANSCOUNT from Excel
+            let csiIdx = header.findIndex(h => h.includes('CSI_OFFICE_CODE') || h.includes('CSI') || h.includes('FACILITY'));
+            let transIdx = header.findIndex(h => h.includes('TRANSCOUNT') || h.includes('TRANS_COUNT') || h.includes('COUNT'));
 
-            // Fallback Column Indexes if Header Not Auto-Detected
-            if (csiIdx === -1) csiIdx = 0;
+            // Fallbacks based on your Excel screenshot (Col I = Index 8, Col J = Index 9)
+            if (csiIdx === -1) csiIdx = 8;
             if (transIdx === -1) transIdx = 9;
 
             let divGroup = new Map();
             let totalOfficesCount = 0, totalNil = 0, totalLow = 0, totalGood = 0;
 
+            // Helper to strictly extract digits from ID (Removes spaces, green triangle text flags, floating .0)
+            const normalizeId = (val) => {
+                if (val === null || val === undefined) return "";
+                return val.toString().replace(/\D/g, '').trim(); // Keeps ONLY numeric digits
+            };
+
             rows.slice(1).forEach(row => {
-                let officeId = (row[csiIdx] || '').toString().trim();
-                if (!officeId) return;
+                let rawOfficeId = row[csiIdx];
+                if (!rawOfficeId) return;
 
-                // 1. MATCH CSI OFFICE ID WITH YOUR MASTER SPREADSHEET DATA
-                let masterOffice = masterOfficeDatabase.find(o => o.id === officeId);
+                let cleanExcelId = normalizeId(rawOfficeId);
+                if (!cleanExcelId) return;
 
-                // 2. IF OFFICE ID NOT FOUND IN YOUR SPREADSHEET, SKIP IT (Not in Indore Region)
+                // MATCH: Compare clean numeric digits between Excel & Google Sheet
+                let masterOffice = masterOfficeDatabase.find(o => normalizeId(o.id) === cleanExcelId);
+
+                // If ID is not in your Google Sheet (e.g. Vidisha / Bhopal offices), skip it
                 if (!masterOffice) return;
 
-                // 3. FETCH DIVISION & SUB-DIVISION STRICTLY FROM YOUR SPREADSHEET
+                // Extract Division & Sub-Division strictly from YOUR Google Sheet
                 let divName = getStandardDivKey(masterOffice.div);
                 let sdName = masterOffice.sd || 'UNASSIGNED';
 
@@ -1737,7 +1752,7 @@
 
                 let transCount = cleanNumber(row[transIdx]);
 
-                // Grouping Data Division and Sub-Division wise
+                // Grouping Data
                 if (!divGroup.has(divName)) divGroup.set(divName, new Map());
                 let sdMap = divGroup.get(divName);
                 if (!sdMap.has(sdName)) sdMap.set(sdName, { total: 0, nil: 0, low: 0, good: 0 });
@@ -1759,15 +1774,14 @@
             });
 
             if (totalOfficesCount === 0) {
-                alert("No matching Office IDs found for Indore Region in the uploaded Excel!");
+                alert("❌ No matching Office IDs found for Indore Region!\n\nकृपया सुनिश्चित करें कि टॉप राइट में '🟢 Live Synced' लिखा आ रहा है।");
                 return;
             }
 
             const badge = document.getElementById('uploadStatusBadge');
-            badge.innerText = `✅ Upload Successful! (${totalOfficesCount} Matched Offices Processed)`;
+            badge.innerText = `✅ Upload Successful! (${totalOfficesCount} Indore Region Offices Processed)`;
             badge.classList.remove('hidden');
 
-            // Generate Final Table using Mapped Sub-Divisions and Divisions
             renderPliNilSummaryTable(divGroup, totalOfficesCount, totalNil, totalLow, totalGood);
         }
 
