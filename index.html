@@ -222,10 +222,35 @@
                         <select id="momLevelSelect" onchange="renderMomAnalysis()" class="bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs rounded-lg p-2"><option value="DIV">🏢 Division Level</option><option value="SD">🏬 Sub-Division Level</option></select>
                         <select id="momVertSelect" onchange="renderMomAnalysis()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2"><option value="ALL">🌐 All Verticals</option><option value="PARCEL">📦 Parcel</option><option value="MAIL">✉️ Mail</option><option value="IRGB">✈️ IR & GB</option></select>
                         <select id="momDivSelect" onchange="renderMomAnalysis()" class="bg-slate-800 text-white text-xs font-semibold rounded-lg p-2 div-select-options"></select>
-                        <button onclick="exportTableByID('momDataTable', 'MoM_Growth_Report.xlsx')" class="bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Export MoM Excel</button>
+                        <button onclick="exportTableByID('momDataTable', 'MoM_Revenue_Growth_Report.xlsx')" class="bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Export MoM Revenue Excel</button>
                     </div>
                 </div>
-                <div class="card p-6"><div class="overflow-x-auto"><table id="momDataTable" class="w-full text-left text-xs border-collapse"><thead id="momTableHead"></thead><tbody id="momTableBody" class="divide-y divide-slate-100 font-medium"></tbody><tfoot id="momTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot></table></div></div>
+
+                <!-- MoM Revenue Table Container -->
+                <div class="card p-6 space-y-3">
+                    <h3 class="text-base font-bold text-amber-900 flex items-center gap-2">💰 Revenue MoM Growth Analysis</h3>
+                    <div class="overflow-x-auto">
+                        <table id="momDataTable" class="w-full text-left text-xs border-collapse">
+                            <thead id="momTableHead"></thead>
+                            <tbody id="momTableBody" class="divide-y divide-slate-100 font-medium"></tbody>
+                            <tfoot id="momTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- MoM Article Count Table Container (Only for Parcel, MO, IRGB, SB Net Addition) -->
+                <div id="momCountContainer" class="card p-6 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-base font-bold text-indigo-900 flex items-center gap-2">📦 Article Count & POSB Net MoM Analysis</h3>
+                        <button onclick="exportTableByID('momCountDataTable', 'MoM_Count_Growth_Report.xlsx')" class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition shadow">📊 Export MoM Count Excel</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="momCountDataTable" class="w-full text-left text-xs border-collapse">
+                            <thead id="momCountTableHead"></thead>
+                            <tbody id="momCountTableBody" class="divide-y divide-slate-100 font-medium"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- YoY Section -->
@@ -524,7 +549,7 @@
                     if (idx === 0 || !r[0]) return;
                     let offId = r[0].trim(), offName = r[1] ? r[1].trim() : "", offCls = r[2] ? r[2].trim().toUpperCase() : "", rawDiv = r[4] ? r[4].trim() : "";
                     let isKhudelBO = (offName.toUpperCase().includes('KHUDEL') && offCls === 'BO');
-                    if (isKhudelBO) return; // Skip Khudel BO completely
+                    if (isKhudelBO) return;
 
                     if (!officeMap.has(offId)) {
                         officeMap.set(offId, {
@@ -568,7 +593,10 @@
 
                 if (rowStr.includes("TARGET & ACHIEVEMENT") || rowStr.includes("NAME OF DIVISION") || !row[0] || row[0].trim() === "") return;
                 let divName = row[0].trim();
-                if (divName.toUpperCase() === 'TOTAL' || divName.toUpperCase().includes('GRAND TOTAL')) return;
+                
+                // FILTER FIX: Filter out Header Titles like "Parcel Vertical", "Mail Operations Vertical", "TOTAL", etc.
+                let divUpper = divName.toUpperCase();
+                if (divUpper.includes('TOTAL') || divUpper.includes('GRAND TOTAL') || divUpper.includes('VERTICAL') || divUpper.includes('NAME OF')) return;
 
                 let isIRGB = (currentVert === "IRGB"), crDivisor = isIRGB ? 100 : 1;
                 let rawT = cleanNumber(row[1]), rawM = cleanNumber(row[2]), rawTM = cleanNumber(row[3]), rawAp = cleanNumber(row[4]), rawMy = cleanNumber(row[5]), rawJn = cleanNumber(row[6]), rawJl = cleanNumber(row[7]), rawAg = cleanNumber(row[8]), rawAch = cleanNumber(row[9]);
@@ -588,7 +616,10 @@
                 else if (rowStr.includes("IRGB ARTICLE COUNT")) { currentVert = "IRGB"; return; }
                 else if (rowStr.includes("PARCEL ARTICLE COUNT")) { currentVert = "PARCEL"; return; }
 
-                if (!row[0] || row[0].trim() === "" || row[0].toUpperCase().includes("NAME OF DIV") || row[0].toUpperCase() === 'TOTAL') return;
+                if (!row[0] || row[0].trim() === "") return;
+                let divUpper = row[0].trim().toUpperCase();
+                if (divUpper.includes("NAME OF DIV") || divUpper.includes('TOTAL') || divUpper.includes('VERTICAL')) return;
+
                 let rawAp = cleanNumber(row[1]), rawMy = cleanNumber(row[2]), rawJn = cleanNumber(row[3]), rawJl = cleanNumber(row[4]), rawAugTarget = cleanNumber(row[5]), rawAugCount = cleanNumber(row[6]);
                 let sumTotalAch = rawAp + rawMy + rawJn + rawJl + rawAugCount;
 
@@ -745,15 +776,26 @@
                 });
                 document.getElementById('posbTableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL</td><td class="p-3.5">${totals.col1.toFixed(3)} Cr</td><td class="p-3.5 text-amber-300">${totals.col2.toFixed(3)} Cr</td><td class="p-3.5 text-blue-300">${totals.col3.toFixed(3)} Cr</td><td class="p-3.5 text-center text-emerald-300">${totals.col2 > 0 ? ((totals.col3 / totals.col2) * 100).toFixed(1) + "%" : "0%"}</td></tr>`;
             } else {
+                // POSB PERCENTAGE COLUMNS ADDED HERE
                 let dataMapLY = (currentPosbOption === 'open') ? SBN_HISTORICAL_OPENED : SBN_HISTORICAL_NET, dataMapTY = (currentPosbOption === 'open') ? SBN_CURRENT_OPENED : SBN_CURRENT_NET;
-                document.getElementById('posbTableHead').innerHTML = `<tr class="bg-emerald-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-slate-800">Last Year (${mKey.toUpperCase()})</th><th class="p-3.5 bg-emerald-900">Current Year (${mKey.toUpperCase()})</th><th class="p-3.5 text-center">Difference</th></tr>`;
+                document.getElementById('posbTableHead').innerHTML = `<tr class="bg-emerald-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-slate-800">Last Year (${mKey.toUpperCase()})</th><th class="p-3.5 bg-emerald-900">Current Year (${mKey.toUpperCase()})</th><th class="p-3.5 text-center">Difference</th><th class="p-3.5 text-center bg-emerald-800 text-amber-200">% Growth</th></tr>`;
+                
                 DIVISIONS.forEach(d => {
                     if (divFilter !== 'ALL' && !isMatchingDivision(d, divFilter)) return;
                     let lyVal = (dataMapLY[mKey] && dataMapLY[mKey][d]) ? dataMapLY[mKey][d] : 0, tyVal = (dataMapTY[mKey] && dataMapTY[mKey][d]) ? dataMapTY[mKey][d] : 0, diff = tyVal - lyVal;
+                    let growthPct = lyVal > 0 ? (((tyVal - lyVal) / lyVal) * 100).toFixed(1) : (tyVal > 0 ? 100 : 0);
                     totals.col1 += lyVal; totals.col2 += tyVal;
-                    tbodyRows.push(`<tr class="hover:bg-emerald-50/50 border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${d}</td><td class="p-3">${lyVal.toLocaleString()}</td><td class="p-3 font-bold text-emerald-800">${tyVal.toLocaleString()}</td><td class="p-3 text-center font-bold ${diff>=0?'text-emerald-600':'text-rose-600'}">${diff>=0?'+':''}${diff.toLocaleString()}</td></tr>`);
+                    
+                    let pctDisplay = growthPct >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${growthPct}%</span>` : `<span class="text-rose-600 font-bold">▼ ${growthPct}%</span>`;
+
+                    tbodyRows.push(`<tr class="hover:bg-emerald-50/50 border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${d}</td><td class="p-3">${lyVal.toLocaleString()}</td><td class="p-3 font-bold text-emerald-800">${tyVal.toLocaleString()}</td><td class="p-3 text-center font-bold ${diff>=0?'text-emerald-600':'text-rose-600'}">${diff>=0?'+':''}${diff.toLocaleString()}</td><td class="p-3 text-center bg-emerald-50">${pctDisplay}</td></tr>`);
                 });
-                document.getElementById('posbTableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL</td><td class="p-3.5">${totals.col1.toLocaleString()}</td><td class="p-3.5 text-emerald-300">${totals.col2.toLocaleString()}</td><td class="p-3.5 text-center font-bold text-amber-300">${(totals.col2 - totals.col1).toLocaleString()}</td></tr>`;
+                
+                let totalDiff = totals.col2 - totals.col1;
+                let totalGrowthPct = totals.col1 > 0 ? (((totals.col2 - totals.col1) / totals.col1) * 100).toFixed(1) : 0;
+                let totPctDisplay = totalGrowthPct >= 0 ? `<span class="text-emerald-300 font-bold">▲ +${totalGrowthPct}%</span>` : `<span class="text-rose-300 font-bold">▼ ${totalGrowthPct}%</span>`;
+
+                document.getElementById('posbTableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL</td><td class="p-3.5">${totals.col1.toLocaleString()}</td><td class="p-3.5 text-emerald-300">${totals.col2.toLocaleString()}</td><td class="p-3.5 text-center font-bold text-amber-300">${(totalDiff>=0?'+':'')}${totalDiff.toLocaleString()}</td><td class="p-3.5 text-center">${totPctDisplay}</td></tr>`;
             }
             document.getElementById('posbTableBody').innerHTML = tbodyRows.join('');
         }
@@ -952,7 +994,9 @@
         function updateQ1Tables() {
             const vKey = document.getElementById('q1VerticalSelect').value;
             let rowsRev = [], sumAnnT = 0, sumQ1T = 0, sumAprR = 0, sumMayR = 0, sumJunR = 0, sumQ1AchR = 0;
-            revenueRecords.filter(r => r.vertical === vKey).forEach(r => {
+            
+            // Q1 FIX: Ignore dummy 0 rows/headers
+            revenueRecords.filter(r => r.vertical === vKey && !r.divName.toUpperCase().includes('VERTICAL')).forEach(r => {
                 let annT = r.target, q1T = annT / 4, ap = r.apr, my = r.may, jn = r.jun, q1Ach = ap + my + jn;
                 sumAnnT += annT; sumQ1T += q1T; sumAprR += ap; sumMayR += my; sumJunR += jn; sumQ1AchR += q1Ach;
                 rowsRev.push(`<tr class="border-b border-slate-200 hover:bg-teal-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3">${annT.toFixed(3)} Cr</td><td class="p-3 font-bold text-teal-800">${q1T.toFixed(3)} Cr</td><td class="p-3">${ap.toFixed(3)}</td><td class="p-3">${my.toFixed(3)}</td><td class="p-3">${jn.toFixed(3)}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toFixed(3)} Cr</td><td class="p-3 text-center font-black text-teal-700">${q1T > 0 ? ((q1Ach / q1T) * 100).toFixed(1) + "%" : "0%"}</td></tr>`);
@@ -961,7 +1005,7 @@
             document.getElementById('q1RevTableFoot').innerHTML = `<tr class="bg-teal-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL Q-1 REVENUE</td><td class="p-3.5">${vKey}</td><td class="p-3.5">${sumAnnT.toFixed(3)} Cr</td><td class="p-3.5 text-teal-200">${sumQ1T.toFixed(3)} Cr</td><td class="p-3.5">${sumAprR.toFixed(3)}</td><td class="p-3.5">${sumMayR.toFixed(3)}</td><td class="p-3.5">${sumJunR.toFixed(3)}</td><td class="p-3.5 text-emerald-300">${sumQ1AchR.toFixed(3)} Cr</td><td class="p-3.5 text-center text-amber-300">${sumQ1T > 0 ? ((sumQ1AchR/sumQ1T)*100).toFixed(1) : 0}%</td></tr>`;
 
             let rowsCnt = [], sumQ1CountTgt = 0, sumAprC = 0, sumMayC = 0, sumJunC = 0, sumQ1AchC = 0;
-            countRecords.filter(r => r.vertical === vKey).forEach(r => {
+            countRecords.filter(r => r.vertical === vKey && !r.divName.toUpperCase().includes('VERTICAL')).forEach(r => {
                 let stdKey = getStandardDivKey(r.divName), q1Tgts = (Q1_COUNT_TARGETS[vKey] && Q1_COUNT_TARGETS[vKey][stdKey]) ? Q1_COUNT_TARGETS[vKey][stdKey] : { apr: 0, may: 0, jun: 0 };
                 let q1TgtCount = q1Tgts.apr + q1Tgts.may + q1Tgts.jun, ap = r.apr, my = r.may, jn = r.jun, q1Ach = ap + my + jn;
                 sumQ1CountTgt += q1TgtCount; sumAprC += ap; sumMayC += my; sumJunC += jn; sumQ1AchC += q1Ach;
@@ -973,8 +1017,14 @@
 
         function renderMomAnalysis() {
             const level = document.getElementById('momLevelSelect').value, vert = document.getElementById('momVertSelect').value, div = document.getElementById('momDivSelect').value;
-            if (level === 'DIV') renderMomDivisionLevel(vert, div);
-            else renderMomSubDivisionLevel(vert, div);
+            if (level === 'DIV') {
+                document.getElementById('momCountContainer').classList.remove('hidden');
+                renderMomDivisionLevel(vert, div);
+                renderMomCountDivisionLevel(vert, div);
+            } else {
+                document.getElementById('momCountContainer').classList.add('hidden');
+                renderMomSubDivisionLevel(vert, div);
+            }
         }
 
         function renderMomDivisionLevel(vert, div) {
@@ -986,6 +1036,35 @@
                 rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs">${r.vertical}</td><td class="p-2.5">${apR.toFixed(3)}</td><td class="p-2.5">${myR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(apR>0?(((myR-apR)/apR)*100).toFixed(1):0)}</td><td class="p-2.5">${jnR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(myR>0?(((jnR-myR)/myR)*100).toFixed(1):0)}</td><td class="p-2.5">${jlR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(jnR>0?(((jlR-jnR)/jnR)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-100">${formatG(jlR>0?(((agR-jlR)/jlR)*100).toFixed(1):0)}</td></tr>`);
             });
             document.getElementById('momTableBody').innerHTML = rows.join(''); document.getElementById('momTableFoot').innerHTML = '';
+        }
+
+        // NEW: MOM COUNT TABLE (ONLY PARCEL, MO, IRGB & SB NET ADDITION)
+        function renderMomCountDivisionLevel(vert, div) {
+            document.getElementById('momCountTableHead').innerHTML = `<tr class="bg-indigo-950 text-white font-bold text-xs uppercase"><th class="p-3">Division Name</th><th class="p-3">Category / Vertical</th><th class="p-3 bg-indigo-900">Apr Count/Net</th><th class="p-3 bg-indigo-900">May Count/Net</th><th class="p-3 bg-indigo-800 text-amber-200">May/Apr %</th><th class="p-3 bg-indigo-900">Jun Count/Net</th><th class="p-3 bg-indigo-800 text-amber-200">Jun/May %</th><th class="p-3 bg-indigo-900">Jul Count/Net</th><th class="p-3 bg-indigo-800 text-amber-200">Jul/Jun %</th><th class="p-3 bg-indigo-900">Aug Count/Net</th><th class="p-3 bg-indigo-800 text-amber-200">Aug/Jul %</th></tr>`;
+            let rows = [];
+            let formatG = (v) => v >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${v}%</span>` : `<span class="text-rose-600 font-bold">▼ ${v}%</span>`;
+
+            // Filter Count records: Only PARCEL, MAIL, IRGB
+            countRecords.filter(r => ['PARCEL', 'MAIL', 'IRGB'].includes(r.vertical) && (div === 'ALL' || isMatchingDivision(r.divName, div)) && (vert === 'ALL' || r.vertical === vert)).forEach(r => {
+                let apC = r.apr, myC = r.may, jnC = r.jun, jlC = r.jul, agC = r.aug;
+                rows.push(`<tr class="hover:bg-indigo-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs font-semibold text-indigo-800">${r.vertical}</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${myC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(apC>0?(((myC-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(myC>0?(((jnC-myC)/myC)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-indigo-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
+            });
+
+            // Include SB Net Addition if Vert is ALL or SB
+            if (vert === 'ALL' || vert === 'SB') {
+                DIVISIONS.forEach(dName => {
+                    if (div !== 'ALL' && !isMatchingDivision(dName, div)) return;
+                    let apC = (SBN_CURRENT_NET['apr'] && SBN_CURRENT_NET['apr'][dName]) ? SBN_CURRENT_NET['apr'][dName] : 0;
+                    let myC = (SBN_CURRENT_NET['may'] && SBN_CURRENT_NET['may'][dName]) ? SBN_CURRENT_NET['may'][dName] : 0;
+                    let jnC = (SBN_CURRENT_NET['jun'] && SBN_CURRENT_NET['jun'][dName]) ? SBN_CURRENT_NET['jun'][dName] : 0;
+                    let jlC = (SBN_CURRENT_NET['jul'] && SBN_CURRENT_NET['jul'][dName]) ? SBN_CURRENT_NET['jul'][dName] : 0;
+                    let agC = (SBN_CURRENT_NET['aug'] && SBN_CURRENT_NET['aug'][dName]) ? SBN_CURRENT_NET['aug'][dName] : 0;
+
+                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${myC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((myC-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(myC>0?(((jnC-myC)/myC)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
+                });
+            }
+
+            document.getElementById('momCountTableBody').innerHTML = rows.join('');
         }
 
         function renderMomSubDivisionLevel(vert, div) {
