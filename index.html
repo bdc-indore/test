@@ -230,7 +230,7 @@
                     <div class="card p-4 border-l-4 border-slate-700"><div class="text-slate-500 text-[11px] font-bold uppercase">TOTAL POST OFFICES</div><div id="offKpiTotal" class="text-xl font-black text-slate-900 mt-1">0</div></div>
                     <div class="card p-4 border-l-4 border-blue-600"><div class="text-slate-500 text-[11px] font-bold uppercase">TOTAL BOOKINGS</div><div id="offKpiBookings" class="text-xl font-black text-blue-700 mt-1">0</div></div>
                     <div onclick="exportCategoryExcel('ALL', 'NIL')" class="card clickable-card p-4 border-l-4 border-rose-600 bg-rose-50/40 group"><div class="text-rose-700 text-[11px] font-extrabold uppercase flex justify-between"><span>NIL BOOKINGS (0)</span><span>📥</span></div><div id="offKpiNil" class="text-xl font-black text-rose-700 mt-1">0</div></div>
-                    <div onclick="exportCategoryExcel('ALL', 'LOW')" class="card clickable-card p-4 border-l-4 border-amber-500 bg-amber-50/40 group"><div class="text-amber-800 text-[11px] font-extrabold uppercase flex justify-between"><span>LOW BOOKING (1-10)</span><span>📥</span></div><div id="offKpiLow" class="text-xl font-black text-amber-700 mt-1">0</div></div>
+                    <div onclick="exportCategoryExcel('ALL', 'LOW')" class="card clickable-card p-4 border-l-4 border-amber-500 bg-amber-50/40 group"><div class="text-amber-800 text-[11px] font-extrabold uppercase flex justify-between"><span>LOW BOOKING (1-10)*</span><span>📥</span></div><div id="offKpiLow" class="text-xl font-black text-amber-700 mt-1">0</div></div>
                     <div onclick="exportCategoryExcel('ALL', 'GOOD')" class="card clickable-card p-4 border-l-4 border-emerald-500 bg-emerald-50/40 group"><div class="text-emerald-800 text-[11px] font-extrabold uppercase flex justify-between"><span>GOOD BOOKING (>10)</span><span>📥</span></div><div id="offKpiGood" class="text-xl font-black text-emerald-600 mt-1">0</div></div>
                     <div class="card p-4 border-l-4 border-purple-500"><div class="text-purple-800 text-[11px] font-extrabold uppercase">% NIL BOOKINGS</div><div id="offKpiNilPct" class="text-xl font-black text-purple-700 mt-1">0%</div></div>
                     <div class="card p-4 border-l-4 border-teal-500"><div class="text-teal-800 text-[11px] font-extrabold uppercase">% GOOD (>10) BOOKINGS</div><div id="offKpiGoodPct" class="text-xl font-black text-teal-700 mt-1">0%</div></div>
@@ -1517,7 +1517,7 @@
             XLSX.writeFile(wb, defaultFileName);
         }
 
-        /* PERFECT PDF GENERATION ENGINE WITH ZERO TOP GAP */
+        /* PERFECT PDF GENERATION ENGINE WITH ZERO TOP GAP & UPDATED HEADING */
         function downloadTablePDF(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1534,7 +1534,9 @@
             headerTitle.style.margin = '0px 0px 6px 0px';
             headerTitle.style.color = '#0f172a';
             headerTitle.style.borderBottom = '2px solid #0f172a';
-            headerTitle.innerText = `DEPARTMENT OF POSTS - ${fileName.replace(/_/g, ' ')}`;
+            
+            // UPDATED HEADER TEXT HERE
+            headerTitle.innerText = `Indore Region - ${fileName.replace(/_/g, ' ')}`;
             container.appendChild(headerTitle);
 
             const clonedTable = tableElement.cloneNode(true);
@@ -1544,7 +1546,7 @@
 
             const opt = {
                 margin:       [0.15, 0.15, 0.15, 0.15],
-                filename:     `${fileName}.pdf`,
+                filename:     `Indore_Region_${fileName}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
@@ -1554,7 +1556,7 @@
             html2pdf().set(opt).from(container).save();
         }
 
-        /* HIGH RESOLUTION JPEG IMAGE DOWNLOAD OPTION */
+        /* HIGH RESOLUTION JPEG IMAGE DOWNLOAD OPTION WITH UPDATED HEADING */
         function downloadTableJPEG(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1572,7 +1574,9 @@
             headerTitle.style.fontWeight = '800';
             headerTitle.style.margin = '0 0 12px 0';
             headerTitle.style.color = '#0f172a';
-            headerTitle.innerText = `DEPARTMENT OF POSTS - ${fileName.replace(/_/g, ' ')}`;
+            
+            // UPDATED HEADER TEXT HERE
+            headerTitle.innerText = `Indore Region - ${fileName.replace(/_/g, ' ')}`;
             container.appendChild(headerTitle);
 
             const clonedTable = tableElement.cloneNode(true);
@@ -1583,7 +1587,7 @@
 
             html2canvas(container, { scale: 2, useCORS: true, scrollY: 0 }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `${fileName}.jpg`;
+                link.download = `Indore_Region_${fileName}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
                 link.click();
                 document.body.removeChild(container);
