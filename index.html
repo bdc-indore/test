@@ -222,7 +222,8 @@
                         <select id="offClassSelect" onchange="renderOfficeAnalytics()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2"><option value="ALL">All Classes</option><option value="BO">BO</option><option value="SO">SO</option><option value="HO">HO</option><option value="RMS">RMS</option></select>
                         <button onclick="downloadTablePDF('sdPerformanceTable', 'Nil_Booking_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📄 Download PDF</button>
                         <button onclick="downloadTableJPEG('sdPerformanceTable', 'Nil_Booking_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📸 JPEG</button>
-                        <button onclick="exportCategoryExcel('ALL', 'NIL')" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Export Excel</button>
+                        <!-- Updated to export FULL table with formatting -->
+                        <button onclick="exportTableByID('sdPerformanceTable', 'Nil_Booking_Report.xlsx', true)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Export Excel</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -438,9 +439,9 @@
         </main>
     </div>
 
-    <!-- Footer -->
+    <!-- Cleaned Footer Without Extra Citation Tags -->
     <footer class="bg-slate-900 text-slate-400 py-4 px-6 text-center text-sm font-semibold border-t border-slate-800 mt-8">
-        Developed by Kapil Rajput, PA (RO), Indore Regional office[cite: 1]
+        Developed by Kapil Rajput, PA (RO), Indore Regional Office
     </footer>
 
     <!-- JavaScript Engine -->
@@ -1150,7 +1151,7 @@
             </tr>`;
         }
 
-        /* UPDATED CELL-CLICK EXCEL EXPORT WITH FULL COLOR & CELL BORDER STYLING */
+        /* CELL-CLICK EXCEL EXPORT FOR INDIVIDUAL CATEGORY/OFFICE LISTS */
         function exportCategoryExcel(targetName, catType, isDivisionLevel = false) {
             const vertKey = document.getElementById('offVertSelect').value;
             const mKey = document.getElementById('offMonthSelect').value;
@@ -1477,7 +1478,7 @@
             document.querySelectorAll('#tableBody tr').forEach(tr => { tr.style.display = tr.innerText.toLowerCase().includes(query) ? '' : 'none'; });
         }
 
-        /* UPDATED FULL EXCEL EXPORT WITH HEADER COLOR & CELL BORDER STYLING */
+        /* FULL EXCEL TABLE EXPORT ENGINE WITH HEADER STYLING & BORDERS */
         function exportTableByID(tableId, defaultFileName, appendIDCNote = false) {
             const tableElement = document.getElementById(tableId); if (!tableElement) return;
             const wb = XLSX.utils.book_new();
@@ -1516,7 +1517,7 @@
             XLSX.writeFile(wb, defaultFileName);
         }
 
-        /* PERFECT PDF GENERATION ENGINE WITH ZERO TOP GAP & HIGH DPI PRINT CLEARITY */
+        /* PERFECT PDF GENERATION ENGINE WITH ZERO TOP GAP */
         function downloadTablePDF(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
