@@ -7,7 +7,8 @@
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Updated Excel Library for Full Color & Style Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -44,11 +45,11 @@
             .card { box-shadow: none !important; border: none !important; }
         }
 
-        /* Optimized styles for PDF print rendering */
+        /* Optimized styles for PDF print rendering - Zero Top Gap */
         .pdf-export-container {
             width: 100% !important;
-            padding: 10px !important;
-            margin: 0 !important;
+            padding: 0px !important;
+            margin: 0px !important;
             background: #ffffff !important;
             box-sizing: border-box !important;
         }
@@ -1107,7 +1108,6 @@
                     let nilPct = vals.total > 0 ? Math.round((vals.nil / vals.total) * 100) + "%" : "0%";
                     let goodPct = vals.total > 0 ? Math.round((vals.good / vals.total) * 100) + "%" : "0%";
 
-                    // Exact Scoped Filter Trigger Passed to Function
                     rows.push(`<tr>
                         <td>${sno++}</td>
                         <td class="${cssClass}">${shortName}</td>
@@ -1150,7 +1150,7 @@
             </tr>`;
         }
 
-        /* FIXED CELL-CLICK EXCEL EXPORT LOGIC FOR SPECIFIC SUB-DIVISION/DIVISION */
+        /* UPDATED CELL-CLICK EXCEL EXPORT WITH FULL COLOR & CELL BORDER STYLING */
         function exportCategoryExcel(targetName, catType, isDivisionLevel = false) {
             const vertKey = document.getElementById('offVertSelect').value;
             const mKey = document.getElementById('offMonthSelect').value;
@@ -1191,7 +1191,35 @@
             }
             
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filteredList), "Offices");
+            const ws = XLSX.utils.json_to_sheet(filteredList);
+
+            // Apply Styles to Header & Data Rows in Excel
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const address = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[address]) continue;
+
+                    if (R === 0) {
+                        ws[address].s = {
+                            fill: { fgColor: { rgb: "0F172A" } },
+                            font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+                            alignment: { horizontal: "center", vertical: "center" }
+                        };
+                    } else {
+                        ws[address].s = {
+                            border: {
+                                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                                bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                                right: { style: "thin", color: { rgb: "CBD5E1" } }
+                            }
+                        };
+                    }
+                }
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, "Offices");
             let cleanFileName = targetName.replace(/[^a-zA-Z0-9]/g, '_');
             XLSX.writeFile(wb, `${cleanFileName}_${catType}_Offices.xlsx`);
         }
@@ -1449,9 +1477,37 @@
             document.querySelectorAll('#tableBody tr').forEach(tr => { tr.style.display = tr.innerText.toLowerCase().includes(query) ? '' : 'none'; });
         }
 
+        /* UPDATED FULL EXCEL EXPORT WITH HEADER COLOR & CELL BORDER STYLING */
         function exportTableByID(tableId, defaultFileName, appendIDCNote = false) {
             const tableElement = document.getElementById(tableId); if (!tableElement) return;
-            const wb = XLSX.utils.book_new(), ws = XLSX.utils.table_to_sheet(tableElement);
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(tableElement);
+
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[cellAddress]) continue;
+
+                    if (R === 0) {
+                        ws[cellAddress].s = {
+                            fill: { fgColor: { rgb: "0F172A" } },
+                            font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+                            alignment: { horizontal: "center", vertical: "center" }
+                        };
+                    } else {
+                        ws[cellAddress].s = {
+                            border: {
+                                top: { style: "thin", color: { rgb: "E2E8F0" } },
+                                bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+                                left: { style: "thin", color: { rgb: "E2E8F0" } },
+                                right: { style: "thin", color: { rgb: "E2E8F0" } }
+                            }
+                        };
+                    }
+                }
+            }
+
             if (appendIDCNote) {
                 let range = XLSX.utils.decode_range(ws['!ref']);
                 XLSX.utils.sheet_add_aoa(ws, [["*Note: IDC offices are non-booking offices and included under Low Booking."]], {origin: {r: range.e.r + 2, c: 0}});
@@ -1460,7 +1516,7 @@
             XLSX.writeFile(wb, defaultFileName);
         }
 
-        /* NEW PROPER PDF GENERATION WITH STRICT MARGIN FIT & NO TOP GAPS */
+        /* PERFECT PDF GENERATION ENGINE WITH ZERO TOP GAP & HIGH DPI PRINT CLEARITY */
         function downloadTablePDF(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1473,8 +1529,8 @@
             headerTitle.style.fontFamily = 'Inter, sans-serif';
             headerTitle.style.fontSize = '12px';
             headerTitle.style.fontWeight = '800';
-            headerTitle.style.padding = '2px 0 6px 0';
-            headerTitle.style.margin = '0 0 6px 0';
+            headerTitle.style.padding = '0px 0px 4px 0px';
+            headerTitle.style.margin = '0px 0px 6px 0px';
             headerTitle.style.color = '#0f172a';
             headerTitle.style.borderBottom = '2px solid #0f172a';
             headerTitle.innerText = `DEPARTMENT OF POSTS - ${fileName.replace(/_/g, ' ')}`;
@@ -1489,7 +1545,7 @@
                 margin:       [0.15, 0.15, 0.15, 0.15],
                 filename:     `${fileName}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
                 pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
@@ -1497,7 +1553,7 @@
             html2pdf().set(opt).from(container).save();
         }
 
-        /* NEW JPEG IMAGE DOWNLOAD OPTION */
+        /* HIGH RESOLUTION JPEG IMAGE DOWNLOAD OPTION */
         function downloadTableJPEG(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1524,7 +1580,7 @@
 
             document.body.appendChild(container);
 
-            html2canvas(container, { scale: 2, useCORS: true }).then(canvas => {
+            html2canvas(container, { scale: 2, useCORS: true, scrollY: 0 }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `${fileName}.jpg`;
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
