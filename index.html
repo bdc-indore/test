@@ -24,7 +24,7 @@
         .report-total { background-color: #FAEEDD; color: #38220f; font-weight: bold; }
         .report-grand { background-color: #4B1D24; color: #ffffff; font-weight: bold; }
 
-        /* Exact Styling for Nil Booking Table based on attached reference image */
+        /* Exact Styling for Nil Booking Table & PLI/Digital Report Tables */
         .nil-table { border-collapse: collapse; width: 100%; font-size: 11px; text-align: center; }
         .nil-table th, .nil-table td { border: 1px solid #707070; padding: 5px 8px; }
         .nil-table th { background-color: #b8cce4; color: #000; font-weight: bold; vertical-align: middle; }
@@ -152,7 +152,7 @@
             </div>
         </div>
 
-        <!-- Section 2: Office Activity Status & Nil Booking (Updated with reference design, class filter & clickable counts) -->
+        <!-- Section 2: Office Activity Status & Nil Booking -->
         <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden" id="sectionNilBookingContainer">
             <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
@@ -269,7 +269,7 @@
         </div>
     </div>
 
-    <!-- Modal 2: Digital Booking / COD Transaction Status Modal -->
+    <!-- Modal 2: Digital Booking / COD Transaction Status Modal (Fully Functional with Reference Color Styling & Clickable Office Counts) -->
     <div id="digitalModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 md:p-6">
         <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-amber-400">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -280,10 +280,11 @@
                 <div class="flex items-center gap-2 flex-wrap">
                     <button onclick="exportDigitalExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
                     <button onclick="exportDigitalPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
+                    <button onclick="exportTableJPEG('digitalTableContainer', 'Digital_Txn_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                     <button onclick="closeDigitalModal()" class="bg-amber-950 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold cursor-pointer ml-2">✕</button>
                 </div>
             </div>
-            <div class="p-6 overflow-y-auto flex-grow space-y-5">
+            <div class="p-6 overflow-y-auto flex-grow space-y-5" id="digitalTableContainer">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button id="btnModeBooking" onclick="switchDigitalMode('booking')" class="p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-800 bg-amber-800 text-white shadow-md cursor-pointer transition-all">
                         <span>📦</span> Digital Booking Txn Report
@@ -312,46 +313,47 @@
                         </select>
                     </div>
                 </div>
-                <div class="overflow-x-auto border border-amber-300 rounded-xl shadow-sm bg-white p-3">
-                    <table class="w-full text-left border-collapse" id="digitalStatusTable">
+                <div class="overflow-x-auto p-3">
+                    <table class="nil-table" id="digitalStatusTable">
                         <thead>
-                            <tr style="background-color: #f7caac; color: #000000;" class="text-xs font-bold uppercase border-b border-amber-900">
-                                <th class="py-3 px-3">Division</th>
-                                <th class="py-3 px-3" id="thSubDiv" style="display:none;">Sub-Division</th>
-                                <th class="py-3 px-2 text-right">Total COD Received</th>
-                                <th class="py-3 px-2 text-right">Digital Delivery</th>
-                                <th class="py-3 px-2 text-right">Cash Delivery</th>
-                                <th class="py-3 px-3 text-center">% of Digital Delivery</th>
+                            <tr>
+                                <th style="width: 6%;">S.No.</th>
+                                <th style="width: 18%;">Name of Division</th>
+                                <th style="width: 22%;" id="thSubDivCol" style="display:none;">Name of Sub Dn</th>
+                                <th style="width: 14%;">Total Offices</th>
+                                <th style="width: 13%;" id="thCol1Label">Digital Txn Offices</th>
+                                <th style="width: 13%;" id="thCol2Label">Cash / Zero Txn Offices</th>
+                                <th style="width: 14%;" id="thCol3Label">% Digital Txn</th>
                             </tr>
                         </thead>
-                        <tbody class="text-xs md:text-sm divide-y divide-amber-100 text-slate-700">
+                        <tbody>
                             <tr>
-                                <td colspan="6" class="py-8 text-center text-slate-400 font-medium">Please upload Excel/CSV raw data to populate report.</td>
+                                <td colspan="7" class="py-8 text-center text-slate-400 font-medium">Please upload Digital/COD Raw Excel/CSV file to generate report.</td>
                             </tr>
                         </tbody>
-                        <tfoot class="font-bold text-xs md:text-sm"></tfoot>
+                        <tfoot></tfoot>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal 3: PLI / RPLI Nil Transaction Report Modal -->
+    <!-- Modal 3: PLI / RPLI Nil Transaction Report Modal (Fully Functional with Reference Color Styling & Clickable Office Counts) -->
     <div id="pliModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 md:p-6">
         <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-amber-400">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h3 class="font-extrabold text-lg flex items-center gap-2">🛡️ PLI / RPLI Nil Transaction Report (Indore Region - Branch Offices Only)</h3>
-                    <p class="text-xs text-amber-200">Strictly matching spreadsheet BO IDs with PLI Excel. Missing BOs are treated as active/1-10 txn.</p>
+                    <p class="text-xs text-amber-200">Strictly matching spreadsheet BO IDs with PLI Excel. Click any count to view/download office list.</p>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <button onclick="exportPliExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel (2 Sheets)</button>
                     <button onclick="exportPliPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
-                    <button onclick="exportPliJPEG()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG Download</button>
+                    <button onclick="exportTableJPEG('pliTableContainer', 'PLI_Nil_Txn_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                     <button onclick="closePliModal()" class="bg-amber-950 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold cursor-pointer ml-2">✕</button>
                 </div>
             </div>
-            <div class="p-6 overflow-y-auto flex-grow space-y-5">
+            <div class="p-6 overflow-y-auto flex-grow space-y-5" id="pliTableContainer">
                 <div class="bg-amber-50/80 p-4 rounded-xl border border-amber-200 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="w-full md:w-2/3">
                         <label class="block text-xs font-bold uppercase text-amber-900 mb-1">📤 Upload PLI/RPLI Raw Report File (Pan India Excel / CSV - Large File Optimized)</label>
@@ -363,31 +365,31 @@
                         </div>
                     </div>
                 </div>
-                <div class="overflow-x-auto border border-amber-300 rounded-xl shadow-sm bg-white p-3" id="pliTableContainer">
+                <div class="overflow-x-auto p-3">
                     <div class="text-center mb-3">
                         <h2 class="text-lg font-extrabold text-[#4B1D24]">DEPARTMENT OF POSTS — REGIONAL OFFICE INDORE</h2>
                         <h3 class="text-sm font-bold text-slate-700">PLI / RPLI Nil & Active Transaction Analysis Report (Indore Region - Branch Offices Only)</h3>
-                        <p class="text-xs text-slate-500 mt-0.5">Spreadsheet BOs missing from uploaded Excel are treated as 1-10 transaction offices</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Spreadsheet BOs missing from uploaded Excel are treated as active transaction offices</p>
                     </div>
-                    <table class="w-full text-left border-collapse" id="tablePliSummary">
+                    <table class="nil-table" id="tablePliSummary">
                         <thead>
-                            <tr class="report-header text-xs font-bold border-b border-amber-900 uppercase">
-                                <th class="py-3 px-3">Name of Division</th>
-                                <th class="py-3 px-3">Name of SD</th>
-                                <th class="py-3 px-2 text-center">Total Office in SD</th>
-                                <th class="py-3 px-2 text-center text-rose-300">Total Nil PLI/RPLI Txn Offices</th>
-                                <th class="py-3 px-2 text-center text-indigo-300">Total Offices with >10 Txn</th>
-                                <th class="py-3 px-2 text-right text-amber-200">Total Txn in SD</th>
-                                <th class="py-3 px-3 text-center text-rose-200">% of Offices with Nil Txn</th>
-                                <th class="py-3 px-3 text-center text-indigo-200">% of Offices with >10 Txn</th>
+                            <tr>
+                                <th style="width: 5%;">S.No.</th>
+                                <th style="width: 15%;">Name of Division</th>
+                                <th style="width: 20%;">Name of Sub Dn</th>
+                                <th style="width: 12%;">Total Offices in SD</th>
+                                <th style="width: 12%;">Nil PLI/RPLI Txn (0)</th>
+                                <th style="width: 12%;">Good PLI Txn (>10)</th>
+                                <th style="width: 12%;">% Nil Offices</th>
+                                <th style="width: 12%;">% Offices with >10 Txn</th>
                             </tr>
                         </thead>
-                        <tbody class="text-xs md:text-sm divide-y divide-amber-100 text-slate-700">
+                        <tbody>
                             <tr>
                                 <td colspan="8" class="py-8 text-center text-slate-400 font-medium">Please upload Pan India PLI Transaction Excel/CSV raw data to generate Indore Region Branch Offices Report.</td>
                             </tr>
                         </tbody>
-                        <tfoot class="font-bold text-xs md:text-sm"></tfoot>
+                        <tfoot></tfoot>
                     </table>
                 </div>
             </div>
@@ -465,10 +467,22 @@
         const IDP_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1439866773&single=true&output=csv";
 
         let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
-        let currentNilBookingProcessedList = [];
+        let digitalRawData = [], currentDigitalMode = 'booking', currentDigitalProcessedList = [];
+        let pliRawData = [], currentPliProcessedList = [], currentNilPliOfficesList = [];
         let idpCredentialsMap = {};
         let generatedReportsLog = [];
         let loggedInAdminId = "";
+
+        const divClassMap = {
+            "INDORE CITY": "div-bg-indore-city",
+            "INDORE MFL": "div-bg-indore-mfl",
+            "KHANDWA": "div-bg-khandwa",
+            "MANDSAUR": "div-bg-mandsaur",
+            "RATLAM": "div-bg-ratlam",
+            "SEHORE": "div-bg-sehore",
+            "UJJAIN": "div-bg-ujjain",
+            "ID DIVISION": "div-bg-id-division"
+        };
 
         function logGeneratedReport(reportName, exportFunction) {
             const now = new Date();
@@ -599,7 +613,6 @@
 
                         // 👉 Handle Khudel BO rule: exclude / merge into Khudel SO
                         if (officeName.toUpperCase().includes("KHUDEL") && officeClass === "BO") {
-                            // Route Khudel BO data or treat as Khudel SO
                             subDiv = "INDORE EAST SD";
                             divName = "INDORE CITY";
                         }
@@ -651,12 +664,10 @@
             const summaryView = document.getElementById('summaryViewType').value;
             const nilFilterClass = document.getElementById('nilFilterClass').value;
 
-            // 👉 Filter Khudel BO completely from processing so it's always 0 count
             const processed = rawData.map(item => {
                 let offId = item.officeId;
                 const master = masterOfficesMap[offId] || { name: "Unknown", class: "BO", sd: "Unknown SD", division: "Unknown Division" };
                 
-                // If office is Khudel BO, ignore or assign 0
                 if (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") {
                     return null;
                 }
@@ -668,7 +679,7 @@
 
             const filteredOfficesMap = {};
             Object.entries(masterOfficesMap).forEach(([id, m]) => {
-                if (m.name.toUpperCase().includes("KHUDEL") && m.class === "BO") return; // Skip Khudel BO
+                if (m.name.toUpperCase().includes("KHUDEL") && m.class === "BO") return;
                 if (selDiv !== "All" && m.division !== selDiv) return;
                 if (selClass !== "All" && m.class !== selClass) return;
                 filteredOfficesMap[id] = m;
@@ -683,7 +694,6 @@
 
             currentFilteredRows = filteredRows;
 
-            // 👉 Ensure SUMMARY table uses ALL offices in master (Total Offices) regardless of whether active or not
             const allMasterOfficesMap = {};
             Object.entries(masterOfficesMap).forEach(([id, m]) => {
                 if (m.name.toUpperCase().includes("KHUDEL") && m.class === "BO") return;
@@ -873,21 +883,16 @@
             }
         }
 
-        // ==========================================
-        // NIL BOOKING TABLE (MATCHING REFERENCE IMAGE & REQUIREMENTS)
-        // ==========================================
         function renderNilBookingTable(allOffices, filterClass) {
             const tbody = document.querySelector('#tableNilBookingSummary tbody');
             const tfoot = document.querySelector('#tableNilBookingSummary tfoot');
             tbody.innerHTML = ""; tfoot.innerHTML = "";
 
-            // Filter master offices by selected class if needed
             const filteredOffices = allOffices.filter(o => {
                 if (filterClass !== "All" && o.class !== filterClass) return false;
                 return true;
             });
 
-            // Group by Division & Sub-Division
             const sdMap = {};
             filteredOffices.forEach(o => {
                 const div = o.division || "OTHER DIVISION";
@@ -932,18 +937,6 @@
                     goodBooking: goodBookingList
                 });
             });
-
-            // Group by Division to render division totals and matching reference image color styling
-            const divClassMap = {
-                "INDORE CITY": "div-bg-indore-city",
-                "INDORE MFL": "div-bg-indore-mfl",
-                "KHANDWA": "div-bg-khandwa",
-                "MANDSAUR": "div-bg-mandsaur",
-                "RATLAM": "div-bg-ratlam",
-                "SEHORE": "div-bg-sehore",
-                "UJJAIN": "div-bg-ujjain",
-                "ID DIVISION": "div-bg-id-division"
-            };
 
             const divGroups = {};
             processedList.forEach(item => {
@@ -1016,7 +1009,6 @@
             `;
         }
 
-        // 👉 Click on office number count to view & download Excel list of those offices
         function openOfficeCategoryListModal(divisionName, subDivisionName, categoryType) {
             const filterClass = document.getElementById('nilFilterClass').value;
             let targetOffices = [];
@@ -1085,22 +1077,502 @@
             logGeneratedReport(`Office List (${categoryType} - ${subDivisionName})`, () => exportModalToExcel());
         }
 
-        function renderTopBottom10(offices) {
-            const sorted = [...offices].sort((a, b) => b.articles - a.articles);
-            const top10 = sorted.slice(0, 10), bottom10 = [...sorted].reverse().slice(0, 10);
-            
-            ['tableTop10', 'tableBottom10'].forEach((tId, idx) => {
-                const tBody = document.querySelector(`#${tId} tbody`);
-                tBody.innerHTML = "";
-                (idx === 0 ? top10 : bottom10).forEach(o => {
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-amber-50 border-b border-amber-100";
-                    tr.innerHTML = `<td class="py-2.5 px-4 font-medium">${o.name} <span class="text-slate-400 text-[10px]">(${o.officeId})</span></td><td class="py-2.5 px-4 text-slate-600">${o.division} / ${o.sd}</td><td class="py-2.5 px-4 text-right font-bold ${idx === 0 ? 'text-[#0B6623]': 'text-[#8B0000]'}">${o.articles}</td>`;
-                    tBody.appendChild(tr);
-                });
-            });
+        // ==========================================
+        // DIGITAL TXN REPORT LOGIC (HOME BUTTON LINKED)
+        // ==========================================
+        function openDigitalModal() {
+            document.getElementById('digitalModal').classList.remove('hidden');
         }
 
+        function closeDigitalModal() {
+            document.getElementById('digitalModal').classList.add('hidden');
+        }
+
+        function switchDigitalMode(mode) {
+            currentDigitalMode = mode;
+            const btnB = document.getElementById('btnModeBooking');
+            const btnC = document.getElementById('btnModeCod');
+            if (mode === 'booking') {
+                btnB.className = "p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-800 bg-amber-800 text-white shadow-md cursor-pointer transition-all";
+                btnC.className = "p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 shadow-sm cursor-pointer transition-all";
+                document.getElementById('digitalModalMainTitle').textContent = "📲 Digital Booking Txn Status Report";
+            } else {
+                btnC.className = "p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-800 bg-amber-800 text-white shadow-md cursor-pointer transition-all";
+                btnB.className = "p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 shadow-sm cursor-pointer transition-all";
+                document.getElementById('digitalModalMainTitle').textContent = "💵 COD Digital Txn Status Report";
+            }
+            processDigitalData();
+        }
+
+        document.getElementById('digitalFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            parseExcelFile(file, function(json) {
+                digitalRawData = json;
+                processDigitalData();
+                logGeneratedReport("Digital Txn Report Raw Data Upload", () => {});
+            });
+        });
+
+        function processDigitalData() {
+            const tbody = document.querySelector('#digitalStatusTable tbody');
+            const tfoot = document.querySelector('#digitalStatusTable tfoot');
+            const viewType = document.getElementById('digitalViewType').value;
+            const boFilter = document.getElementById('digitalBoFilter').value;
+            const thSubDivCol = document.getElementById('thSubDivCol');
+
+            if (!digitalRawData || digitalRawData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">Please upload Digital/COD Raw Excel/CSV file to generate report.</td></tr>`;
+                tfoot.innerHTML = "";
+                return;
+            }
+
+            if (viewType === 'subdivision') {
+                thSubDivCol.style.display = '';
+            } else {
+                thSubDivCol.style.display = 'none';
+            }
+
+            // Process digital raw data and map against master offices
+            const groupedMap = {};
+            digitalRawData.forEach(row => {
+                let offId = String(row["office-id"] || row["Office ID"] || Object.values(row)[0] || "").trim();
+                let master = masterOfficesMap[offId];
+                if (!master) return;
+
+                if (boFilter === 'excluding' && master.class === 'BO') return;
+                if (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return;
+
+                let div = master.division || "OTHER";
+                let sd = master.sd || "OTHER SD";
+                let key = viewType === 'subdivision' ? (div + "||" + sd) : div;
+
+                if (!groupedMap[key]) {
+                    groupedMap[key] = { division: div, sd: sd, offices: new Set(), digitalCount: 0, cashCount: 0, totalCount: 0, digitalOfficesList: [], cashOfficesList: [] };
+                }
+
+                groupedMap[key].offices.add(offId);
+                let isDigital = String(Object.values(row)[3] || row["is-digital"] || "").trim().toUpperCase();
+                let mode = String(Object.values(row)[4] || row["payment-mode"] || "").trim().toUpperCase();
+
+                let isDigTxn = (isDigital.includes('YES') || isDigital.includes('TRUE') || mode.includes('QR') || mode.includes('UPI') || mode.includes('DIGITAL') || mode.includes('ONLINE'));
+
+                groupedMap[key].totalCount++;
+                if (isDigTxn) {
+                    groupedMap[key].digitalCount++;
+                    groupedMap[key].digitalOfficesList.push({ officeId: offId, officeName: master.name, class: master.class, division: div, sd: sd });
+                } else {
+                    groupedMap[key].cashCount++;
+                    groupedMap[key].cashOfficesList.push({ officeId: offId, officeName: master.name, class: master.class, division: div, sd: sd });
+                }
+            });
+
+            currentDigitalProcessedList = Object.values(groupedMap);
+            tbody.innerHTML = "";
+            let sno = 1, totOff = 0, totDig = 0, totCash = 0, totAll = 0;
+
+            currentDigitalProcessedList.forEach(item => {
+                totOff += item.offices.size;
+                totDig += item.digitalCount;
+                totCash += item.cashCount;
+                totAll += item.totalCount;
+
+                let pct = item.totalCount > 0 ? Math.round((item.digitalCount / item.totalCount) * 100) + "%" : "0%";
+                let cssClass = divClassMap[item.division] || "div-bg-indore-city";
+
+                const tr = document.createElement('tr');
+                let sdColHTML = viewType === 'subdivision' ? `<td style="text-align: left; font-weight: 600;">${item.sd}</td>` : '';
+                tr.innerHTML = `
+                    <td>${sno++}</td>
+                    <td class="${cssClass}">${item.division}</td>
+                    ${sdColHTML}
+                    <td>${item.offices.size}</td>
+                    <td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openDigitalOfficeListModal('${item.division}', '${item.sd}', 'DIGITAL')">${item.digitalCount}</td>
+                    <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openDigitalOfficeListModal('${item.division}', '${item.sd}', 'CASH')">${item.cashCount}</td>
+                    <td class="font-bold text-emerald-800 bg-emerald-100/60">${pct}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            let grandPct = totAll > 0 ? Math.round((totDig / totAll) * 100) + "%" : "0%";
+            let colspanVal = viewType === 'subdivision' ? 3 : 2;
+
+            tfoot.innerHTML = `
+                <tr class="row-grand-total">
+                    <td colspan="${colspanVal}">Grand Total</td>
+                    <td>${totOff}</td>
+                    <td class="clickable-cell underline" onclick="openDigitalOfficeListModal('ALL', 'ALL', 'DIGITAL')">${totDig}</td>
+                    <td class="clickable-cell underline" onclick="openDigitalOfficeListModal('ALL', 'ALL', 'CASH')">${totCash}</td>
+                    <td>${grandPct}</td>
+                </tr>
+            `;
+        }
+
+        function openDigitalOfficeListModal(divisionName, subDivisionName, type) {
+            let targetList = [];
+            currentDigitalProcessedList.forEach(item => {
+                if (divisionName !== 'ALL' && item.division !== divisionName) return;
+                if (subDivisionName !== 'ALL' && item.sd !== subDivisionName) return;
+
+                if (type === 'DIGITAL') targetList.push(...item.digitalOfficesList);
+                else targetList.push(...item.cashOfficesList);
+            });
+
+            if (targetList.length === 0) {
+                alert(`No offices found under ${type} category.`);
+                return;
+            }
+
+            modalExportData = targetList.map(o => ({
+                "Office ID": o.officeId,
+                "Office Name": o.officeName,
+                "Class": o.class,
+                "Sub-Division": o.sd,
+                "Division": o.division,
+                "Category": type
+            }));
+
+            document.getElementById('modalTitle').textContent = `Digital Report Office List (${type} - ${subDivisionName === 'ALL' ? divisionName : subDivisionName})`;
+            document.getElementById('modalSubtitle').textContent = `Total ${targetList.length} offices found.`;
+
+            const modalBody = document.querySelector('#tableModalOffices tbody');
+            modalBody.innerHTML = "";
+            targetList.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-amber-50 border-b border-amber-100";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold">${item.officeName} <span class="text-xs text-slate-400">(${item.officeId})</span></td>
+                    <td class="py-3 px-4"><span class="bg-amber-100 text-[#4B1D24] text-xs px-2 py-1 rounded font-bold">${item.class}</span></td>
+                    <td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.sd}</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-[#4B1D24]">${type}</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td>
+                `;
+                modalBody.appendChild(tr);
+            });
+
+            document.getElementById('drilldownModal').classList.remove('hidden');
+        }
+
+        function exportDigitalExcel() {
+            if (!currentDigitalProcessedList || currentDigitalProcessedList.length === 0) {
+                alert("No digital report data available to export.");
+                return;
+            }
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(document.getElementById('digitalStatusTable'));
+            XLSX.utils.book_append_sheet(wb, ws, "Digital_Report");
+            XLSX.writeFile(wb, "Digital_Txn_Report.xlsx");
+            logGeneratedReport("Digital Txn Report (Excel)", () => exportDigitalExcel());
+        }
+
+        function exportDigitalPDF() {
+            exportSingleTableToPDF('digitalStatusTable', 'Digital Txn Status Report');
+            logGeneratedReport("Digital Txn Report (PDF)", () => exportDigitalPDF());
+        }
+
+        // ==========================================
+        // PLI / RPLI NIL TRANSACTION REPORT LOGIC (HOME BUTTON LINKED)
+        // ==========================================
+        function openPliModal() {
+            document.getElementById('pliModal').classList.remove('hidden');
+        }
+
+        function closePliModal() {
+            document.getElementById('pliModal').classList.add('hidden');
+        }
+
+        document.getElementById('pliFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('pliUploadStatus');
+            statusEl.innerHTML = `🔄 Reading Large Excel File (Chunked)...`;
+            statusEl.className = "text-xs font-bold text-amber-900 bg-amber-200 p-2.5 rounded-xl border border-amber-400 inline-block animate-pulse";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let data = e.target.result;
+                    let workbook = XLSX.read(data, {type: 'array', cellDates: true, dense: true});
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    
+                    statusEl.innerHTML = `🔄 Parsing rows & mapping BO offices...`;
+
+                    setTimeout(() => {
+                        const jsonRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+                        
+                        let indoreBoMaster = {};
+                        Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                            const cls = String(m.class || "").toUpperCase();
+                            const div = String(m.division || "").toUpperCase();
+                            const ro = String(m.ro || "").toUpperCase();
+                            if (cls === "BO" && (!ro || ro.includes("INDORE") || ["INDORE", "UJJAIN", "KHANDWA", "DEWAS", "DHAR", "KHARGONE", "MANDSAUR", "NEEMUCH", "RATLAM", "SHAJAPUR"].includes(div))) {
+                                indoreBoMaster[id] = m;
+                            }
+                        });
+
+                        if (Object.keys(indoreBoMaster).length === 0) {
+                            Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                                if (String(m.class).toUpperCase() === "BO") indoreBoMaster[id] = m;
+                            });
+                        }
+
+                        pliRawData = [];
+                        for (let i = 1; i < jsonRows.length; i++) {
+                            const row = jsonRows[i];
+                            if (!row || row.length === 0) continue;
+
+                            let oId = String(row[8] || row[0] || "").trim();
+                            oId = oId.replace(/\.0$/, '');
+
+                            if (!oId) continue;
+
+                            let transCount = 0;
+                            for (let j = 0; j < row.length; j++) {
+                                let val = Number(row[j]);
+                                if (!isNaN(val) && val >= 0 && val < 500000 && j !== 8) {
+                                    transCount = val;
+                                }
+                            }
+
+                            pliRawData.push({
+                                officeId: oId,
+                                transCount: transCount
+                            });
+                        }
+
+                        statusEl.innerHTML = `✅ Uploaded Successfully! (${Object.keys(indoreBoMaster).length} Indore Region BO Master Offices matched)`;
+                        statusEl.className = "text-xs font-bold text-emerald-900 bg-emerald-200 p-2.5 rounded-xl border border-emerald-400 inline-block";
+                        
+                        processPliData(indoreBoMaster);
+                        logGeneratedReport("PLI / RPLI Nil Transaction Report (Indore Region BO)", () => exportPliExcel());
+                    }, 50);
+
+                } catch (err) {
+                    console.error("Large File Parsing Error:", err);
+                    statusEl.innerHTML = `❌ Error reading file. Try CSV format.`;
+                    statusEl.className = "text-xs font-bold text-rose-900 bg-rose-200 p-2.5 rounded-xl border border-rose-400 inline-block";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processPliData(indoreBoMaster) {
+            const tbody = document.querySelector('#tablePliSummary tbody');
+            const tfoot = document.querySelector('#tablePliSummary tfoot');
+            tbody.innerHTML = ""; tfoot.innerHTML = "";
+
+            const officeTxnMap = {};
+            pliRawData.forEach(item => {
+                officeTxnMap[item.officeId] = (officeTxnMap[item.officeId] || 0) + item.transCount;
+            });
+
+            currentNilPliOfficesList = [];
+            Object.entries(indoreBoMaster).forEach(([id, m]) => {
+                const hasEntryInExcel = officeTxnMap.hasOwnProperty(id);
+                const txn = officeTxnMap[id] || 0;
+                if (hasEntryInExcel && txn === 0) {
+                    currentNilPliOfficesList.push({
+                        officeId: id,
+                        officeName: m.name,
+                        subDivision: m.sd,
+                        division: m.division
+                    });
+                }
+            });
+
+            const sdMap = {};
+            Object.entries(indoreBoMaster).forEach(([id, m]) => {
+                const div = m.division || "UNKNOWN DIVISION";
+                const sd = m.sd || "UNKNOWN SD";
+                const key = div + "||" + sd;
+                if (!sdMap[key]) {
+                    sdMap[key] = {
+                        division: div,
+                        sd: sd,
+                        offices: [],
+                        nilOfficesList: [],
+                        goodOfficesList: []
+                    };
+                }
+                sdMap[key].offices.push({ id: id, master: m });
+            });
+
+            Object.values(sdMap).forEach(item => {
+                let nilList = [];
+                let goodList = [];
+
+                item.offices.forEach(off => {
+                    const id = off.id;
+                    const m = off.master;
+                    const hasEntryInExcel = officeTxnMap.hasOwnProperty(id);
+                    const txn = officeTxnMap[id] || 0;
+
+                    if (hasEntryInExcel && txn === 0) {
+                        nilList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd });
+                    } else {
+                        goodList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd });
+                    }
+                });
+
+                item.totalOffices = item.offices.length;
+                item.nilOfficesList = nilList;
+                item.goodOfficesList = goodList;
+            });
+
+            currentPliProcessedList = Object.values(sdMap);
+
+            let sno = 1, gTotalOff = 0, gNilOff = 0, gGoodOff = 0;
+
+            const divGroups = {};
+            currentPliProcessedList.forEach(item => {
+                if (!divGroups[item.division]) divGroups[item.division] = [];
+                divGroups[item.division].push(item);
+            });
+
+            Object.entries(divGroups).forEach(([divName, sdItems]) => {
+                let divTotOff = 0, divNilOff = 0, divGoodOff = 0;
+                let cssClass = divClassMap[divName] || "div-bg-indore-city";
+
+                sdItems.forEach(item => {
+                    divTotOff += item.totalOffices;
+                    divNilOff += item.nilOfficesList.length;
+                    divGoodOff += item.goodOfficesList.length;
+
+                    const nilPct = item.totalOffices > 0 ? Math.round((item.nilOfficesList.length / item.totalOffices) * 100) + "%" : "0%";
+                    const goodPct = item.totalOffices > 0 ? Math.round((item.goodOfficesList.length / item.totalOffices) * 100) + "%" : "0%";
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${sno++}</td>
+                        <td class="${cssClass}">${divName}</td>
+                        <td style="text-align: left; font-weight: 600;">${item.sd}</td>
+                        <td>${item.totalOffices}</td>
+                        <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openPliOfficeListModal('${divName}', '${item.sd}', 'NIL')">${item.nilOfficesList.length}</td>
+                        <td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openPliOfficeListModal('${divName}', '${item.sd}', 'GOOD')">${item.goodOfficesList.length}</td>
+                        <td class="font-bold text-rose-800 bg-rose-100/60">${nilPct}</td>
+                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${goodPct}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                gTotalOff += divTotOff; gNilOff += divNilOff; gGoodOff += divGoodOff;
+                const divNilPct = divTotOff > 0 ? Math.round((divNilOff / divTotOff) * 100) + "%" : "0%";
+                const divGoodPct = divTotOff > 0 ? Math.round((divGoodOff / divTotOff) * 100) + "%" : "0%";
+
+                const divTr = document.createElement('tr');
+                divTr.className = "row-div-total";
+                divTr.innerHTML = `
+                    <td colspan="3">${divName} Total</td>
+                    <td>${divTotOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('${divName}', 'ALL', 'NIL')">${divNilOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('${divName}', 'ALL', 'GOOD')">${divGoodOff}</td>
+                    <td>${divNilPct}</td>
+                    <td>${divGoodPct}</td>
+                `;
+                tbody.appendChild(divTr);
+            });
+
+            const grandNilPct = gTotalOff > 0 ? Math.round((gNilOff / gTotalOff) * 100) + "%" : "0%";
+            const grandGoodPct = gTotalOff > 0 ? Math.round((gGoodOff / gTotalOff) * 100) + "%" : "0%";
+
+            tfoot.innerHTML = `
+                <tr class="row-grand-total">
+                    <td colspan="3">Grand Total (Indore Region - BO)</td>
+                    <td>${gTotalOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('ALL', 'ALL', 'NIL')">${gNilOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('ALL', 'ALL', 'GOOD')">${gGoodOff}</td>
+                    <td>${grandNilPct}</td>
+                    <td>${grandGoodPct}</td>
+                </tr>
+            `;
+        }
+
+        function openPliOfficeListModal(divisionName, subDivisionName, type) {
+            let targetList = [];
+            currentPliProcessedList.forEach(item => {
+                if (divisionName !== 'ALL' && item.division !== divisionName) return;
+                if (subDivisionName !== 'ALL' && item.sd !== subDivisionName) return;
+
+                if (type === 'NIL') targetList.push(...item.nilOfficesList);
+                else targetList.push(...item.goodOfficesList);
+            });
+
+            if (targetList.length === 0) {
+                alert(`No offices found under ${type} PLI category.`);
+                return;
+            }
+
+            modalExportData = targetList.map(o => ({
+                "Office ID": o.officeId,
+                "Office Name": o.officeName,
+                "Class": o.class,
+                "Sub-Division": o.sd,
+                "Division": o.division,
+                "Category": type === 'NIL' ? 'Nil PLI Txn' : 'Active PLI Txn'
+            }));
+
+            document.getElementById('modalTitle').textContent = `PLI Report Office List (${type === 'NIL' ? 'Nil Txn' : 'Active Txn'} - ${subDivisionName === 'ALL' ? divisionName : subDivisionName})`;
+            document.getElementById('modalSubtitle').textContent = `Total ${targetList.length} offices found.`;
+
+            const modalBody = document.querySelector('#tableModalOffices tbody');
+            modalBody.innerHTML = "";
+            targetList.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-amber-50 border-b border-amber-100";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold">${item.officeName} <span class="text-xs text-slate-400">(${item.officeId})</span></td>
+                    <td class="py-3 px-4"><span class="bg-amber-100 text-[#4B1D24] text-xs px-2 py-1 rounded font-bold">${item.class}</span></td>
+                    <td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.sd}</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-[#4B1D24]">${type === 'NIL' ? '0 Txn' : '>0 Txn'}</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td>
+                `;
+                modalBody.appendChild(tr);
+            });
+
+            document.getElementById('drilldownModal').classList.remove('hidden');
+        }
+
+        function exportPliExcel() {
+            if (!currentPliProcessedList || currentPliProcessedList.length === 0) {
+                alert("No PLI report data available to export. Please upload raw file first.");
+                return;
+            }
+
+            const workbook = XLSX.utils.book_new();
+            const ws1 = XLSX.utils.table_to_sheet(document.getElementById('tablePliSummary'));
+            XLSX.utils.book_append_sheet(workbook, ws1, "PLI_Summary_Report");
+
+            const excelRows2 = currentNilPliOfficesList.length > 0 ? currentNilPliOfficesList.map((o, idx) => ({
+                "S.No": idx + 1,
+                "Office ID": o.officeId,
+                "Branch Office Name (BO)": o.officeName,
+                "Sub-Division Name (SD)": o.subDivision,
+                "Division Name": o.division
+            })) : [{ "Message": "No Nil PLI transaction offices found" }];
+
+            const ws2 = XLSX.utils.json_to_sheet(excelRows2);
+            XLSX.utils.book_append_sheet(workbook, ws2, "Nil_PLI_Offices_List");
+
+            XLSX.writeFile(workbook, "PLI_Nil_Transaction_Report_Indore_Region_BO.xlsx");
+            logGeneratedReport("PLI Nil Transaction Report (2-Sheet Excel)", () => exportPliExcel());
+        }
+
+        function exportPliPDF() {
+            exportSingleTableToPDF('tablePliSummary', 'PLI Nil Transaction Report');
+            logGeneratedReport("PLI Nil Transaction Report (PDF)", () => exportPliPDF());
+        }
+
+        // ==========================================
+        // STANDARD EXCEL & PDF EXPORT UTILS
+        // ==========================================
         function openDrilldown(subDivisionName, divisionName) {
             document.getElementById('modalTitle').textContent = `Sub-Division Breakdown: ${subDivisionName} (${divisionName})`;
             const matchingRows = currentFilteredRows.filter(r => r.subDivision === subDivisionName && r.division === divisionName);
@@ -1142,7 +1614,6 @@
             exportTableToExcel('tableDivisionSummary', 'Complete_Summary_Report.xlsx');
         }
 
-        // 👉 JPEG Export function using html2canvas for any section container
         function exportTableJPEG(containerId, filenamePrefix) {
             const container = document.getElementById(containerId);
             if (!container) return;
