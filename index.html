@@ -106,6 +106,7 @@
                                 <option value="IRGB">✈️ IR & GB Vertical</option>
                                 <option value="SB">🏦 POSB Schemes</option>
                                 <option value="PLI">🛡️ PLI / RPLI</option>
+                                <option value="CCS">💳 CCS Revenue</option>
                             </select>
                         </div>
                         <div class="flex items-center gap-2">
@@ -263,7 +264,14 @@
                 <div class="bg-white rounded-xl p-5 border border-teal-100 card flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <label class="text-xs font-bold text-slate-600 uppercase">Q-1 Vertical Filter:</label>
-                        <select id="q1VerticalSelect" onchange="updateQ1Tables()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm font-semibold rounded-lg p-2.5"><option value="PARCEL">📦 Parcel Vertical</option><option value="MAIL">✉️ Mail Operations (MO)</option><option value="IRGB">✈️ IR & GB Vertical</option></select>
+                        <select id="q1VerticalSelect" onchange="updateQ1Tables()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm font-semibold rounded-lg p-2.5">
+                            <option value="PARCEL">📦 Parcel Vertical</option>
+                            <option value="MAIL">✉️ Mail Operations (MO)</option>
+                            <option value="IRGB">✈️ IR & GB Vertical</option>
+                            <option value="SB">🏦 POSB Schemes</option>
+                            <option value="PLI">🛡️ PLI / RPLI</option>
+                            <option value="CCS">💳 CCS Revenue</option>
+                        </select>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="downloadTablePDF('q1RevTable', 'Q1_Revenue_Performance')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📄 Download PDF</button>
@@ -271,7 +279,7 @@
                     </div>
                 </div>
                 <div class="card p-6 space-y-3">
-                    <h3 class="text-base font-bold text-teal-900 flex items-center gap-2">Q-1 Revenue Performance Table</h3>
+                    <h3 class="text-base font-bold text-teal-900 flex items-center gap-2">Q-1 Revenue Performance Table (Mail, Parcel, IRGB, PLI, POSB, CCS)</h3>
                     <div class="overflow-x-auto">
                         <table id="q1RevTable" class="w-full text-left text-sm border-collapse">
                             <thead><tr class="bg-teal-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5">Vertical</th><th class="p-3.5 bg-teal-900">Annual Target (Cr)</th><th class="p-3.5 bg-teal-800">Q-1 Target (Cr)</th><th class="p-3.5">April 26</th><th class="p-3.5">May 26</th><th class="p-3.5">June 26</th><th class="p-3.5 font-black text-emerald-300 bg-teal-900">Q-1 Total Revenue</th><th class="p-3.5 text-center bg-teal-800">Q-1 % Ach</th></tr></thead>
@@ -348,7 +356,7 @@
                 <div class="bg-white rounded-xl p-6 border border-indigo-100 card flex flex-wrap items-center justify-between gap-4">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-grow">
                         <div><label class="text-xs font-bold text-slate-600 uppercase">Division:</label><select id="yoyDivSelect" onchange="updateYoYTable()" class="mt-1 w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm font-semibold rounded-lg p-2.5 div-select-options"></select></div>
-                        <div><label class="text-xs font-bold text-slate-600 uppercase">Vertical / Metric:</label><select id="yoyVertSelect" onchange="updateYoYTable()" class="mt-1 w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm font-semibold rounded-lg p-2.5"><option value="ALL">🌐 All Verticals</option><option value="PARCEL">📦 Parcel</option><option value="MAIL">✉️ Mail</option><option value="SB">🏦 POSB</option><option value="PLI">🛡️ PLI / RPLI</option></select></div>
+                        <div><label class="text-xs font-bold text-slate-600 uppercase">Vertical / Metric:</label><select id="yoyVertSelect" onchange="updateYoYTable()" class="mt-1 w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm font-semibold rounded-lg p-2.5"><option value="ALL">🌐 All Verticals</option><option value="PARCEL">📦 Parcel</option><option value="MAIL">✉️ Mail</option><option value="SB">🏦 POSB</option><option value="PLI">🛡️ PLI / RPLI</option><option value="CCS">💳 CCS</option></select></div>
                         <div><label class="text-xs font-bold text-slate-600 uppercase">Select Month:</label><select id="yoyMonthSelect" onchange="updateYoYTable()" class="mt-1 w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm font-semibold rounded-lg p-2.5 month-select-options"></select></div>
                     </div>
                     <div class="flex items-center gap-2 self-end">
@@ -435,6 +443,23 @@
                 <div class="card p-6"><div class="overflow-x-auto"><table id="pliDataTable" class="w-full text-left text-sm border-collapse"><thead id="pliTableHead"></thead><tbody id="pliTableBody" class="divide-y divide-slate-100 font-medium"></tbody><tfoot id="pliTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot></table></div></div>
             </div>
 
+            <!-- CCS View -->
+            <div id="ccsDataView" class="hidden space-y-6">
+                <div class="bg-white rounded-xl p-5 border border-amber-100 card space-y-4">
+                    <h2 class="text-base font-bold text-amber-900 flex items-center gap-2">💳 CCS Revenue Target & Achievement</h2>
+                    <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-100">
+                        <select id="ccsMonthSelect" onchange="renderCcsDataView()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2 month-select-options"></select>
+                        <select id="ccsDivSelect" onchange="renderCcsDataView()" class="bg-slate-800 text-white text-xs font-semibold rounded-lg p-2 div-select-options"></select>
+                        <div class="ml-auto flex items-center gap-2">
+                            <button onclick="downloadTablePDF('ccsDataTable', 'CCS_Revenue_Performance_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📄 PDF</button>
+                            <button onclick="downloadTableJPEG('ccsDataTable', 'CCS_Revenue_Performance_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📸 JPEG</button>
+                            <button onclick="exportTableByID('ccsDataTable', 'CCS_Revenue_Performance_Report.xlsx')" class="bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Excel</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card p-6"><div class="overflow-x-auto"><table id="ccsDataTable" class="w-full text-left text-sm border-collapse"><thead id="ccsTableHead"></thead><tbody id="ccsTableBody" class="divide-y divide-slate-100 font-medium"></tbody><tfoot id="ccsTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot></table></div></div>
+            </div>
+
         </main>
     </div>
 
@@ -461,7 +486,7 @@
         const DIVISIONS = ["Indore City", "Indore Moffusil", "Khandwa", "Mandsaur", "Ratlam", "Sehore", "Ujjain", "ID DIVISION"];
         const MONTHS = [{k:'apr', n:'April'}, {k:'may', n:'May'}, {k:'jun', n:'June'}, {k:'jul', n:'July'}, {k:'aug', n:'August'}, {k:'sep', n:'September'}, {k:'oct', n:'October'}, {k:'nov', n:'November'}, {k:'dec', n:'December'}, {k:'jan', n:'January'}, {k:'feb', n:'February'}, {k:'mar', n:'March'}];
         
-        let HISTORICAL_LY_DATA = { "MAIL": { count:{}, revenue:{} }, "PARCEL": { count:{}, revenue:{} }, "IRGB": { count:{}, revenue:{} }, "PLI/RPLI": { revenue:{} }, "POSB": { revenue:{} } };
+        let HISTORICAL_LY_DATA = { "MAIL": { count:{}, revenue:{} }, "PARCEL": { count:{}, revenue:{} }, "IRGB": { count:{}, revenue:{} }, "PLI/RPLI": { revenue:{} }, "POSB": { revenue:{} }, "CCS": { revenue:{} } };
         let SBN_HISTORICAL_OPENED = {}, SBN_HISTORICAL_NET = {}, SBN_CURRENT_OPENED = {}, SBN_CURRENT_NET = {};
         let RAW_HISTORICAL_ROWS = { count: [], revenue: [] };
         
@@ -498,7 +523,8 @@
                 { id: 'rankings', icon: '🏆', text: 'Top/Bottom 20', hover: 'hover:text-emerald-600' },
                 { id: 'historical', icon: '📜', text: 'Historical Data', hover: 'hover:text-sky-600' },
                 { id: 'posb', icon: '🏦', text: 'POSB', hover: 'hover:text-emerald-600' },
-                { id: 'pli', icon: '🛡️', text: 'PLI', hover: 'hover:text-teal-600' }
+                { id: 'pli', icon: '🛡️', text: 'PLI', hover: 'hover:text-teal-600' },
+                { id: 'ccs', icon: '💳', text: 'CCS', hover: 'hover:text-amber-600' }
             ];
             let tabsHtml = '';
             tabs.forEach(t => {
@@ -578,7 +604,7 @@
                 let stdDiv = getStandardDivKey(row[0]);
                 if (!stdDiv) return;
                 let rawVert = row[1] ? row[1].trim().toUpperCase() : "";
-                let vertKey = rawVert.includes("POSB") || rawVert.includes("SB") ? "SB" : (rawVert.includes("PLI") || rawVert.includes("RPLI") ? "PLI" : "");
+                let vertKey = rawVert.includes("POSB") || rawVert.includes("SB") ? "SB" : (rawVert.includes("PLI") || rawVert.includes("RPLI") ? "PLI" : (rawVert.includes("CCS") ? "CCS" : ""));
                 if (!vertKey) return;
 
                 let target = cleanNumber(row[2]), apr = cleanNumber(row[3]), may = cleanNumber(row[4]), jun = cleanNumber(row[5]), jul = cleanNumber(row[6]), aug = cleanNumber(row[7]);
@@ -625,7 +651,7 @@
                 if (idx === 0 || !row[0]) return;
                 let stdKey = getStandardDivKey(row[0]); if (!stdKey) return;
                 let rawVert = row[1] ? row[1].toString().trim().toUpperCase() : "";
-                let vertKey = rawVert.includes("PARCEL") ? "PARCEL" : (rawVert.includes("MO") || rawVert.includes("MAIL") ? "MAIL" : (rawVert.includes("IRGB") ? "IRGB" : (rawVert.includes("PLI") ? "PLI/RPLI" : (rawVert.includes("POSB") || rawVert.includes("SB") ? "POSB" : null))));
+                let vertKey = rawVert.includes("PARCEL") ? "PARCEL" : (rawVert.includes("MO") || rawVert.includes("MAIL") ? "MAIL" : (rawVert.includes("IRGB") ? "IRGB" : (rawVert.includes("PLI") ? "PLI/RPLI" : (rawVert.includes("POSB") || rawVert.includes("SB") ? "POSB" : (rawVert.includes("CCS") ? "CCS" : null)))));
                 if (!vertKey) return;
 
                 if (!HISTORICAL_LY_DATA[vertKey]) HISTORICAL_LY_DATA[vertKey] = { count: {}, revenue: {} };
@@ -639,7 +665,6 @@
             });
         }
 
-        /* सुधारित सब-डिवीजन मैपिंग लॉजिक जो स्प्रेडशीट और सब-डिवीजन फ़िल्टर को पूर्ण रूप से सिंक्रनाइज़ करता है */
         function normalizeSubDivisionName(sdName, clsName, offName, divName) {
             let sd = (sdName || '').trim();
             let cls = (clsName || '').trim().toUpperCase();
@@ -683,7 +708,6 @@
                     }
                     let offObj = officeMap.get(offId);
                     
-                    // यदि बाद के महीनों (जैसे जुलाई/अगस्त) में सही सब-डिवीजन नाम उपलब्ध है, तो उसे अपडेट करें
                     if (rawSd && rawSd !== '' && (offObj.sd === 'UNASSIGNED' || offObj.sd === '')) {
                         offObj.sd = normalizeSubDivisionName(rawSd, offCls, offName, stdDiv);
                     }
@@ -704,7 +728,6 @@
             masterOfficeDatabase = Array.from(officeMap.values());
         }
 
-        /* सुधारित रेवेन्यू शीट पार्सर जो अगस्त रेवेन्यू और कुल उपलब्धि को पूर्णतः सही जोड़ता है */
         function parseRevenueSheet(rows) {
             let currentVert = "PARCEL", records = [];
             rows.forEach((row) => {
@@ -724,7 +747,6 @@
                 let rawT = cleanNumber(row[1]), rawM = cleanNumber(row[2]), rawTM = cleanNumber(row[3]);
                 let rawAp = cleanNumber(row[4]), rawMy = cleanNumber(row[5]), rawJn = cleanNumber(row[6]), rawJl = cleanNumber(row[7]), rawAg = cleanNumber(row[8]);
                 
-                // कुल उपलब्धि (Total Achievement) को सभी महीनों (Apr से Aug) का सटीक योग बनाकर निकालें ताकि गड़बड़ी न हो
                 let calcTotalAch = rawAp + rawMy + rawJn + rawJl + rawAg;
 
                 records.push({
@@ -765,10 +787,10 @@
 
         function switchView(viewType) {
             currentActiveView = viewType;
-            ['standardDashboardView', 'sdMonthView', 'officeAnalyticsView', 'q1DataView', 'momAnalysisView', 'yoyComparisonView', 'rankingsView', 'historicalDataView', 'posbDataView', 'pliDataView'].forEach(id => {
+            ['standardDashboardView', 'sdMonthView', 'officeAnalyticsView', 'q1DataView', 'momAnalysisView', 'yoyComparisonView', 'rankingsView', 'historicalDataView', 'posbDataView', 'pliDataView', 'ccsDataView'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.classList.add('hidden');
             });
-            ['revenue', 'count', 'sdMonth', 'office', 'q1', 'mom', 'yoy', 'rankings', 'historical', 'posb', 'pli'].forEach(t => {
+            ['revenue', 'count', 'sdMonth', 'office', 'q1', 'mom', 'yoy', 'rankings', 'historical', 'posb', 'pli', 'ccs'].forEach(t => {
                 const btn = document.getElementById(`tab-type-${t}`);
                 if (btn) btn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition flex items-center gap-1.5";
             });
@@ -811,6 +833,10 @@
                 document.getElementById('pliDataView').classList.remove('hidden');
                 if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-teal-600 text-teal-600 transition flex items-center gap-1.5";
                 renderPliDataView();
+            } else if (viewType === 'ccs') {
+                document.getElementById('ccsDataView').classList.remove('hidden');
+                if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-amber-600 text-amber-600 transition flex items-center gap-1.5";
+                renderCcsDataView();
             } else {
                 document.getElementById('standardDashboardView').classList.remove('hidden');
                 currentDataType = (viewType === 'revenue') ? 'revenue' : 'count';
@@ -944,6 +970,20 @@
             });
             document.getElementById('pliTableBody').innerHTML = tbodyRows.join('');
             document.getElementById('pliTableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL</td><td class="p-3.5">${totals.col1.toFixed(3)} Cr</td><td class="p-3.5 text-amber-300">${totals.col2.toFixed(3)} Cr</td><td class="p-3.5 text-blue-300">${totals.col3.toFixed(3)} Cr</td><td class="p-3.5 text-center text-emerald-300">${totals.col2 > 0 ? ((totals.col3 / totals.col2) * 100).toFixed(1) + "%" : "0%"}</td></tr>`;
+        }
+
+        function renderCcsDataView() {
+            const mKey = document.getElementById('ccsMonthSelect').value, divFilter = document.getElementById('ccsDivSelect').value;
+            document.getElementById('ccsTableHead').innerHTML = `<tr class="bg-amber-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-amber-900">Annual Target (Cr)</th><th class="p-3.5 bg-amber-800 text-amber-200">Monthly Target</th><th class="p-3.5">Achievement (${mKey.toUpperCase()})</th><th class="p-3.5 text-center bg-amber-900">% Achievement</th></tr>`;
+            let tbodyRows = [], totals = { col1: 0, col2: 0, col3: 0 };
+            revenueRecords.filter(r => r.vertical === 'CCS').forEach(r => {
+                if (divFilter !== 'ALL' && !isMatchingDivision(r.divName, divFilter)) return;
+                let annT = r.target, monT = annT / 12, ach = r[mKey] || 0;
+                totals.col1 += annT; totals.col2 += monT; totals.col3 += ach;
+                tbodyRows.push(`<tr class="hover:bg-amber-50/50 border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3">${annT.toFixed(3)} Cr</td><td class="p-3 font-bold text-amber-800">${monT.toFixed(3)} Cr</td><td class="p-3 font-extrabold text-blue-700">${ach.toFixed(3)} Cr</td><td class="p-3 text-center font-black text-amber-700">${monT > 0 ? ((ach / monT) * 100).toFixed(1) + "%" : "0%"}</td></tr>`);
+            });
+            document.getElementById('ccsTableBody').innerHTML = tbodyRows.join('');
+            document.getElementById('ccsTableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL</td><td class="p-3.5">${totals.col1.toFixed(3)} Cr</td><td class="p-3.5 text-amber-300">${totals.col2.toFixed(3)} Cr</td><td class="p-3.5 text-blue-300">${totals.col3.toFixed(3)} Cr</td><td class="p-3.5 text-center text-emerald-300">${totals.col2 > 0 ? ((totals.col3 / totals.col2) * 100).toFixed(1) + "%" : "0%"}</td></tr>`;
         }
 
         function populateSubDivDropdown(divSelectId, sdSelectId) {
@@ -1312,7 +1352,7 @@
                     let jlC = (SBN_CURRENT_NET['jul'] && SBN_CURRENT_NET['jul'][dName]) ? SBN_CURRENT_NET['jul'][dName] : 0;
                     let agC = (SBN_CURRENT_NET['aug'] && SBN_CURRENT_NET['aug'][dName]) ? SBN_CURRENT_NET['aug'][dName] : 0;
 
-                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
+                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jlC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
                 });
             }
 
@@ -1350,9 +1390,9 @@
 
             let rows = [], totalLYCount = 0, totalTYCount = 0, totalLYRev = 0, totalTYRev = 0;
             revenueRecords.filter(r => !r.divName.toUpperCase().includes('VERTICAL') && !r.divName.toUpperCase().includes('TOTAL') && (div === 'ALL' || isMatchingDivision(r.divName, div)) && (vert === 'ALL' || r.vertical === vert)).forEach((rItem) => {
-                let cItem = countRecords.find(x => isMatchingDivision(x.divName, rItem.divName) && x.vertical === rItem.vertical), isSbOrPli = ['SB','PLI'].includes(rItem.vertical);
+                let cItem = countRecords.find(x => isMatchingDivision(x.divName, rItem.divName) && x.vertical === rItem.vertical), isSbOrPli = ['SB','PLI','CCS'].includes(rItem.vertical);
                 let tyCountVal = isSbOrPli ? 0 : (cItem ? (cItem[month] || 0) : 0), tyRevVal = rItem ? (rItem[month] || 0) : 0, stdKey = getStandardDivKey(rItem.divName);
-                let vKey = rItem.vertical === 'MAIL' ? 'MAIL' : (rItem.vertical === 'IRGB' ? 'IRGB' : (rItem.vertical === 'PLI' ? 'PLI/RPLI' : (rItem.vertical === 'SB' ? 'POSB' : 'PARCEL')));
+                let vKey = rItem.vertical === 'MAIL' ? 'MAIL' : (rItem.vertical === 'IRGB' ? 'IRGB' : (rItem.vertical === 'PLI' ? 'PLI/RPLI' : (rItem.vertical === 'SB' ? 'POSB' : (rItem.vertical === 'CCS' ? 'CCS' : 'PARCEL'))));
 
                 let lyCountVal = 0, lyRevVal = 0;
                 if (HISTORICAL_LY_DATA[vKey]) {
@@ -1392,7 +1432,7 @@
 
         function populateHistVerticalDropdown() {
             const dType = document.getElementById('histDataTypeSelect').value, vertSelect = document.getElementById('histVertSelect');
-            if (dType === 'revenue') vertSelect.innerHTML = `<option value="ALL">🌐 All Verticals</option><option value="PARCEL">📦 Parcel</option><option value="MAIL">✉️ Mail</option><option value="IRGB">✈️ IRGB</option><option value="PLI/RPLI">🛡️ PLI/RPLI</option><option value="POSB">🏦 POSB</option>`;
+            if (dType === 'revenue') vertSelect.innerHTML = `<option value="ALL">🌐 All Verticals</option><option value="PARCEL">📦 Parcel</option><option value="MAIL">✉️ Mail</option><option value="IRGB">✈️ IRGB</option><option value="PLI/RPLI">🛡️ PLI/RPLI</option><option value="POSB">🏦 POSB</option><option value="CCS">💳 CCS</option>`;
             else if (dType === 'count') vertSelect.innerHTML = `<option value="ALL">🌐 All Verticals</option><option value="PARCEL">📦 Parcel</option><option value="MAIL">✉️ Mail</option><option value="IRGB">✈️ IRGB</option>`;
             else vertSelect.innerHTML = `<option value="ALL">🏦 POSB Schemes</option>`;
         }
@@ -1428,7 +1468,7 @@
                     if (idx === 0 || !row[0]) return;
                     let stdDiv = getStandardDivKey(row[0]); if (!stdDiv || (divFilter !== 'ALL' && !isMatchingDivision(stdDiv, divFilter))) return;
                     let rawVert = row[1] ? row[1].toString().trim().toUpperCase() : "";
-                    let vertKey = rawVert.includes("MO") || rawVert.includes("MAIL") ? "MAIL" : (rawVert.includes("IRGB") ? "IRGB" : (rawVert.includes("PLI") ? "PLI/RPLI" : (rawVert.includes("POSB") || rawVert.includes("SB") ? "POSB" : "PARCEL")));
+                    let vertKey = rawVert.includes("MO") || rawVert.includes("MAIL") ? "MAIL" : (rawVert.includes("IRGB") ? "IRGB" : (rawVert.includes("PLI") ? "PLI/RPLI" : (rawVert.includes("POSB") || rawVert.includes("SB") ? "POSB" : (rawVert.includes("CCS") ? "CCS" : "PARCEL"))));
                     if (vertFilter !== 'ALL' && vertKey !== vertFilter) return;
 
                     let yearlyTarget = cleanNumber(row[2]), monthlyTarget = yearlyTarget / 12;
@@ -1485,11 +1525,10 @@
                 });
             }
 
-            /* सुधारित वर्टिकल ब्रेकडाउन चार्ट जो 5 वर्टिकल्स के रेवेन्यू अनुपात को सही रूप से दर्शाता है */
             const ctx2 = document.getElementById('secondaryChart').getContext('2d');
             if (secondChart) secondChart.destroy();
             
-            let vertRevenueTotals = { "PARCEL": 0, "MAIL": 0, "IRGB": 0, "SB": 0, "PLI": 0 };
+            let vertRevenueTotals = { "PARCEL": 0, "MAIL": 0, "IRGB": 0, "SB": 0, "PLI": 0, "CCS": 0 };
             revenueRecords.forEach(r => {
                 if (selectedDiv === 'ALL' || isMatchingDivision(r.divName, selectedDiv)) {
                     if (vertRevenueTotals[r.vertical] !== undefined) {
@@ -1501,16 +1540,17 @@
             secondChart = new Chart(ctx2, {
                 type: 'doughnut',
                 data: { 
-                    labels: ['Parcel', 'Mail Operations', 'IRGB', 'POSB Schemes', 'PLI / RPLI'], 
+                    labels: ['Parcel', 'Mail Operations', 'IRGB', 'POSB Schemes', 'PLI / RPLI', 'CCS'], 
                     datasets: [{ 
                         data: [
                             vertRevenueTotals["PARCEL"], 
                             vertRevenueTotals["MAIL"], 
                             vertRevenueTotals["IRGB"], 
                             vertRevenueTotals["SB"], 
-                            vertRevenueTotals["PLI"]
+                            vertRevenueTotals["PLI"],
+                            vertRevenueTotals["CCS"]
                         ], 
-                        backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899'] 
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899', '#d97706'] 
                     }] 
                 },
                 options: { responsive: true, maintainAspectRatio: false }
