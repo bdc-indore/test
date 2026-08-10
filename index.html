@@ -560,9 +560,8 @@
             if (sbnHistRows.length > 0) parseSbnHistoricalSheet(sbnHistRows);
             if (sbnCurrRows.length > 0) parseSbnCurrentSheet(sbnCurrRows);
 
-            buildMasterOfficeDatabaseLive(aprRows, mayRows, junRows);
-            updateMonthLiveCounts(julyRows, 'jul');
-            updateMonthLiveCounts(augRows, 'aug');
+            // Fully dynamic sequential build using respective month sheets to ensure zero constant/old data retention
+            buildMasterOfficeDatabaseLive(aprRows, mayRows, junRows, julyRows, augRows);
 
             updateDashboard();
 
@@ -650,66 +649,69 @@
             return sd || 'UNASSIGNED';
         }
 
-        function buildMasterOfficeDatabaseLive(aprRows, mayRows, junRows) {
+        // Fully Updated to ingest all 5 month sheets and dynamically prioritize latest sub-division assignment from spreadsheet records
+        function buildMasterOfficeDatabaseLive(aprRows, mayRows, junRows, julyRows, augRows) {
             let officeMap = new Map();
+            
             function processMonthSheet(rows, monthKey) {
                 if (!rows || rows.length <= 1) return;
                 rows.forEach((r, idx) => {
                     if (idx === 0 || !r[0]) return;
-                    let offId = r[0].trim(), offName = r[1] ? r[1].trim() : "", offCls = r[2] ? r[2].trim().toUpperCase() : "", rawDiv = r[4] ? r[4].trim() : "";
+                    let offId = r[0].trim();
+                    if (!offId) return;
+                    let offName = r[1] ? r[1].trim() : "";
+                    let offCls = r[2] ? r[2].trim().toUpperCase() : "";
+                    let rawDiv = r[4] ? r[4].trim() : "";
+                    let rawSd = r[3] ? r[3].trim() : "";
+                    
                     let isKhudelBO = (offName.toUpperCase().includes('KHUDEL') && offCls === 'BO');
                     if (isKhudelBO) return;
 
+                    let currentNormalizedSd = normalizeSubDivisionName(rawSd, offCls, offName, rawDiv);
+
                     if (!officeMap.has(offId)) {
                         officeMap.set(offId, {
-                            id: offId, name: offName, cls: offCls, sd: normalizeSubDivisionName(r[3], offCls, offName, rawDiv), div: rawDiv, isIDC: (offCls === 'IDC' || offName.toUpperCase().includes('IDC')),
-                            parcel_apr:0, parcel_may:0, parcel_jun:0, parcel_jul:0, parcel_aug:0, mo_apr:0, mo_may:0, mo_jun:0, mo_jul:0, mo_aug:0, irgb_apr:0, irgb_may:0, irgb_jun:0, irgb_jul:0, irgb_aug:0
+                            id: offId, name: offName, cls: offCls, sd: currentNormalizedSd, div: rawDiv, isIDC: (offCls === 'IDC' || offName.toUpperCase().includes('IDC')),
+                            parcel_apr:0, parcel_may:0, parcel_jun:0, parcel_jul:0, parcel_aug:0, 
+                            mo_apr:0, mo_may:0, mo_jun:0, mo_jul:0, mo_aug:0, 
+                            irgb_apr:0, irgb_may:0, irgb_jun:0, irgb_jul:0, irgb_aug:0
                         });
                     }
+                    
                     let offObj = officeMap.get(offId);
-                    // Updated to dynamically sync latest sub-division updates from spreadsheet rows
-                    let latestSd = normalizeSubDivisionName(r[3], offCls, offName, rawDiv);
-                    if (latestSd && latestSd !== 'UNASSIGNED') {
-                        offObj.sd = latestSd;
+                    
+                    // Always pick up the latest sub-division and division state directly from the source spreadsheet row
+                    if (currentNormalizedSd && currentNormalizedSd !== 'UNASSIGNED') {
+                        offObj.sd = currentNormalizedSd;
                     }
                     if (rawDiv) {
                         offObj.div = rawDiv;
                     }
+                    if (offName) {
+                        offObj.name = offName;
+                    }
+                    if (offCls) {
+                        offObj.cls = offCls;
+                    }
 
                     let cat = r[5] ? r[5].trim().toUpperCase() : "", cnt = cleanNumber(r[6]);
-                    if (cat.includes("PARCEL")) offObj[`parcel_${monthKey}`] += cnt;
-                    else if (cat.includes("IRGB")) offObj[`irgb_${monthKey}`] += cnt;
-                    else offObj[`mo_${monthKey}`] += cnt;
+                    if (cat.includes("PARCEL")) {
+                        offObj[`parcel_${monthKey}`] += cnt;
+                    } else if (cat.includes("IRGB")) {
+                        offObj[`irgb_${monthKey}`] += cnt;
+                    } else {
+                        offObj[`mo_${monthKey}`] += cnt;
+                    }
                 });
             }
-            processMonthSheet(aprRows, 'apr'); processMonthSheet(mayRows, 'may'); processMonthSheet(junRows, 'jun');
-            masterOfficeDatabase = Array.from(officeMap.values());
-        }
 
-        function updateMonthLiveCounts(rows, monthKey) {
-            if (!rows || rows.length <= 1) return;
-            rows.forEach((r, idx) => {
-                if (idx === 0 || !r[0]) return;
-                let offId = r[0].trim();
-                let offName = r[1] ? r[1].trim() : "";
-                let offCls = r[2] ? r[2].trim().toUpperCase() : "";
-                let rawDiv = r[4] ? r[4].trim() : "";
-                
-                let offObj = masterOfficeDatabase.find(x => x.id === offId);
-                if (offObj) {
-                    let latestSd = normalizeSubDivisionName(r[3], offCls, offName, rawDiv);
-                    if (latestSd && latestSd !== 'UNASSIGNED') {
-                        offObj.sd = latestSd;
-                    }
-                    if (rawDiv) {
-                        offObj.div = rawDiv;
-                    }
-                    let cat = r[5] ? r[5].trim().toUpperCase() : "", cnt = cleanNumber(r[6]);
-                    if (cat.includes("PARCEL")) offObj[`parcel_${monthKey}`] = cnt;
-                    else if (cat.includes("IRGB")) offObj[`irgb_${monthKey}`] = cnt;
-                    else offObj[`mo_${monthKey}`] += cnt;
-                }
-            });
+            processMonthSheet(aprRows, 'apr');
+            processMonthSheet(mayRows, 'may');
+            processMonthSheet(junRows, 'jun');
+            processMonthSheet(julyRows, 'jul');
+            processMonthSheet(augRows, 'aug');
+
+            masterOfficeDatabase = Array.from(officeMap.values());
         }
 
         function parseRevenueSheet(rows) {
@@ -730,7 +732,6 @@
                 let isIRGB = (currentVert === "IRGB"), crDivisor = isIRGB ? 100 : 1;
                 let rawT = cleanNumber(row[1]), rawM = cleanNumber(row[2]), rawTM = cleanNumber(row[3]), rawAp = cleanNumber(row[4]), rawMy = cleanNumber(row[5]), rawJn = cleanNumber(row[6]), rawJl = cleanNumber(row[7]), rawAg = cleanNumber(row[8]), rawAch = cleanNumber(row[9]);
 
-                // Safety guard against abnormal values like 407 Cr anomaly
                 if (rawT > 1000 || rawAch > 1000) return;
 
                 records.push({
@@ -1490,7 +1491,6 @@
             const ctx2 = document.getElementById('secondaryChart').getContext('2d');
             if (secondChart) secondChart.destroy();
             
-            // Updated to include POSB and PLI along with Parcel, Mail, and IRGB in the Home Page secondary breakdown chart
             let divDataset = fullDataset.filter(r => (selectedDiv === 'ALL') || isMatchingDivision(r.divName, selectedDiv));
             let parcelVal = divDataset.filter(x => x.vertical === 'PARCEL').reduce((a, b) => a + b.aug, 0);
             let mailVal = divDataset.filter(x => x.vertical === 'MAIL').reduce((a, b) => a + b.aug, 0);
@@ -1516,7 +1516,6 @@
             document.querySelectorAll('#tableBody tr').forEach(tr => { tr.style.display = tr.innerText.toLowerCase().includes(query) ? '' : 'none'; });
         }
 
-        /* FULL EXCEL TABLE EXPORT ENGINE WITH HEADER STYLING & BORDERS */
         function exportTableByID(tableId, defaultFileName, appendIDCNote = false) {
             const tableElement = document.getElementById(tableId); if (!tableElement) return;
             const wb = XLSX.utils.book_new();
@@ -1555,7 +1554,6 @@
             XLSX.writeFile(wb, defaultFileName);
         }
 
-        /* PERFECT PDF GENERATION ENGINE WITH ZERO TOP GAP & UPDATED HEADING */
         function downloadTablePDF(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1593,7 +1591,6 @@
             html2pdf().set(opt).from(container).save();
         }
 
-        /* HIGH RESOLUTION JPEG IMAGE DOWNLOAD OPTION WITH UPDATED HEADING */
         function downloadTableJPEG(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
