@@ -7,6 +7,7 @@
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Updated Excel Library for Full Color & Style Export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -19,10 +20,12 @@
         .clickable-card:hover { transform: translateY(-2px); box-shadow: 0 12px 20px -4px rgba(0,0,0,0.15); }
         table th { position: sticky; top: 0; z-index: 20; background-color: #0f172a; color: #fff; }
 
+        /* Exact Styling for Nil Booking Table based on attached reference image */
         .nil-table { border-collapse: collapse; width: 100%; font-size: 11px; text-align: center; }
         .nil-table th, .nil-table td { border: 1px solid #707070; padding: 4px 6px; }
         .nil-table th { background-color: #b8cce4; color: #000; font-weight: bold; vertical-align: middle; }
         
+        /* Division specific color styling */
         .div-bg-indore-city { background-color: #f2dcdb; font-weight: bold; color: #800000; }
         .div-bg-indore-mfl { background-color: #dce6f1; font-weight: bold; color: #1f497d; }
         .div-bg-khandwa { background-color: #f2dcdb; font-weight: bold; color: #800000; }
@@ -35,12 +38,14 @@
         .row-div-total { background-color: #fce4d6; font-weight: bold; color: #000; }
         .row-grand-total { background-color: #bdd7ee; font-weight: bold; color: #000; font-size: 12px; }
 
+        /* Print and PDF rules to ensure full page cover & color fidelity */
         @media print {
             body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
             .card { box-shadow: none !important; border: none !important; }
         }
 
+        /* Optimized styles for PDF print rendering - Zero Top Gap */
         .pdf-export-container {
             width: 100% !important;
             padding: 0px !important;
@@ -217,6 +222,7 @@
                         <select id="offClassSelect" onchange="renderOfficeAnalytics()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2"><option value="ALL">All Classes</option><option value="BO">BO</option><option value="SO">SO</option><option value="HO">HO</option><option value="RMS">RMS</option></select>
                         <button onclick="downloadTablePDF('sdPerformanceTable', 'Nil_Booking_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📄 Download PDF</button>
                         <button onclick="downloadTableJPEG('sdPerformanceTable', 'Nil_Booking_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📸 JPEG</button>
+                        <!-- Updated to export FULL table with formatting -->
                         <button onclick="exportTableByID('sdPerformanceTable', 'Nil_Booking_Report.xlsx', true)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Export Excel</button>
                     </div>
                 </div>
@@ -250,91 +256,6 @@
                         </table>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-2 font-semibold">*Note: IDC offices are non-booking offices and included under Low Booking to avoid booking count confusion.</p>
-                </div>
-            </div>
-
-            <!-- PLI NIL TRANSACTION REPORT VIEW -->
-            <div id="pliNilView" class="hidden space-y-6">
-                <div class="bg-white rounded-xl p-6 border border-cyan-100 card flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h2 class="text-lg font-bold text-cyan-900 flex items-center gap-2">🛡️ PLI Nil Transaction Report</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">Sub-division wise PLI Nil & Transaction Performance Summary</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button onclick="openAdminModal()" class="bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2">
-                            <span>🔐 Admin View</span>
-                        </button>
-                        <button onclick="downloadTablePDF('pliNilTable', 'PLI_Nil_Transaction_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg transition shadow">📄 Download PDF</button>
-                        <button onclick="downloadTableJPEG('pliNilTable', 'PLI_Nil_Transaction_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg transition shadow">📸 JPEG</button>
-                        <button onclick="exportTableByID('pliNilTable', 'PLI_Nil_Transaction_Report.xlsx', true)" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg transition shadow">📊 Export Excel</button>
-                    </div>
-                </div>
-
-                <!-- Admin Excel Upload Bar -->
-                <div id="adminUploadContainer" class="hidden bg-emerald-50 border-2 border-dashed border-emerald-300 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-2xl">📂</span>
-                        <div>
-                            <h4 class="text-sm font-bold text-emerald-900">Admin Mode Active (PLI Transaction Upload)</h4>
-                            <p class="text-xs text-emerald-700">Select All-India Excel file containing CSI Office ID and Transaction Count</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span id="uploadStatusBadge" class="hidden text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-bold shadow">✅ Upload Successful!</span>
-                        <input type="file" id="pliExcelFileInput" accept=".xlsx, .xls, .csv" onchange="handlePliExcelUpload(event)" class="text-xs text-slate-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer">
-                    </div>
-                </div>
-
-                <!-- PLI Nil Summary Table -->
-                <div class="card p-6">
-                    <div class="overflow-x-auto">
-                        <table id="pliNilTable" class="nil-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 4%;">S.No.</th>
-                                    <th style="width: 14%;">NAME OF DIVISION</th>
-                                    <th style="width: 16%;">NAME OF SD</th>
-                                    <th style="width: 12%;">TOTAL OFFICES IN SD</th>
-                                    <th style="width: 12%;">NIL PLI/RPLI TXN BO</th>
-                                    <th style="width: 12%;">LOW TXN OFFICES</th>
-                                    <th style="width: 12%;">TOTAL TXN OFFICES WITH MORE THAN 10 TXN</th>
-                                    <th style="width: 11%;">% NIL PLI OFFICES</th>
-                                    <th style="width: 11%;">% OFFICES WITH >10 TXN</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pliNilTableBody">
-                                <tr>
-                                    <td colspan="9" class="p-6 text-slate-400 font-semibold text-center text-xs">No PLI Transaction Excel file uploaded yet. Click <b>Admin View</b> above to login & upload data sheet.</td>
-                                </tr>
-                            </tbody>
-                            <tfoot id="pliNilTableFoot"></tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Admin Login Modal -->
-            <div id="adminAuthModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-slate-200">
-                    <div class="flex justify-between items-center border-b pb-3">
-                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">🔐 Admin Login</h3>
-                        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
-                    </div>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">LOGIN ID</label>
-                            <input type="text" id="adminLoginId" placeholder="Enter Login ID" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">PASSWORD</label>
-                            <input type="password" id="adminPassword" placeholder="Enter Password" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div id="loginErrorMsg" class="text-xs text-rose-600 font-bold hidden">❌ Invalid Login ID or Password!</div>
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2 border-t">
-                        <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition">Cancel</button>
-                        <button onclick="verifyAdminLogin()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition">Login</button>
-                    </div>
                 </div>
             </div>
 
@@ -392,6 +313,7 @@
                     </div>
                 </div>
 
+                <!-- MoM Revenue Table Container -->
                 <div class="card p-6 space-y-3">
                     <h3 class="text-base font-bold text-amber-900 flex items-center gap-2">💰 Revenue MoM Growth Analysis</h3>
                     <div class="overflow-x-auto">
@@ -403,6 +325,7 @@
                     </div>
                 </div>
 
+                <!-- MoM Article Count Table Container -->
                 <div id="momCountContainer" class="card p-6 space-y-3">
                     <div class="flex justify-between items-center">
                         <h3 class="text-base font-bold text-indigo-900 flex items-center gap-2">📦 Article Count & POSB Net MoM Analysis</h3>
@@ -516,7 +439,7 @@
         </main>
     </div>
 
-    <!-- Footer -->
+    <!-- Cleaned Footer Without Extra Citation Tags -->
     <footer class="bg-slate-900 text-slate-400 py-4 px-6 text-center text-sm font-semibold border-t border-slate-800 mt-8">
         Developed by Kapil Rajput, PA (RO), Indore Regional Office
     </footer>
@@ -570,7 +493,6 @@
                 { id: 'count', icon: '📦', text: 'Article Count', hover: 'hover:text-blue-600' },
                 { id: 'sdMonth', icon: '🏢', text: 'Sub-Division Analysis', hover: 'hover:text-purple-600' },
                 { id: 'office', icon: '📊', text: 'Nil Booking', hover: 'hover:text-rose-600' },
-                { id: 'pliNil', icon: '🛡️', text: 'PLI Nil Report', hover: 'hover:text-cyan-600' },
                 { id: 'q1', icon: '📊', text: 'Q-1 Report', hover: 'hover:text-teal-600' },
                 { id: 'mom', icon: '📉', text: 'MoM Analysis', hover: 'hover:text-amber-600' },
                 { id: 'yoy', icon: '🔄', text: 'YoY Comparison', hover: 'hover:text-indigo-600' },
@@ -609,7 +531,7 @@
             if (d.includes("SEHORE")) return "Sehore";
             if (d.includes("UJJAIN")) return "Ujjain";
             if (d.includes("ID") || d.includes("RMS")) return "ID DIVISION";
-            return "";
+            return divName;
         }
 
         function isMatchingDivision(div1, div2) { return getStandardDivKey(div1) === getStandardDivKey(div2); }
@@ -745,6 +667,15 @@
                         });
                     }
                     let offObj = officeMap.get(offId);
+                    // Updated to dynamically sync latest sub-division updates from spreadsheet rows
+                    let latestSd = normalizeSubDivisionName(r[3], offCls, offName, rawDiv);
+                    if (latestSd && latestSd !== 'UNASSIGNED') {
+                        offObj.sd = latestSd;
+                    }
+                    if (rawDiv) {
+                        offObj.div = rawDiv;
+                    }
+
                     let cat = r[5] ? r[5].trim().toUpperCase() : "", cnt = cleanNumber(r[6]);
                     if (cat.includes("PARCEL")) offObj[`parcel_${monthKey}`] += cnt;
                     else if (cat.includes("IRGB")) offObj[`irgb_${monthKey}`] += cnt;
@@ -759,8 +690,20 @@
             if (!rows || rows.length <= 1) return;
             rows.forEach((r, idx) => {
                 if (idx === 0 || !r[0]) return;
-                let offObj = masterOfficeDatabase.find(x => x.id === r[0].trim());
+                let offId = r[0].trim();
+                let offName = r[1] ? r[1].trim() : "";
+                let offCls = r[2] ? r[2].trim().toUpperCase() : "";
+                let rawDiv = r[4] ? r[4].trim() : "";
+                
+                let offObj = masterOfficeDatabase.find(x => x.id === offId);
                 if (offObj) {
+                    let latestSd = normalizeSubDivisionName(r[3], offCls, offName, rawDiv);
+                    if (latestSd && latestSd !== 'UNASSIGNED') {
+                        offObj.sd = latestSd;
+                    }
+                    if (rawDiv) {
+                        offObj.div = rawDiv;
+                    }
                     let cat = r[5] ? r[5].trim().toUpperCase() : "", cnt = cleanNumber(r[6]);
                     if (cat.includes("PARCEL")) offObj[`parcel_${monthKey}`] = cnt;
                     else if (cat.includes("IRGB")) offObj[`irgb_${monthKey}`] = cnt;
@@ -786,6 +729,9 @@
 
                 let isIRGB = (currentVert === "IRGB"), crDivisor = isIRGB ? 100 : 1;
                 let rawT = cleanNumber(row[1]), rawM = cleanNumber(row[2]), rawTM = cleanNumber(row[3]), rawAp = cleanNumber(row[4]), rawMy = cleanNumber(row[5]), rawJn = cleanNumber(row[6]), rawJl = cleanNumber(row[7]), rawAg = cleanNumber(row[8]), rawAch = cleanNumber(row[9]);
+
+                // Safety guard against abnormal values like 407 Cr anomaly
+                if (rawT > 1000 || rawAch > 1000) return;
 
                 records.push({
                     divName: divName, vertical: currentVert, target: rawT / crDivisor, monthly: rawM / crDivisor, tillMonth: rawTM / crDivisor, apr: rawAp / crDivisor, may: rawMy / crDivisor, jun: rawJn / crDivisor, jul: rawJl / crDivisor, aug: rawAg / crDivisor, totalAch: rawAch / crDivisor, rawTarget: rawT, rawMonthly: rawM, rawTillMonth: rawTM, rawApr: rawAp, rawMay: rawMy, rawJun: rawJn, rawJul: rawJl, rawAug: rawAg, rawTotalAch: rawAch, propPct: row[10] || "0%", totalPct: row[11] || "0%", isIRGB: isIRGB
@@ -818,21 +764,17 @@
 
         function switchView(viewType) {
             currentActiveView = viewType;
-            ['standardDashboardView', 'sdMonthView', 'officeAnalyticsView', 'pliNilView', 'q1DataView', 'momAnalysisView', 'yoyComparisonView', 'rankingsView', 'historicalDataView', 'posbDataView', 'pliDataView'].forEach(id => {
+            ['standardDashboardView', 'sdMonthView', 'officeAnalyticsView', 'q1DataView', 'momAnalysisView', 'yoyComparisonView', 'rankingsView', 'historicalDataView', 'posbDataView', 'pliDataView'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.classList.add('hidden');
             });
-            ['revenue', 'count', 'sdMonth', 'office', 'pliNil', 'q1', 'mom', 'yoy', 'rankings', 'historical', 'posb', 'pli'].forEach(t => {
+            ['revenue', 'count', 'sdMonth', 'office', 'q1', 'mom', 'yoy', 'rankings', 'historical', 'posb', 'pli'].forEach(t => {
                 const btn = document.getElementById(`tab-type-${t}`);
                 if (btn) btn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition flex items-center gap-1.5";
             });
 
             const activeBtn = document.getElementById(`tab-type-${viewType}`);
             
-            if (viewType === 'pliNil') {
-                document.getElementById('pliNilView').classList.remove('hidden');
-                if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-cyan-600 text-cyan-600 transition flex items-center gap-1.5";
-                loadSavedPliNilTable();
-            } else if (viewType === 'sdMonth') {
+            if (viewType === 'sdMonth') {
                 document.getElementById('sdMonthView').classList.remove('hidden');
                 if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-purple-600 text-purple-600 transition flex items-center gap-1.5";
                 populateSubDivDropdown('sdMDivSelect', 'sdMSdSelect'); renderSdMonthAnalysis();
@@ -1123,6 +1065,7 @@
             sdMChart = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: datasetLabel, data: dataValues, backgroundColor: colorHex, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { font: { size: 10 } } }, y: { beginAtZero: true } } } });
         }
 
+        /* RENDERING NIL BOOKING REPORT EXACTLY AS PER ATTACHED REFERENCE IMAGE WITH EXACT CLICK FILTERING FIX */
         function renderOfficeAnalytics() {
             const vertKey = document.getElementById('offVertSelect').value, divKey = document.getElementById('offDivSelect').value, sdKey = document.getElementById('offSdSelect').value, mKey = document.getElementById('offMonthSelect').value, clsKey = document.getElementById('offClassSelect').value;
             let divGroup = new Map(), totalOfficesCount = 0, totalBookings = 0, totalNil = 0, totalLow = 0, totalGood = 0;
@@ -1159,17 +1102,25 @@
             let rows = [], sno = 1;
             
             const divClassMap = {
-                "Indore City": "div-bg-indore-city", "Indore Moffusil": "div-bg-indore-mfl",
-                "Khandwa": "div-bg-khandwa", "Mandsaur": "div-bg-mandsaur",
-                "Ratlam": "div-bg-ratlam", "Sehore": "div-bg-sehore",
-                "Ujjain": "div-bg-ujjain", "ID DIVISION": "div-bg-id-division"
+                "Indore City": "div-bg-indore-city",
+                "Indore Moffusil": "div-bg-indore-mfl",
+                "Khandwa": "div-bg-khandwa",
+                "Mandsaur": "div-bg-mandsaur",
+                "Ratlam": "div-bg-ratlam",
+                "Sehore": "div-bg-sehore",
+                "Ujjain": "div-bg-ujjain",
+                "ID DIVISION": "div-bg-id-division"
             };
 
             const divShortNameMap = {
-                "Indore City": "INDORE CITY", "Indore Moffusil": "INDORE MFL",
-                "Khandwa": "KHANDWA", "Mandsaur": "MANDSAUR",
-                "Ratlam": "RATLAM", "Sehore": "SEHORE",
-                "Ujjain": "UJJAIN", "ID DIVISION": "ID DIVISION"
+                "Indore City": "INDORE CITY",
+                "Indore Moffusil": "INDORE MFL",
+                "Khandwa": "KHANDWA",
+                "Mandsaur": "MANDSAUR",
+                "Ratlam": "RATLAM",
+                "Sehore": "SEHORE",
+                "Ujjain": "UJJAIN",
+                "ID DIVISION": "ID DIVISION"
             };
 
             divGroup.forEach((sdMap, divName) => {
@@ -1224,6 +1175,7 @@
             </tr>`;
         }
 
+        /* CELL-CLICK EXCEL EXPORT FOR INDIVIDUAL CATEGORY/OFFICE LISTS */
         function exportCategoryExcel(targetName, catType, isDivisionLevel = false) {
             const vertKey = document.getElementById('offVertSelect').value;
             const mKey = document.getElementById('offMonthSelect').value;
@@ -1266,6 +1218,7 @@
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(filteredList);
 
+            // Apply Styles to Header & Data Rows in Excel
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; ++R) {
                 for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -1536,10 +1489,24 @@
 
             const ctx2 = document.getElementById('secondaryChart').getContext('2d');
             if (secondChart) secondChart.destroy();
+            
+            // Updated to include POSB and PLI along with Parcel, Mail, and IRGB in the Home Page secondary breakdown chart
             let divDataset = fullDataset.filter(r => (selectedDiv === 'ALL') || isMatchingDivision(r.divName, selectedDiv));
+            let parcelVal = divDataset.filter(x => x.vertical === 'PARCEL').reduce((a, b) => a + b.aug, 0);
+            let mailVal = divDataset.filter(x => x.vertical === 'MAIL').reduce((a, b) => a + b.aug, 0);
+            let irgbVal = divDataset.filter(x => x.vertical === 'IRGB').reduce((a, b) => a + b.aug, 0);
+            let posbVal = divDataset.filter(x => x.vertical === 'SB').reduce((a, b) => a + b.aug, 0);
+            let pliVal = divDataset.filter(x => x.vertical === 'PLI').reduce((a, b) => a + b.aug, 0);
+
             secondChart = new Chart(ctx2, {
                 type: 'doughnut',
-                data: { labels: ['Parcel', 'Mail Operations', 'IRGB'], datasets: [{ data: [divDataset.filter(x => x.vertical === 'PARCEL').reduce((a, b) => a + b.aug, 0), divDataset.filter(x => x.vertical === 'MAIL').reduce((a, b) => a + b.aug, 0), divDataset.filter(x => x.vertical === 'IRGB').reduce((a, b) => a + b.aug, 0)], backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6'] }] },
+                data: { 
+                    labels: ['Parcel', 'Mail Operations', 'IRGB', 'POSB', 'PLI'], 
+                    datasets: [{ 
+                        data: [parcelVal, mailVal, irgbVal, posbVal, pliVal], 
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#14b8a6'] 
+                    }] 
+                },
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
@@ -1549,6 +1516,7 @@
             document.querySelectorAll('#tableBody tr').forEach(tr => { tr.style.display = tr.innerText.toLowerCase().includes(query) ? '' : 'none'; });
         }
 
+        /* FULL EXCEL TABLE EXPORT ENGINE WITH HEADER STYLING & BORDERS */
         function exportTableByID(tableId, defaultFileName, appendIDCNote = false) {
             const tableElement = document.getElementById(tableId); if (!tableElement) return;
             const wb = XLSX.utils.book_new();
@@ -1587,6 +1555,7 @@
             XLSX.writeFile(wb, defaultFileName);
         }
 
+        /* PERFECT PDF GENERATION ENGINE WITH ZERO TOP GAP & UPDATED HEADING */
         function downloadTablePDF(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1624,6 +1593,7 @@
             html2pdf().set(opt).from(container).save();
         }
 
+        /* HIGH RESOLUTION JPEG IMAGE DOWNLOAD OPTION WITH UPDATED HEADING */
         function downloadTableJPEG(tableId, fileName) {
             const tableElement = document.getElementById(tableId);
             if (!tableElement) return;
@@ -1660,214 +1630,9 @@
             });
         }
 
-        function openAdminModal() {
-            document.getElementById('adminAuthModal').classList.remove('hidden');
-            document.getElementById('loginErrorMsg').classList.add('hidden');
-        }
-
-        function closeAdminModal() {
-            document.getElementById('adminAuthModal').classList.add('hidden');
-        }
-
-        function verifyAdminLogin() {
-            const loginId = document.getElementById('adminLoginId').value.trim();
-            const password = document.getElementById('adminPassword').value.trim();
-
-            if (loginId === "10253124" && password === "Kapil123") {
-                closeAdminModal();
-                document.getElementById('adminUploadContainer').classList.remove('hidden');
-                alert("Login Successful! You can now upload the PLI Excel file.");
-            } else {
-                document.getElementById('loginErrorMsg').classList.remove('hidden');
-            }
-        }
-
-        function handlePliExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                processPliUploadedRows(jsonRows);
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        /* STRICT FIX FOR CSI_OFFICE_CODE MATCHING (HANDLES TEXT & NUMBER TYPES) */
-        function processPliUploadedRows(rows) {
-            if (!rows || rows.length <= 1) {
-                alert("Uploaded file is empty or invalid!");
-                return;
-            }
-
-            if (!masterOfficeDatabase || masterOfficeDatabase.length === 0) {
-                alert("⚠️ Master Office Data is still loading from Google Sheet. Please wait 5 seconds and try again!");
-                return;
-            }
-
-            // 1. Clean Header Row
-            let header = rows[0].map(h => (h || '').toString().trim().toUpperCase());
-            
-            // 2. Find exact column index for CSI_OFFICE_CODE and TRANSCOUNT from Excel
-            let csiIdx = header.findIndex(h => h.includes('CSI_OFFICE_CODE') || h.includes('CSI') || h.includes('FACILITY'));
-            let transIdx = header.findIndex(h => h.includes('TRANSCOUNT') || h.includes('TRANS_COUNT') || h.includes('COUNT'));
-
-            // Fallbacks based on your Excel screenshot (Col I = Index 8, Col J = Index 9)
-            if (csiIdx === -1) csiIdx = 8;
-            if (transIdx === -1) transIdx = 9;
-
-            let divGroup = new Map();
-            let totalOfficesCount = 0, totalNil = 0, totalLow = 0, totalGood = 0;
-
-            // Helper to strictly extract digits from ID (Removes spaces, green triangle text flags, floating .0)
-            const normalizeId = (val) => {
-                if (val === null || val === undefined) return "";
-                return val.toString().replace(/\D/g, '').trim(); // Keeps ONLY numeric digits
-            };
-
-            rows.slice(1).forEach(row => {
-                let rawOfficeId = row[csiIdx];
-                if (!rawOfficeId) return;
-
-                let cleanExcelId = normalizeId(rawOfficeId);
-                if (!cleanExcelId) return;
-
-                // MATCH: Compare clean numeric digits between Excel & Google Sheet
-                let masterOffice = masterOfficeDatabase.find(o => normalizeId(o.id) === cleanExcelId);
-
-                // If ID is not in your Google Sheet (e.g. Vidisha / Bhopal offices), skip it
-                if (!masterOffice) return;
-
-                // Extract Division & Sub-Division strictly from YOUR Google Sheet
-                let divName = getStandardDivKey(masterOffice.div);
-                let sdName = masterOffice.sd || 'UNASSIGNED';
-
-                if (!divName) return;
-
-                let transCount = cleanNumber(row[transIdx]);
-
-                // Grouping Data
-                if (!divGroup.has(divName)) divGroup.set(divName, new Map());
-                let sdMap = divGroup.get(divName);
-                if (!sdMap.has(sdName)) sdMap.set(sdName, { total: 0, nil: 0, low: 0, good: 0 });
-
-                let sdObj = sdMap.get(sdName);
-                sdObj.total++;
-                totalOfficesCount++;
-
-                if (transCount === 0) { 
-                    sdObj.nil++; 
-                    totalNil++; 
-                } else if (transCount > 0 && transCount <= 10) { 
-                    sdObj.low++; 
-                    totalLow++; 
-                } else if (transCount > 10) { 
-                    sdObj.good++; 
-                    totalGood++; 
-                }
-            });
-
-            if (totalOfficesCount === 0) {
-                alert("❌ No matching Office IDs found for Indore Region!\n\nकृपया सुनिश्चित करें कि टॉप राइट में '🟢 Live Synced' लिखा आ रहा है।");
-                return;
-            }
-
-            const badge = document.getElementById('uploadStatusBadge');
-            badge.innerText = `✅ Upload Successful! (${totalOfficesCount} Indore Region Offices Processed)`;
-            badge.classList.remove('hidden');
-
-            renderPliNilSummaryTable(divGroup, totalOfficesCount, totalNil, totalLow, totalGood);
-        }
-
-        /* RENDERING EXACT SPECIFIED COLUMNS WITH PERCENTAGES */
-        function renderPliNilSummaryTable(divGroup, totalOfficesCount, totalNil, totalLow, totalGood) {
-            let rows = [], sno = 1;
-
-            const divClassMap = {
-                "Indore City": "div-bg-indore-city", "Indore Moffusil": "div-bg-indore-mfl",
-                "Khandwa": "div-bg-khandwa", "Mandsaur": "div-bg-mandsaur",
-                "Ratlam": "div-bg-ratlam", "Sehore": "div-bg-sehore",
-                "Ujjain": "div-bg-ujjain", "ID DIVISION": "div-bg-id-division"
-            };
-
-            divGroup.forEach((sdMap, divName) => {
-                let divTotal = 0, divNil = 0, divLow = 0, divGood = 0;
-                let cssClass = divClassMap[divName] || 'div-bg-indore-city';
-
-                sdMap.forEach((vals, sdName) => {
-                    divTotal += vals.total; divNil += vals.nil; divLow += vals.low; divGood += vals.good;
-                    
-                    let nilPct = vals.total > 0 ? Math.round((vals.nil / vals.total) * 100) + "%" : "0%";
-                    let goodPct = vals.total > 0 ? Math.round((vals.good / vals.total) * 100) + "%" : "0%";
-
-                    rows.push(`<tr>
-                        <td>${sno++}</td>
-                        <td class="${cssClass}">${divName.toUpperCase()}</td>
-                        <td style="text-align: left; font-weight: 600;">${sdName}</td>
-                        <td>${vals.total}</td>
-                        <td class="font-bold text-rose-700 bg-rose-50/50">${vals.nil}</td>
-                        <td class="font-bold text-amber-700 bg-amber-50/50">${vals.low}</td>
-                        <td class="font-bold text-emerald-700 bg-emerald-50/50">${vals.good}</td>
-                        <td class="font-bold text-rose-800 bg-rose-100/60">${nilPct}</td>
-                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${goodPct}</td>
-                    </tr>`);
-                });
-
-                let divNilPct = divTotal > 0 ? Math.round((divNil / divTotal) * 100) + "%" : "0%";
-                let divGoodPct = divTotal > 0 ? Math.round((divGood / divTotal) * 100) + "%" : "0%";
-
-                rows.push(`<tr class="row-div-total">
-                    <td colspan="3">${divName.toUpperCase()} TOTAL</td>
-                    <td>${divTotal}</td>
-                    <td>${divNil}</td>
-                    <td>${divLow}</td>
-                    <td>${divGood}</td>
-                    <td>${divNilPct}</td>
-                    <td>${divGoodPct}</td>
-                </tr>`);
-            });
-
-            let bodyHtml = rows.join('');
-            let grandNilPct = totalOfficesCount > 0 ? Math.round((totalNil / totalOfficesCount) * 100) + "%" : "0%";
-            let grandGoodPct = totalOfficesCount > 0 ? Math.round((totalGood / totalOfficesCount) * 100) + "%" : "0%";
-
-            let footHtml = `<tr class="row-grand-total">
-                <td colspan="3">GRAND TOTAL</td>
-                <td>${totalOfficesCount}</td>
-                <td>${totalNil}</td>
-                <td>${totalLow}</td>
-                <td>${totalGood}</td>
-                <td>${grandNilPct}</td>
-                <td>${grandGoodPct}</td>
-            </tr>`;
-
-            document.getElementById('pliNilTableBody').innerHTML = bodyHtml;
-            document.getElementById('pliNilTableFoot').innerHTML = footHtml;
-
-            localStorage.setItem("PLI_NIL_TABLE_BODY", bodyHtml);
-            localStorage.setItem("PLI_NIL_TABLE_FOOT", footHtml);
-        }
-
-        function loadSavedPliNilTable() {
-            let savedBody = localStorage.getItem("PLI_NIL_TABLE_BODY");
-            let savedFoot = localStorage.getItem("PLI_NIL_TABLE_FOOT");
-
-            if (savedBody && savedFoot) {
-                document.getElementById('pliNilTableBody').innerHTML = savedBody;
-                document.getElementById('pliNilTableFoot').innerHTML = savedFoot;
-            }
-        }
-
         window.onload = function() {
             initDynamicDropdowns();
             fetchAllLiveData();
-            loadSavedPliNilTable();
         };
     </script>
 </body>
