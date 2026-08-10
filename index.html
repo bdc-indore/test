@@ -222,7 +222,6 @@
                         <select id="offClassSelect" onchange="renderOfficeAnalytics()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2"><option value="ALL">All Classes</option><option value="BO">BO</option><option value="SO">SO</option><option value="HO">HO</option><option value="RMS">RMS</option></select>
                         <button onclick="downloadTablePDF('sdPerformanceTable', 'Nil_Booking_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📄 Download PDF</button>
                         <button onclick="downloadTableJPEG('sdPerformanceTable', 'Nil_Booking_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📸 JPEG</button>
-                        <!-- Updated to export FULL table with formatting -->
                         <button onclick="exportTableByID('sdPerformanceTable', 'Nil_Booking_Report.xlsx', true)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Export Excel</button>
                     </div>
                 </div>
@@ -560,7 +559,6 @@
             if (sbnHistRows.length > 0) parseSbnHistoricalSheet(sbnHistRows);
             if (sbnCurrRows.length > 0) parseSbnCurrentSheet(sbnCurrRows);
 
-            // Fully dynamic sequential build using respective month sheets to ensure zero constant/old data retention
             buildMasterOfficeDatabaseLive(aprRows, mayRows, junRows, julyRows, augRows);
 
             updateDashboard();
@@ -641,15 +639,23 @@
             });
         }
 
+        /* सुधारित सब-डिवीजन मैपिंग लॉजिक जो स्प्रेडशीट और सब-डिवीजन फ़िल्टर को पूर्ण रूप से सिंक्रनाइज़ करता है */
         function normalizeSubDivisionName(sdName, clsName, offName, divName) {
-            let sd = (sdName || '').trim(), cls = (clsName || '').trim().toUpperCase(), name = (offName || '').trim().toUpperCase(), div = (divName || '').trim().toUpperCase();
+            let sd = (sdName || '').trim();
+            let cls = (clsName || '').trim().toUpperCase();
+            let name = (offName || '').trim().toUpperCase();
+            let div = (divName || '').trim().toUpperCase();
+            
             if (div.includes('CITY') || div.includes('INDORE CITY')) {
-                if (sd.toUpperCase().includes('EAST') || ['BNPL','BPC','IDC'].includes(cls) || name.includes('BNPL') || name.includes('BPC') || name.includes('IDC')) return "Indore East";
+                if (sd === '' || sd.toUpperCase() === 'UNASSIGNED' || sd.toUpperCase() === 'INDORE CITY') {
+                    if (['BNPL','BPC','IDC'].includes(cls) || name.includes('BNPL') || name.includes('BPC') || name.includes('IDC') || name.includes('EAST')) {
+                        return "Indore East";
+                    }
+                }
             }
-            return sd || 'UNASSIGNED';
+            return sd && sd !== '' ? sd : 'UNASSIGNED';
         }
 
-        // Fully Updated to ingest all 5 month sheets and dynamically prioritize latest sub-division assignment from spreadsheet records
         function buildMasterOfficeDatabaseLive(aprRows, mayRows, junRows, julyRows, augRows) {
             let officeMap = new Map();
             
@@ -658,62 +664,47 @@
                 rows.forEach((r, idx) => {
                     if (idx === 0 || !r[0]) return;
                     let offId = r[0].trim();
-                    if (!offId) return;
                     let offName = r[1] ? r[1].trim() : "";
                     let offCls = r[2] ? r[2].trim().toUpperCase() : "";
                     let rawDiv = r[4] ? r[4].trim() : "";
+                    let stdDiv = getStandardDivKey(rawDiv);
                     let rawSd = r[3] ? r[3].trim() : "";
                     
                     let isKhudelBO = (offName.toUpperCase().includes('KHUDEL') && offCls === 'BO');
                     if (isKhudelBO) return;
 
-                    let currentNormalizedSd = normalizeSubDivisionName(rawSd, offCls, offName, rawDiv);
-
                     if (!officeMap.has(offId)) {
                         officeMap.set(offId, {
-                            id: offId, name: offName, cls: offCls, sd: currentNormalizedSd, div: rawDiv, isIDC: (offCls === 'IDC' || offName.toUpperCase().includes('IDC')),
+                            id: offId, name: offName, cls: offCls, sd: normalizeSubDivisionName(rawSd, offCls, offName, stdDiv), div: stdDiv || rawDiv, isIDC: (offCls === 'IDC' || offName.toUpperCase().includes('IDC')),
                             parcel_apr:0, parcel_may:0, parcel_jun:0, parcel_jul:0, parcel_aug:0, 
                             mo_apr:0, mo_may:0, mo_jun:0, mo_jul:0, mo_aug:0, 
                             irgb_apr:0, irgb_may:0, irgb_jun:0, irgb_jul:0, irgb_aug:0
                         });
                     }
-                    
                     let offObj = officeMap.get(offId);
                     
-                    // Always pick up the latest sub-division and division state directly from the source spreadsheet row
-                    if (currentNormalizedSd && currentNormalizedSd !== 'UNASSIGNED') {
-                        offObj.sd = currentNormalizedSd;
-                    }
-                    if (rawDiv) {
-                        offObj.div = rawDiv;
-                    }
-                    if (offName) {
-                        offObj.name = offName;
-                    }
-                    if (offCls) {
-                        offObj.cls = offCls;
+                    // यदि बाद के महीनों (जैसे जुलाई/अगस्त) में सही सब-डिवीजन नाम उपलब्ध है, तो उसे अपडेट करें
+                    if (rawSd && rawSd !== '' && (offObj.sd === 'UNASSIGNED' || offObj.sd === '')) {
+                        offObj.sd = normalizeSubDivisionName(rawSd, offCls, offName, stdDiv);
                     }
 
                     let cat = r[5] ? r[5].trim().toUpperCase() : "", cnt = cleanNumber(r[6]);
-                    if (cat.includes("PARCEL")) {
-                        offObj[`parcel_${monthKey}`] += cnt;
-                    } else if (cat.includes("IRGB")) {
-                        offObj[`irgb_${monthKey}`] += cnt;
-                    } else {
-                        offObj[`mo_${monthKey}`] += cnt;
-                    }
+                    if (cat.includes("PARCEL")) offObj[`parcel_${monthKey}`] += cnt;
+                    else if (cat.includes("IRGB")) offObj[`irgb_${monthKey}`] += cnt;
+                    else offObj[`mo_${monthKey}`] += cnt;
                 });
             }
 
-            processMonthSheet(aprRows, 'apr');
-            processMonthSheet(mayRows, 'may');
+            processMonthSheet(aprRows, 'apr'); 
+            processMonthSheet(mayRows, 'may'); 
             processMonthSheet(junRows, 'jun');
-            processMonthSheet(julyRows, 'jul');
+            processMonthSheet(julyRows, 'jul'); 
             processMonthSheet(augRows, 'aug');
 
             masterOfficeDatabase = Array.from(officeMap.values());
         }
 
+        /* सुधारित रेवेन्यू शीट पार्सर जो अगस्त रेवेन्यू और कुल उपलब्धि को पूर्णतः सही जोड़ता है */
         function parseRevenueSheet(rows) {
             let currentVert = "PARCEL", records = [];
             rows.forEach((row) => {
@@ -730,12 +721,21 @@
                 if (divUpper.includes('TOTAL') || divUpper.includes('GRAND TOTAL') || divUpper.includes('VERTICAL') || divUpper.includes('NAME OF')) return;
 
                 let isIRGB = (currentVert === "IRGB"), crDivisor = isIRGB ? 100 : 1;
-                let rawT = cleanNumber(row[1]), rawM = cleanNumber(row[2]), rawTM = cleanNumber(row[3]), rawAp = cleanNumber(row[4]), rawMy = cleanNumber(row[5]), rawJn = cleanNumber(row[6]), rawJl = cleanNumber(row[7]), rawAg = cleanNumber(row[8]), rawAch = cleanNumber(row[9]);
-
-                if (rawT > 1000 || rawAch > 1000) return;
+                let rawT = cleanNumber(row[1]), rawM = cleanNumber(row[2]), rawTM = cleanNumber(row[3]);
+                let rawAp = cleanNumber(row[4]), rawMy = cleanNumber(row[5]), rawJn = cleanNumber(row[6]), rawJl = cleanNumber(row[7]), rawAg = cleanNumber(row[8]);
+                
+                // कुल उपलब्धि (Total Achievement) को सभी महीनों (Apr से Aug) का सटीक योग बनाकर निकालें ताकि गड़बड़ी न हो
+                let calcTotalAch = rawAp + rawMy + rawJn + rawJl + rawAg;
 
                 records.push({
-                    divName: divName, vertical: currentVert, target: rawT / crDivisor, monthly: rawM / crDivisor, tillMonth: rawTM / crDivisor, apr: rawAp / crDivisor, may: rawMy / crDivisor, jun: rawJn / crDivisor, jul: rawJl / crDivisor, aug: rawAg / crDivisor, totalAch: rawAch / crDivisor, rawTarget: rawT, rawMonthly: rawM, rawTillMonth: rawTM, rawApr: rawAp, rawMay: rawMy, rawJun: rawJn, rawJul: rawJl, rawAug: rawAg, rawTotalAch: rawAch, propPct: row[10] || "0%", totalPct: row[11] || "0%", isIRGB: isIRGB
+                    divName: divName, vertical: currentVert, 
+                    target: rawT / crDivisor, monthly: rawM / crDivisor, tillMonth: rawTM / crDivisor, 
+                    apr: rawAp / crDivisor, may: rawMy / crDivisor, jun: rawJn / crDivisor, jul: rawJl / crDivisor, aug: rawAg / crDivisor, 
+                    totalAch: calcTotalAch / crDivisor, 
+                    rawTarget: rawT, rawMonthly: rawM, rawTillMonth: rawTM, 
+                    rawApr: rawAp, rawMay: rawMy, rawJun: rawJn, rawJul: rawJl, rawAug: rawAg, 
+                    rawTotalAch: calcTotalAch, 
+                    propPct: row[10] || "0%", totalPct: row[11] || "0%", isIRGB: isIRGB
                 });
             });
             return records;
@@ -1066,7 +1066,6 @@
             sdMChart = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: datasetLabel, data: dataValues, backgroundColor: colorHex, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { font: { size: 10 } } }, y: { beginAtZero: true } } } });
         }
 
-        /* RENDERING NIL BOOKING REPORT EXACTLY AS PER ATTACHED REFERENCE IMAGE WITH EXACT CLICK FILTERING FIX */
         function renderOfficeAnalytics() {
             const vertKey = document.getElementById('offVertSelect').value, divKey = document.getElementById('offDivSelect').value, sdKey = document.getElementById('offSdSelect').value, mKey = document.getElementById('offMonthSelect').value, clsKey = document.getElementById('offClassSelect').value;
             let divGroup = new Map(), totalOfficesCount = 0, totalBookings = 0, totalNil = 0, totalLow = 0, totalGood = 0;
@@ -1176,7 +1175,6 @@
             </tr>`;
         }
 
-        /* CELL-CLICK EXCEL EXPORT FOR INDIVIDUAL CATEGORY/OFFICE LISTS */
         function exportCategoryExcel(targetName, catType, isDivisionLevel = false) {
             const vertKey = document.getElementById('offVertSelect').value;
             const mKey = document.getElementById('offMonthSelect').value;
@@ -1219,7 +1217,6 @@
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(filteredList);
 
-            // Apply Styles to Header & Data Rows in Excel
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; ++R) {
                 for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -1255,9 +1252,9 @@
             let rowsRev = [], sumAnnT = 0, sumQ1T = 0, sumAprR = 0, sumMayR = 0, sumJunR = 0, sumQ1AchR = 0;
             
             revenueRecords.filter(r => r.vertical === vKey && !r.divName.toUpperCase().includes('VERTICAL')).forEach(r => {
-                let annT = r.target, q1T = annT / 4, ap = r.apr, my = r.may, jn = r.jun, q1Ach = ap + my + jn;
-                sumAnnT += annT; sumQ1T += q1T; sumAprR += ap; sumMayR += my; sumJunR += jn; sumQ1AchR += q1Ach;
-                rowsRev.push(`<tr class="border-b border-slate-200 hover:bg-teal-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3">${annT.toFixed(3)} Cr</td><td class="p-3 font-bold text-teal-800">${q1T.toFixed(3)} Cr</td><td class="p-3">${ap.toFixed(3)}</td><td class="p-3">${my.toFixed(3)}</td><td class="p-3">${jn.toFixed(3)}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toFixed(3)} Cr</td><td class="p-3 text-center font-black text-teal-700">${q1T > 0 ? ((q1Ach / q1T) * 100).toFixed(1) + "%" : "0%"}</td></tr>`);
+                let annT = r.target, q1T = annT / 4, ap = r.apr, mayVal = r.may, jn = r.jun, q1Ach = ap + mayVal + jn;
+                sumAnnT += annT; sumQ1T += q1T; sumAprR += ap; sumMayR += mayVal; sumJunR += jn; sumQ1AchR += q1Ach;
+                rowsRev.push(`<tr class="border-b border-slate-200 hover:bg-teal-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3">${annT.toFixed(3)} Cr</td><td class="p-3 font-bold text-teal-800">${q1T.toFixed(3)} Cr</td><td class="p-3">${ap.toFixed(3)}</td><td class="p-3">${mayVal.toFixed(3)}</td><td class="p-3">${jn.toFixed(3)}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toFixed(3)} Cr</td><td class="p-3 text-center font-black text-teal-700">${q1T > 0 ? ((q1Ach / q1T) * 100).toFixed(1) + "%" : "0%"}</td></tr>`);
             });
             document.getElementById('q1RevTableBody').innerHTML = rowsRev.join('');
             document.getElementById('q1RevTableFoot').innerHTML = `<tr class="bg-teal-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL Q-1 REVENUE</td><td class="p-3.5">${vKey}</td><td class="p-3.5">${sumAnnT.toFixed(3)} Cr</td><td class="p-3.5 text-teal-200">${sumQ1T.toFixed(3)} Cr</td><td class="p-3.5">${sumAprR.toFixed(3)}</td><td class="p-3.5">${sumMayR.toFixed(3)}</td><td class="p-3.5">${sumJunR.toFixed(3)}</td><td class="p-3.5 text-emerald-300">${sumQ1AchR.toFixed(3)} Cr</td><td class="p-3.5 text-center text-amber-300">${sumQ1T > 0 ? ((sumQ1AchR/sumQ1T)*100).toFixed(1) : 0}%</td></tr>`;
@@ -1265,9 +1262,9 @@
             let rowsCnt = [], sumQ1CountTgt = 0, sumAprC = 0, sumMayC = 0, sumJunC = 0, sumQ1AchC = 0;
             countRecords.filter(r => r.vertical === vKey && !r.divName.toUpperCase().includes('VERTICAL')).forEach(r => {
                 let stdKey = getStandardDivKey(r.divName), q1Tgts = (Q1_COUNT_TARGETS[vKey] && Q1_COUNT_TARGETS[vKey][stdKey]) ? Q1_COUNT_TARGETS[vKey][stdKey] : { apr: 0, may: 0, jun: 0 };
-                let q1TgtCount = q1Tgts.apr + q1Tgts.may + q1Tgts.jun, ap = r.apr, my = r.may, jn = r.jun, q1Ach = ap + my + jn;
-                sumQ1CountTgt += q1TgtCount; sumAprC += ap; sumMayC += my; sumJunC += jn; sumQ1AchC += q1Ach;
-                rowsCnt.push(`<tr class="border-b border-slate-200 hover:bg-indigo-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3 font-bold text-indigo-800">${q1TgtCount.toLocaleString()}</td><td class="p-3">${ap.toLocaleString()}</td><td class="p-3">${my.toLocaleString()}</td><td class="p-3">${jn.toLocaleString()}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toLocaleString()}</td><td class="p-3 text-center font-black text-indigo-700">${q1TgtCount > 0 ? ((q1Ach / q1TgtCount) * 100).toFixed(1) + "%" : "0%"}</td></tr>`);
+                let q1TgtCount = q1Tgts.apr + q1Tgts.may + q1Tgts.jun, ap = r.apr, mayVal = r.may, jn = r.jun, q1Ach = ap + mayVal + jn;
+                sumQ1CountTgt += q1TgtCount; sumAprC += ap; sumMayC += mayVal; sumJunC += jn; sumQ1AchC += q1Ach;
+                rowsCnt.push(`<tr class="border-b border-slate-200 hover:bg-indigo-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3 font-bold text-indigo-800">${q1TgtCount.toLocaleString()}</td><td class="p-3">${ap.toLocaleString()}</td><td class="p-3">${mayVal.toLocaleString()}</td><td class="p-3">${jn.toLocaleString()}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toLocaleString()}</td><td class="p-3 text-center font-black text-indigo-700">${q1TgtCount > 0 ? ((q1Ach / q1TgtCount) * 100).toFixed(1) + "%" : "0%"}</td></tr>`);
             });
             document.getElementById('q1CountTableBody').innerHTML = rowsCnt.join('');
             document.getElementById('q1CountTableFoot').innerHTML = `<tr class="bg-indigo-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL Q-1 COUNT</td><td class="p-3.5">${vKey}</td><td class="p-3.5 text-indigo-200">${sumQ1CountTgt.toLocaleString()}</td><td class="p-3.5">${sumAprC.toLocaleString()}</td><td class="p-3.5">${sumMayC.toLocaleString()}</td><td class="p-3.5">${sumJunC.toLocaleString()}</td><td class="p-3.5 text-emerald-300">${sumQ1AchC.toLocaleString()}</td><td class="p-3.5 text-center text-amber-300">${sumQ1CountTgt > 0 ? ((sumQ1AchC/sumQ1CountTgt)*100).toFixed(1) : 0}%</td></tr>`;
@@ -1289,9 +1286,9 @@
             document.getElementById('momTableHead').innerHTML = `<tr class="bg-amber-950 text-white font-bold text-xs uppercase"><th class="p-3">Division Name</th><th class="p-3">Vertical</th><th class="p-3 bg-amber-900">Apr Rev</th><th class="p-3 bg-amber-900">May Rev</th><th class="p-3 bg-amber-800 text-amber-200">May/Apr %</th><th class="p-3 bg-amber-900">Jun Rev</th><th class="p-3 bg-amber-800 text-amber-200">Jun/May %</th><th class="p-3 bg-amber-900">Jul Rev</th><th class="p-3 bg-amber-800 text-amber-200">Jul/Jun %</th><th class="p-3 bg-amber-900">Aug Rev</th><th class="p-3 bg-amber-800 text-amber-200">Aug/Jul %</th></tr>`;
             let rows = [];
             revenueRecords.filter(r => (div === 'ALL' || isMatchingDivision(r.divName, div)) && (vert === 'ALL' || r.vertical === vert)).forEach(r => {
-                let apR = r.apr, myR = r.may, jnR = r.jun, jlR = r.jul, agR = r.aug;
+                let apR = r.apr, mayVal = r.may, jnR = r.jun, jlR = r.jul, agR = r.aug;
                 let formatG = (v) => v >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${v}%</span>` : `<span class="text-rose-600 font-bold">▼ ${v}%</span>`;
-                rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs">${r.vertical}</td><td class="p-2.5">${apR.toFixed(3)}</td><td class="p-2.5">${myR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(apR>0?(((myR-apR)/apR)*100).toFixed(1):0)}</td><td class="p-2.5">${jnR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(myR>0?(((jnR-myR)/myR)*100).toFixed(1):0)}</td><td class="p-2.5">${jlR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(jnR>0?(((jlR-jnR)/jnR)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-100">${formatG(jlR>0?(((agR-jlR)/jlR)*100).toFixed(1):0)}</td></tr>`);
+                rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs">${r.vertical}</td><td class="p-2.5">${apR.toFixed(3)}</td><td class="p-2.5">${mayVal.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(apR>0?(((mayVal-apR)/apR)*100).toFixed(1):0)}</td><td class="p-2.5">${jnR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(mayVal>0?(((jnR-mayVal)/mayVal)*100).toFixed(1):0)}</td><td class="p-2.5">${jlR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(jnR>0?(((jlR-jnR)/jnR)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-100">${formatG(jlR>0?(((agR-jlR)/jlR)*100).toFixed(1):0)}</td></tr>`);
             });
             document.getElementById('momTableBody').innerHTML = rows.join(''); document.getElementById('momTableFoot').innerHTML = '';
         }
@@ -1302,20 +1299,20 @@
             let formatG = (v) => v >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${v}%</span>` : `<span class="text-rose-600 font-bold">▼ ${v}%</span>`;
 
             countRecords.filter(r => ['PARCEL', 'MAIL', 'IRGB'].includes(r.vertical) && (div === 'ALL' || isMatchingDivision(r.divName, div)) && (vert === 'ALL' || r.vertical === vert)).forEach(r => {
-                let apC = r.apr, myC = r.may, jnC = r.jun, jlC = r.jul, agC = r.aug;
-                rows.push(`<tr class="hover:bg-indigo-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs font-semibold text-indigo-800">${r.vertical}</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${myC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(apC>0?(((myC-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(myC>0?(((jnC-myC)/myC)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-indigo-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
+                let apC = r.apr, mayVal = r.may, jnC = r.jun, jlC = r.jul, agC = r.aug;
+                rows.push(`<tr class="hover:bg-indigo-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs font-semibold text-indigo-800">${r.vertical}</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-indigo-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
             });
 
             if (vert === 'ALL' || vert === 'SB') {
                 DIVISIONS.forEach(dName => {
                     if (div !== 'ALL' && !isMatchingDivision(dName, div)) return;
                     let apC = (SBN_CURRENT_NET['apr'] && SBN_CURRENT_NET['apr'][dName]) ? SBN_CURRENT_NET['apr'][dName] : 0;
-                    let myC = (SBN_CURRENT_NET['may'] && SBN_CURRENT_NET['may'][dName]) ? SBN_CURRENT_NET['may'][dName] : 0;
+                    let mayVal = (SBN_CURRENT_NET['may'] && SBN_CURRENT_NET['may'][dName]) ? SBN_CURRENT_NET['may'][dName] : 0;
                     let jnC = (SBN_CURRENT_NET['jun'] && SBN_CURRENT_NET['jun'][dName]) ? SBN_CURRENT_NET['jun'][dName] : 0;
                     let jlC = (SBN_CURRENT_NET['jul'] && SBN_CURRENT_NET['jul'][dName]) ? SBN_CURRENT_NET['jul'][dName] : 0;
                     let agC = (SBN_CURRENT_NET['aug'] && SBN_CURRENT_NET['aug'][dName]) ? SBN_CURRENT_NET['aug'][dName] : 0;
 
-                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${myC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((myC-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(myC>0?(((jnC-myC)/myC)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
+                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
                 });
             }
 
@@ -1488,23 +1485,32 @@
                 });
             }
 
+            /* सुधारित वर्टिकल ब्रेकडाउन चार्ट जो 5 वर्टिकल्स के रेवेन्यू अनुपात को सही रूप से दर्शाता है */
             const ctx2 = document.getElementById('secondaryChart').getContext('2d');
             if (secondChart) secondChart.destroy();
             
-            let divDataset = fullDataset.filter(r => (selectedDiv === 'ALL') || isMatchingDivision(r.divName, selectedDiv));
-            let parcelVal = divDataset.filter(x => x.vertical === 'PARCEL').reduce((a, b) => a + b.aug, 0);
-            let mailVal = divDataset.filter(x => x.vertical === 'MAIL').reduce((a, b) => a + b.aug, 0);
-            let irgbVal = divDataset.filter(x => x.vertical === 'IRGB').reduce((a, b) => a + b.aug, 0);
-            let posbVal = divDataset.filter(x => x.vertical === 'SB').reduce((a, b) => a + b.aug, 0);
-            let pliVal = divDataset.filter(x => x.vertical === 'PLI').reduce((a, b) => a + b.aug, 0);
+            let vertRevenueTotals = { "PARCEL": 0, "MAIL": 0, "IRGB": 0, "SB": 0, "PLI": 0 };
+            revenueRecords.forEach(r => {
+                if (selectedDiv === 'ALL' || isMatchingDivision(r.divName, selectedDiv)) {
+                    if (vertRevenueTotals[r.vertical] !== undefined) {
+                        vertRevenueTotals[r.vertical] += (r.totalAch || 0);
+                    }
+                }
+            });
 
             secondChart = new Chart(ctx2, {
                 type: 'doughnut',
                 data: { 
-                    labels: ['Parcel', 'Mail Operations', 'IRGB', 'POSB', 'PLI'], 
+                    labels: ['Parcel', 'Mail Operations', 'IRGB', 'POSB Schemes', 'PLI / RPLI'], 
                     datasets: [{ 
-                        data: [parcelVal, mailVal, irgbVal, posbVal, pliVal], 
-                        backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#14b8a6'] 
+                        data: [
+                            vertRevenueTotals["PARCEL"], 
+                            vertRevenueTotals["MAIL"], 
+                            vertRevenueTotals["IRGB"], 
+                            vertRevenueTotals["SB"], 
+                            vertRevenueTotals["PLI"]
+                        ], 
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899'] 
                     }] 
                 },
                 options: { responsive: true, maintainAspectRatio: false }
