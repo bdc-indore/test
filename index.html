@@ -278,7 +278,7 @@
                                 <th class="py-3 px-3" id="thDigitalSubDiv" style="display:none;">Sub-Division</th>
                                 <th class="py-3 px-2 text-right">Cash (Cnt)</th>
                                 <th class="py-3 px-2 text-right">DQR Scan (Cnt)</th>
-                                <th class="py-3 px-2 text-right">SBIPOS BHARAT QR (Cnt)</th>
+                                <th class="py-3 px-2 text-right">SBIPOS Bharat QR (Cnt)</th>
                                 <th class="py-3 px-3 text-center">% of Digital Txn</th>
                             </tr>
                         </thead>
@@ -945,7 +945,7 @@
         }
 
         // ==========================================
-        // DIGITAL TXN & COD REPORT LOGIC (PERFECTLY FIXED)
+        // DIGITAL TXN & COD REPORT LOGIC (BO FILTER READY)
         // ==========================================
         function openDigitalModal() {
             document.getElementById('digitalModal').classList.remove('hidden');
@@ -992,7 +992,7 @@
             if (!digitalRawData || digitalRawData.length === 0) return;
 
             const viewType = document.getElementById('digitalViewType').value;
-            const boFilter = document.getElementById('digitalBoFilter').value;
+            const boFilter = document.getElementById('digitalBoFilter').value; // 'including' or 'excluding'
             const thSubDiv = document.getElementById('thDigitalSubDiv');
 
             if (viewType === 'subdivision') {
@@ -1006,7 +1006,6 @@
             digitalRawData.forEach(row => {
                 let rowKeys = Object.keys(row);
                 
-                // Identify Office ID or Name key
                 let oIdKey = rowKeys.find(k => {
                     let lk = k.toLowerCase();
                     return lk.includes('office') || lk.includes('facility') || lk.includes('id') || lk.includes('name');
@@ -1014,8 +1013,7 @@
                 
                 let oIdVal = String(row[oIdKey] || "").trim();
 
-                // 🛑 Ignore summary / total rows to prevent "UNKNOWN DIVISION"
-                if (!oIdVal || oIdVal.toUpperCase().includes('TOTAL') || oIdVal.toUpperCase().includes('SUMMARY') || oIdVal.toUpperCase().includes('GRAND')) {
+                if (!oIdVal || oIdVal.toUpperCase().includes('SUMMARY') || oIdVal.toUpperCase().includes('TOTAL') || oIdVal.toUpperCase().includes('GRAND')) {
                     return;
                 }
 
@@ -1027,32 +1025,16 @@
                     division: "UNKNOWN DIVISION" 
                 };
 
-                // If master division is missing or unknown, check if the row itself has a division/subdivision column
-                let rowDivision = master.division;
-                let rowSubDiv = master.sd;
-
-                rowKeys.forEach(k => {
-                    let lk = k.toLowerCase();
-                    let valStr = String(row[k] || "").trim();
-                    if ((lk.includes('division') && !lk.includes('sub')) && (!rowDivision || rowDivision === "UNKNOWN DIVISION")) {
-                        if (valStr && !valStr.toUpperCase().includes('TOTAL')) rowDivision = valStr.toUpperCase();
-                    }
-                    if (lk.includes('sub') && (!rowSubDiv || rowSubDiv === "UNKNOWN SD")) {
-                        if (valStr && !valStr.toUpperCase().includes('TOTAL')) rowSubDiv = valStr.toUpperCase();
-                    }
-                });
-
-                if (rowDivision === "UNKNOWN DIVISION" && master.name && !master.name.match(/^\d+$/)) {
-                    // Fallback division assignment if text name is present
-                    rowDivision = "INDORE CITY DIVISION"; 
-                }
-
+                // 🛑 EXCLUDING BO CHECK: If option is excluding and office class is BO, skip it!
                 if (boFilter === 'excluding' && master.class === 'BO') {
                     return; 
                 }
 
-                let division = rowDivision.toUpperCase();
-                let subDivision = rowSubDiv.toUpperCase();
+                let rowDivision = master.division;
+                let rowSubDiv = master.sd;
+
+                let division = (rowDivision || "UNKNOWN DIVISION").toUpperCase();
+                let subDivision = (rowSubDiv || "UNKNOWN SD").toUpperCase();
                 let key = viewType === 'subdivision' ? (division + "||" + subDivision) : division;
 
                 if (!groupMap[key]) {
@@ -1065,33 +1047,21 @@
                     };
                 }
 
-                // 🎯 Strictly target exact headers from photo and parse as integer COUNTS (not amounts)
                 let cashVal = 0, dqrVal = 0, qrVal = 0;
 
                 rowKeys.forEach(k => {
                     let lk = k.toLowerCase().trim();
-                    // Parse strictly as integer count
                     let val = parseInt(String(row[k]).replace(/,/g, ''), 10) || 0;
                     if (val < 0) val = 0;
 
-                    if (lk === 'cash (cnt)' || lk === 'cash' || lk.includes('cash')) {
+                    if (lk === 'cash (cnt)') {
                         cashVal += val;
-                    } else if (lk === 'dqr scan (cnt)' || lk === 'dqr scan' || lk === 'dqr' || lk.includes('dqr')) {
+                    } else if (lk === 'dqr scan (cnt)') {
                         dqrVal += val;
-                    } else if (lk === 'sbipos bharat qr (cnt)' || lk === 'sbipos' || lk === 'bharat qr' || lk.includes('qr') || lk.includes('upi')) {
+                    } else if (lk.includes('sbipos') || lk.includes('bharat qr (cnt)')) {
                         qrVal += val;
                     }
                 });
-
-                // Fallback position based count extraction if exact names not matched
-                if (cashVal === 0 && dqrVal === 0 && qrVal === 0) {
-                    let numericVals = rowKeys.map(k => parseInt(String(row[k]).replace(/,/g, ''), 10)).filter(v => !isNaN(v) && v >= 0);
-                    if (numericVals.length >= 3) {
-                        cashVal = numericVals[numericVals.length - 3];
-                        dqrVal = numericVals[numericVals.length - 2];
-                        qrVal = numericVals[numericVals.length - 1];
-                    }
-                }
 
                 groupMap[key].cash += cashVal;
                 groupMap[key].dqr += dqrVal;
@@ -1117,7 +1087,7 @@
                     <th class="py-3 px-3">Sub-Division</th>
                     <th class="py-3 px-2 text-right">Cash (Cnt)</th>
                     <th class="py-3 px-2 text-right">DQR Scan (Cnt)</th>
-                    <th class="py-3 px-2 text-right">SBIPOS BHARAT QR (Cnt)</th>
+                    <th class="py-3 px-2 text-right">SBIPOS Bharat QR (Cnt)</th>
                     <th class="py-3 px-3 text-center">% of Digital Txn</th>
                 `;
             } else {
@@ -1125,7 +1095,7 @@
                     <th class="py-3 px-3">Division</th>
                     <th class="py-3 px-2 text-right">Cash (Cnt)</th>
                     <th class="py-3 px-2 text-right">DQR Scan (Cnt)</th>
-                    <th class="py-3 px-2 text-right">SBIPOS BHARAT QR (Cnt)</th>
+                    <th class="py-3 px-2 text-right">SBIPOS Bharat QR (Cnt)</th>
                     <th class="py-3 px-3 text-center">% of Digital Txn</th>
                 `;
             }
@@ -1202,7 +1172,7 @@
                 if (viewType === 'subdivision') obj["Sub-Division"] = item.subDivision;
                 obj["Cash (Cnt)"] = item.cash;
                 obj["DQR Scan (Cnt)"] = item.dqr;
-                obj["SBIPOS BHARAT QR (Cnt)"] = item.sbipos;
+                obj["SBIPOS Bharat QR (Cnt)"] = item.sbipos;
                 obj["% of Digital Txn"] = digPct;
                 return obj;
             });
