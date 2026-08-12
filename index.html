@@ -268,8 +268,8 @@
                     <div>
                         <label class="block text-xs font-bold uppercase text-amber-900 mb-1">⚙️ BO Inclusion Report Option</label>
                         <select id="digitalBoFilter" onchange="processDigitalData()" class="w-full border border-amber-300 rounded-lg p-2 text-xs bg-white font-bold">
-                            <option value="including">Including BO (SO + HO + BO)</option>
                             <option value="excluding">Excluding BO (SO + HO Only)</option>
+                            <option value="including">Including BO (SO + HO + BO)</option>
                         </select>
                     </div>
                 </div>
@@ -278,11 +278,11 @@
                         <thead>
                             <tr style="background-color: #f7caac; color: #000000;" class="text-xs font-bold uppercase border-b border-amber-900">
                                 <th class="py-3 px-3">Division</th>
-                                <th class="py-3 px-3" id="thSubDiv" style="display:none;">Sub-Division</th>
-                                <th class="py-3 px-2 text-right">Total COD Received</th>
-                                <th class="py-3 px-2 text-right">Digital Delivery</th>
-                                <th class="py-3 px-2 text-right">Cash Delivery</th>
-                                <th class="py-3 px-3 text-center">% of Digital Delivery</th>
+                                <th class="py-3 px-3" id="thDigitalSubDiv" style="display:none;">Sub-Division</th>
+                                <th class="py-3 px-2 text-right">Cash (Cnt)</th>
+                                <th class="py-3 px-2 text-right">DQR Scan (Cnt)</th>
+                                <th class="py-3 px-2 text-right">SBIPOS BHARAT QR (Cnt)</th>
+                                <th class="py-3 px-3 text-center">% of Digital Txn</th>
                             </tr>
                         </thead>
                         <tbody class="text-xs md:text-sm divide-y divide-amber-100 text-slate-700">
@@ -423,8 +423,6 @@
     <script>
         const MASTER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=0&single=true&output=csv";
         const MAPPING_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1575541045&single=true&output=csv";
-        
-        // 👉 IDP Sheet Published CSV Link
         const IDP_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1439866773&single=true&output=csv";
 
         let masterOfficesMap = {}, serviceMapping = {}, rawData = [], digitalRawData = [], pliRawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
@@ -432,6 +430,7 @@
         let idpCredentialsMap = {};
         let generatedReportsLog = [];
         let loggedInAdminId = "";
+        let currentDigitalMode = 'booking'; // 'booking' or 'cod'
 
         function logGeneratedReport(reportName, exportFunction) {
             const now = new Date();
@@ -949,244 +948,225 @@
         }
 
         // ==========================================
-        // PLI / RPLI NIL TRANSACTION REPORT LOGIC
+        // DIGITAL TXN & COD REPORT LOGIC
         // ==========================================
-        function openPliModal() {
-            document.getElementById('pliModal').classList.remove('hidden');
+        function openDigitalModal() {
+            document.getElementById('digitalModal').classList.remove('hidden');
         }
 
-        function closePliModal() {
-            document.getElementById('pliModal').classList.add('hidden');
+        function closeDigitalModal() {
+            document.getElementById('digitalModal').classList.add('hidden');
         }
 
-        document.getElementById('pliFileInput').addEventListener('change', function(e) {
+        function switchDigitalMode(mode) {
+            currentDigitalMode = mode;
+            const btnBooking = document.getElementById('btnModeBooking');
+            const btnCod = document.getElementById('btnModeCod');
+            const mainTitle = document.getElementById('digitalModalMainTitle');
+            const subTitle = document.getElementById('digitalModalSubTitle');
+
+            if (mode === 'booking') {
+                btnBooking.className = "p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-800 bg-amber-800 text-white shadow-md cursor-pointer transition-all";
+                btnCod.className = "p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 shadow-sm cursor-pointer transition-all";
+                mainTitle.textContent = "📲 Digital Booking Txn Status Report";
+                subTitle.textContent = "Upload Raw Excel to analyze Cash vs. Digital Transactions";
+            } else {
+                btnCod.className = "p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-800 bg-amber-800 text-white shadow-md cursor-pointer transition-all";
+                btnBooking.className = "p-3.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 shadow-sm cursor-pointer transition-all";
+                mainTitle.textContent = "💵 COD Digital Txn Status Report";
+                subTitle.textContent = "Upload COD Raw Excel to analyze Cash vs. Digital Delivery";
+            }
+            if (digitalRawData.length > 0) {
+                processDigitalData();
+            }
+        }
+
+        document.getElementById('digitalFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-
-            const statusEl = document.getElementById('pliUploadStatus');
-            statusEl.innerHTML = `🔄 Reading Large Excel File (Chunked)...`;
-            statusEl.className = "text-xs font-bold text-amber-900 bg-amber-200 p-2.5 rounded-xl border border-amber-400 inline-block animate-pulse";
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    let data = e.target.result;
-                    let workbook = XLSX.read(data, {type: 'array', cellDates: true, dense: true});
-                    const sheetName = workbook.SheetNames[0];
-                    const sheet = workbook.Sheets[sheetName];
-                    
-                    statusEl.innerHTML = `🔄 Parsing rows & mapping BO offices...`;
-
-                    setTimeout(() => {
-                        const jsonRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
-                        
-                        let indoreBoMaster = {};
-                        Object.entries(masterOfficesMap).forEach(([id, m]) => {
-                            const cls = String(m.class || "").toUpperCase();
-                            const div = String(m.division || "").toUpperCase();
-                            const ro = String(m.ro || "").toUpperCase();
-                            if (cls === "BO" && (!ro || ro.includes("INDORE") || ["INDORE", "UJJAIN", "KHANDWA", "DEWAS", "DHAR", "KHARGONE", "MANDSAUR", "NEEMUCH", "RATLAM", "SHAJAPUR"].includes(div))) {
-                                indoreBoMaster[id] = m;
-                            }
-                        });
-
-                        if (Object.keys(indoreBoMaster).length === 0) {
-                            Object.entries(masterOfficesMap).forEach(([id, m]) => {
-                                if (String(m.class).toUpperCase() === "BO") indoreBoMaster[id] = m;
-                            });
-                        }
-
-                        pliRawData = [];
-                        for (let i = 1; i < jsonRows.length; i++) {
-                            const row = jsonRows[i];
-                            if (!row || row.length === 0) continue;
-
-                            let oId = String(row[8] || row[0] || "").trim();
-                            oId = oId.replace(/\.0$/, '');
-
-                            if (!oId) continue;
-
-                            let transCount = 0;
-                            for (let j = 0; j < row.length; j++) {
-                                let val = Number(row[j]);
-                                if (!isNaN(val) && val >= 0 && val < 500000 && j !== 8) {
-                                    transCount = val;
-                                }
-                            }
-
-                            pliRawData.push({
-                                officeId: oId,
-                                transCount: transCount
-                            });
-                        }
-
-                        statusEl.innerHTML = `✅ Uploaded Successfully! (${Object.keys(indoreBoMaster).length} Indore Region BO Master Offices matched)`;
-                        statusEl.className = "text-xs font-bold text-emerald-900 bg-emerald-200 p-2.5 rounded-xl border border-emerald-400 inline-block";
-                        
-                        processPliData(indoreBoMaster);
-                        logGeneratedReport("PLI / RPLI Nil Transaction Report (Indore Region BO)", () => exportPliExcel());
-                    }, 50);
-
-                } catch (err) {
-                    console.error("Large File Parsing Error:", err);
-                    statusEl.innerHTML = `❌ Error reading file. Try CSV format.`;
-                    statusEl.className = "text-xs font-bold text-rose-900 bg-rose-200 p-2.5 rounded-xl border border-rose-400 inline-block";
-                }
-            };
-            reader.readAsArrayBuffer(file);
+            parseExcelFile(file, function(json) {
+                digitalRawData = json;
+                processDigitalData();
+                logGeneratedReport("Digital Txn Report Analysis", () => {});
+            });
         });
 
-        function processPliData(indoreBoMaster) {
-            const tbody = document.querySelector('#tablePliSummary tbody');
-            const tfoot = document.querySelector('#tablePliSummary tfoot');
-            tbody.innerHTML = ""; tfoot.innerHTML = "";
+        function processDigitalData() {
+            if (!digitalRawData || digitalRawData.length === 0) return;
 
-            const officeTxnMap = {};
-            pliRawData.forEach(item => {
-                officeTxnMap[item.officeId] = (officeTxnMap[item.officeId] || 0) + item.transCount;
-            });
+            const viewType = document.getElementById('digitalViewType').value;
+            const boFilter = document.getElementById('digitalBoFilter').value;
+            const thSubDiv = document.getElementById('thDigitalSubDiv');
 
-            currentNilPliOfficesList = [];
-            Object.entries(indoreBoMaster).forEach(([id, m]) => {
-                const hasEntryInExcel = officeTxnMap.hasOwnProperty(id);
-                const txn = officeTxnMap[id] || 0;
-                if (hasEntryInExcel && txn === 0) {
-                    currentNilPliOfficesList.push({
-                        officeId: id,
-                        officeName: m.name,
-                        subDivision: m.sd,
-                        division: m.division
-                    });
+            if (viewType === 'subdivision') {
+                thSubDiv.style.display = '';
+            } else {
+                thSubDiv.style.display = 'none';
+            }
+
+            // Aggregate data by Division or Sub-Division based on master offices
+            const groupMap = {};
+
+            digitalRawData.forEach(row => {
+                // Try finding office ID or name from various possible columns
+                let oId = String(row["office-id"] || row["Office ID"] || row["Facility ID"] || row["Office ID/Name"] || Object.values(row)[0] || "").trim();
+                oId = oId.replace(/\.0$/, '');
+
+                const master = masterOfficesMap[oId] || { name: String(Object.values(row)[1] || "Unknown").trim(), class: "SO", sd: "UNKNOWN SD", division: "UNKNOWN DIVISION" };
+
+                // BO filtering check
+                if (boFilter === 'excluding' && master.class === 'BO') {
+                    return; // Skip BOs if excluding
                 }
-            });
 
-            const sdMap = {};
-            Object.entries(indoreBoMaster).forEach(([id, m]) => {
-                const div = m.division || "UNKNOWN DIVISION";
-                const sd = m.sd || "UNKNOWN SD";
-                const key = div + "||" + sd;
-                if (!sdMap[key]) {
-                    sdMap[key] = {
-                        division: div,
-                        sd: sd,
-                        offices: [],
-                        nilOffices: 0,
-                        above10Offices: 0,
-                        totalTxn: 0
+                let division = (master.division || "UNKNOWN DIVISION").toUpperCase();
+                let subDivision = (master.sd || "UNKNOWN SD").toUpperCase();
+
+                let key = viewType === 'subdivision' ? (division + "||" + subDivision) : division;
+
+                if (!groupMap[key]) {
+                    groupMap[key] = {
+                        division: division,
+                        subDivision: subDivision,
+                        cash: 0,
+                        dqr: 0,
+                        sbipos: 0
                     };
                 }
-                sdMap[key].offices.push(id);
+
+                // Detect numerical values across columns for Cash, DQR, SBIPOS QR
+                let vals = Object.values(row).map(v => Number(v) || 0).filter(v => v >= 0 && v < 1000000);
+                
+                // Intelligent fallback extraction if specific headers exist or position based
+                let cashVal = Number(row["Cash (Cnt)"] || row["Cash"] || row["Cash Count"] || vals[0] || 0);
+                let dqrVal = Number(row["DQR Scan (Cnt)"] || row["DQR Scan"] || row["DQR"] || vals[1] || 0);
+                let qrVal = Number(row["SBIPOS BHARAT QR (Cnt)"] || row["SBIPOS"] || row["Bharat QR"] || vals[2] || 0);
+
+                groupMap[key].cash += cashVal;
+                groupMap[key].dqr += dqrVal;
+                groupMap[key].sbipos += qrVal;
             });
 
-            Object.values(sdMap).forEach(item => {
-                let nilCount = 0;
-                let above10Count = 0;
-                let sdTotalTxn = 0;
+            currentDigitalProcessedList = Object.values(groupMap);
+            renderDigitalTable(currentDigitalProcessedList, viewType);
+        }
 
-                item.offices.forEach(id => {
-                    const hasEntryInExcel = officeTxnMap.hasOwnProperty(id);
-                    const txn = officeTxnMap[id] || 0;
+        function renderDigitalTable(dataList, viewType) {
+            const table = document.getElementById('digitalStatusTable');
+            const theadTr = table.querySelector('thead tr');
+            const tbody = table.querySelector('tbody');
+            const tfoot = table.querySelector('tfoot');
 
-                    if (hasEntryInExcel) {
-                        sdTotalTxn += txn;
-                        if (txn === 0) {
-                            nilCount++;
-                        } else if (txn > 10) {
-                            above10Count++;
-                        }
-                    } else {
-                        above10Count++;
-                    }
-                });
+            tbody.innerHTML = "";
+            tfoot.innerHTML = "";
 
-                item.totalOffices = item.offices.length;
-                item.nilOffices = nilCount;
-                item.above10Offices = above10Count;
-                item.totalTxn = sdTotalTxn;
-            });
+            if (viewType === 'subdivision') {
+                theadTr.innerHTML = `
+                    <th class="py-3 px-3">Division</th>
+                    <th class="py-3 px-3">Sub-Division</th>
+                    <th class="py-3 px-2 text-right">Cash (Cnt)</th>
+                    <th class="py-3 px-2 text-right">DQR Scan (Cnt)</th>
+                    <th class="py-3 px-2 text-right">SBIPOS BHARAT QR (Cnt)</th>
+                    <th class="py-3 px-3 text-center">% of Digital Txn</th>
+                `;
+            } else {
+                theadTr.innerHTML = `
+                    <th class="py-3 px-3">Division</th>
+                    <th class="py-3 px-2 text-right">Cash (Cnt)</th>
+                    <th class="py-3 px-2 text-right">DQR Scan (Cnt)</th>
+                    <th class="py-3 px-2 text-right">SBIPOS BHARAT QR (Cnt)</th>
+                    <th class="py-3 px-3 text-center">% of Digital Txn</th>
+                `;
+            }
 
-            currentPliProcessedList = Object.values(sdMap);
+            let totCash = 0, totDqr = 0, totQr = 0;
 
-            let gTotalOff = 0, gNilOff = 0, gAbv10Off = 0, gTotTxn = 0;
+            dataList.forEach(item => {
+                totCash += item.cash;
+                totDqr += item.dqr;
+                totQr += item.sbipos;
 
-            currentPliProcessedList.forEach((item) => {
-                gTotalOff += item.totalOffices;
-                gNilOff += item.nilOffices;
-                gAbv10Off += item.above10Offices;
-                gTotTxn += item.totalTxn;
+                let totalTxn = item.cash + item.dqr + item.sbipos;
+                let digitalTxn = item.dqr + item.sbipos;
+                let digPct = totalTxn > 0 ? ((digitalTxn / totalTxn) * 100).toFixed(2) : "0.00";
 
-                const nilPct = item.totalOffices > 0 ? ((item.nilOffices / item.totalOffices) * 100).toFixed(1) : "0.0";
-                const above10Pct = item.totalOffices > 0 ? ((item.above10Offices / item.totalOffices) * 100).toFixed(1) : "0.0";
+                // Color code like reference image
+                let colorClass = "bg-emerald-100 text-emerald-800";
+                let numPct = parseFloat(digPct);
+                if (numPct < 60) colorClass = "bg-rose-100 text-rose-800";
+                else if (numPct < 75) colorClass = "bg-amber-100 text-amber-900";
+                else if (numPct < 85) colorClass = "bg-yellow-100 text-yellow-900";
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-amber-50 border-b border-amber-100";
-                tr.innerHTML = `
-                    <td class="py-3 px-3 font-bold text-[#4B1D24]">${item.division}</td>
-                    <td class="py-3 px-3 font-bold text-blue-900">${item.sd}</td>
-                    <td class="py-3 px-2 text-center font-semibold">${item.totalOffices}</td>
-                    <td class="py-3 px-2 text-center font-bold text-[#8B0000] bg-rose-50/50">${item.nilOffices}</td>
-                    <td class="py-3 px-2 text-center font-bold text-indigo-800 bg-indigo-50/50">${item.above10Offices}</td>
-                    <td class="py-3 px-2 text-right font-bold text-emerald-800">${item.totalTxn.toLocaleString('en-IN')}</td>
-                    <td class="py-3 px-3 text-center font-extrabold text-rose-700 bg-rose-100/60">${nilPct}%</td>
-                    <td class="py-3 px-3 text-center font-extrabold text-indigo-700 bg-indigo-100/60">${above10Pct}%</td>
-                `;
+                
+                if (viewType === 'subdivision') {
+                    tr.innerHTML = `
+                        <td class="py-3 px-3 font-bold text-[#4B1D24]">${item.division}</td>
+                        <td class="py-3 px-3 font-bold text-blue-900">${item.subDivision}</td>
+                        <td class="py-3 px-2 text-right font-semibold">${item.cash.toLocaleString('en-IN')}</td>
+                        <td class="py-3 px-2 text-right font-semibold">${item.dqr.toLocaleString('en-IN')}</td>
+                        <td class="py-3 px-2 text-right font-semibold">${item.sbipos.toLocaleString('en-IN')}</td>
+                        <td class="py-3 px-3 text-center font-extrabold"><span class="${colorClass} px-2.5 py-1 rounded-full">${digPct}%</span></td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="py-3 px-3 font-bold text-[#4B1D24]">${item.division}</td>
+                        <td class="py-3 px-2 text-right font-semibold">${item.cash.toLocaleString('en-IN')}</td>
+                        <td class="py-3 px-2 text-right font-semibold">${item.dqr.toLocaleString('en-IN')}</td>
+                        <td class="py-3 px-2 text-right font-semibold">${item.sbipos.toLocaleString('en-IN')}</td>
+                        <td class="py-3 px-3 text-center font-extrabold"><span class="${colorClass} px-2.5 py-1 rounded-full">${digPct}%</span></td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
 
-            const gNilPct = gTotalOff > 0 ? ((gNilOff / gTotalOff) * 100).toFixed(1) : "0.0";
-            const gAbv10Pct = gTotalOff > 0 ? ((gAbv10Off / gTotalOff) * 100).toFixed(1) : "0.0";
+            let gTotTxn = totCash + totDqr + totQr;
+            let gDigTxn = totDqr + totQr;
+            let gDigPct = gTotTxn > 0 ? ((gDigTxn / gTotTxn) * 100).toFixed(2) : "0.00";
+            let colspanVal = viewType === 'subdivision' ? 2 : 1;
 
             tfoot.innerHTML = `
                 <tr class="report-grand text-xs bg-[#4B1D24] text-white font-bold">
-                    <td colspan="2" class="py-3 px-3">GRAND TOTAL (INDORE REGION - BO)</td>
-                    <td class="py-3 px-2 text-center">${gTotalOff}</td>
-                    <td class="py-3 px-2 text-center text-rose-200">${gNilOff}</td>
-                    <td class="py-3 px-2 text-center text-indigo-200">${gAbv10Off}</td>
-                    <td class="py-3 px-2 text-right text-amber-200">${gTotTxn.toLocaleString('en-IN')}</td>
-                    <td class="py-3 px-3 text-center text-amber-300">${gNilPct}%</td>
-                    <td class="py-3 px-3 text-center text-amber-300">${gAbv10Pct}%</td>
-                </tr>`;
+                    <td colspan="${colspanVal}" class="py-3 px-3">GRAND TOTAL</td>
+                    <td class="py-3 px-2 text-right">${totCash.toLocaleString('en-IN')}</td>
+                    <td class="py-3 px-2 text-right">${totDqr.toLocaleString('en-IN')}</td>
+                    <td class="py-3 px-2 text-right">${totQr.toLocaleString('en-IN')}</td>
+                    <td class="py-3 px-3 text-center bg-amber-700 text-white">${gDigPct}%</td>
+                </tr>
+            `;
         }
 
-        function exportPliExcel() {
-            if (!currentPliProcessedList || currentPliProcessedList.length === 0) {
-                alert("No PLI report data available to export. Please upload raw file first.");
+        function exportDigitalExcel() {
+            if (!currentDigitalProcessedList || currentDigitalProcessedList.length === 0) {
+                alert("No digital report data available to export.");
                 return;
             }
+            const viewType = document.getElementById('digitalViewType').value;
+            const excelRows = currentDigitalProcessedList.map(item => {
+                let totalTxn = item.cash + item.dqr + item.sbipos;
+                let digitalTxn = item.dqr + item.sbipos;
+                let digPct = totalTxn > 0 ? Number(((digitalTxn / totalTxn) * 100).toFixed(2)) : 0;
+                
+                let obj = { "Division": item.division };
+                if (viewType === 'subdivision') obj["Sub-Division"] = item.subDivision;
+                obj["Cash (Cnt)"] = item.cash;
+                obj["DQR Scan (Cnt)"] = item.dqr;
+                obj["SBIPOS BHARAT QR (Cnt)"] = item.sbipos;
+                obj["% of Digital Txn"] = digPct;
+                return obj;
+            });
 
-            const workbook = XLSX.utils.book_new();
-
-            const excelRows1 = currentPliProcessedList.map(item => ({
-                "Name of Division": item.division,
-                "Name of SD": item.sd,
-                "Total Office in SD": item.totalOffices,
-                "Total Nil PLI/RPLI Txn Offices": item.nilOffices,
-                "Total Offices with >10 Txn": item.above10Offices,
-                "Total Txn in SD": item.totalTxn,
-                "% of Offices with Nil Txn": Number(((item.nilOffices / item.totalOffices) * 100).toFixed(2)),
-                "% of Offices with >10 Txn": Number(((item.above10Offices / item.totalOffices) * 100).toFixed(2))
-            }));
-            const ws1 = XLSX.utils.json_to_sheet(excelRows1);
-            XLSX.utils.book_append_sheet(workbook, ws1, "PLI_Summary_Report");
-
-            const excelRows2 = currentNilPliOfficesList.length > 0 ? currentNilPliOfficesList.map((o, idx) => ({
-                "S.No": idx + 1,
-                "Office ID": o.officeId,
-                "Branch Office Name (BO)": o.officeName,
-                "Sub-Division Name (SD)": o.subDivision,
-                "Division Name": o.division
-            })) : [{ "Message": "No Nil PLI transaction offices found" }];
-
-            const ws2 = XLSX.utils.json_to_sheet(excelRows2);
-            XLSX.utils.book_append_sheet(workbook, ws2, "Nil_PLI_Offices_List");
-
-            XLSX.writeFile(workbook, "PLI_Nil_Transaction_Report_Indore_Region_BO.xlsx");
-            logGeneratedReport("PLI Nil Transaction Report (2-Sheet Excel)", () => exportPliExcel());
+            const ws = XLSX.utils.json_to_sheet(excelRows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Digital_Txn_Report");
+            XLSX.writeFile(wb, "Digital_Booking_Txn_Status_Report.xlsx");
+            logGeneratedReport("Digital Txn Report (Excel)", () => exportDigitalExcel());
         }
 
-        function exportPliPDF() {
-            if (!currentPliProcessedList || currentPliProcessedList.length === 0) {
-                alert("No PLI report data available to export.");
+        function exportDigitalPDF() {
+            if (!currentDigitalProcessedList || currentDigitalProcessedList.length === 0) {
+                alert("No digital report data available to export.");
                 return;
             }
             const { jsPDF } = window.jspdf;
@@ -1201,11 +1181,11 @@
             doc.text("DEPARTMENT OF POSTS — REGIONAL OFFICE INDORE", 12, 11);
             doc.setFontSize(9);
             doc.setFont("helvetica", "normal");
-            doc.text("PLI / RPLI NIL TRANSACTION REPORT (INDORE REGION - BO ONLY)", 12, 16);
+            doc.text("DIGITAL TRANSACTION STATUS REPORT", 12, 16);
             doc.text("Date: " + getReportPreviousDateFormatted(), pageWidth - 50, 12);
 
             doc.autoTable({
-                html: '#tablePliSummary',
+                html: '#digitalStatusTable',
                 startY: 22,
                 margin: { top: 22, right: 10, bottom: 14, left: 10 },
                 theme: 'grid',
@@ -1219,20 +1199,8 @@
                     doc.text("Developed by Kapil Rajput, PA, Regional Office Indore", 12, pageHeight - 6);
                 }
             });
-            doc.save("PLI_Nil_Transaction_Report_Indore_Region_BO.pdf");
-            logGeneratedReport("PLI Nil Transaction Report (PDF)", () => exportPliPDF());
-        }
-
-        function exportPliJPEG() {
-            const container = document.getElementById('pliTableContainer');
-            if (!container) return;
-            html2canvas(container, { scale: 2 }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'PLI_Nil_Transaction_Report_Indore_Region_BO.jpg';
-                link.href = canvas.toDataURL('image/jpeg', 0.95);
-                link.click();
-            });
-            logGeneratedReport("PLI Nil Transaction Report (JPEG Image)", () => exportPliJPEG());
+            doc.save("Digital_Booking_Txn_Status_Report.pdf");
+            logGeneratedReport("Digital Txn Report (PDF)", () => exportDigitalPDF());
         }
 
         function openDrilldown(subDivisionName, divisionName) {
