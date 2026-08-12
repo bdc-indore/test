@@ -6,64 +6,72 @@
     <title>Booking & PLI Nil Txn Calculator - Department of Posts</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS, jsPDF, html2canvas -->
+    <!-- SheetJS for Excel import & export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <!-- html2canvas for JPEG export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
+        .report-header { background-color: #4B1D24; color: #ffffff; }
         .nil-table { border-collapse: collapse; width: 100%; font-size: 11px; text-align: center; }
-        .nil-table th, .nil-table td { border: 1px solid #cbd5e1; padding: 6px 8px; }
-        .nil-table th { background-color: #f8fafc; color: #1e293b; font-weight: 700; }
-        .clickable-cell { cursor: pointer; text-decoration: underline; color: #2563eb; }
-        .clickable-cell:hover { opacity: 0.8; }
+        .nil-table th, .nil-table td { border: 1px solid #707070; padding: 5px 8px; }
+        .nil-table th { background-color: #b8cce4; color: #000; font-weight: bold; }
+        .row-div-total { background-color: #fce4d6; font-weight: bold; color: #000; }
+        .row-grand-total { background-color: #bdd7ee; font-weight: bold; color: #000; font-size: 12px; }
+        .clickable-cell { cursor: pointer; text-decoration: underline; }
+        .clickable-cell:hover { opacity: 0.7; }
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+<body class="bg-amber-50/30 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between">
 
-    <!-- Modern Header -->
-    <header class="bg-slate-900 text-white shadow-md py-3 px-6 border-b border-slate-800">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+    <!-- Header -->
+    <header class="report-header shadow-xl py-4 px-4 md:px-8 border-b-4 border-amber-900">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
             <div class="flex items-center gap-3">
-                <div class="bg-white p-1.5 rounded-lg shadow-sm">
+                <div class="bg-white p-1.5 rounded-xl shadow-md border border-amber-300 flex items-center justify-center">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/c/c4/India_Post_Day_Block.png" 
                          onerror="this.src='https://www.indiapost.gov.in/VAS/Pages/images/IndiaPost_Logo.png';" 
-                         alt="India Post" class="h-8 w-auto object-contain"/>
+                         alt="India Post Logo" class="h-10 w-auto object-contain"/>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight">Booking & PLI Calculator</h1>
-                    <p class="text-xs text-slate-400">Department of Posts • Regional Office Indore</p>
+                    <h1 class="text-2xl font-extrabold tracking-tight">Booking & PLI Calculator</h1>
+                    <p class="text-xs text-amber-200 mt-0.5">Department of Posts - Regional Office Indore Analytics</p>
                 </div>
             </div>
-            <div class="flex items-center flex-wrap gap-2">
-                <span id="masterStatus" class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs px-2.5 py-1 rounded-full font-medium">Loading Master...</span>
-                <button onclick="openPliModal()" class="bg-slate-800 hover:bg-slate-700 text-xs font-medium px-3 py-2 rounded-lg border border-slate-700 transition">🛡️ PLI Nil Txn</button>
-                <button onclick="openDigitalModal()" class="bg-slate-800 hover:bg-slate-700 text-xs font-medium px-3 py-2 rounded-lg border border-slate-700 transition">📲 Digital Txn</button>
-                <button onclick="openAdminLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-xs font-medium px-3 py-2 rounded-lg border border-slate-700 transition">🔒 Admin</button>
-                <button onclick="exportAllToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-xs font-medium px-3 py-2 rounded-lg transition">📥 Excel</button>
-                <button onclick="exportAllToPDF()" class="bg-rose-600 hover:bg-rose-700 text-xs font-medium px-3 py-2 rounded-lg transition">📄 PDF</button>
+            <div class="flex items-center flex-wrap gap-3">
+                <span id="masterStatus" class="bg-amber-700 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow animate-pulse">Loading Master...</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="openPliModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow transition cursor-pointer">🛡️ PLI Nil Txn</button>
+                    <button onclick="openDigitalModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow transition cursor-pointer">📲 Digital Txn</button>
+                    <button onclick="openAdminLoginModal()" class="bg-slate-800 hover:bg-slate-900 text-amber-300 text-xs font-bold px-3 py-2 rounded-xl shadow transition cursor-pointer border border-amber-600">🔒 Admin</button>
+                    <button onclick="exportAllToExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow transition cursor-pointer">📥 Excel</button>
+                    <button onclick="exportAllToPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow transition cursor-pointer">📄 PDF</button>
+                </div>
             </div>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6 w-full flex-grow">
+    <main class="max-w-7xl mx-auto px-3 md:px-8 py-6 space-y-6 w-full flex-grow">
 
-        <!-- Controls Toolbar -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <!-- Controls Section -->
+        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-md border border-amber-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1.5">📁 Booking Raw File</label>
-                <input type="file" id="rawFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-200 rounded-lg bg-slate-50"/>
+                <label class="block text-xs font-bold uppercase text-amber-900 mb-2">📁 Booking Raw File</label>
+                <input type="file" id="rawFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-900 cursor-pointer border border-amber-300 rounded-xl p-1 bg-amber-50/50"/>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Division</label>
-                <select id="filterDivision" class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-slate-50 font-medium focus:ring-2 focus:ring-slate-900 outline-none">
+                <label class="block text-xs font-bold uppercase text-amber-900 mb-2">Select Division</label>
+                <select id="filterDivision" class="w-full border border-amber-300 rounded-xl p-2.5 text-sm bg-amber-50/50 font-medium">
                     <option value="All">All Divisions</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Office Class</label>
-                <select id="filterClass" class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-slate-50 font-medium focus:ring-2 focus:ring-slate-900 outline-none">
+                <label class="block text-xs font-bold uppercase text-amber-900 mb-2">Select Office Class</label>
+                <select id="filterClass" class="w-full border border-amber-300 rounded-xl p-2.5 text-sm bg-amber-50/50 font-medium">
                     <option value="All">All Classes</option>
                     <option value="BO">BO</option>
                     <option value="SO">SO</option>
@@ -71,81 +79,78 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Category</label>
-                <select id="filterCategory" class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-slate-50 font-medium focus:ring-2 focus:ring-slate-900 outline-none">
+                <label class="block text-xs font-bold uppercase text-amber-900 mb-2">Select Category</label>
+                <select id="filterCategory" class="w-full border border-amber-300 rounded-xl p-2.5 text-sm bg-amber-50/50 font-medium">
                     <option value="All">All Categories</option>
                 </select>
             </div>
         </div>
 
-        <!-- KPI Metrics Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Articles Booked</p>
-                <p id="kpiArticles" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+            <div class="bg-gradient-to-br from-[#4B1D24] to-slate-900 text-white p-5 rounded-2xl shadow-md">
+                <p class="text-xs font-bold uppercase tracking-wider text-amber-200">Total Articles Booked</p>
+                <p id="kpiArticles" class="text-3xl font-extrabold mt-2">0</p>
             </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Postage (₹)</p>
-                <p id="kpiPostage" class="text-2xl font-bold text-emerald-600 mt-1">0.00</p>
+            <div class="bg-gradient-to-br from-emerald-800 to-emerald-950 text-white p-5 rounded-2xl shadow-md">
+                <p class="text-xs font-bold uppercase tracking-wider text-emerald-200">Total Postage (₹)</p>
+                <p id="kpiPostage" class="text-3xl font-extrabold mt-2">0.00</p>
             </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Offices (Master)</p>
-                <p id="kpiOffices" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+            <div class="bg-gradient-to-br from-blue-900 to-slate-900 text-white p-5 rounded-2xl shadow-md">
+                <p class="text-xs font-bold uppercase tracking-wider text-blue-200">Total Offices (Master)</p>
+                <p id="kpiOffices" class="text-3xl font-extrabold mt-2">0</p>
             </div>
         </div>
 
         <!-- Section 1: Summary Report -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="sectionSummaryContainer">
-            <div class="px-5 py-3.5 bg-slate-100 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <h2 class="font-bold text-sm text-slate-800">📊 Division & Sub-Division Category-wise Report</h2>
-                <div class="flex items-center gap-2">
-                    <select id="summaryViewType" onchange="updateDashboard()" class="bg-white border border-slate-300 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded-lg outline-none cursor-pointer">
+        <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden" id="sectionSummaryContainer">
+            <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-center gap-3">
+                <h2 class="font-bold text-base">📊 Division & Sub-Division Category-wise Report</h2>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <select id="summaryViewType" onchange="updateDashboard()" class="bg-[#361318] text-white text-xs font-bold px-3 py-1.5 rounded-lg outline-none cursor-pointer">
                         <option value="subdivision">Sub-Division Wise</option>
                         <option value="division">Division Wise</option>
                     </select>
-                    <button onclick="exportTableToExcel('tableDivisionSummary', 'Summary_Report.xlsx')" class="bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition">📥 Excel</button>
-                    <button onclick="exportSingleTableToPDF('tableDivisionSummary', 'Summary Report')" class="bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition">📄 PDF</button>
-                    <button onclick="exportTableJPEG('sectionSummaryContainer', 'Summary_Report')" class="bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition">📸 JPEG</button>
+                    <button onclick="exportTableToExcel('tableDivisionSummary', 'Summary_Report.xlsx')" class="bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg shadow">📥 Excel</button>
+                    <button onclick="exportSingleTableToPDF('tableDivisionSummary', 'Summary Report')" class="bg-rose-800 text-white text-xs px-2.5 py-1.5 rounded-lg shadow">📄 PDF</button>
                 </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse" id="tableDivisionSummary">
-                    <thead><tr class="bg-slate-50 text-xs font-bold text-slate-700 border-b border-slate-200 uppercase"></tr></thead>
-                    <tbody class="text-xs divide-y divide-slate-100 text-slate-700"></tbody>
-                    <tfoot class="font-bold text-xs bg-slate-50 border-t border-slate-200"></tfoot>
+                    <thead><tr class="report-header text-xs font-bold border-b border-amber-900 uppercase"></tr></thead>
+                    <tbody class="text-xs md:text-sm divide-y divide-amber-100 text-slate-700"></tbody>
+                    <tfoot class="font-bold text-xs md:text-sm"></tfoot>
                 </table>
             </div>
         </div>
 
         <!-- Section 2: Nil Booking & Activity Status -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="sectionNilBookingContainer">
-            <div class="px-5 py-3.5 bg-slate-100 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <h2 class="font-bold text-sm text-slate-800">🏢 Nil Booking Report & Office Activity Status</h2>
+        <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden" id="sectionNilBookingContainer">
+            <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-center gap-3">
+                <h2 class="font-bold text-base">🏢 Nil Booking Report & Office Activity Status</h2>
                 <div class="flex items-center gap-2">
-                    <select id="nilFilterClass" onchange="updateDashboard()" class="bg-white border border-slate-300 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded-lg outline-none cursor-pointer">
+                    <select id="nilFilterClass" onchange="updateDashboard()" class="bg-[#361318] text-white text-xs font-bold px-3 py-1.5 rounded-lg outline-none cursor-pointer">
                         <option value="All">All Classes</option>
                         <option value="BO">BO</option>
                         <option value="SO">SO</option>
                         <option value="HO">HO</option>
                     </select>
-                    <button onclick="exportTableToExcel('tableNilBookingSummary', 'Nil_Booking_Report.xlsx')" class="bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition">📥 Excel</button>
-                    <button onclick="exportSingleTableToPDF('tableNilBookingSummary', 'Nil Booking Report')" class="bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition">📄 PDF</button>
-                    <button onclick="exportTableJPEG('sectionNilBookingContainer', 'Nil_Booking_Report')" class="bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition">📸 JPEG</button>
+                    <button onclick="exportTableToExcel('tableNilBookingSummary', 'Nil_Booking_Report.xlsx')" class="bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg shadow">📥 Excel</button>
                 </div>
             </div>
             <div class="overflow-x-auto p-3">
                 <table class="nil-table" id="tableNilBookingSummary">
                     <thead>
                         <tr>
-                            <th style="width: 5%;">S.No.</th>
-                            <th style="width: 15%;">Division</th>
-                            <th style="width: 20%;">Sub Division</th>
-                            <th style="width: 12%;">Total Offices</th>
-                            <th style="width: 12%;">NIL (0)</th>
-                            <th style="width: 12%;">Low (1-10)</th>
-                            <th style="width: 12%;">Good (>10)</th>
-                            <th style="width: 12%;">% NIL</th>
-                            <th style="width: 12%;">% Good</th>
+                            <th>S.No.</th>
+                            <th>Name of Division</th>
+                            <th>Name of Sub Dn</th>
+                            <th>Total Offices</th>
+                            <th>NIL (0) Offices</th>
+                            <th>Low Booking (1-10)</th>
+                            <th>Good Booking (>10)</th>
+                            <th>% NIL</th>
+                            <th>% Good</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -153,84 +158,72 @@
                 </table>
             </div>
         </div>
-
     </main>
 
-    <!-- Modals (Drilldown, Digital, PLI, Admin) -->
-    <div id="drilldownModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
-            <div class="px-5 py-4 bg-slate-900 text-white flex justify-between items-center">
+    <!-- Modal: Drilldown / Office Lists -->
+    <div id="drilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-amber-300">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
                 <div>
-                    <h3 id="modalTitle" class="font-bold text-sm">Office Details List</h3>
-                    <p id="modalSubtitle" class="text-xs text-slate-400">Detailed breakdown list</p>
+                    <h3 id="modalTitle" class="font-bold text-lg">Office Details List</h3>
+                    <p id="modalSubtitle" class="text-xs text-amber-200">Complete office list</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="exportModalToExcel()" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg">📥 Excel</button>
-                    <button onclick="closeModal()" class="bg-slate-800 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold">✕</button>
+                    <button onclick="exportModalToExcel()" class="bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">📥 Excel</button>
+                    <button onclick="closeModal()" class="bg-amber-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
                 </div>
             </div>
-            <div class="p-4 overflow-y-auto flex-grow">
+            <div class="p-6 overflow-y-auto flex-grow">
                 <table class="w-full text-left border-collapse" id="tableModalOffices">
                     <thead>
-                        <tr class="bg-slate-100 text-slate-700 text-xs font-bold uppercase border-b border-slate-200">
-                            <th class="py-2.5 px-3">Office Name & ID</th>
-                            <th class="py-2.5 px-3">Class</th>
-                            <th class="py-2.5 px-3">Division / SD</th>
-                            <th class="py-2.5 px-3 text-right">Articles</th>
+                        <tr class="bg-[#FDF3E6] text-[#4B1D24] text-xs font-bold uppercase border-b border-amber-300">
+                            <th class="py-3 px-4">Office Name & ID</th>
+                            <th class="py-3 px-4">Class</th>
+                            <th class="py-3 px-4">Division / SD</th>
+                            <th class="py-3 px-4 text-right">Articles</th>
                         </tr>
                     </thead>
-                    <tbody class="text-xs divide-y divide-slate-100"></tbody>
+                    <tbody class="text-xs md:text-sm divide-y divide-amber-100"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Digital Modal -->
-    <div id="digitalModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
-            <div class="px-5 py-4 bg-slate-900 text-white flex justify-between items-center">
-                <h3 class="font-bold text-sm">📲 Digital Transaction Report</h3>
-                <button onclick="closeDigitalModal()" class="bg-slate-800 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold">✕</button>
+    <!-- Modal: Digital Txn Report -->
+    <div id="digitalModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-amber-400">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
+                <h3 class="font-extrabold text-lg">📲 Digital Transaction Status Report</h3>
+                <button onclick="closeDigitalModal()" class="bg-amber-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
             </div>
-            <div class="p-5 overflow-y-auto space-y-4">
-                <div class="flex gap-2">
-                    <button id="btnModeBooking" onclick="switchDigitalMode('booking')" class="px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold">Booking Digital Txn</button>
-                    <button id="btnModeCod" onclick="switchDigitalMode('cod')" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">COD Digital Txn</button>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div class="p-6 overflow-y-auto flex-grow space-y-4">
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 flex justify-between items-center flex-wrap gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Upload Raw File</label>
-                        <input type="file" id="digitalFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-200"/>
+                        <label class="block text-xs font-bold uppercase text-amber-900 mb-1">Upload Digital / COD Raw File</label>
+                        <input type="file" id="digitalFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500 file:bg-amber-800 file:text-white file:rounded-lg file:py-1.5 file:px-3 file:border-0 cursor-pointer bg-white border border-amber-300 rounded-lg p-1"/>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">View Type</label>
-                        <select id="digitalViewType" onchange="processDigitalData()" class="w-full border border-slate-200 rounded-lg p-1.5 text-xs bg-white font-medium">
+                        <label class="block text-xs font-bold uppercase text-amber-900 mb-1">View Type</label>
+                        <select id="digitalViewType" onchange="processDigitalData()" class="border border-amber-300 rounded-lg p-2 text-xs font-bold bg-white">
                             <option value="division">Division View</option>
                             <option value="subdivision">Sub-Division View</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">BO Filter Option</label>
-                        <select id="digitalBoFilter" onchange="processDigitalData()" class="w-full border border-slate-200 rounded-lg p-1.5 text-xs bg-white font-medium">
-                            <option value="including">Including BO</option>
-                            <option value="excluding">Excluding BO (SO+HO)</option>
-                        </select>
-                    </div>
                 </div>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto p-2">
                     <table class="nil-table" id="digitalStatusTable">
                         <thead>
                             <tr>
                                 <th>S.No.</th>
-                                <th>Division</th>
-                                <th id="thSubDivCol" style="display:none;">Sub Division</th>
+                                <th>Division Name</th>
+                                <th id="thSubDivCol" style="display:none;">Sub Division Name</th>
                                 <th>Total Offices</th>
                                 <th>Digital Txn Offices</th>
                                 <th>Cash / Zero Txn</th>
-                                <th>% Digital</th>
+                                <th>% Digital Txn</th>
                             </tr>
                         </thead>
-                        <tbody><tr><td colspan="7" class="py-6 text-center text-slate-400">Upload Digital/COD raw file to generate report.</td></tr></tbody>
+                        <tbody><tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">Please upload Digital/COD Raw Excel/CSV file.</td></tr></tbody>
                         <tfoot></tfoot>
                     </table>
                 </div>
@@ -238,36 +231,36 @@
         </div>
     </div>
 
-    <!-- PLI Modal -->
-    <div id="pliModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
-            <div class="px-5 py-4 bg-slate-900 text-white flex justify-between items-center">
-                <h3 class="font-bold text-sm">🛡️ PLI / RPLI Nil Transaction Report</h3>
-                <button onclick="closePliModal()" class="bg-slate-800 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold">✕</button>
+    <!-- Modal: PLI Nil Txn Report -->
+    <div id="pliModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-amber-400">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
+                <h3 class="font-extrabold text-lg">🛡️ PLI / RPLI Nil Transaction Report (Branch Offices)</h3>
+                <button onclick="closePliModal()" class="bg-amber-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
             </div>
-            <div class="p-5 overflow-y-auto space-y-4">
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center">
+            <div class="p-6 overflow-y-auto flex-grow space-y-4">
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 flex justify-between items-center flex-wrap gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Upload PLI Pan-India Raw Report</label>
-                        <input type="file" id="pliFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500"/>
+                        <label class="block text-xs font-bold uppercase text-amber-900 mb-1">Upload PLI Pan-India Raw Report</label>
+                        <input type="file" id="pliFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500 file:bg-amber-800 file:text-white file:rounded-lg file:py-1.5 file:px-3 file:border-0 cursor-pointer bg-white border border-amber-300 rounded-lg p-1"/>
                     </div>
-                    <div id="pliUploadStatus" class="text-xs font-medium text-slate-600">Waiting for file...</div>
+                    <div id="pliUploadStatus" class="text-xs font-bold text-amber-900">⏳ Waiting for file upload...</div>
                 </div>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto p-2">
                     <table class="nil-table" id="tablePliSummary">
                         <thead>
                             <tr>
                                 <th>S.No.</th>
-                                <th>Division</th>
-                                <th>Sub Division</th>
+                                <th>Division Name</th>
+                                <th>Sub Division Name</th>
                                 <th>Total Offices</th>
                                 <th>Nil PLI Txn (0)</th>
                                 <th>Good PLI Txn (>10)</th>
-                                <th>% Nil</th>
-                                <th>% Good</th>
+                                <th>% Nil Offices</th>
+                                <th>% Good Offices</th>
                             </tr>
                         </thead>
-                        <tbody><tr><td colspan="8" class="py-6 text-center text-slate-400">Upload PLI raw data to analyze branch offices.</td></tr></tbody>
+                        <tbody><tr><td colspan="8" class="py-8 text-center text-slate-400 font-medium">Please upload PLI Raw Report file.</td></tr></tbody>
                         <tfoot></tfoot>
                     </table>
                 </div>
@@ -275,31 +268,31 @@
         </div>
     </div>
 
-    <!-- Admin Modal -->
-    <div id="adminLoginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden border border-slate-200">
-            <div class="px-5 py-4 bg-slate-900 text-white flex justify-between items-center">
-                <h3 class="font-bold text-sm">🔒 Admin Login</h3>
-                <button onclick="closeAdminLoginModal()" class="bg-slate-800 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">✕</button>
+    <!-- Modal: Admin Login -->
+    <div id="adminLoginModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-amber-400">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
+                <h3 class="font-extrabold text-base">🔒 Admin Login</h3>
+                <button onclick="closeAdminLoginModal()" class="bg-amber-950 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold">✕</button>
             </div>
-            <div class="p-5 space-y-3">
+            <div class="p-6 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Admin ID</label>
-                    <input type="password" id="adminUser" class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-slate-50 outline-none"/>
+                    <label class="block text-xs font-bold uppercase text-amber-900 mb-1">Admin ID</label>
+                    <input type="password" id="adminUser" placeholder="Enter Admin ID" class="w-full border border-amber-300 rounded-xl p-2.5 text-sm bg-amber-50/50 outline-none"/>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
-                    <input type="password" id="adminPass" class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-slate-50 outline-none"/>
+                    <label class="block text-xs font-bold uppercase text-amber-900 mb-1">Password</label>
+                    <input type="password" id="adminPass" placeholder="Enter Password" class="w-full border border-amber-300 rounded-xl p-2.5 text-sm bg-amber-50/50 outline-none"/>
                 </div>
-                <p id="adminLoginError" class="text-xs text-rose-600 font-semibold hidden">Invalid ID or password.</p>
-                <button onclick="verifyAdminLogin()" class="w-full bg-slate-900 text-white font-medium py-2 rounded-lg text-xs">Login</button>
+                <div id="adminLoginError" class="text-xs text-rose-600 font-bold hidden">❌ Invalid ID or Password.</div>
+                <button onclick="verifyAdminLogin()" class="w-full bg-[#4B1D24] text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">Login</button>
             </div>
         </div>
     </div>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-400 text-xs py-3 px-6 text-center border-t border-slate-800 mt-8">
-        <p>Developed by <span class="text-white font-medium">Kapil Rajput</span>, PA, Regional Office Indore</p>
+    <footer class="report-header text-amber-200 text-xs py-4 px-6 text-center border-t border-amber-900 mt-12">
+        <p class="font-medium">Developed by <span class="text-white font-bold">Kapil Rajput</span>, PA, Regional Office Indore</p>
     </footer>
 
     <script>
@@ -307,9 +300,8 @@
         const MAPPING_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1575541045&single=true&output=csv";
         const IDP_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1439866773&single=true&output=csv";
 
-        let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
-        let digitalRawData = [], currentDigitalMode = 'booking', currentDigitalProcessedList = [];
-        let pliRawData = [], idpCredentialsMap = {};
+        let masterOfficesMap = {}, serviceMapping = {}, rawData = [], globalAllFilteredOffices = [], modalExportData = [];
+        let digitalRawData = [], pliRawData = [], idpCredentialsMap = {};
 
         async function loadMasterData() {
             try {
@@ -333,8 +325,10 @@
                     if (idpRows[i][0] && idpRows[i][1]) idpCredentialsMap[String(idpRows[i][0]).trim()] = String(idpRows[i][1]).trim();
                 }
                 document.getElementById('masterStatus').textContent = `Loaded (${Object.keys(masterOfficesMap).length} Offices)`;
+                document.getElementById('masterStatus').className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow";
             } catch (err) {
                 masterOfficesMap = { "23108926": { name: "AGARCANTT B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN" } };
+                serviceMapping = { "inland speed post document": "MO" };
                 document.getElementById('masterStatus').textContent = `Offline Mode`;
             }
             initDropdowns();
@@ -358,16 +352,15 @@
             const nilFilterClass = document.getElementById('nilFilterClass').value;
 
             const processed = rawData.map(item => {
-                let offId = item.officeId;
-                const master = masterOfficesMap[offId] || { name: "Unknown", class: "BO", sd: "Unknown SD", division: "Unknown" };
-                const sKey = String(item.service).trim().toLowerCase();
+                let master = masterOfficesMap[item.officeId] || { name: "Unknown", class: "BO", sd: "Unknown SD", division: "Unknown" };
+                let sKey = String(item.service).trim().toLowerCase();
                 let cat = serviceMapping[sKey] || (sKey.includes("parcel") ? "PARCEL" : "MO");
                 return { ...item, officeName: master.name, officeClass: master.class, subDivision: master.sd, division: master.division, category: cat };
             });
 
             const officeTotals = {};
             Object.entries(masterOfficesMap).forEach(([id, m]) => {
-                officeTotals[id] = { ...m, officeId: id, articles: 0, postage: 0, categories: { PARCEL: { articles: 0, postage: 0 }, MO: { articles: 0, postage: 0 }, IRGB: { articles: 0, postage: 0 } } };
+                officeTotals[id] = { ...m, officeId: id, articles: 0, postage: 0, categories: { PARCEL: { articles: 0, postage: 0 }, MO: { articles: 0, postage: 0 } } };
             });
 
             processed.forEach(item => {
@@ -397,7 +390,7 @@
             tbody.innerHTML = ""; tfoot.innerHTML = "";
 
             if (viewType === 'division') {
-                thead.innerHTML = `<tr><th class="py-2 px-3">Division</th><th class="py-2 px-2 text-center">Offices</th><th class="py-2 px-2 text-right">Parcel Art</th><th class="py-2 px-2 text-right">Parcel Rev</th><th class="py-2 px-2 text-right">MO Art</th><th class="py-2 px-2 text-right">MO Rev</th><th class="py-2 px-3 text-right">Total Art</th><th class="py-2 px-3 text-right">Total Rev (₹)</th></tr>`;
+                thead.innerHTML = `<tr class="report-header text-[11px] font-bold uppercase"><th class="py-2.5 px-3">Division Name</th><th class="py-2.5 px-2 text-center">Offices</th><th class="py-2.5 px-2 text-right">Parcel Art</th><th class="py-2.5 px-2 text-right">Parcel Rev</th><th class="py-2.5 px-2 text-right">MO Art</th><th class="py-2.5 px-2 text-right">MO Rev</th><th class="py-2.5 px-3 text-right">Total Art</th><th class="py-2.5 px-3 text-right">Total Rev (₹)</th></tr>`;
                 const divMap = {};
                 allOffices.forEach(row => {
                     if (!divMap[row.division]) divMap[row.division] = { division: row.division, offices: new Set(), cats: { PARCEL:{a:0, p:0}, MO:{a:0, p:0} }, totalArt: 0, totalPostage: 0 };
@@ -412,17 +405,16 @@
 
                 Object.values(divMap).forEach(item => {
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50";
-                    tr.innerHTML = `<td class="py-2 px-3 font-semibold text-slate-900">${item.division}</td><td class="py-2 px-2 text-center">${item.offices.size}</td><td class="py-2 px-2 text-right">${item.cats.PARCEL.a}</td><td class="py-2 px-2 text-right">${item.cats.PARCEL.p.toLocaleString('en-IN')}</td><td class="py-2 px-2 text-right">${item.cats.MO.a}</td><td class="py-2 px-2 text-right">${item.cats.MO.p.toLocaleString('en-IN')}</td><td class="py-2 px-3 text-right font-bold">${item.totalArt}</td><td class="py-2 px-3 text-right font-bold text-emerald-600">${item.totalPostage.toLocaleString('en-IN')}</td>`;
+                    tr.className = "hover:bg-amber-50 border-b border-amber-100 text-[11px]";
+                    tr.innerHTML = `<td class="py-2.5 px-3 font-bold text-[#4B1D24]">${item.division}</td><td class="py-2.5 px-2 text-center">${item.offices.size}</td><td class="py-2.5 px-2 text-right">${item.cats.PARCEL.a}</td><td class="py-2.5 px-2 text-right">${item.cats.PARCEL.p.toLocaleString('en-IN')}</td><td class="py-2.5 px-2 text-right">${item.cats.MO.a}</td><td class="py-2.5 px-2 text-right">${item.cats.MO.p.toLocaleString('en-IN')}</td><td class="py-2.5 px-3 text-right font-extrabold">${item.totalArt}</td><td class="py-2.5 px-3 text-right font-extrabold text-emerald-800">${item.totalPostage.toLocaleString('en-IN')}</td>`;
                     tbody.appendChild(tr);
                 });
             } else {
-                thead.innerHTML = `<tr><th class="py-2 px-3">Division</th><th class="py-2 px-3">Sub-Division</th><th class="py-2 px-2 text-center">Offices</th><th class="py-2 px-3 text-right">Total Articles</th><th class="py-2 px-3 text-right">Total Rev (₹)</th></tr>`;
+                thead.innerHTML = `<tr class="report-header text-[11px] font-bold uppercase"><th class="py-2.5 px-3">Division</th><th class="py-2.5 px-3">Sub-Division</th><th class="py-2.5 px-2 text-center">Offices</th><th class="py-2.5 px-3 text-right">Total Articles</th><th class="py-2.5 px-3 text-right">Total Rev (₹)</th></tr>`;
                 allOffices.forEach(r => {
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50 cursor-pointer";
-                    tr.onclick = () => openDrilldown(r.sd, r.division);
-                    tr.innerHTML = `<td class="py-2 px-3 font-semibold">${r.division}</td><td class="py-2 px-3 text-blue-600">${r.sd}</td><td class="py-2 px-2 text-center">1</td><td class="py-2 px-3 text-right font-bold">${r.articles}</td><td class="py-2 px-3 text-right font-bold text-emerald-600">${r.postage.toLocaleString('en-IN')}</td>`;
+                    tr.className = "hover:bg-amber-50 border-b border-amber-100 text-[11px]";
+                    tr.innerHTML = `<td class="py-2.5 px-3 font-bold text-[#4B1D24]">${r.division}</td><td class="py-2.5 px-3 font-bold text-blue-900">${r.sd}</td><td class="py-2.5 px-2 text-center">1</td><td class="py-2.5 px-3 text-right font-bold">${r.articles}</td><td class="py-2.5 px-3 text-right font-bold text-emerald-800">${r.postage.toLocaleString('en-IN')}</td>`;
                     tbody.appendChild(tr);
                 });
             }
@@ -448,16 +440,37 @@
                 const nilPct = item.total ? Math.round((item.nil / item.total) * 100) + "%" : "0%";
                 const goodPct = item.total ? Math.round((item.good / item.total) * 100) + "%" : "0%";
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${sno++}</td><td class="font-semibold">${item.division}</td><td class="text-left font-medium">${item.sd}</td><td>${item.total}</td><td class="clickable-cell text-rose-600 font-bold" onclick="openOfficeCategoryListModal('${item.division}', '${item.sd}', 'NIL')">${item.nil}</td><td class="clickable-cell text-amber-600 font-bold" onclick="openOfficeCategoryListModal('${item.division}', '${item.sd}', 'LOW')">${item.low}</td><td class="clickable-cell text-emerald-600 font-bold" onclick="openOfficeCategoryListModal('${item.division}', '${item.sd}', 'GOOD')">${item.good}</td><td class="font-bold text-rose-700">${nilPct}</td><td class="font-bold text-emerald-700">${goodPct}</td>`;
+                tr.innerHTML = `<td>${sno++}</td><td class="font-bold">${item.division}</td><td class="text-left font-semibold">${item.sd}</td><td>${item.total}</td><td class="clickable-cell text-rose-700 font-bold bg-rose-50" onclick="openOfficeListModal('${item.division}', '${item.sd}', 'NIL')">${item.nil}</td><td class="clickable-cell text-amber-700 font-bold bg-amber-50" onclick="openOfficeListModal('${item.division}', '${item.sd}', 'LOW')">${item.low}</td><td class="clickable-cell text-emerald-700 font-bold bg-emerald-50" onclick="openOfficeListModal('${item.division}', '${item.sd}', 'GOOD')">${item.good}</td><td class="font-bold text-rose-800">${nilPct}</td><td class="font-bold text-emerald-800">${goodPct}</td>`;
                 tbody.appendChild(tr);
             });
         }
 
-        // Fix Digital Processing Bug with Flexible Key Parsing
+        function openOfficeListModal(divName, sdName, type) {
+            const target = globalAllFilteredOffices.filter(o => {
+                if (o.division !== divName || o.sd !== sdName) return false;
+                if (type === 'NIL' && o.articles === 0) return true;
+                if (type === 'LOW' && o.articles > 0 && o.articles <= 10) return true;
+                if (type === 'GOOD' && o.articles > 10) return true;
+                return false;
+            });
+
+            modalExportData = target.map(o => ({ "Office ID": o.officeId, "Office Name": o.name, "Class": o.class, "Sub-Division": o.sd, "Division": o.division, "Articles": o.articles }));
+            document.getElementById('modalTitle').textContent = `Office List: ${type} (${sdName})`;
+            document.getElementById('modalSubtitle').textContent = `Total ${target.length} offices found.`;
+            
+            const tbody = document.querySelector('#tableModalOffices tbody');
+            tbody.innerHTML = "";
+            target.forEach(o => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="py-2.5 px-3 font-semibold">${o.name} (${o.officeId})</td><td class="py-2.5 px-3">${o.class}</td><td class="py-2.5 px-3">${o.division} / ${o.sd}</td><td class="py-2.5 px-3 text-right font-bold">${o.articles}</td>`;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('drilldownModal').classList.remove('hidden');
+        }
+
+        // Digital Processing with Flexible Key Parsing (Fixed)
         document.getElementById('digitalFileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            parseExcelFile(file, function(json) {
+            parseExcelFile(e.target.files[0], function(json) {
                 digitalRawData = json;
                 processDigitalData();
             });
@@ -466,56 +479,87 @@
         function processDigitalData() {
             const tbody = document.querySelector('#digitalStatusTable tbody');
             const viewType = document.getElementById('digitalViewType').value;
-            const boFilter = document.getElementById('digitalBoFilter').value;
             document.getElementById('thSubDivCol').style.display = viewType === 'subdivision' ? '' : 'none';
-
+            tbody.innerHTML = "";
             if (!digitalRawData.length) return;
 
             const groupedMap = {};
             digitalRawData.forEach(row => {
-                // Flexible column detection for office ID and digital status
                 let rowValues = Object.values(row).map(v => String(v).trim());
                 let offId = rowValues.find(v => masterOfficesMap[v]) || rowValues[0];
                 let master = masterOfficesMap[offId];
                 if (!master) return;
 
-                if (boFilter === 'excluding' && master.class === 'BO') return;
-
                 let div = master.division, sd = master.sd;
                 let key = viewType === 'subdivision' ? (div + "||" + sd) : div;
 
-                if (!groupedMap[key]) {
-                    groupedMap[key] = { division: div, sd: sd, offices: new Set(), digitalCount: 0, cashCount: 0, totalCount: 0 };
-                }
+                if (!groupedMap[key]) groupedMap[key] = { division: div, sd: sd, offices: new Set(), digital: 0, cash: 0, total: 0 };
                 groupedMap[key].offices.add(offId);
 
-                // Check any cell for digital transaction keywords
-                let isDigTxn = rowValues.some(v => /yes|true|qr|upi|digital|online/i.test(v));
-                groupedMap[key].totalCount++;
-                if (isDigTxn) groupedMap[key].digitalCount++;
-                else groupedMap[key].cashCount++;
+                let isDig = rowValues.some(v => /yes|true|qr|upi|digital|online/i.test(v));
+                groupedMap[key].total++;
+                if (isDig) groupedMap[key].digital++; else groupedMap[key].cash++;
             });
 
-            currentDigitalProcessedList = Object.values(groupedMap);
-            tbody.innerHTML = "";
             let sno = 1;
-
-            currentDigitalProcessedList.forEach(item => {
-                let pct = item.totalCount ? Math.round((item.digitalCount / item.totalCount) * 100) + "%" : "0%";
-                let tr = document.createElement('tr');
+            Object.values(groupedMap).forEach(item => {
+                let pct = item.total ? Math.round((item.digital / item.total) * 100) + "%" : "0%";
+                const tr = document.createElement('tr');
                 let sdCol = viewType === 'subdivision' ? `<td>${item.sd}</td>` : '';
-                tr.innerHTML = `<td>${sno++}</td><td class="font-semibold">${item.division}</td>${sdCol}<td>${item.offices.size}</td><td class="text-emerald-600 font-bold">${item.digitalCount}</td><td class="text-rose-600 font-bold">${item.cashCount}</td><td class="font-bold">${pct}</td>`;
+                tr.innerHTML = `<td>${sno++}</td><td class="font-bold">${item.division}</td>${sdCol}<td>${item.offices.size}</td><td class="text-emerald-700 font-bold">${item.digital}</td><td class="text-rose-700 font-bold">${item.cash}</td><td class="font-bold">${pct}</td>`;
                 tbody.appendChild(tr);
             });
         }
 
-        // File Parsing Helper
+        // PLI Processing
+        document.getElementById('pliFileInput').addEventListener('change', function(e) {
+            const statusEl = document.getElementById('pliUploadStatus');
+            statusEl.textContent = "Processing PLI data...";
+            parseExcelFile(e.target.files[0], function(json) {
+                pliRawData = json;
+                statusEl.textContent = "✅ PLI Data Loaded Successfully!";
+                processPliData();
+            });
+        });
+
+        function processPliData() {
+            const tbody = document.querySelector('#tablePliSummary tbody');
+            tbody.innerHTML = "";
+            
+            const officeTxnMap = {};
+            pliRawData.forEach(row => {
+                let vals = Object.values(row);
+                let oId = String(vals[8] || vals[0] || "").trim().replace(/\.0$/, '');
+                if (oId) officeTxnMap[oId] = (officeTxnMap[oId] || 0) + 1;
+            });
+
+            const sdMap = {};
+            Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                if (m.class !== "BO") return;
+                let div = m.division, sd = m.sd;
+                let key = div + "||" + sd;
+                if (!sdMap[key]) sdMap[key] = { division: div, sd: sd, total: 0, nil: 0, good: 0 };
+                sdMap[key].total++;
+                let txn = officeTxnMap[id] || 0;
+                if (officeTxnMap.hasOwnProperty(id) && txn === 0) sdMap[key].nil++;
+                else sdMap[key].good++;
+            });
+
+            let sno = 1;
+            Object.values(sdMap).forEach(item => {
+                let nilPct = item.total ? Math.round((item.nil / item.total) * 100) + "%" : "0%";
+                let goodPct = item.total ? Math.round((item.good / item.total) * 100) + "%" : "0%";
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${sno++}</td><td class="font-bold">${item.division}</td><td class="text-left font-semibold">${item.sd}</td><td>${item.total}</td><td class="text-rose-700 font-bold">${item.nil}</td><td class="text-emerald-700 font-bold">${item.good}</td><td class="font-bold text-rose-800">${nilPct}</td><td class="font-bold text-emerald-800">${goodPct}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
         function parseExcelFile(file, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const workbook = XLSX.read(e.target.result, {type: 'array'});
-                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
-                callback(json);
+                callback(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""}));
             };
             reader.readAsArrayBuffer(file);
         }
@@ -527,10 +571,21 @@
                     service: String(Object.values(row)[2] || "").trim(),
                     articles: Number(Object.values(row)[3] || 0),
                     postage: Number(Object.values(row)[4] || 0)
-                })).filter(i => i.officeId && i.service);
+                })).filter(i => i.officeId);
                 updateDashboard();
             });
         });
+
+        function verifyAdminLogin() {
+            let u = document.getElementById('adminUser').value.trim();
+            let p = document.getElementById('adminPass').value.trim();
+            if (idpCredentialsMap[u] && idpCredentialsMap[u] === p) {
+                alert("✅ Admin Login Successful!");
+                closeAdminLoginModal();
+            } else {
+                document.getElementById('adminLoginError').classList.remove('hidden');
+            }
+        }
 
         function openDigitalModal() { document.getElementById('digitalModal').classList.remove('hidden'); }
         function closeDigitalModal() { document.getElementById('digitalModal').classList.add('hidden'); }
@@ -540,8 +595,15 @@
         function closeAdminLoginModal() { document.getElementById('adminLoginModal').classList.add('hidden'); }
         function closeModal() { document.getElementById('drilldownModal').classList.add('hidden'); }
         function exportTableToExcel(id, fn) { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById(id)), fn); }
+        function exportModalToExcel() { XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(modalExportData), "Details"), "Office_Details.xlsx"); }
         function exportAllToExcel() { exportTableToExcel('tableDivisionSummary', 'Complete_Summary.xlsx'); }
-        function exportAllToPDF() { window.print(); }
+        function exportSingleTableToPDF(id, title) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            doc.autoTable({ html: '#' + id });
+            doc.save(title.replace(/\s+/g, '_') + ".pdf");
+        }
+        function exportAllToPDF() { exportSingleTableToPDF('tableDivisionSummary', 'Summary_Report'); }
 
         loadMasterData();
     </script>
