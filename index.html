@@ -289,12 +289,13 @@
         function closeModal() { document.getElementById('drilldownModal').classList.add('hidden'); }
 
         async function loadIdpCredentials() {
-            try {
-                const res = await fetch(IDP_CSV_URL);
-                const rows = XLSX.utils.sheet_to_json(XLSX.read(await res.text(), {type: 'string'}).Sheets[XLSX.read(await res.text(), {type: 'string'}).SheetNames[0]], {header: 1});
-                idpCredentialsMap = {};
-                for (let i = 1; i < rows.length; i++) if (rows[i][0] && rows[i][1]) idpCredentialsMap[String(rows[i][0]).trim()] = String(rows[i][1]).trim();
-            } catch (err) { idpCredentialsMap = { "7697": "5250" }; }
+            loadCSVData(IDP_CSV_URL, (text) => {
+                try {
+                    const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type: 'string'}).Sheets[XLSX.read(text, {type: 'string'}).SheetNames[0]], {header: 1});
+                    idpCredentialsMap = {};
+                    for (let i = 1; i < rows.length; i++) if (rows[i][0] && rows[i][1]) idpCredentialsMap[String(rows[i][0]).trim()] = String(rows[i][1]).trim();
+                } catch (err) { idpCredentialsMap = { "7697": "5250" }; }
+            });
         }
 
         function verifyAdminLogin() {
@@ -311,60 +312,82 @@
             });
         }
 
-        async function loadMasterData() {
+        // Reliable XMLHttpRequest helper for bypassing CORS and network blocks completely
+        function loadCSVData(url, callback) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200 || xhr.status === 0) {
+                        callback(xhr.responseText);
+                    } else {
+                        console.error("XHR Error loading:", url, xhr.status);
+                        callback(null);
+                    }
+                }
+            };
+            xhr.onerror = function() {
+                console.error("XHR Network request failed for:", url);
+                callback(null);
+            };
+            xhr.send();
+        }
+
+        function loadMasterData() {
             loadIdpCredentials();
-            try {
-                // CORS fallback / safe fetch helper using AllOrigins proxy if direct fetch fails
-                const fetchSafe = async (url) => {
+            
+            loadCSVData(MASTER_CSV_URL, function(masterText) {
+                if (!masterText) {
+                    handleMasterError();
+                    return;
+                }
+                loadCSVData(MAPPING_CSV_URL, function(mapText) {
+                    if (!mapText) {
+                        handleMasterError();
+                        return;
+                    }
                     try {
-                        const response = await fetch(url);
-                        if (response.ok) return await response.text();
-                    } catch (e) {
-                        console.warn("Direct fetch blocked, trying proxy...");
+                        const mRows = XLSX.utils.sheet_to_json(XLSX.read(masterText, {type: 'string'}).Sheets[XLSX.read(masterText, {type: 'string'}).SheetNames[0]], {header: 1});
+                        masterOfficesMap = {};
+                        for (let i = 1; i < mRows.length; i++) {
+                            let id = String(mRows[i][0] || "").trim();
+                            if (id) {
+                                masterOfficesMap[id] = { 
+                                    name: String(mRows[i][1] || "").trim(), 
+                                    class: String(mRows[i][2] || "BO").trim().toUpperCase(), 
+                                    sd: String(mRows[i][3] || "").trim(), 
+                                    division: String(mRows[i][4] || "").trim().toUpperCase(), 
+                                    ro: String(mRows[i][5] || "").trim().toUpperCase() 
+                                };
+                            }
+                        }
+
+                        const mapRows = XLSX.utils.sheet_to_json(XLSX.read(mapText, {type: 'string'}).Sheets[XLSX.read(mapText, {type: 'string'}).SheetNames[0]], {header: 1});
+                        serviceMapping = {};
+                        for (let i = 1; i < mapRows.length; i++) {
+                            if (mapRows[i][0]) {
+                                serviceMapping[String(mapRows[i][0]).trim().toLowerCase()] = String(mapRows[i][1]).trim().toUpperCase();
+                            }
+                        }
+
+                        document.getElementById('masterStatus').textContent = `Master Loaded (${Object.keys(masterOfficesMap).length} Offices)`;
+                        document.getElementById('masterStatus').className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold";
+                        
+                        initDropdowns();
+                        updateDashboard();
+                    } catch (err) {
+                        console.error("Parsing Error:", err);
+                        handleMasterError();
                     }
-                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                    const res = await fetch(proxyUrl);
-                    return await res.text();
-                };
+                });
+            });
+        }
 
-                const [masterText, mapText] = await Promise.all([
-                    fetchSafe(MASTER_CSV_URL),
-                    fetchSafe(MAPPING_CSV_URL)
-                ]);
-
-                const mRows = XLSX.utils.sheet_to_json(XLSX.read(masterText, {type: 'string'}).Sheets[XLSX.read(masterText, {type: 'string'}).SheetNames[0]], {header: 1});
-                masterOfficesMap = {};
-                for (let i = 1; i < mRows.length; i++) {
-                    let id = String(mRows[i][0] || "").trim();
-                    if (id) {
-                        masterOfficesMap[id] = { 
-                            name: String(mRows[i][1] || "").trim(), 
-                            class: String(mRows[i][2] || "BO").trim().toUpperCase(), 
-                            sd: String(mRows[i][3] || "").trim(), 
-                            division: String(mRows[i][4] || "").trim().toUpperCase(), 
-                            ro: String(mRows[i][5] || "").trim().toUpperCase() 
-                        };
-                    }
-                }
-
-                const mapRows = XLSX.utils.sheet_to_json(XLSX.read(mapText, {type: 'string'}).Sheets[XLSX.read(mapText, {type: 'string'}).SheetNames[0]], {header: 1});
-                serviceMapping = {};
-                for (let i = 1; i < mapRows.length; i++) {
-                    if (mapRows[i][0]) {
-                        serviceMapping[String(mapRows[i][0]).trim().toLowerCase()] = String(mapRows[i][1]).trim().toUpperCase();
-                    }
-                }
-
-                document.getElementById('masterStatus').textContent = `Master Loaded (${Object.keys(masterOfficesMap).length} Offices)`;
-                document.getElementById('masterStatus').className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold";
-            } catch (err) {
-                console.error("Master Data Load Error:", err);
-                // Fallback offline sample data so dashboard works even without internet/CORS
-                masterOfficesMap = { "23108926": { name: "AGARCANTT B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN" } };
-                serviceMapping = { "inland speed post document": "MO" };
-                document.getElementById('masterStatus').textContent = `Loaded Offline Mode`;
-                document.getElementById('masterStatus').className = "bg-rose-600 text-white text-xs px-3 py-1.5 rounded-full font-bold";
-            }
+        function handleMasterError() {
+            masterOfficesMap = { "23108926": { name: "AGARCANTT B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN" } };
+            serviceMapping = { "inland speed post document": "MO" };
+            document.getElementById('masterStatus').textContent = `Loaded Offline Mode`;
+            document.getElementById('masterStatus').className = "bg-rose-600 text-white text-xs px-3 py-1.5 rounded-full font-bold";
             initDropdowns();
             updateDashboard();
         }
@@ -372,9 +395,12 @@
         function initDropdowns() {
             const divs = [...new Set(Object.values(masterOfficesMap).map(o => o.division))].filter(Boolean).sort();
             const divSel = document.getElementById('filterDivision');
+            divSel.innerHTML = '<option value="All">All Divisions</option>';
             divs.forEach(d => divSel.innerHTML += `<option value="${d}">${d}</option>`);
+            
             const cats = [...new Set(Object.values(serviceMapping))].filter(Boolean).sort();
             const catSel = document.getElementById('filterCategory');
+            catSel.innerHTML = '<option value="All">All Categories</option>';
             cats.forEach(c => catSel.innerHTML += `<option value="${c}">${c}</option>`);
         }
 
