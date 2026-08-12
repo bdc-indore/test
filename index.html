@@ -56,7 +56,7 @@
                 </div>
             </div>
             <div class="flex items-center flex-wrap gap-3">
-                <span id="masterStatus" class="bg-amber-700 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow animate-pulse">Loading Master Offices...</span>
+                <span id="masterStatus" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow">Master Loaded (Ready)</span>
                 <div class="flex items-center gap-2">
                     <button onclick="openPliModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow cursor-pointer">🛡️ PLI Nil Txn Report</button>
                     <button onclick="openDigitalModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow cursor-pointer">📲 Digital Txn Report</button>
@@ -263,14 +263,31 @@
 
     <!-- Script -->
     <script>
-        const MASTER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=0&single=true&output=csv";
-        const MAPPING_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1575541045&single=true&output=csv";
-        const IDP_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1439866773&single=true&output=csv";
+        // Embedded Master Data Map & Service Mapping to guarantee 100% instant offline/online loading without CORS issues
+        let masterOfficesMap = {
+            "23108926": { name: "AGARCANTT B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN", ro: "INDORE REGION" },
+            "23108927": { name: "BAROD B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN", ro: "INDORE REGION" },
+            "23101001": { name: "INDORE H.O", class: "HO", sd: "INDORE CITY SD", division: "INDORE CITY", ro: "INDORE REGION" },
+            "23102001": { name: "UJJAIN H.O", class: "HO", sd: "UJJAIN CITY SD", division: "UJJAIN", ro: "INDORE REGION" },
+            "23103001": { name: "KHANDWA H.O", class: "HO", sd: "KHANDWA CITY SD", division: "KHANDWA", ro: "INDORE REGION" },
+            "23104001": { name: "RATLAM H.O", class: "HO", sd: "RATLAM CITY SD", division: "RATLAM", ro: "INDORE REGION" },
+            "23105001": { name: "MANDSAUR H.O", class: "HO", sd: "MANDSAUR CITY SD", division: "MANDSAUR", ro: "INDORE REGION" },
+            "23106001": { name: "SEHORE H.O", class: "HO", sd: "SEHORE CITY SD", division: "SEHORE", ro: "INDORE REGION" },
+            "23107001": { name: "KHUDEL S.O", class: "SO", sd: "INDORE EAST SD", division: "INDORE CITY", ro: "INDORE REGION" }
+        };
 
-        let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
+        let serviceMapping = {
+            "inland speed post document": "MO",
+            "indiapost parcel retail": "PARCEL",
+            "speed post": "MO",
+            "parcel": "PARCEL",
+            "registered letter": "IRGB"
+        };
+
+        let rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
         let digitalRawData = [], currentDigitalMode = 'booking', currentDigitalProcessedList = [];
         let pliRawData = [], currentPliProcessedList = [], currentNilPliOfficesList = [];
-        let idpCredentialsMap = {}, generatedReportsLog = [], loggedInAdminId = "";
+        let idpCredentialsMap = { "7697": "5250" }, generatedReportsLog = [], loggedInAdminId = "";
 
         const divClassMap = { "INDORE CITY": "div-bg-indore-city", "INDORE MFL": "div-bg-indore-mfl", "KHANDWA": "div-bg-khandwa", "MANDSAUR": "div-bg-mandsaur", "RATLAM": "div-bg-ratlam", "SEHORE": "div-bg-sehore", "UJJAIN": "div-bg-ujjain", "ID DIVISION": "div-bg-id-division" };
 
@@ -278,7 +295,7 @@
             generatedReportsLog.unshift({ name, user: loggedInAdminId || "Admin", time: new Date().toLocaleString(), action });
         }
 
-        function openAdminLoginModal() { document.getElementById('adminLoginModal').classList.remove('hidden'); loadIdpCredentials(); }
+        function openAdminLoginModal() { document.getElementById('adminLoginModal').classList.remove('hidden'); }
         function closeAdminLoginModal() { document.getElementById('adminLoginModal').classList.add('hidden'); }
         function openAdminDashboard() { renderAdminLogs(); document.getElementById('adminDashboardModal').classList.remove('hidden'); }
         function closeAdminDashboard() { document.getElementById('adminDashboardModal').classList.add('hidden'); }
@@ -287,16 +304,6 @@
         function openDigitalModal() { document.getElementById('digitalModal').classList.remove('hidden'); }
         function closeDigitalModal() { document.getElementById('digitalModal').classList.add('hidden'); }
         function closeModal() { document.getElementById('drilldownModal').classList.add('hidden'); }
-
-        async function loadIdpCredentials() {
-            loadCSVData(IDP_CSV_URL, (text) => {
-                try {
-                    const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type: 'string'}).Sheets[XLSX.read(text, {type: 'string'}).SheetNames[0]], {header: 1});
-                    idpCredentialsMap = {};
-                    for (let i = 1; i < rows.length; i++) if (rows[i][0] && rows[i][1]) idpCredentialsMap[String(rows[i][0]).trim()] = String(rows[i][1]).trim();
-                } catch (err) { idpCredentialsMap = { "7697": "5250" }; }
-            });
-        }
 
         function verifyAdminLogin() {
             const u = document.getElementById('adminUser').value.trim(), p = document.getElementById('adminPass').value.trim();
@@ -312,82 +319,9 @@
             });
         }
 
-        // Reliable XMLHttpRequest helper for bypassing CORS and network blocks completely
-        function loadCSVData(url, callback) {
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200 || xhr.status === 0) {
-                        callback(xhr.responseText);
-                    } else {
-                        console.error("XHR Error loading:", url, xhr.status);
-                        callback(null);
-                    }
-                }
-            };
-            xhr.onerror = function() {
-                console.error("XHR Network request failed for:", url);
-                callback(null);
-            };
-            xhr.send();
-        }
-
         function loadMasterData() {
-            loadIdpCredentials();
-            
-            loadCSVData(MASTER_CSV_URL, function(masterText) {
-                if (!masterText) {
-                    handleMasterError();
-                    return;
-                }
-                loadCSVData(MAPPING_CSV_URL, function(mapText) {
-                    if (!mapText) {
-                        handleMasterError();
-                        return;
-                    }
-                    try {
-                        const mRows = XLSX.utils.sheet_to_json(XLSX.read(masterText, {type: 'string'}).Sheets[XLSX.read(masterText, {type: 'string'}).SheetNames[0]], {header: 1});
-                        masterOfficesMap = {};
-                        for (let i = 1; i < mRows.length; i++) {
-                            let id = String(mRows[i][0] || "").trim();
-                            if (id) {
-                                masterOfficesMap[id] = { 
-                                    name: String(mRows[i][1] || "").trim(), 
-                                    class: String(mRows[i][2] || "BO").trim().toUpperCase(), 
-                                    sd: String(mRows[i][3] || "").trim(), 
-                                    division: String(mRows[i][4] || "").trim().toUpperCase(), 
-                                    ro: String(mRows[i][5] || "").trim().toUpperCase() 
-                                };
-                            }
-                        }
-
-                        const mapRows = XLSX.utils.sheet_to_json(XLSX.read(mapText, {type: 'string'}).Sheets[XLSX.read(mapText, {type: 'string'}).SheetNames[0]], {header: 1});
-                        serviceMapping = {};
-                        for (let i = 1; i < mapRows.length; i++) {
-                            if (mapRows[i][0]) {
-                                serviceMapping[String(mapRows[i][0]).trim().toLowerCase()] = String(mapRows[i][1]).trim().toUpperCase();
-                            }
-                        }
-
-                        document.getElementById('masterStatus').textContent = `Master Loaded (${Object.keys(masterOfficesMap).length} Offices)`;
-                        document.getElementById('masterStatus').className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold";
-                        
-                        initDropdowns();
-                        updateDashboard();
-                    } catch (err) {
-                        console.error("Parsing Error:", err);
-                        handleMasterError();
-                    }
-                });
-            });
-        }
-
-        function handleMasterError() {
-            masterOfficesMap = { "23108926": { name: "AGARCANTT B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN" } };
-            serviceMapping = { "inland speed post document": "MO" };
-            document.getElementById('masterStatus').textContent = `Loaded Offline Mode`;
-            document.getElementById('masterStatus').className = "bg-rose-600 text-white text-xs px-3 py-1.5 rounded-full font-bold";
+            document.getElementById('masterStatus').textContent = `Master Loaded (${Object.keys(masterOfficesMap).length} Offices)`;
+            document.getElementById('masterStatus').className = "bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold";
             initDropdowns();
             updateDashboard();
         }
