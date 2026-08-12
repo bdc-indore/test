@@ -945,7 +945,7 @@
         }
 
         // ==========================================
-        // DIGITAL TXN & COD REPORT LOGIC (BO FILTER READY)
+        // DIGITAL TXN & COD REPORT LOGIC (PERFECTED)
         // ==========================================
         function openDigitalModal() {
             document.getElementById('digitalModal').classList.remove('hidden');
@@ -1025,16 +1025,13 @@
                     division: "UNKNOWN DIVISION" 
                 };
 
-                // 🛑 EXCLUDING BO CHECK: If option is excluding and office class is BO, skip it!
+                // 🛑 EXCLUDING BO CHECK: If option is excluding and office class is BO, skip it completely!
                 if (boFilter === 'excluding' && master.class === 'BO') {
                     return; 
                 }
 
-                let rowDivision = master.division;
-                let rowSubDiv = master.sd;
-
-                let division = (rowDivision || "UNKNOWN DIVISION").toUpperCase();
-                let subDivision = (rowSubDiv || "UNKNOWN SD").toUpperCase();
+                let division = (master.division || "UNKNOWN DIVISION").toUpperCase();
+                let subDivision = (master.sd || "UNKNOWN SD").toUpperCase();
                 let key = viewType === 'subdivision' ? (division + "||" + subDivision) : division;
 
                 if (!groupMap[key]) {
@@ -1047,6 +1044,7 @@
                     };
                 }
 
+                // 🎯 PRECISE HEADER MATCHING FOR COUNTS (Column D = Cash (Cnt), Column Q = DQR Scan (Cnt), Column S+ = SBIPOS Bharat QR)
                 let cashVal = 0, dqrVal = 0, qrVal = 0;
 
                 rowKeys.forEach(k => {
@@ -1058,7 +1056,7 @@
                         cashVal += val;
                     } else if (lk === 'dqr scan (cnt)') {
                         dqrVal += val;
-                    } else if (lk.includes('sbipos') || lk.includes('bharat qr (cnt)')) {
+                    } else if (lk.includes('sbipos') || lk.includes('bharat qr') || lk.includes('franchise sb') || lk.includes('sbipos bharat qr')) {
                         qrVal += val;
                     }
                 });
