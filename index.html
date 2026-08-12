@@ -263,7 +263,6 @@
 
     <!-- Script -->
     <script>
-        // Embedded Master Data Map & Service Mapping to guarantee 100% instant offline/online loading without CORS issues
         let masterOfficesMap = {
             "23108926": { name: "AGARCANTT B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN", ro: "INDORE REGION" },
             "23108927": { name: "BAROD B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN", ro: "INDORE REGION" },
@@ -505,6 +504,147 @@
             mBody.innerHTML = "";
             modalExportData.forEach(i => mBody.innerHTML += `<tr class="hover:bg-amber-50 border-b"><td class="py-3 px-4 font-semibold">${i.officeName} (${i.officeId})</td><td class="py-3 px-4">${i.officeClass}</td><td class="py-3 px-4">${i.division} / ${i.sd}</td><td class="text-center">${i.cats.PARCEL.a}</td><td class="text-center">${i.cats.MO.a}</td><td class="text-center">${i.cats.IRGB.a}</td><td class="text-right font-bold">${i.totalArt}</td><td class="text-right font-bold text-emerald-800">${i.totalPost.toLocaleString('en-IN')}</td></tr>`);
             document.getElementById('drilldownModal').classList.remove('hidden');
+        }
+
+        // ================= PLI / RPLI REPORT LOGIC =================
+        document.getElementById('pliFileInput').addEventListener('change', function(e) {
+            if (!e.target.files[0]) return;
+            let reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    let workbook = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+                    let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+                    
+                    pliRawData = json.map(r => ({
+                        officeId: String(r["office-id"] || r["Office ID"] || r["SOL ID"] || Object.values(r)[0]).trim(),
+                        txnCount: Number(r["pli-count"] || r["Transaction Count"] || r["Count"] || Object.values(r)[3] || 0)
+                    })).filter(i => i.officeId);
+
+                    processPliData();
+                    document.getElementById('pliUploadStatus').textContent = `✅ Loaded (${pliRawData.length} records)`;
+                } catch(err) {
+                    alert("Error reading PLI file: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        function processPliData() {
+            let summaryMap = {};
+            // Filter only Branch Offices (BO) as specified in the PLI modal header
+            Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                if (m.class === "BO") {
+                    let key = `${m.division}||${m.sd}`;
+                    if (!summaryMap[key]) summaryMap[key] = { division: m.division, sd: m.sd, total: 0, nil: 0, good: 0 };
+                    summaryMap[key].total++;
+
+                    let foundTxn = pliRawData.find(p => p.officeId === id);
+                    let count = foundTxn ? foundTxn.txnCount : 0;
+                    if (count === 0) summaryMap[key].nil++;
+                    if (count > 10) summaryMap[key].good++;
+                }
+            });
+
+            const tbody = document.querySelector('#tablePliSummary tbody');
+            tbody.innerHTML = "";
+            let sno = 1, gTot = 0, gNil = 0, gGood = 0;
+
+            Object.values(summaryMap).forEach(row => {
+                gTot += row.total; gNil += row.nil; gGood += row.good;
+                let nilPct = Math.round((row.nil / row.total) * 100) || 0;
+                let goodPct = Math.round((row.good / row.total) * 100) || 0;
+                tbody.innerHTML += `<tr><td>${sno++}</td><td>${row.division}</td><td style="text-align:left">${row.sd}</td><td>${row.total}</td><td class="text-rose-700 bg-rose-50 font-bold">${row.nil}</td><td class="text-emerald-700 bg-emerald-50 font-bold">${row.good}</td><td class="font-bold text-rose-800 bg-rose-100">${nilPct}%</td><td class="font-bold text-emerald-800 bg-emerald-100">${goodPct}%</td></tr>`;
+            });
+
+            const tfoot = document.querySelector('#tablePliSummary tfoot');
+            tfoot.innerHTML = `<tr class="row-grand-total"><td colspan="3">Grand Total (BO)</td><td>${gTot}</td><td>${gNil}</td><td>${gGood}</td><td>${Math.round((gNil/gTot)*100)||0}%</td><td>${Math.round((gGood/gTot)*100)||0}%</td></tr>`;
+        }
+
+        // ================= DIGITAL TXN REPORT LOGIC =================
+        function switchDigitalMode(mode) {
+            currentDigitalMode = mode;
+            const btnBooking = document.getElementById('btnModeBooking');
+            const btnCod = document.getElementById('btnModeCod');
+            if (mode === 'booking') {
+                btnBooking.className = "p-3.5 rounded-xl border-2 font-bold text-xs border-amber-800 bg-amber-800 text-white shadow-md cursor-pointer";
+                btnCod.className = "p-3.5 rounded-xl border-2 font-bold text-xs border-amber-300 bg-amber-50 text-amber-900 shadow-sm cursor-pointer";
+                document.getElementById('digitalModalMainTitle').textContent = "📲 Digital Booking Txn Status Report";
+                document.getElementById('thCol1Label').textContent = "Digital Txn";
+                document.getElementById('thCol2Label').textContent = "Cash / Zero";
+                document.getElementById('thCol3Label').textContent = "% Digital";
+            } else {
+                btnCod.className = "p-3.5 rounded-xl border-2 font-bold text-xs border-amber-800 bg-amber-800 text-white shadow-md cursor-pointer";
+                btnBooking.className = "p-3.5 rounded-xl border-2 font-bold text-xs border-amber-300 bg-amber-50 text-amber-900 shadow-sm cursor-pointer";
+                document.getElementById('digitalModalMainTitle').textContent = "💵 COD Digital Txn Status Report";
+                document.getElementById('thCol1Label').textContent = "Digital COD";
+                document.getElementById('thCol2Label').textContent = "Cash COD";
+                document.getElementById('thCol3Label').textContent = "% Digital COD";
+            }
+            if (digitalRawData.length > 0) processDigitalData();
+        }
+
+        document.getElementById('digitalFileInput').addEventListener('change', function(e) {
+            if (!e.target.files[0]) return;
+            let reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    let workbook = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+                    let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+                    
+                    digitalRawData = json.map(r => ({
+                        officeId: String(r["office-id"] || r["Office ID"] || Object.values(r)[0]).trim(),
+                        digitalCount: Number(r["digital-count"] || r["Digital Txn"] || Object.values(r)[2] || 0),
+                        cashCount: Number(r["cash-count"] || r["Cash Txn"] || Object.values(r)[3] || 0)
+                    })).filter(i => i.officeId);
+
+                    processDigitalData();
+                } catch(err) {
+                    alert("Error reading Digital file: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        function processDigitalData() {
+            if (digitalRawData.length === 0) return;
+            const viewType = document.getElementById('digitalViewType').value;
+            const boFilter = document.getElementById('digitalBoFilter').value;
+            const thSubDiv = document.getElementById('thSubDivCol');
+            
+            if (viewType === 'subdivision') thSubDiv.style.display = "";
+            else thSubDiv.style.display = "none";
+
+            let grouped = {};
+            Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                if (boFilter === 'excluding' && m.class === 'BO') return;
+                
+                let key = viewType === 'subdivision' ? `${m.division}||${m.sd}` : m.division;
+                if (!grouped[key]) grouped[key] = { division: m.division, sd: m.sd, total: 0, digital: 0, cash: 0 };
+                
+                grouped[key].total++;
+                let found = digitalRawData.find(d => d.officeId === id);
+                if (found) {
+                    grouped[key].digital += found.digitalCount;
+                    grouped[key].cash += found.cashCount;
+                }
+            });
+
+            const tbody = document.querySelector('#digitalStatusTable tbody');
+            tbody.innerHTML = "";
+            let sno = 1, gTot = 0, gDig = 0, gCash = 0;
+
+            Object.values(grouped).forEach(row => {
+                gTot += row.total; gDig += row.digital; gCash += row.cash;
+                let pct = Math.round((row.digital / (row.digital + row.cash)) * 100) || 0;
+                let subDivCol = viewType === 'subdivision' ? `<td>${row.sd}</td>` : '';
+                
+                tbody.innerHTML += `<tr><td>${sno++}</td><td>${row.division}</td>${subDivCol}<td>${row.total}</td><td class="text-emerald-700 font-bold">${row.digital}</td><td class="text-rose-700 font-bold">${row.cash}</td><td class="font-bold bg-amber-50">${pct}%</td></tr>`;
+            });
+
+            const tfoot = document.querySelector('#digitalStatusTable tfoot');
+            let spanCols = viewType === 'subdivision' ? 3 : 2;
+            let overallPct = Math.round((gDig / (gDig + gCash)) * 100) || 0;
+            tfoot.innerHTML = `<tr class="row-grand-total"><td colspan="${spanCols}">Grand Total</td><td>${gTot}</td><td>${gDig}</td><td>${gCash}</td><td>${overallPct}%</td></tr>`;
         }
 
         function exportTableToExcel(tId, filename) { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById(tId), {sheet: "Report"}), filename); }
