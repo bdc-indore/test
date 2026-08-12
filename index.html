@@ -23,6 +23,26 @@
         .report-subhead { background-color: #FDF3E6; color: #2b1d0c; }
         .report-total { background-color: #FAEEDD; color: #38220f; font-weight: bold; }
         .report-grand { background-color: #4B1D24; color: #ffffff; font-weight: bold; }
+
+        /* Exact Styling for Nil Booking Table & PLI Report Tables */
+        .nil-table { border-collapse: collapse; width: 100%; font-size: 11px; text-align: center; }
+        .nil-table th, .nil-table td { border: 1px solid #707070; padding: 5px 8px; }
+        .nil-table th { background-color: #b8cce4; color: #000; font-weight: bold; vertical-align: middle; }
+        
+        /* Division specific color styling matching reference image */
+        .div-bg-indore-city { background-color: #f2dcdb; font-weight: bold; color: #800000; }
+        .div-bg-indore-mfl { background-color: #dce6f1; font-weight: bold; color: #1f497d; }
+        .div-bg-khandwa { background-color: #f2dcdb; font-weight: bold; color: #800000; }
+        .div-bg-mandsaur { background-color: #e2efda; font-weight: bold; color: #375623; }
+        .div-bg-ratlam { background-color: #e1d5e7; font-weight: bold; color: #595959; }
+        .div-bg-sehore { background-color: #d9edf7; font-weight: bold; color: #31708f; }
+        .div-bg-ujjain { background-color: #d9d9d9; font-weight: bold; color: #333333; }
+        .div-bg-id-division { background-color: #fff2cc; font-weight: bold; color: #7f6000; }
+        
+        .row-div-total { background-color: #fce4d6; font-weight: bold; color: #000; }
+        .row-grand-total { background-color: #bdd7ee; font-weight: bold; color: #000; font-size: 12px; }
+        .clickable-cell { cursor: pointer; text-decoration: underline; }
+        .clickable-cell:hover { opacity: 0.7; }
     </style>
 </head>
 <body class="bg-amber-50/30 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between">
@@ -101,13 +121,13 @@
                 <p id="kpiPostage" class="text-3xl font-extrabold mt-2">0.00</p>
             </div>
             <div class="bg-gradient-to-br from-blue-900 to-slate-900 text-white p-5 rounded-2xl shadow-md border border-blue-800">
-                <p class="text-xs font-bold uppercase tracking-wider text-blue-200">Filtered Active / Total Offices</p>
-                <p id="kpiOffices" class="text-3xl font-extrabold mt-2">0 / 0</p>
+                <p class="text-xs font-bold uppercase tracking-wider text-blue-200">Total Offices (Master)</p>
+                <p id="kpiOffices" class="text-3xl font-extrabold mt-2">0</p>
             </div>
         </div>
 
         <!-- Section 1: Summary Report -->
-        <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden" id="sectionSummaryContainer">
             <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h2 class="font-bold text-base flex items-center gap-2"><span>📊</span> Division & Sub-Division Category-wise Articles & Revenue Report</h2>
@@ -119,6 +139,7 @@
                     </select>
                     <button onclick="exportTableToExcel('tableDivisionSummary', 'Summary_Report.xlsx')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
                     <button onclick="exportSingleTableToPDF('tableDivisionSummary', 'Summary Report')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
+                    <button onclick="exportTableJPEG('sectionSummaryContainer', 'Summary_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -130,38 +151,58 @@
             </div>
         </div>
 
-        <!-- Section 2: Office Activity Status -->
-        <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden">
+        <!-- Section 2: Office Activity Status & Nil Booking -->
+        <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden" id="sectionNilBookingContainer">
             <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h2 class="font-bold text-base flex items-center gap-2"><span>🏢</span> Office Activity Status (Active, Nil Booking & >10 Articles)</h2>
+                    <h2 class="font-bold text-base flex items-center gap-2"><span>🏢</span> Nil Booking Report & Office Activity Status</h2>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <select id="activityViewType" onchange="updateDashboard()" class="bg-[#361318] text-white text-xs font-bold px-3 py-1.5 rounded-lg border-0 outline-none cursor-pointer">
-                        <option value="subdivision">Sub-Division Wise</option>
-                        <option value="division">Division Wise</option>
+                    <label class="text-xs font-bold text-amber-200">Office Class:</label>
+                    <select id="nilFilterClass" onchange="updateDashboard()" class="bg-[#361318] text-white text-xs font-bold px-3 py-1.5 rounded-lg border-0 outline-none cursor-pointer">
+                        <option value="All">All Classes</option>
+                        <option value="BO">BO</option>
+                        <option value="SO">SO</option>
+                        <option value="HO">HO</option>
                     </select>
-                    <button onclick="exportTableToExcel('tableActivitySummary', 'Activity_Status_Report.xlsx')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
-                    <button onclick="exportSingleTableToPDF('tableActivitySummary', 'Activity Status Report')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
+                    <button onclick="exportTableToExcel('tableNilBookingSummary', 'Nil_Booking_Report.xlsx')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
+                    <button onclick="exportSingleTableToPDF('tableNilBookingSummary', 'Nil Booking Report')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
+                    <button onclick="exportTableJPEG('sectionNilBookingContainer', 'Nil_Booking_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse" id="tableActivitySummary">
-                    <thead><tr class="report-header text-xs font-bold border-b border-amber-900 uppercase"></tr></thead>
-                    <tbody class="text-xs md:text-sm divide-y divide-amber-100 text-slate-700"></tbody>
-                    <tfoot class="font-bold text-xs md:text-sm"></tfoot>
+            <div class="overflow-x-auto p-3">
+                <table class="nil-table" id="tableNilBookingSummary">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">S.No.</th>
+                            <th style="width: 15%;">Name of Division</th>
+                            <th style="width: 20%;">Name of Sub Dn</th>
+                            <th style="width: 12%;">Total Offices in Sub Dn</th>
+                            <th style="width: 12%;">NIL (0) Offices</th>
+                            <th style="width: 12%;">Low Booking (1-10)*</th>
+                            <th style="width: 12%;">Good Booking (>10)</th>
+                            <th style="width: 12%;">% NIL Offices in Sub Dn</th>
+                            <th style="width: 12%;">% Offices with >10 Booking</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                    <tfoot></tfoot>
                 </table>
+            </div>
+            <div class="px-6 py-2.5 bg-amber-50 border-t border-amber-200 text-[11px] text-amber-900 font-medium">
+                ⚠️ <strong>Note:</strong> Khudel BO is excluded / merged into Khudel SO automatically (Indore city count restricted to 10 BOs). IDC offices are non-booking offices and included under Low Booking. Click on any office number count to download the corresponding office list in Excel.
             </div>
         </div>
 
         <!-- Section 3: Top & Bottom 10 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden" id="sectionTop10Container">
                 <div class="px-5 py-3.5 bg-[#0B6623] text-white flex justify-between items-center">
                     <h3 class="font-bold text-sm">🏆 Top 10 Performing Offices</h3>
                     <div class="flex gap-1.5">
                         <button onclick="exportTableToExcel('tableTop10', 'Top_10.xlsx')" class="bg-emerald-950 text-white text-[11px] px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
                         <button onclick="exportSingleTableToPDF('tableTop10', 'Top 10 Offices')" class="bg-rose-800 text-white text-[11px] px-2.5 py-1 rounded shadow cursor-pointer">📄 PDF</button>
+                        <button onclick="exportTableJPEG('sectionTop10Container', 'Top_10_Offices')" class="bg-indigo-700 text-white text-[11px] px-2.5 py-1 rounded shadow cursor-pointer">📸 JPEG</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -171,12 +212,13 @@
                     </table>
                 </div>
             </div>
-            <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-md border border-amber-200 overflow-hidden" id="sectionBottom10Container">
                 <div class="px-5 py-3.5 bg-[#8B0000] text-white flex justify-between items-center">
                     <h3 class="font-bold text-sm">⚠️ Bottom 10 / Nil Booking Offices</h3>
                     <div class="flex gap-1.5">
                         <button onclick="exportTableToExcel('tableBottom10', 'Bottom_10.xlsx')" class="bg-rose-950 text-white text-[11px] px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
                         <button onclick="exportSingleTableToPDF('tableBottom10', 'Bottom 10 Offices')" class="bg-rose-800 text-white text-[11px] px-2.5 py-1 rounded shadow cursor-pointer">📄 PDF</button>
+                        <button onclick="exportTableJPEG('sectionBottom10Container', 'Bottom_10_Offices')" class="bg-indigo-700 text-white text-[11px] px-2.5 py-1 rounded shadow cursor-pointer">📸 JPEG</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -226,22 +268,22 @@
         </div>
     </div>
 
-    <!-- Modal 3: PLI / RPLI Nil Transaction Report Modal -->
+    <!-- Modal 3: PLI / RPLI Nil Transaction Report Modal (Fully Functional with Reference Color Styling & Clickable Office Counts) -->
     <div id="pliModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 md:p-6">
         <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-amber-400">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h3 class="font-extrabold text-lg flex items-center gap-2">🛡️ PLI / RPLI Nil Transaction Report (Indore Region - Branch Offices Only)</h3>
-                    <p class="text-xs text-amber-200">Strictly matching spreadsheet BO IDs with PLI Excel. Missing BOs are treated as active/1-10 txn.</p>
+                    <p class="text-xs text-amber-200">Strictly matching spreadsheet BO IDs with PLI Excel. Click any count to view/download office list.</p>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <button onclick="exportPliExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel (2 Sheets)</button>
                     <button onclick="exportPliPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
-                    <button onclick="exportPliJPEG()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG Download</button>
+                    <button onclick="exportTableJPEG('pliTableContainer', 'PLI_Nil_Txn_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                     <button onclick="closePliModal()" class="bg-amber-950 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold cursor-pointer ml-2">✕</button>
                 </div>
             </div>
-            <div class="p-6 overflow-y-auto flex-grow space-y-5">
+            <div class="p-6 overflow-y-auto flex-grow space-y-5" id="pliTableContainer">
                 <div class="bg-amber-50/80 p-4 rounded-xl border border-amber-200 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="w-full md:w-2/3">
                         <label class="block text-xs font-bold uppercase text-amber-900 mb-1">📤 Upload PLI/RPLI Raw Report File (Pan India Excel / CSV - Large File Optimized)</label>
@@ -253,31 +295,31 @@
                         </div>
                     </div>
                 </div>
-                <div class="overflow-x-auto border border-amber-300 rounded-xl shadow-sm bg-white p-3" id="pliTableContainer">
+                <div class="overflow-x-auto p-3">
                     <div class="text-center mb-3">
                         <h2 class="text-lg font-extrabold text-[#4B1D24]">DEPARTMENT OF POSTS — REGIONAL OFFICE INDORE</h2>
                         <h3 class="text-sm font-bold text-slate-700">PLI / RPLI Nil & Active Transaction Analysis Report (Indore Region - Branch Offices Only)</h3>
-                        <p class="text-xs text-slate-500 mt-0.5">Spreadsheet BOs missing from uploaded Excel are treated as 1-10 transaction offices</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Spreadsheet BOs missing from uploaded Excel are treated as active transaction offices</p>
                     </div>
-                    <table class="w-full text-left border-collapse" id="tablePliSummary">
+                    <table class="nil-table" id="tablePliSummary">
                         <thead>
-                            <tr class="report-header text-xs font-bold border-b border-amber-900 uppercase">
-                                <th class="py-3 px-3">Name of Division</th>
-                                <th class="py-3 px-3">Name of SD</th>
-                                <th class="py-3 px-2 text-center">Total Office in SD</th>
-                                <th class="py-3 px-2 text-center text-rose-300">Total Nil PLI/RPLI Txn Offices</th>
-                                <th class="py-3 px-2 text-center text-indigo-300">Total Offices with >10 Txn</th>
-                                <th class="py-3 px-2 text-right text-amber-200">Total Txn in SD</th>
-                                <th class="py-3 px-3 text-center text-rose-200">% of Offices with Nil Txn</th>
-                                <th class="py-3 px-3 text-center text-indigo-200">% of Offices with >10 Txn</th>
+                            <tr>
+                                <th style="width: 5%;">S.No.</th>
+                                <th style="width: 15%;">Name of Division</th>
+                                <th style="width: 20%;">Name of Sub Dn</th>
+                                <th style="width: 12%;">Total Offices in SD</th>
+                                <th style="width: 12%;">Nil PLI/RPLI Txn (0)</th>
+                                <th style="width: 12%;">Good PLI Txn (>10)</th>
+                                <th style="width: 12%;">% Nil Offices</th>
+                                <th style="width: 12%;">% Offices with >10 Txn</th>
                             </tr>
                         </thead>
-                        <tbody class="text-xs md:text-sm divide-y divide-amber-100 text-slate-700">
+                        <tbody>
                             <tr>
                                 <td colspan="8" class="py-8 text-center text-slate-400 font-medium">Please upload Pan India PLI Transaction Excel/CSV raw data to generate Indore Region Branch Offices Report.</td>
                             </tr>
                         </tbody>
-                        <tfoot class="font-bold text-xs md:text-sm"></tfoot>
+                        <tfoot></tfoot>
                     </table>
                 </div>
             </div>
@@ -354,11 +396,22 @@
         const MAPPING_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1575541045&single=true&output=csv";
         const IDP_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1439866773&single=true&output=csv";
 
-        let masterOfficesMap = {}, serviceMapping = {}, rawData = [], pliRawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
-        let currentPliProcessedList = [], globalNilBoList = [], currentNilPliOfficesList = [];
+        let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
+        let pliRawData = [], currentPliProcessedList = [], currentNilPliOfficesList = [];
         let idpCredentialsMap = {};
         let generatedReportsLog = [];
         let loggedInAdminId = "";
+
+        const divClassMap = {
+            "INDORE CITY": "div-bg-indore-city",
+            "INDORE MFL": "div-bg-indore-mfl",
+            "KHANDWA": "div-bg-khandwa",
+            "MANDSAUR": "div-bg-mandsaur",
+            "RATLAM": "div-bg-ratlam",
+            "SEHORE": "div-bg-sehore",
+            "UJJAIN": "div-bg-ujjain",
+            "ID DIVISION": "div-bg-id-division"
+        };
 
         function logGeneratedReport(reportName, exportFunction) {
             const now = new Date();
@@ -480,13 +533,23 @@
                 
                 masterOfficesMap = {};
                 for (let i = 1; i < masterRows.length; i++) {
-                    const row = masterRows[i], id = String(row[0] || "").trim().replace(/\.0$/, '');
+                    const row = masterRows[i], id = String(row[0] || "").trim();
                     if (id) {
+                        let officeName = String(row[1] || "").trim();
+                        let subDiv = String(row[3] || "").trim();
+                        let divName = String(row[4] || "").trim().toUpperCase();
+                        let officeClass = String(row[2] || "BO").trim().toUpperCase();
+
+                        if (officeName.toUpperCase().includes("KHUDEL") && officeClass === "BO") {
+                            subDiv = "INDORE EAST SD";
+                            divName = "INDORE CITY";
+                        }
+
                         masterOfficesMap[id] = { 
-                            name: String(row[1] || "").trim(), 
-                            class: String(row[2] || "BO").trim().toUpperCase(), 
-                            sd: String(row[3] || "").trim(), 
-                            division: String(row[4] || "").trim().toUpperCase(),
+                            name: officeName, 
+                            class: officeClass, 
+                            sd: subDiv, 
+                            division: divName,
                             ro: String(row[5] || row[6] || "").trim().toUpperCase()
                         };
                     }
@@ -527,17 +590,24 @@
             const selClass = document.getElementById('filterClass').value;
             const selCat = document.getElementById('filterCategory').value;
             const summaryView = document.getElementById('summaryViewType').value;
-            const activityView = document.getElementById('activityViewType').value;
+            const nilFilterClass = document.getElementById('nilFilterClass').value;
 
             const processed = rawData.map(item => {
-                const master = masterOfficesMap[item.officeId] || { name: "Unknown", class: "BO", sd: "Unknown SD", division: "Unknown Division" };
+                let offId = item.officeId;
+                const master = masterOfficesMap[offId] || { name: "Unknown", class: "BO", sd: "Unknown SD", division: "Unknown Division" };
+                
+                if (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") {
+                    return null;
+                }
+
                 const sKey = String(item.service).trim().toLowerCase();
                 let cat = serviceMapping[sKey] || (sKey.includes("parcel") ? "PARCEL" : "MO");
-                return { officeId: item.officeId, service: item.service, articles: Number(item.articles) || 0, postage: Number(item.postage) || 0, officeName: master.name, officeClass: master.class, subDivision: master.sd, division: master.division, category: cat };
-            });
+                return { officeId: offId, service: item.service, articles: Number(item.articles) || 0, postage: Number(item.postage) || 0, officeName: master.name, officeClass: master.class, subDivision: master.sd, division: master.division, category: cat };
+            }).filter(Boolean);
 
             const filteredOfficesMap = {};
             Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                if (m.name.toUpperCase().includes("KHUDEL") && m.class === "BO") return;
                 if (selDiv !== "All" && m.division !== selDiv) return;
                 if (selClass !== "All" && m.class !== selClass) return;
                 filteredOfficesMap[id] = m;
@@ -552,9 +622,16 @@
 
             currentFilteredRows = filteredRows;
 
+            const allMasterOfficesMap = {};
+            Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                if (m.name.toUpperCase().includes("KHUDEL") && m.class === "BO") return;
+                if (selDiv !== "All" && m.division !== selDiv) return;
+                allMasterOfficesMap[id] = m;
+            });
+
             const officeTotals = {};
-            Object.keys(filteredOfficesMap).forEach(id => {
-                officeTotals[id] = { ...filteredOfficesMap[id], officeId: id, articles: 0, postage: 0, categories: { PARCEL: { articles: 0, postage: 0 }, MO: { articles: 0, postage: 0 }, IRGB: { articles: 0, postage: 0 } } };
+            Object.keys(allMasterOfficesMap).forEach(id => {
+                officeTotals[id] = { ...allMasterOfficesMap[id], officeId: id, articles: 0, postage: 0, categories: { PARCEL: { articles: 0, postage: 0 }, MO: { articles: 0, postage: 0 }, IRGB: { articles: 0, postage: 0 } } };
             });
 
             processed.forEach(item => {
@@ -571,14 +648,14 @@
             globalAllFilteredOffices = Object.values(officeTotals);
             document.getElementById('kpiArticles').textContent = filteredRows.reduce((a, c) => a + c.articles, 0).toLocaleString('en-IN');
             document.getElementById('kpiPostage').textContent = filteredRows.reduce((a, c) => a + c.postage, 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
-            document.getElementById('kpiOffices').textContent = `${globalAllFilteredOffices.filter(o => o.articles > 0 || (o.name && o.name.toUpperCase().includes("IDC"))).length} / ${globalAllFilteredOffices.length}`;
+            document.getElementById('kpiOffices').textContent = `${Object.keys(masterOfficesMap).length}`;
 
-            renderSummaryTable(filteredRows, summaryView);
-            renderActivityTable(globalAllFilteredOffices, activityView);
+            renderSummaryTable(globalAllFilteredOffices, summaryView);
+            renderNilBookingTable(globalAllFilteredOffices, nilFilterClass);
             renderTopBottom10(globalAllFilteredOffices);
         }
 
-        function renderSummaryTable(filteredRows, viewType) {
+        function renderSummaryTable(allOffices, viewType) {
             const thead = document.querySelector('#tableDivisionSummary thead');
             const tbody = document.querySelector('#tableDivisionSummary tbody');
             const tfoot = document.querySelector('#tableDivisionSummary tfoot');
@@ -587,7 +664,7 @@
             if (viewType === 'division') {
                 thead.innerHTML = `<tr class="report-header text-[11px] font-bold border-b border-amber-900 uppercase">
                     <th class="py-2.5 px-3">Division Name</th>
-                    <th class="py-2.5 px-2 text-center">Offices</th>
+                    <th class="py-2.5 px-2 text-center">Total Offices</th>
                     <th class="py-2.5 px-2 text-right">Parcel Art</th>
                     <th class="py-2.5 px-2 text-right">Parcel Rev</th>
                     <th class="py-2.5 px-2 text-right">MO Art</th>
@@ -599,15 +676,15 @@
                 </tr>`;
 
                 const divMap = {};
-                filteredRows.forEach(row => {
+                allOffices.forEach(row => {
                     if (!divMap[row.division]) {
                         divMap[row.division] = { division: row.division, offices: new Set(), cats: { PARCEL:{a:0, p:0}, MO:{a:0, p:0}, IRGB:{a:0, p:0} }, totalArt: 0, totalPostage: 0 };
                     }
                     divMap[row.division].offices.add(row.officeId);
-                    if (divMap[row.division].cats[row.category]) {
-                        divMap[row.division].cats[row.category].a += row.articles;
-                        divMap[row.division].cats[row.category].p += row.postage;
-                    }
+                    Object.keys(row.categories).forEach(cat => {
+                        divMap[row.division].cats[cat].a += row.categories[cat].articles;
+                        divMap[row.division].cats[cat].p += row.categories[cat].postage;
+                    });
                     divMap[row.division].totalArt += row.articles;
                     divMap[row.division].totalPostage += row.postage;
                 });
@@ -657,7 +734,7 @@
                 thead.innerHTML = `<tr class="report-header text-[11px] font-bold border-b border-amber-900 uppercase">
                     <th class="py-2.5 px-3">Division</th>
                     <th class="py-2.5 px-3">Sub-Division (SD)</th>
-                    <th class="py-2.5 px-2 text-center">Offices</th>
+                    <th class="py-2.5 px-2 text-center">Total Offices</th>
                     <th class="py-2.5 px-2 text-right">Parcel Art</th>
                     <th class="py-2.5 px-2 text-right">Parcel Rev</th>
                     <th class="py-2.5 px-2 text-right">MO Art</th>
@@ -669,23 +746,23 @@
                 </tr>`;
 
                 const divGroups = {};
-                filteredRows.forEach(row => { if (!divGroups[row.division]) divGroups[row.division] = []; divGroups[row.division].push(row); });
+                allOffices.forEach(row => { if (!divGroups[row.division]) divGroups[row.division] = []; divGroups[row.division].push(row); });
                 
                 let gOffices = new Set(), gParcelA = 0, gParcelP = 0, gMoA = 0, gMoP = 0, gIrgbA = 0, gIrgbP = 0, gTotArt = 0, gTotPost = 0;
 
                 Object.entries(divGroups).forEach(([divName, rows]) => {
                     const subMap = {};
                     rows.forEach(r => {
-                        if (!subMap[r.subDivision]) {
-                            subMap[r.subDivision] = { offices: new Set(), cats: { PARCEL:{a:0, p:0}, MO:{a:0, p:0}, IRGB:{a:0, p:0} }, totalArt: 0, totalPostage: 0 };
+                        if (!subMap[r.sd]) {
+                            subMap[r.sd] = { offices: new Set(), cats: { PARCEL:{a:0, p:0}, MO:{a:0, p:0}, IRGB:{a:0, p:0} }, totalArt: 0, totalPostage: 0 };
                         }
-                        subMap[r.subDivision].offices.add(r.officeId);
-                        if (subMap[r.subDivision].cats[r.category]) {
-                            subMap[r.subDivision].cats[r.category].a += r.articles;
-                            subMap[r.subDivision].cats[r.category].p += r.postage;
-                        }
-                        subMap[r.subDivision].totalArt += r.articles;
-                        subMap[r.subDivision].totalPostage += r.postage;
+                        subMap[r.sd].offices.add(r.officeId);
+                        Object.keys(r.categories).forEach(cat => {
+                            subMap[r.sd].cats[cat].a += r.categories[cat].articles;
+                            subMap[r.sd].cats[cat].p += r.categories[cat].postage;
+                        });
+                        subMap[r.sd].totalArt += r.articles;
+                        subMap[r.sd].totalPostage += r.postage;
                     });
 
                     const subEntries = Object.entries(subMap);
@@ -734,129 +811,198 @@
             }
         }
 
-        function renderActivityTable(allOffices, viewType) {
-            const thead = document.querySelector('#tableActivitySummary thead');
-            const tbody = document.querySelector('#tableActivitySummary tbody');
-            const tfoot = document.querySelector('#tableActivitySummary tfoot');
+        function renderNilBookingTable(allOffices, filterClass) {
+            const tbody = document.querySelector('#tableNilBookingSummary tbody');
+            const tfoot = document.querySelector('#tableNilBookingSummary tfoot');
             tbody.innerHTML = ""; tfoot.innerHTML = "";
 
-            let totalOff = 0, totalAct = 0, totalNil = 0, totalAbv10 = 0;
-            const isOfficeActive = (o) => o.articles > 0 || (o.name && o.name.toUpperCase().includes("IDC"));
+            const filteredOffices = allOffices.filter(o => {
+                if (filterClass !== "All" && o.class !== filterClass) return false;
+                return true;
+            });
 
-            if (viewType === 'division') {
-                thead.innerHTML = `
-                    <tr class="report-header text-xs font-bold border-b border-amber-900 uppercase">
-                        <th class="py-3 px-4">Division Name</th>
-                        <th class="py-3 px-3 text-center">Total Offices</th>
-                        <th class="py-3 px-3 text-center text-emerald-300">Active (>0 / IDC)</th>
-                        <th class="py-3 px-3 text-center text-rose-300">Nil Booking</th>
-                        <th class="py-3 px-3 text-center text-indigo-300">> 10 Articles</th>
-                        <th class="py-3 px-3 text-center text-rose-200">% Nil Booking</th>
-                        <th class="py-3 px-3 text-center text-indigo-200">% >10 Booking</th>
-                    </tr>`;
+            const sdMap = {};
+            filteredOffices.forEach(o => {
+                const div = o.division || "OTHER DIVISION";
+                const sd = o.sd || "OTHER SD";
+                const key = div + "||" + sd;
+                if (!sdMap[key]) {
+                    sdMap[key] = {
+                        division: div,
+                        sd: sd,
+                        offices: []
+                    };
+                }
+                sdMap[key].offices.push(o);
+            });
 
-                const divActMap = {};
-                allOffices.forEach(o => {
-                    const key = o.division || "UNKNOWN";
-                    if (!divActMap[key]) divActMap[key] = { division: key, offices: [], active: [], nil: [], above10: [] };
-                    divActMap[key].offices.push(o);
-                    if (isOfficeActive(o)) divActMap[key].active.push(o); else divActMap[key].nil.push(o);
-                    if (o.articles > 10) divActMap[key].above10.push(o);
+            let processedList = [];
+            Object.values(sdMap).forEach(item => {
+                let totalOff = item.offices.length;
+                let nilOfficesList = [];
+                let lowBookingList = [];
+                let goodBookingList = [];
+
+                item.offices.forEach(o => {
+                    const cnt = o.articles;
+                    const isIDC = o.name.toUpperCase().includes("IDC");
+
+                    if (cnt === 0 && !isIDC) {
+                        nilOfficesList.push(o);
+                    } else if ((cnt > 0 && cnt <= 10) || (cnt === 0 && isIDC)) {
+                        lowBookingList.push(o);
+                    } else if (cnt > 10) {
+                        goodBookingList.push(o);
+                    }
                 });
 
-                Object.values(divActMap).forEach(item => {
-                    const totalCount = item.offices.length;
-                    totalOff += totalCount; totalAct += item.active.length; totalNil += item.nil.length; totalAbv10 += item.above10.length;
+                processedList.push({
+                    division: item.division,
+                    sd: item.sd,
+                    totalOffices: totalOff,
+                    nilOffices: nilOfficesList,
+                    lowBooking: lowBookingList,
+                    goodBooking: goodBookingList
+                });
+            });
 
-                    const nilPct = totalCount > 0 ? ((item.nil.length / totalCount) * 100).toFixed(1) : "0.0";
-                    const above10Pct = totalCount > 0 ? ((item.above10.length / totalCount) * 100).toFixed(1) : "0.0";
+            const divGroups = {};
+            processedList.forEach(item => {
+                if (!divGroups[item.division]) divGroups[item.division] = [];
+                divGroups[item.division].push(item);
+            });
+
+            let sno = 1;
+            let gTotOff = 0, gNilOff = 0, gLowOff = 0, gGoodOff = 0;
+
+            Object.entries(divGroups).forEach(([divName, sdItems]) => {
+                let divTotOff = 0, divNilOff = 0, divLowOff = 0, divGoodOff = 0;
+                let cssClass = divClassMap[divName] || "div-bg-indore-city";
+
+                sdItems.forEach(item => {
+                    divTotOff += item.totalOffices;
+                    divNilOff += item.nilOffices.length;
+                    divLowOff += item.lowBooking.length;
+                    divGoodOff += item.goodBooking.length;
+
+                    const nilPct = item.totalOffices > 0 ? Math.round((item.nilOffices.length / item.totalOffices) * 100) + "%" : "0%";
+                    const goodPct = item.totalOffices > 0 ? Math.round((item.goodBooking.length / item.totalOffices) * 100) + "%" : "0%";
 
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-amber-50 border-b border-amber-100";
                     tr.innerHTML = `
-                        <td class="py-3 px-4 font-bold text-[#4B1D24]">${item.division}</td>
-                        <td class="py-3 px-3 text-center font-semibold">${totalCount}</td>
-                        <td class="py-3 px-3 text-center font-bold text-[#0B6623] bg-emerald-50/40">${item.active.length}</td>
-                        <td class="py-3 px-3 text-center font-bold text-[#8B0000] bg-rose-50/40">${item.nil.length}</td>
-                        <td class="py-3 px-3 text-center font-bold text-indigo-800 bg-indigo-50/40">${item.above10.length}</td>
-                        <td class="py-3 px-3 text-center font-extrabold text-rose-700 bg-rose-100/50">${nilPct}%</td>
-                        <td class="py-3 px-3 text-center font-extrabold text-indigo-700 bg-indigo-100/50">${above10Pct}%</td>
+                        <td>${sno++}</td>
+                        <td class="${cssClass}">${divName}</td>
+                        <td style="text-align: left; font-weight: 600;">${item.sd}</td>
+                        <td>${item.totalOffices}</td>
+                        <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'NIL')">${item.nilOffices.length}</td>
+                        <td class="clickable-cell font-bold text-amber-700 bg-amber-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'LOW')">${item.lowBooking.length}</td>
+                        <td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'GOOD')">${item.goodBooking.length}</td>
+                        <td class="font-bold text-rose-800 bg-rose-100/60">${nilPct}</td>
+                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${goodPct}</td>
                     `;
                     tbody.appendChild(tr);
                 });
 
-                const overallNilPct = totalOff > 0 ? ((totalNil / totalOff) * 100).toFixed(1) : "0.0";
-                const overallAbv10Pct = totalOff > 0 ? ((totalAbv10 / totalOff) * 100).toFixed(1) : "0.0";
+                gTotOff += divTotOff; gNilOff += divNilOff; gLowOff += divLowOff; gGoodOff += divGoodOff;
+                const divNilPct = divTotOff > 0 ? Math.round((divNilOff / divTotOff) * 100) + "%" : "0%";
+                const divGoodPct = divTotOff > 0 ? Math.round((divGoodOff / divTotOff) * 100) + "%" : "0%";
 
-                tfoot.innerHTML = `
-                    <tr class="report-grand text-xs bg-[#4B1D24] text-white font-bold">
-                        <td class="py-3 px-4">GRAND TOTAL</td>
-                        <td class="py-3 px-3 text-center">${totalOff}</td>
-                        <td class="py-3 px-3 text-center text-emerald-200">${totalAct}</td>
-                        <td class="py-3 px-3 text-center text-rose-200">${totalNil}</td>
-                        <td class="py-3 px-3 text-center text-indigo-200">${totalAbv10}</td>
-                        <td class="py-3 px-3 text-center text-amber-300">${overallNilPct}%</td>
-                        <td class="py-3 px-3 text-center text-amber-300">${overallAbv10Pct}%</td>
-                    </tr>`;
+                const divTr = document.createElement('tr');
+                divTr.className = "row-div-total";
+                divTr.innerHTML = `
+                    <td colspan="3">${divName} Total</td>
+                    <td>${divTotOff}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'NIL')">${divNilOff}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'LOW')">${divLowOff}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'GOOD')">${divGoodOff}</td>
+                    <td>${divNilPct}</td>
+                    <td>${divGoodPct}</td>
+                `;
+                tbody.appendChild(divTr);
+            });
 
-            } else {
-                thead.innerHTML = `
-                    <tr class="report-header text-xs font-bold border-b border-amber-900 uppercase">
-                        <th class="py-3 px-4">Division Name</th>
-                        <th class="py-3 px-4">Sub-Division</th>
-                        <th class="py-3 px-3 text-center">Total Offices</th>
-                        <th class="py-3 px-3 text-center text-emerald-300">Active (>0 / IDC)</th>
-                        <th class="py-3 px-3 text-center text-rose-300">Nil Booking</th>
-                        <th class="py-3 px-3 text-center text-indigo-300">> 10 Articles</th>
-                        <th class="py-3 px-3 text-center text-rose-200">% Nil Booking</th>
-                        <th class="py-3 px-3 text-center text-indigo-200">% >10 Booking</th>
-                    </tr>`;
-                
-                const subActMap = {};
-                allOffices.forEach(o => {
-                    const key = (o.division || "OTHER") + "||" + (o.sd || "OTHER");
-                    if (!subActMap[key]) subActMap[key] = { division: o.division, sd: o.sd, offices: [], active: [], nil: [], above10: [] };
-                    subActMap[key].offices.push(o);
-                    if (isOfficeActive(o)) subActMap[key].active.push(o); else subActMap[key].nil.push(o);
-                    if (o.articles > 10) subActMap[key].above10.push(o);
-                });
+            const grandNilPct = gTotOff > 0 ? Math.round((gNilOff / gTotOff) * 100) + "%" : "0%";
+            const grandGoodPct = gTotOff > 0 ? Math.round((gGoodOff / gTotOff) * 100) + "%" : "0%";
 
-                Object.values(subActMap).forEach(item => {
-                    const totalCount = item.offices.length;
-                    totalOff += totalCount; totalAct += item.active.length; totalNil += item.nil.length; totalAbv10 += item.above10.length;
+            tfoot.innerHTML = `
+                <tr class="row-grand-total">
+                    <td colspan="3">Grand Total</td>
+                    <td>${gTotOff}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'NIL')">${gNilOff}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'LOW')">${gLowOff}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'GOOD')">${gGoodOff}</td>
+                    <td>${grandNilPct}</td>
+                    <td>${grandGoodPct}</td>
+                </tr>
+            `;
+        }
 
-                    const nilPct = totalCount > 0 ? ((item.nil.length / totalCount) * 100).toFixed(1) : "0.0";
-                    const above10Pct = totalCount > 0 ? ((item.above10.length / totalCount) * 100).toFixed(1) : "0.0";
+        function openOfficeCategoryListModal(divisionName, subDivisionName, categoryType) {
+            const filterClass = document.getElementById('nilFilterClass').value;
+            let targetOffices = [];
 
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-amber-50 border-b border-amber-100";
-                    tr.innerHTML = `
-                        <td class="py-3 px-4 font-bold text-[#4B1D24]">${item.division}</td>
-                        <td class="py-3 px-4 font-bold text-blue-900">${item.sd}</td>
-                        <td class="py-3 px-3 text-center font-semibold">${totalCount}</td>
-                        <td class="py-3 px-3 text-center font-bold text-[#0B6623] bg-emerald-50/40">${item.active.length}</td>
-                        <td class="py-3 px-3 text-center font-bold text-[#8B0000] bg-rose-50/40">${item.nil.length}</td>
-                        <td class="py-3 px-3 text-center font-bold text-indigo-800 bg-indigo-50/40">${item.above10.length}</td>
-                        <td class="py-3 px-3 text-center font-extrabold text-rose-700 bg-rose-100/50">${nilPct}%</td>
-                        <td class="py-3 px-3 text-center font-extrabold text-indigo-700 bg-indigo-100/50">${above10Pct}%</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+            globalAllFilteredOffices.forEach(o => {
+                if (filterClass !== "All" && o.class !== filterClass) return;
+                if (divisionName !== "ALL" && o.division !== divisionName) return;
+                if (subDivisionName !== "ALL" && o.sd !== subDivisionName) return;
 
-                const overallNilPct = totalOff > 0 ? ((totalNil / totalOff) * 100).toFixed(1) : "0.0";
-                const overallAbv10Pct = totalOff > 0 ? ((totalAbv10 / totalOff) * 100).toFixed(1) : "0.0";
+                const cnt = o.articles;
+                const isIDC = o.name.toUpperCase().includes("IDC");
 
-                tfoot.innerHTML = `
-                    <tr class="report-grand text-xs bg-[#4B1D24] text-white font-bold">
-                        <td colspan="2" class="py-3 px-4">GRAND TOTAL</td>
-                        <td class="py-3 px-3 text-center">${totalOff}</td>
-                        <td class="py-3 px-3 text-center text-emerald-200">${totalAct}</td>
-                        <td class="py-3 px-3 text-center text-rose-200">${totalNil}</td>
-                        <td class="py-3 px-3 text-center text-indigo-200">${totalAbv10}</td>
-                        <td class="py-3 px-3 text-center text-amber-300">${overallNilPct}%</td>
-                        <td class="py-3 px-3 text-center text-amber-300">${overallAbv10Pct}%</td>
-                    </tr>`;
+                let match = false;
+                if (categoryType === 'NIL' && cnt === 0 && !isIDC) match = true;
+                if (categoryType === 'LOW' && ((cnt > 0 && cnt <= 10) || (cnt === 0 && isIDC))) match = true;
+                if (categoryType === 'GOOD' && cnt > 10) match = true;
+
+                if (match) {
+                    targetOffices.push({
+                        officeId: o.officeId,
+                        officeName: o.name,
+                        class: o.class,
+                        subDivision: o.sd,
+                        division: o.division,
+                        articles: cnt
+                    });
+                }
+            });
+
+            if (targetOffices.length === 0) {
+                alert(`No offices found for ${divisionName} / ${subDivisionName} under ${categoryType} category.`);
+                return;
             }
+
+            modalExportData = targetOffices.map(o => ({
+                "Office ID": o.officeId,
+                "Office Name": o.officeName,
+                "Class": o.class,
+                "Sub-Division": o.subDivision,
+                "Division": o.division,
+                "Articles Booked": o.articles
+            }));
+
+            document.getElementById('modalTitle').textContent = `Office List: ${categoryType} Booking (${subDivisionName === 'ALL' ? divisionName : subDivisionName})`;
+            document.getElementById('modalSubtitle').textContent = `Total ${targetOffices.length} offices found. Click Excel button to download list.`;
+            
+            const modalBody = document.querySelector('#tableModalOffices tbody');
+            modalBody.innerHTML = "";
+            targetOffices.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-amber-50 border-b border-amber-100";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold">${item.officeName} <span class="text-xs text-slate-400">(${item.officeId})</span></td>
+                    <td class="py-3 px-4"><span class="bg-amber-100 text-[#4B1D24] text-xs px-2 py-1 rounded font-bold">${item.class}</span></td>
+                    <td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.subDivision}</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-[#4B1D24]">${item.articles}</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td>
+                `;
+                modalBody.appendChild(tr);
+            });
+
+            document.getElementById('drilldownModal').classList.remove('hidden');
+            logGeneratedReport(`Office List (${categoryType} - ${subDivisionName})`, () => exportModalToExcel());
         }
 
         function renderTopBottom10(offices) {
@@ -916,6 +1062,18 @@
             exportTableToExcel('tableDivisionSummary', 'Complete_Summary_Report.xlsx');
         }
 
+        function exportTableJPEG(containerId, filenamePrefix) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            html2canvas(container, { scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = filenamePrefix + '.jpg';
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+            });
+            logGeneratedReport(filenamePrefix + " (JPEG Image)", () => exportTableJPEG(containerId, filenamePrefix));
+        }
+
         function generatePdfDoc(tableId, titleText) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4');
@@ -963,6 +1121,304 @@
             exportSingleTableToPDF('tableDivisionSummary', 'Summary Report');
         }
 
+        // ==========================================
+        // PLI / RPLI NIL TRANSACTION REPORT LOGIC (HOME BUTTON LINKED & FIXED DRILLDOWN)
+        // ==========================================
+        function openPliModal() {
+            document.getElementById('pliModal').classList.remove('hidden');
+        }
+
+        function closePliModal() {
+            document.getElementById('pliModal').classList.add('hidden');
+        }
+
+        document.getElementById('pliFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('pliUploadStatus');
+            statusEl.innerHTML = `🔄 Reading Large Excel File (Chunked)...`;
+            statusEl.className = "text-xs font-bold text-amber-900 bg-amber-200 p-2.5 rounded-xl border border-amber-400 inline-block animate-pulse";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let data = e.target.result;
+                    let workbook = XLSX.read(data, {type: 'array', cellDates: true, dense: true});
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    
+                    statusEl.innerHTML = `🔄 Parsing rows & mapping BO offices...`;
+
+                    setTimeout(() => {
+                        const jsonRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+                        
+                        let indoreBoMaster = {};
+                        Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                            const cls = String(m.class || "").toUpperCase();
+                            const div = String(m.division || "").toUpperCase();
+                            const ro = String(m.ro || "").toUpperCase();
+                            if (cls === "BO" && (!ro || ro.includes("INDORE") || ["INDORE", "UJJAIN", "KHANDWA", "DEWAS", "DHAR", "KHARGONE", "MANDSAUR", "NEEMUCH", "RATLAM", "SHAJAPUR"].includes(div))) {
+                                indoreBoMaster[id] = m;
+                            }
+                        });
+
+                        if (Object.keys(indoreBoMaster).length === 0) {
+                            Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                                if (String(m.class).toUpperCase() === "BO") indoreBoMaster[id] = m;
+                            });
+                        }
+
+                        pliRawData = [];
+                        for (let i = 1; i < jsonRows.length; i++) {
+                            const row = jsonRows[i];
+                            if (!row || row.length === 0) continue;
+
+                            let oId = String(row[8] || row[0] || "").trim();
+                            oId = oId.replace(/\.0$/, '');
+
+                            if (!oId) continue;
+
+                            let transCount = 0;
+                            for (let j = 0; j < row.length; j++) {
+                                let val = Number(row[j]);
+                                if (!isNaN(val) && val >= 0 && val < 500000 && j !== 8) {
+                                    transCount = val;
+                                }
+                            }
+
+                            pliRawData.push({
+                                officeId: oId,
+                                transCount: transCount
+                            });
+                        }
+
+                        statusEl.innerHTML = `✅ Uploaded Successfully! (${Object.keys(indoreBoMaster).length} Indore Region BO Master Offices matched)`;
+                        statusEl.className = "text-xs font-bold text-emerald-900 bg-emerald-200 p-2.5 rounded-xl border border-emerald-400 inline-block";
+                        
+                        processPliData(indoreBoMaster);
+                        logGeneratedReport("PLI / RPLI Nil Transaction Report (Indore Region BO)", () => exportPliExcel());
+                    }, 50);
+
+                } catch (err) {
+                    console.error("Large File Parsing Error:", err);
+                    statusEl.innerHTML = `❌ Error reading file. Try CSV format.`;
+                    statusEl.className = "text-xs font-bold text-rose-900 bg-rose-200 p-2.5 rounded-xl border border-rose-400 inline-block";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processPliData(indoreBoMaster) {
+            const tbody = document.querySelector('#tablePliSummary tbody');
+            const tfoot = document.querySelector('#tablePliSummary tfoot');
+            tbody.innerHTML = ""; tfoot.innerHTML = "";
+
+            const officeTxnMap = {};
+            pliRawData.forEach(item => {
+                officeTxnMap[item.officeId] = (officeTxnMap[item.officeId] || 0) + item.transCount;
+            });
+
+            currentNilPliOfficesList = [];
+            Object.entries(indoreBoMaster).forEach(([id, m]) => {
+                const hasEntryInExcel = officeTxnMap.hasOwnProperty(id);
+                const txn = officeTxnMap[id] || 0;
+                if (hasEntryInExcel && txn === 0) {
+                    currentNilPliOfficesList.push({
+                        officeId: id,
+                        officeName: m.name,
+                        subDivision: m.sd,
+                        division: m.division
+                    });
+                }
+            });
+
+            const sdMap = {};
+            Object.entries(indoreBoMaster).forEach(([id, m]) => {
+                const div = m.division || "UNKNOWN DIVISION";
+                const sd = m.sd || "UNKNOWN SD";
+                const key = div + "||" + sd;
+                if (!sdMap[key]) {
+                    sdMap[key] = {
+                        division: div,
+                        sd: sd,
+                        offices: [],
+                        nilOfficesList: [],
+                        goodOfficesList: []
+                    };
+                }
+                sdMap[key].offices.push({ id: id, master: m });
+            });
+
+            Object.values(sdMap).forEach(item => {
+                let nilList = [];
+                let goodList = [];
+
+                item.offices.forEach(off => {
+                    const id = off.id;
+                    const m = off.master;
+                    const hasEntryInExcel = officeTxnMap.hasOwnProperty(id);
+                    const txn = officeTxnMap[id] || 0;
+
+                    if (hasEntryInExcel && txn === 0) {
+                        nilList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd });
+                    } else {
+                        goodList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd });
+                    }
+                });
+
+                item.totalOffices = item.offices.length;
+                item.nilOfficesList = nilList;
+                item.goodOfficesList = goodList;
+            });
+
+            currentPliProcessedList = Object.values(sdMap);
+
+            let sno = 1, gTotalOff = 0, gNilOff = 0, gGoodOff = 0;
+
+            const divGroups = {};
+            currentPliProcessedList.forEach(item => {
+                if (!divGroups[item.division]) divGroups[item.division] = [];
+                divGroups[item.division].push(item);
+            });
+
+            Object.entries(divGroups).forEach(([divName, sdItems]) => {
+                let divTotOff = 0, divNilOff = 0, divGoodOff = 0;
+                let cssClass = divClassMap[divName] || "div-bg-indore-city";
+
+                sdItems.forEach(item => {
+                    divTotOff += item.totalOffices;
+                    divNilOff += item.nilOfficesList.length;
+                    divGoodOff += item.goodOfficesList.length;
+
+                    const nilPct = item.totalOffices > 0 ? Math.round((item.nilOfficesList.length / item.totalOffices) * 100) + "%" : "0%";
+                    const goodPct = item.totalOffices > 0 ? Math.round((item.goodOfficesList.length / item.totalOffices) * 100) + "%" : "0%";
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${sno++}</td>
+                        <td class="${cssClass}">${divName}</td>
+                        <td style="text-align: left; font-weight: 600;">${item.sd}</td>
+                        <td>${item.totalOffices}</td>
+                        <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openPliOfficeListModal('${divName}', '${item.sd}', 'NIL')">${item.nilOfficesList.length}</td>
+                        <td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openPliOfficeListModal('${divName}', '${item.sd}', 'GOOD')">${item.goodOfficesList.length}</td>
+                        <td class="font-bold text-rose-800 bg-rose-100/60">${nilPct}</td>
+                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${goodPct}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                gTotalOff += divTotOff; gNilOff += divNilOff; gGoodOff += divGoodOff;
+                const divNilPct = divTotOff > 0 ? Math.round((divNilOff / divTotOff) * 100) + "%" : "0%";
+                const divGoodPct = divTotOff > 0 ? Math.round((divGoodOff / divTotOff) * 100) + "%" : "0%";
+
+                const divTr = document.createElement('tr');
+                divTr.className = "row-div-total";
+                divTr.innerHTML = `
+                    <td colspan="3">${divName} Total</td>
+                    <td>${divTotOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('${divName}', 'ALL', 'NIL')">${divNilOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('${divName}', 'ALL', 'GOOD')">${divGoodOff}</td>
+                    <td>${divNilPct}</td>
+                    <td>${divGoodPct}</td>
+                `;
+                tbody.appendChild(divTr);
+            });
+
+            const grandNilPct = gTotalOff > 0 ? Math.round((gNilOff / gTotalOff) * 100) + "%" : "0%";
+            const grandGoodPct = gTotalOff > 0 ? Math.round((gGoodOff / gTotalOff) * 100) + "%" : "0%";
+
+            tfoot.innerHTML = `
+                <tr class="row-grand-total">
+                    <td colspan="3">Grand Total (Indore Region - BO)</td>
+                    <td>${gTotalOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('ALL', 'ALL', 'NIL')">${gNilOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('ALL', 'ALL', 'GOOD')">${gGoodOff}</td>
+                    <td>${grandNilPct}</td>
+                    <td>${grandGoodPct}</td>
+                </tr>
+            `;
+        }
+
+        function openPliOfficeListModal(divisionName, subDivisionName, type) {
+            let targetList = [];
+            currentPliProcessedList.forEach(item => {
+                if (divisionName !== 'ALL' && item.division !== divisionName) return;
+                if (subDivisionName !== 'ALL' && item.sd !== subDivisionName) return;
+
+                if (type === 'NIL') targetList.push(...item.nilOfficesList);
+                else targetList.push(...item.goodOfficesList);
+            });
+
+            if (targetList.length === 0) {
+                alert(`No offices found under ${type} PLI category.`);
+                return;
+            }
+
+            modalExportData = targetList.map(o => ({
+                "Office ID": o.officeId,
+                "Office Name": o.officeName,
+                "Class": o.class,
+                "Sub-Division": o.sd,
+                "Division": o.division,
+                "Category": type === 'NIL' ? 'Nil PLI Txn' : 'Active PLI Txn'
+            }));
+
+            document.getElementById('modalTitle').textContent = `PLI Report Office List (${type === 'NIL' ? 'Nil Txn' : 'Active Txn'} - ${subDivisionName === 'ALL' ? divisionName : subDivisionName})`;
+            document.getElementById('modalSubtitle').textContent = `Total ${targetList.length} offices found. Click Excel button to download list.`;
+
+            const modalBody = document.querySelector('#tableModalOffices tbody');
+            modalBody.innerHTML = "";
+            targetList.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-amber-50 border-b border-amber-100";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold">${item.officeName} <span class="text-xs text-slate-400">(${item.officeId})</span></td>
+                    <td class="py-3 px-4"><span class="bg-amber-100 text-[#4B1D24] text-xs px-2 py-1 rounded font-bold">${item.class}</span></td>
+                    <td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.sd}</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-center text-xs">-</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-[#4B1D24]">${type === 'NIL' ? '0 Txn' : '>0 Txn'}</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td>
+                `;
+                modalBody.appendChild(tr);
+            });
+
+            document.getElementById('drilldownModal').classList.remove('hidden');
+            logGeneratedReport(`PLI Office List (${type} - ${subDivisionName})`, () => exportModalToExcel());
+        }
+
+        function exportPliExcel() {
+            if (!currentPliProcessedList || currentPliProcessedList.length === 0) {
+                alert("No PLI report data available to export. Please upload raw file first.");
+                return;
+            }
+
+            const workbook = XLSX.utils.book_new();
+            const ws1 = XLSX.utils.table_to_sheet(document.getElementById('tablePliSummary'));
+            XLSX.utils.book_append_sheet(workbook, ws1, "PLI_Summary_Report");
+
+            const excelRows2 = currentNilPliOfficesList.length > 0 ? currentNilPliOfficesList.map((o, idx) => ({
+                "S.No": idx + 1,
+                "Office ID": o.officeId,
+                "Branch Office Name (BO)": o.officeName,
+                "Sub-Division Name (SD)": o.subDivision,
+                "Division Name": o.division
+            })) : [{ "Message": "No Nil PLI transaction offices found" }];
+
+            const ws2 = XLSX.utils.json_to_sheet(excelRows2);
+            XLSX.utils.book_append_sheet(workbook, ws2, "Nil_PLI_Offices_List");
+
+            XLSX.writeFile(workbook, "PLI_Nil_Transaction_Report_Indore_Region_BO.xlsx");
+            logGeneratedReport("PLI Nil Transaction Report (2-Sheet Excel)", () => exportPliExcel());
+        }
+
+        function exportPliPDF() {
+            exportSingleTableToPDF('tablePliSummary', 'PLI Nil Transaction Report');
+            logGeneratedReport("PLI Nil Transaction Report (PDF)", () => exportPliPDF());
+        }
+
         document.getElementById('rawFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; 
             if (!file) return;
@@ -973,7 +1429,7 @@
                     if (firstCol.includes("TOTAL") || firstCol.includes("SUMMARY")) return null;
 
                     return {
-                        officeId: String(row["office-id"] || row["Office ID"] || Object.values(row)[0] || "").trim().replace(/\.0$/, ''),
+                        officeId: String(row["office-id"] || row["Office ID"] || Object.values(row)[0] || "").trim(),
                         service: String(row["product-name"] || row["Service Name"] || Object.values(row)[2] || "").trim(),
                         articles: Number(row["article-count"] || row["Articles Booked"] || Object.values(row)[3] || 0),
                         postage: Number(row["postage"] || row["Postage Collected"] || Object.values(row)[4] || 0)
@@ -1028,4 +1484,3 @@
     </script>
 </body>
 </html>
-```[cite: 1]
