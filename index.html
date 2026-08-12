@@ -19,6 +19,7 @@
     
     <meta name="theme-color" content="#31103f">
     <style>
+        /* Exact Color Coding & Styling from Reference Dashboard */
         .report-header { background: linear-gradient(135deg, #2c0c38 0%, #3f1251 100%); color: #ffffff; }
         .report-subhead { background-color: #FDF3E6; color: #2b1d0c; }
         .report-total { background-color: #FAEEDD; color: #38220f; font-weight: bold; }
@@ -47,7 +48,7 @@
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between">
 
-    <!-- Header Section -->
+    <!-- Header Section with Exact Reference Styling & User Specified Heading -->
     <header class="report-header shadow-xl py-5 px-4 md:px-8 border-b-4 border-purple-950">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="flex items-center gap-3">
@@ -70,6 +71,7 @@
                     <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Live Synced
                 </span>
                 
+                <!-- Global Top Right Buttons matching reference UI -->
                 <div class="flex items-center gap-2">
                     <button onclick="openAdminLoginModal()" class="bg-slate-800 hover:bg-slate-900 text-purple-300 text-xs font-bold px-3.5 py-2 rounded-xl shadow transition cursor-pointer border border-purple-600 flex items-center gap-1">🔒 Admin View</button>
                     <button onclick="exportAllToExcel()" class="bg-purple-800 hover:bg-purple-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer flex items-center gap-1">📥 Excel</button>
@@ -79,7 +81,7 @@
         </div>
     </header>
 
-    <!-- Navigation / Module Switcher Tabs -->
+    <!-- Navigation / Module Switcher Tabs matching reference image style -->
     <nav class="bg-white border-b border-slate-200 shadow-sm py-3 px-4 md:px-8">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
             <button onclick="switchModule('booking')" id="btnNavBooking" class="bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border-b-2 border-purple-600">
@@ -99,6 +101,7 @@
 
         <!-- MODULE 1: NIL ARTICLE BOOKING CALCULATOR -->
         <div id="moduleBooking" class="space-y-6">
+            <!-- Controls Section: File Upload & Filters matching reference modern card style -->
             <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-purple-950 mb-2">📁 Booking Raw File</label>
@@ -127,6 +130,7 @@
                 </div>
             </div>
 
+            <!-- KPI Cards matching reference colour borders -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-purple-900">
                     <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Articles Booked</p>
@@ -142,6 +146,7 @@
                 </div>
             </div>
 
+            <!-- Section 1: Summary Report -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionSummaryContainer">
                 <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
@@ -166,6 +171,7 @@
                 </div>
             </div>
 
+            <!-- Section 2: Office Activity Status & Nil Booking -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionNilBookingContainer">
                 <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
@@ -208,6 +214,7 @@
                 </div>
             </div>
 
+            <!-- Section 3: Top & Bottom 10 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionTop10Container">
                     <div class="px-5 py-3.5 bg-[#0B6623] text-white flex justify-between items-center">
@@ -1254,7 +1261,7 @@
         }
 
         // ==========================================
-        // DIGITAL TXN REPORT CALCULATOR LOGIC
+        // DIGITAL TXN REPORT CALCULATOR LOGIC (Robust Header Matching & Parsing)
         // ==========================================
         document.getElementById('digitalFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -1277,20 +1284,46 @@
                     setTimeout(() => {
                         const jsonRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
                         
+                        if (jsonRows.length === 0) {
+                            throw new Error("Empty Excel file");
+                        }
+
+                        // Locate header row dynamically by searching for 'Office ID' or 'Office Name'
+                        let headerRowIdx = 0;
+                        for (let i = 0; i < Math.min(10, jsonRows.length); i++) {
+                            let rStr = jsonRows[i].map(c => String(c).trim().toLowerCase());
+                            if (rStr.includes('office id') || rStr.includes('office name')) {
+                                headerRowIdx = i;
+                                break;
+                            }
+                        }
+
+                        const headers = jsonRows[headerRowIdx].map(c => String(c).trim());
+                        let idIdx = headers.findIndex(h => h.toLowerCase() === 'office id');
+                        let nameIdx = headers.findIndex(h => h.toLowerCase() === 'office name');
+                        let cashIdx = headers.findIndex(h => h.toLowerCase() === 'cash (cnt)');
+                        let dqrIdx = headers.findIndex(h => h.toLowerCase() === 'dqr scan (cnt)');
+                        let sbiposIdx = headers.findIndex(h => h.toLowerCase() === 'sbipos bharatqr (cnt)');
+
+                        if (idIdx === -1) idIdx = 0;
+                        if (nameIdx === -1) nameIdx = 1;
+                        if (cashIdx === -1) cashIdx = 3;
+                        if (dqrIdx === -1) dqrIdx = 15;
+                        if (sbiposIdx === -1) sbiposIdx = 21;
+
                         digitalRawData = [];
-                        for (let i = 1; i < jsonRows.length; i++) {
+                        for (let i = headerRowIdx + 1; i < jsonRows.length; i++) {
                             const row = jsonRows[i];
                             if (!row || row.length === 0) continue;
 
-                            let oId = String(row[0] || "").trim().replace(/\.0$/, '');
-                            let oName = String(row[1] || "").trim();
+                            let oId = String(row[idIdx] || "").trim().replace(/\.0$/, '');
+                            let oName = String(row[nameIdx] || "").trim();
 
-                            if (oName.toUpperCase().includes("SUMMARY")) continue;
-                            if (!oId && !oName.toUpperCase().includes("SUMMARY")) continue;
+                            if (!oName || oName.toUpperCase().includes("SUMMARY")) continue;
 
-                            let cashCnt = Number(row[3]) || 0;
-                            let dqrCnt = Number(row[15]) || 0;
-                            let sbiposQrCnt = Number(row[21]) || 0;
+                            let cashCnt = Number(row[cashIdx]) || 0;
+                            let dqrCnt = Number(row[dqrIdx]) || 0;
+                            let sbiposQrCnt = Number(row[sbiposIdx]) || 0;
 
                             digitalRawData.push({
                                 officeId: oId,
@@ -1346,7 +1379,7 @@
 
                 let groupKey = (viewType === 'division') ? (master.division || "OTHER DIVISION") : (master.sd || "OTHER SD");
 
-                if (!groupgingMapCheck(groupingMap, groupKey)) {
+                if (!groupingMap.hasOwnProperty(groupKey)) {
                     groupingMap[groupKey] = {
                         name: groupKey,
                         cash: 0,
@@ -1359,10 +1392,6 @@
                 groupingMap[groupKey].dqr += item.dqr;
                 groupingMap[groupKey].sbiposQr += item.sbiposQr;
             });
-
-            function groupingMapCheck(map, key) {
-                return map.hasOwnProperty(key);
-            }
 
             let rowsArray = Object.values(groupingMap);
 
@@ -1391,7 +1420,6 @@
 
                 let pctVal = r.pct;
                 let bgStyle = "";
-                let textCol = "#000";
 
                 if (pctVal < 60) {
                     bgStyle = "background-color: #f8cbad; color: #a61c1c;";
