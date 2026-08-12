@@ -1013,7 +1013,7 @@
                 
                 let oIdVal = String(row[oIdKey] || "").trim();
 
-                // 🛑 FIXED: Skip summary rows or header summary lines in raw file
+                // 🛑 STRICTLY SKIP SUMMARY / TOTAL ROWS FROM RAW FILE
                 if (!oIdVal || oIdVal.toUpperCase().includes('SUMMARY') || oIdVal.toUpperCase().includes('TOTAL') || oIdVal.toUpperCase().includes('GRAND') || oIdVal.toLowerCase() === 'nan') {
                     return;
                 }
@@ -1026,7 +1026,7 @@
                     division: "UNKNOWN DIVISION" 
                 };
 
-                // 🛑 EXCLUDING BO CHECK: If option is excluding and office class is BO, skip it completely!
+                // 🛑 EXCLUDING BO CHECK: If excluding BO, strictly skip BO class offices
                 if (boFilter === 'excluding' && master.class === 'BO') {
                     return; 
                 }
@@ -1052,11 +1052,12 @@
                     let val = parseInt(String(row[k]).replace(/,/g, ''), 10) || 0;
                     if (val < 0) val = 0;
 
-                    if (colIndex === 21 || lk.includes('sbipos bharatqr') || lk.includes('bharat qr') || lk.includes('sbipos-bharatqr')) {
+                    // 🛑 STRICTLY TARGET ONLY COUNT COLUMN (EXCLUDING AMOUNT COLUMNS)
+                    if ((colIndex === 21 || lk === 'sbipos bharatqr (cnt)' || lk.includes('sbipos bharatqr (cnt)')) && !lk.includes('amt')) {
                         qrVal += val;
-                    } else if (lk.includes('cash (cnt)') || lk === 'cash') {
+                    } else if ((lk === 'cash (cnt)' || lk === 'cash') && !lk.includes('amt')) {
                         cashVal += val;
-                    } else if (lk.includes('dqr scan (cnt)') || lk.includes('dqr')) {
+                    } else if ((lk === 'dqr scan (cnt)' || lk === 'dqr') && !lk.includes('amt')) {
                         dqrVal += val;
                     }
                 });
@@ -1374,4 +1375,3 @@
     </script>
 </body>
 </html>
-```[cite: 1]
