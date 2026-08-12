@@ -1044,20 +1044,21 @@
                     };
                 }
 
-                // 🎯 PRECISE HEADER MATCHING FOR COUNTS (Column D = Cash (Cnt), Column Q = DQR Scan (Cnt), Column S+ = SBIPOS Bharat QR)
+                // 🎯 PRECISE COLUMN MAPPING FIX FOR V COLUMN (SBI POS BHARAT QR)
                 let cashVal = 0, dqrVal = 0, qrVal = 0;
 
-                rowKeys.forEach(k => {
+                rowKeys.forEach((k, colIndex) => {
                     let lk = k.toLowerCase().trim();
                     let val = parseInt(String(row[k]).replace(/,/g, ''), 10) || 0;
                     if (val < 0) val = 0;
 
-                    if (lk === 'cash (cnt)') {
-                        cashVal += val;
-                    } else if (lk === 'dqr scan (cnt)') {
-                        dqrVal += val;
-                    } else if (lk.includes('sbipos') || lk.includes('bharat qr') || lk.includes('franchise sb') || lk.includes('sbipos bharat qr')) {
+                    // If it's V column (index 21 assuming 0-indexed, or matching header names)
+                    if (colIndex === 21 || lk.includes('sbipos') || lk.includes('bharat qr') || lk.includes('franchise sb') || lk.includes('sbipos bharat qr')) {
                         qrVal += val;
+                    } else if (lk.includes('cash (cnt)') || lk === 'cash') {
+                        cashVal += val;
+                    } else if (lk.includes('dqr scan (cnt)') || lk.includes('dqr')) {
+                        dqrVal += val;
                     }
                 });
 
@@ -1374,3 +1375,4 @@
     </script>
 </body>
 </html>
+```[cite: 1]
