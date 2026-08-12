@@ -1,4 +1,4 @@
-=<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -19,7 +19,6 @@
     
     <meta name="theme-color" content="#31103f">
     <style>
-        /* Exact Color Coding & Styling from Reference Dashboard */
         .report-header { background: linear-gradient(135deg, #2c0c38 0%, #3f1251 100%); color: #ffffff; }
         .report-subhead { background-color: #FDF3E6; color: #2b1d0c; }
         .report-total { background-color: #FAEEDD; color: #38220f; font-weight: bold; }
@@ -48,7 +47,7 @@
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between">
 
-    <!-- Header Section with Exact Reference Styling & User Specified Heading -->
+    <!-- Header Section -->
     <header class="report-header shadow-xl py-5 px-4 md:px-8 border-b-4 border-purple-950">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="flex items-center gap-3">
@@ -71,7 +70,6 @@
                     <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Live Synced
                 </span>
                 
-                <!-- Global Top Right Buttons matching reference UI -->
                 <div class="flex items-center gap-2">
                     <button onclick="openAdminLoginModal()" class="bg-slate-800 hover:bg-slate-900 text-purple-300 text-xs font-bold px-3.5 py-2 rounded-xl shadow transition cursor-pointer border border-purple-600 flex items-center gap-1">🔒 Admin View</button>
                     <button onclick="exportAllToExcel()" class="bg-purple-800 hover:bg-purple-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer flex items-center gap-1">📥 Excel</button>
@@ -81,7 +79,7 @@
         </div>
     </header>
 
-    <!-- Navigation / Module Switcher Tabs matching reference image style -->
+    <!-- Navigation / Module Switcher Tabs -->
     <nav class="bg-white border-b border-slate-200 shadow-sm py-3 px-4 md:px-8">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
             <button onclick="switchModule('booking')" id="btnNavBooking" class="bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border-b-2 border-purple-600">
@@ -89,6 +87,9 @@
             </button>
             <button onclick="switchModule('pli')" id="btnNavPli" class="bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200">
                 <span>🛡️</span> PLI Txn Calculator
+            </button>
+            <button onclick="switchModule('digital')" id="btnNavDigital" class="bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200">
+                <span>💳</span> Digital Txn Report
             </button>
         </div>
     </nav>
@@ -98,7 +99,6 @@
 
         <!-- MODULE 1: NIL ARTICLE BOOKING CALCULATOR -->
         <div id="moduleBooking" class="space-y-6">
-            <!-- Controls Section: File Upload & Filters matching reference modern card style -->
             <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-purple-950 mb-2">📁 Booking Raw File</label>
@@ -127,7 +127,6 @@
                 </div>
             </div>
 
-            <!-- KPI Cards matching reference colour borders -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-purple-900">
                     <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Articles Booked</p>
@@ -143,7 +142,6 @@
                 </div>
             </div>
 
-            <!-- Section 1: Summary Report -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionSummaryContainer">
                 <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
@@ -168,7 +166,6 @@
                 </div>
             </div>
 
-            <!-- Section 2: Office Activity Status & Nil Booking -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionNilBookingContainer">
                 <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
@@ -211,7 +208,6 @@
                 </div>
             </div>
 
-            <!-- Section 3: Top & Bottom 10 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionTop10Container">
                     <div class="px-5 py-3.5 bg-[#0B6623] text-white flex justify-between items-center">
@@ -305,6 +301,73 @@
             </div>
         </div>
 
+        <!-- MODULE 3: DIGITAL TXN REPORT CALCULATOR -->
+        <div id="moduleDigital" class="space-y-6 hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-extrabold text-lg flex items-center gap-2">💳 Digital Booking Txn Status Calculator</h3>
+                        <p class="text-xs text-purple-200">Upload Booking Paymentwise Report to calculate Cash, DQR Scan, SBIPOS Bharat QR and % Digital Txn.</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportDigitalExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
+                        <button onclick="exportSingleTableToPDF('tableDigitalSummary', 'Digital Booking Txn Status')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
+                        <button onclick="exportTableJPEG('digitalTableContainer', 'Digital_Booking_Txn_Status')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                    </div>
+                </div>
+                <div class="p-6 space-y-5" id="digitalTableContainer">
+                    <div class="bg-purple-50/60 p-4 rounded-xl border border-purple-200 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📤 Upload Booking Paymentwise Report (Excel / CSV)</label>
+                            <input type="file" id="digitalFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-900 file:text-white hover:file:bg-purple-950 cursor-pointer border border-purple-300 rounded-lg bg-white p-1"/>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Select Mode</label>
+                            <select id="digitalModeSelect" onchange="processDigitalReport()" class="w-full border border-purple-300 rounded-lg p-2 text-xs bg-white font-bold text-purple-950 outline-none">
+                                <option value="excluding_bo">Excluding BO</option>
+                                <option value="including_bo">Including BO (HO+BO+SO)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center px-2">
+                        <div id="digitalUploadStatus" class="text-xs font-bold text-purple-950">
+                            ⏳ Waiting for Booking Paymentwise Report file upload...
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold text-slate-700">View By:</label>
+                            <select id="digitalViewType" onchange="processDigitalReport()" class="bg-[#31103f] text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-purple-700 outline-none cursor-pointer">
+                                <option value="division">Division Level</option>
+                                <option value="subdivision">Sub-Division Level</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto p-3">
+                        <div class="text-center mb-3">
+                            <h2 id="digitalReportTitle" class="text-lg font-extrabold text-[#31103f]">Digital Booking Txn Status (Excluding BO)</h2>
+                            <p class="text-xs text-slate-500 mt-0.5" id="digitalReportDate">Report Date: --</p>
+                        </div>
+                        <table class="nil-table" id="tableDigitalSummary">
+                            <thead>
+                                <tr>
+                                    <th id="digitalHeaderGrouping" style="width: 25%;">Division</th>
+                                    <th style="width: 15%;">Cash (Cnt)</th>
+                                    <th style="width: 15%;">DQR Scan (Cnt)</th>
+                                    <th style="width: 20%;">SBIPOS BHARAT QR (Cnt)</th>
+                                    <th style="width: 25%;">% of Digital Txn</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="py-8 text-center text-slate-400 font-medium">Please upload Booking Paymentwise Report file to generate Digital Txn Report.</td>
+                                </tr>
+                            </tbody>
+                            <tfoot></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Modal 1: Detailed Offices Modal -->
@@ -343,7 +406,7 @@
         </div>
     </div>
 
-    <!-- Modal 2: Dedicated PLI Office List Modal (Clean BO List without Parcel/MO/IRGB) -->
+    <!-- Modal 2: Dedicated PLI Office List Modal -->
     <div id="pliDrilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
             <div class="report-header px-6 py-4 flex justify-between items-center">
@@ -447,6 +510,7 @@
 
         let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
         let pliRawData = [], currentPliProcessedList = [], currentNilPliOfficesList = [];
+        let digitalRawData = [];
         let pliModalExportData = [];
         let idpCredentialsMap = {};
         let generatedReportsLog = [];
@@ -466,19 +530,27 @@
         function switchModule(mod) {
             const bMod = document.getElementById('moduleBooking');
             const pMod = document.getElementById('modulePli');
+            const dMod = document.getElementById('moduleDigital');
             const btnB = document.getElementById('btnNavBooking');
             const btnP = document.getElementById('btnNavPli');
+            const btnD = document.getElementById('btnNavDigital');
+
+            bMod.classList.add('hidden');
+            pMod.classList.add('hidden');
+            dMod.classList.add('hidden');
+            btnB.className = "bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200";
+            btnP.className = "bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200";
+            btnD.className = "bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200";
 
             if (mod === 'booking') {
                 bMod.classList.remove('hidden');
-                pMod.classList.add('hidden');
                 btnB.className = "bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border-b-2 border-purple-600";
-                btnP.className = "bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200";
-            } else {
-                bMod.classList.add('hidden');
+            } else if (mod === 'pli') {
                 pMod.classList.remove('hidden');
                 btnP.className = "bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border-b-2 border-purple-600";
-                btnB.className = "bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200";
+            } else if (mod === 'digital') {
+                dMod.classList.remove('hidden');
+                btnD.className = "bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border-b-2 border-purple-600";
             }
         }
 
@@ -1182,7 +1254,192 @@
         }
 
         // ==========================================
-        // PLI / RPLI NIL TRANSACTION REPORT LOGIC (Khudel BO excluded, exactly 10 in Indore City, Clean BO Drilldown)
+        // DIGITAL TXN REPORT CALCULATOR LOGIC
+        // ==========================================
+        document.getElementById('digitalFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('digitalUploadStatus');
+            statusEl.innerHTML = `🔄 Reading Booking Paymentwise Report...`;
+            statusEl.className = "text-xs font-bold text-purple-950 bg-purple-200 p-2.5 rounded-xl border border-purple-400 inline-block animate-pulse";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let data = e.target.result;
+                    let workbook = XLSX.read(data, {type: 'array', cellDates: true, dense: true});
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    
+                    statusEl.innerHTML = `🔄 Parsing rows & calculating digital metrics...`;
+
+                    setTimeout(() => {
+                        const jsonRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+                        
+                        digitalRawData = [];
+                        for (let i = 1; i < jsonRows.length; i++) {
+                            const row = jsonRows[i];
+                            if (!row || row.length === 0) continue;
+
+                            let oId = String(row[0] || "").trim().replace(/\.0$/, '');
+                            let oName = String(row[1] || "").trim();
+
+                            if (oName.toUpperCase().includes("SUMMARY")) continue;
+                            if (!oId && !oName.toUpperCase().includes("SUMMARY")) continue;
+
+                            let cashCnt = Number(row[3]) || 0;
+                            let dqrCnt = Number(row[15]) || 0;
+                            let sbiposQrCnt = Number(row[21]) || 0;
+
+                            digitalRawData.push({
+                                officeId: oId,
+                                officeName: oName,
+                                cash: cashCnt,
+                                dqr: dqrCnt,
+                                sbiposQr: sbiposQrCnt
+                            });
+                        }
+
+                        statusEl.innerHTML = `✅ Uploaded Successfully! (${digitalRawData.length} records parsed)`;
+                        statusEl.className = "text-xs font-bold text-emerald-900 bg-emerald-200 p-2.5 rounded-xl border border-emerald-400 inline-block";
+                        
+                        processDigitalReport();
+                        logGeneratedReport("Digital Booking Txn Status Report", () => exportDigitalExcel());
+                    }, 50);
+
+                } catch (err) {
+                    console.error("Digital File Parsing Error:", err);
+                    statusEl.innerHTML = `❌ Error reading file. Try CSV format.`;
+                    statusEl.className = "text-xs font-bold text-rose-900 bg-rose-200 p-2.5 rounded-xl border border-rose-400 inline-block";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processDigitalReport() {
+            if (!digitalRawData || digitalRawData.length === 0) return;
+
+            const mode = document.getElementById('digitalModeSelect').value;
+            const viewType = document.getElementById('digitalViewType').value;
+            
+            const isExcludingBo = (mode === 'excluding_bo');
+            const titleText = `Digital Booking Txn Status (${isExcludingBo ? 'Excluding BO' : 'Including BO'})`;
+            document.getElementById('digitalReportTitle').textContent = titleText;
+            document.getElementById('digitalHeaderGrouping').textContent = (viewType === 'division') ? 'Division' : 'Sub-Division';
+
+            let d = new Date();
+            d.setDate(d.getDate() - 1);
+            if (d.getDay() === 0) d.setDate(d.getDate() - 1);
+            const dateStr = String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+            document.getElementById('digitalReportDate').textContent = `Report Date: ${dateStr}`;
+
+            const groupingMap = {};
+
+            digitalRawData.forEach(item => {
+                const master = masterOfficesMap[item.officeId];
+                if (!master) return;
+
+                if (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return;
+
+                if (isExcludingBo && master.class === "BO") return;
+
+                let groupKey = (viewType === 'division') ? (master.division || "OTHER DIVISION") : (master.sd || "OTHER SD");
+
+                if (!groupgingMapCheck(groupingMap, groupKey)) {
+                    groupingMap[groupKey] = {
+                        name: groupKey,
+                        cash: 0,
+                        dqr: 0,
+                        sbiposQr: 0
+                    };
+                }
+
+                groupingMap[groupKey].cash += item.cash;
+                groupingMap[groupKey].dqr += item.dqr;
+                groupingMap[groupKey].sbiposQr += item.sbiposQr;
+            });
+
+            function groupingMapCheck(map, key) {
+                return map.hasOwnProperty(key);
+            }
+
+            let rowsArray = Object.values(groupingMap);
+
+            rowsArray.forEach(r => {
+                let totalDigital = r.dqr + r.sbiposQr;
+                let totalTxn = r.cash + totalDigital;
+                r.pct = totalTxn > 0 ? (totalDigital / totalTxn) * 100 : 0;
+            });
+
+            if (viewType === 'division') {
+                rowsArray.sort((a, b) => b.pct - a.pct);
+            } else {
+                rowsArray.sort((a, b) => a.name.localeCompare(b.name));
+            }
+
+            const tbody = document.querySelector('#tableDigitalSummary tbody');
+            const tfoot = document.querySelector('#tableDigitalSummary tfoot');
+            tbody.innerHTML = ""; tfoot.innerHTML = "";
+
+            let totCash = 0, totDqr = 0, totSbipos = 0;
+
+            rowsArray.forEach(r => {
+                totCash += r.cash;
+                totDqr += r.dqr;
+                totSbipos += r.sbiposQr;
+
+                let pctVal = r.pct;
+                let bgStyle = "";
+                let textCol = "#000";
+
+                if (pctVal < 60) {
+                    bgStyle = "background-color: #f8cbad; color: #a61c1c;";
+                } else if (pctVal >= 60 && pctVal < 75) {
+                    bgStyle = "background-color: #ffeb9c; color: #835c00;";
+                } else if (pctVal >= 75 && pctVal < 85) {
+                    bgStyle = "background-color: #c6efce; color: #006100;";
+                } else {
+                    bgStyle = "background-color: #a9d18e; color: #003800;";
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="font-bold text-left px-3">${r.name}</td>
+                    <td class="text-right px-3">${r.cash.toLocaleString('en-IN')}</td>
+                    <td class="text-right px-3">${r.dqr.toLocaleString('en-IN')}</td>
+                    <td class="text-right px-3">${r.sbiposQr.toLocaleString('en-IN')}</td>
+                    <td class="text-right px-3 font-bold" style="${bgStyle}">${pctVal.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            let grandTotalDigital = totDqr + totSbipos;
+            let grandTotalTxn = totCash + grandTotalDigital;
+            let grandPct = grandTotalTxn > 0 ? (grandTotalDigital / grandTotalTxn) * 100 : 0;
+
+            tfoot.innerHTML = `
+                <tr class="row-grand-total">
+                    <td class="text-left px-3">Total</td>
+                    <td class="text-right px-3">${totCash.toLocaleString('en-IN')}</td>
+                    <td class="text-right px-3">${totDqr.toLocaleString('en-IN')}</td>
+                    <td class="text-right px-3">${totSbipos.toLocaleString('en-IN')}</td>
+                    <td class="text-right px-3 font-bold" style="background-color: #f8cbad; color: #a61c1c;">${grandPct.toFixed(2)}</td>
+                </tr>
+            `;
+        }
+
+        function exportDigitalExcel() {
+            if (!digitalRawData || digitalRawData.length === 0) {
+                alert("No Digital Txn data available to export. Please upload file first.");
+                return;
+            }
+            XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('tableDigitalSummary'), {sheet: "Digital_Txn_Status"}), "Digital_Booking_Txn_Status.xlsx");
+            logGeneratedReport("Digital Booking Txn Status Report (Excel)", () => exportDigitalExcel());
+        }
+
+        // ==========================================
+        // PLI / RPLI NIL TRANSACTION REPORT LOGIC
         // ==========================================
         document.getElementById('pliFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -1212,7 +1469,6 @@
                             const ro = String(m.ro || "").toUpperCase();
                             const name = String(m.name || "").toUpperCase();
 
-                            // Explicitly exclude Khudel BO from PLI report
                             if (name.includes("KHUDEL") && cls === "BO") return;
 
                             if (cls === "BO" && (!ro || ro.includes("INDORE") || ["INDORE", "UJJAIN", "KHANDWA", "DEWAS", "DHAR", "KHARGONE", "MANDSAUR", "NEEMUCH", "RATLAM", "SHAJAPUR"].includes(div))) {
@@ -1529,7 +1785,6 @@
                     alert("Error reading file. Please re-select a valid Excel (.xlsx, .xls) or .csv file.");
                 }
             };
-            if (reader.readAsArrayBranch ? reader.readAsArrayBuffer(file) : reader.readAsArrayBuffer(file));
             if (reader.readAsArrayBuffer) {
                 reader.readAsArrayBuffer(file);
             } else {
