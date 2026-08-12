@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+=<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -343,6 +343,38 @@
         </div>
     </div>
 
+    <!-- Modal 2: Dedicated PLI Office List Modal (Clean BO List without Parcel/MO/IRGB) -->
+    <div id="pliDrilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h3 id="pliModalTitle" class="font-bold text-lg">PLI Office Details List</h3>
+                    <p id="pliModalSubtitle" class="text-xs text-purple-200">Branch Office list with PLI Transaction status</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="exportPliModalToExcel()" class="bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
+                    <button onclick="closePliModalDetails()" class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold cursor-pointer">✕</button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse" id="tablePliModalOffices">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-800 text-xs font-bold uppercase border-b border-slate-200">
+                                <th class="py-3 px-4">S.No.</th>
+                                <th class="py-3 px-4">Office ID & Name</th>
+                                <th class="py-3 px-4">Class</th>
+                                <th class="py-3 px-4">SD / Division</th>
+                                <th class="py-3 px-4 text-right">PLI Transactions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-xs md:text-sm divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal 4: Admin Login Modal -->
     <div id="adminLoginModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-purple-400">
@@ -415,6 +447,7 @@
 
         let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
         let pliRawData = [], currentPliProcessedList = [], currentNilPliOfficesList = [];
+        let pliModalExportData = [];
         let idpCredentialsMap = {};
         let generatedReportsLog = [];
         let loggedInAdminId = "";
@@ -1149,7 +1182,7 @@
         }
 
         // ==========================================
-        // PLI / RPLI NIL TRANSACTION REPORT LOGIC
+        // PLI / RPLI NIL TRANSACTION REPORT LOGIC (Khudel BO excluded, exactly 10 in Indore City, Clean BO Drilldown)
         // ==========================================
         document.getElementById('pliFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -1177,6 +1210,11 @@
                             const cls = String(m.class || "").toUpperCase();
                             const div = String(m.division || "").toUpperCase();
                             const ro = String(m.ro || "").toUpperCase();
+                            const name = String(m.name || "").toUpperCase();
+
+                            // Explicitly exclude Khudel BO from PLI report
+                            if (name.includes("KHUDEL") && cls === "BO") return;
+
                             if (cls === "BO" && (!ro || ro.includes("INDORE") || ["INDORE", "UJJAIN", "KHANDWA", "DEWAS", "DHAR", "KHARGONE", "MANDSAUR", "NEEMUCH", "RATLAM", "SHAJAPUR"].includes(div))) {
                                 indoreBoMaster[id] = m;
                             }
@@ -1184,6 +1222,8 @@
 
                         if (Object.keys(indoreBoMaster).length === 0) {
                             Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                                const name = String(m.name || "").toUpperCase();
+                                if (name.includes("KHUDEL") && String(m.class).toUpperCase() === "BO") return;
                                 if (String(m.class).toUpperCase() === "BO") indoreBoMaster[id] = m;
                             });
                         }
@@ -1247,7 +1287,8 @@
                         officeId: id,
                         officeName: m.name,
                         subDivision: m.sd,
-                        division: m.division
+                        division: m.division,
+                        txn: 0
                     });
                 }
             });
@@ -1280,9 +1321,9 @@
                     const txn = officeTxnMap[id] || 0;
 
                     if (hasEntryInExcel && txn === 0) {
-                        nilList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd });
+                        nilList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd, txn: 0 });
                     } else {
-                        goodList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd });
+                        goodList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd, txn: txn });
                     }
                 });
 
@@ -1370,42 +1411,49 @@
             });
 
             if (targetList.length === 0) {
-                alert(`No offices found under ${type} PLI category.`);
+                alert(`No offices found under ${type === 'NIL' ? 'PLI Nil Txn' : 'Good PLI Txn'} category.`);
                 return;
             }
 
-            modalExportData = targetList.map(o => ({
+            pliModalExportData = targetList.map((o, idx) => ({
+                "S.No": idx + 1,
                 "Office ID": o.officeId,
                 "Office Name": o.officeName,
                 "Class": o.class,
                 "Sub-Division": o.sd,
                 "Division": o.division,
-                "Category": type === 'NIL' ? 'Nil PLI Txn' : 'Active PLI Txn'
+                "PLI Transactions": o.txn
             }));
 
-            document.getElementById('modalTitle').textContent = `PLI Report Office List (${type === 'NIL' ? 'Nil Txn' : 'Active Txn'} - ${subDivisionName === 'ALL' ? divisionName : subDivisionName})`;
-            document.getElementById('modalSubtitle').textContent = `Total ${targetList.length} offices found. Click Excel button to download list.`;
+            document.getElementById('pliModalTitle').textContent = `PLI Office List (${type === 'NIL' ? 'PLI Txn Nil' : 'Good PLI Txn'} - ${subDivisionName === 'ALL' ? divisionName : subDivisionName})`;
+            document.getElementById('pliModalSubtitle').textContent = `Total ${targetList.length} branch offices found.`;
 
-            const modalBody = document.querySelector('#tableModalOffices tbody');
+            const modalBody = document.querySelector('#tablePliModalOffices tbody');
             modalBody.innerHTML = "";
-            targetList.forEach(item => {
+            targetList.forEach((item, idx) => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-slate-100";
                 tr.innerHTML = `
+                    <td class="py-3 px-4 font-bold">${idx + 1}</td>
                     <td class="py-3 px-4 font-semibold">${item.officeName} <span class="text-xs text-slate-400">(${item.officeId})</span></td>
                     <td class="py-3 px-4"><span class="bg-purple-100 text-purple-950 text-xs px-2 py-1 rounded font-bold">${item.class}</span></td>
                     <td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.sd}</td>
-                    <td class="py-3 px-4 text-center text-xs">-</td>
-                    <td class="py-3 px-4 text-center text-xs">-</td>
-                    <td class="py-3 px-4 text-center text-xs">-</td>
-                    <td class="py-3 px-4 text-right font-extrabold text-purple-950">${type === 'NIL' ? '0 Txn' : '>0 Txn'}</td>
-                    <td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td>
+                    <td class="py-3 px-4 text-right font-extrabold ${item.txn === 0 ? 'text-rose-700' : 'text-emerald-800'}">${item.txn}</td>
                 `;
                 modalBody.appendChild(tr);
             });
 
-            document.getElementById('drilldownModal').classList.remove('hidden');
-            logGeneratedReport(`PLI Office List (${type} - ${subDivisionName})`, () => exportModalToExcel());
+            document.getElementById('pliDrilldownModal').classList.remove('hidden');
+            logGeneratedReport(`PLI Office List Details (${type} - ${subDivisionName})`, () => exportPliModalToExcel());
+        }
+
+        function closePliModalDetails() {
+            document.getElementById('pliDrilldownModal').classList.add('hidden');
+        }
+
+        function exportPliModalToExcel() {
+            XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(pliModalExportData), "PLI_Offices"), "PLI_Office_Details_List.xlsx");
+            logGeneratedReport("PLI Office Details List (Excel)", () => exportPliModalToExcel());
         }
 
         function exportPliExcel() {
@@ -1481,6 +1529,7 @@
                     alert("Error reading file. Please re-select a valid Excel (.xlsx, .xls) or .csv file.");
                 }
             };
+            if (reader.readAsArrayBranch ? reader.readAsArrayBuffer(file) : reader.readAsArrayBuffer(file));
             if (reader.readAsArrayBuffer) {
                 reader.readAsArrayBuffer(file);
             } else {
