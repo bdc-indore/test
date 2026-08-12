@@ -263,7 +263,6 @@
 
     <!-- Script -->
     <script>
-        // Expanded Master Offices Map with dynamic auto-detection fallback
         let masterOfficesMap = {
             "23108926": { name: "AGARCANTT B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN", ro: "INDORE REGION" },
             "23108927": { name: "BAROD B.O", class: "BO", sd: "AGAR SD", division: "UJJAIN", ro: "INDORE REGION" },
@@ -294,7 +293,6 @@
         function getMasterOffice(id) {
             id = String(id).trim();
             if (masterOfficesMap[id]) return masterOfficesMap[id];
-            // Fallback dynamically if office ID is not pre-listed so data won't drop out
             return { name: "Office " + id, class: id.length >= 8 && id.startsWith("231") ? "BO" : "SO", sd: "GENERAL SD", division: "INDORE CITY", ro: "INDORE REGION" };
         }
 
@@ -355,7 +353,6 @@
             currentFilteredRows = processed.filter(i => (selDiv === "All" || i.division === selDiv) && (selClass === "All" || i.officeClass === selClass) && (selCat === "All" || i.category === selCat));
 
             const officeTotals = {};
-            // Gather all unique office IDs from master map + any uploaded raw data
             let allOfficeIds = new Set(Object.keys(masterOfficesMap));
             rawData.forEach(r => { if(r.officeId) allOfficeIds.add(r.officeId); });
 
@@ -512,7 +509,7 @@
             const mBody = document.querySelector('#tableModalOffices tbody');
             mBody.innerHTML = "";
             modalExportData.forEach(i => mBody.innerHTML += `<tr class="hover:bg-amber-50 border-b"><td class="py-3 px-4 font-semibold">${i.officeName} (${i.officeId})</td><td class="py-3 px-4">${i.officeClass}</td><td class="py-3 px-4">${i.division} / ${i.sd}</td><td class="text-center">${i.cats.PARCEL.a}</td><td class="text-center">${i.cats.MO.a}</td><td class="text-center">${i.cats.IRGB.a}</td><td class="text-right font-bold">${i.totalArt}</td><td class="text-right font-bold text-emerald-800">${i.totalPost.toLocaleString('en-IN')}</td></tr>`);
-            document.getElementById('drilldownModal').classList.add('hidden');
+            document.getElementById('drilldownModal').classList.remove('hidden');
         }
 
         // ================= PLI / RPLI REPORT LOGIC =================
@@ -525,10 +522,11 @@
                     let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
                     
                     pliRawData = json.map(r => {
-                        let keys = Object.keys(r);
-                        let officeId = String(r["office-id"] || r["Office ID"] || r["SOL ID"] || r["facility-id"] || r[keys[0]] || "").trim();
-                        let txnCount = Number(r["pli-count"] || r["Transaction Count"] || r["Count"] || r["total-count"] || r[keys[3]] || r[keys[2]] || 0);
-                        return { officeId, txnCount };
+                        let vals = Object.values(r);
+                        return {
+                            officeId: String(r["office-id"] || r["Office ID"] || r["SOL ID"] || r["facility-id"] || vals[0] || "").trim(),
+                            txnCount: Number(r["pli-count"] || r["Transaction Count"] || r["Count"] || r["total-count"] || vals[3] || vals[2] || 0)
+                        };
                     }).filter(i => i.officeId);
 
                     processPliData();
@@ -542,30 +540,22 @@
 
         function processPliData() {
             let summaryMap = {};
-            let targetOffices = Object.entries(masterOfficesMap);
-            
-            // If user uploaded a master-like list or general list, include them as BOs for flexibility
-            if(pliRawData.length > 0) {
-                pliRawData.forEach(p => {
-                    let m = getMasterOffice(p.officeId);
-                    if(m.class === "BO") {
-                        let key = `${m.division}||${m.sd}`;
-                        if (!summaryMap[key]) summaryMap[key] = { division: m.division, sd: m.sd, total: 0, nil: 0, good: 0 };
-                        summaryMap[key].total++;
-                        if (p.txnCount === 0) summaryMap[key].nil++;
-                        if (p.txnCount > 10) summaryMap[key].good++;
-                    }
-                });
-            } else {
-                targetOffices.forEach(([id, m]) => {
-                    if (m.class === "BO") {
-                        let key = `${m.division}||${m.sd}`;
-                        if (!summaryMap[key]) summaryMap[key] = { division: m.division, sd: m.sd, total: 0, nil: 0, good: 0 };
-                        summaryMap[key].total++;
-                        summaryMap[key].nil++; // default 0 if no file loaded
-                    }
-                });
-            }
+            let allIds = new Set(Object.keys(masterOfficesMap));
+            pliRawData.forEach(p => allIds.add(p.officeId));
+
+            allIds.forEach(id => {
+                let m = getMasterOffice(id);
+                if (m.class === "BO") {
+                    let key = `${m.division}||${m.sd}`;
+                    if (!summaryMap[key]) summaryMap[key] = { division: m.division, sd: m.sd, total: 0, nil: 0, good: 0 };
+                    summaryMap[key].total++;
+
+                    let found = pliRawData.find(p => p.officeId === id);
+                    let count = found ? found.txnCount : 0;
+                    if (count === 0) summaryMap[key].nil++;
+                    if (count > 10) summaryMap[key].good++;
+                }
+            });
 
             const tbody = document.querySelector('#tablePliSummary tbody');
             tbody.innerHTML = "";
@@ -614,11 +604,12 @@
                     let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
                     
                     digitalRawData = json.map(r => {
-                        let keys = Object.keys(r);
-                        let officeId = String(r["office-id"] || r["Office ID"] || r["SOL ID"] || r[keys[0]] || "").trim();
-                        let digitalCount = Number(r["digital-count"] || r["Digital Txn"] || r[keys[2]] || 0);
-                        let cashCount = Number(r["cash-count"] || r["Cash Txn"] || r[keys[3]] || 0);
-                        return { officeId, digitalCount, cashCount };
+                        let vals = Object.values(r);
+                        return {
+                            officeId: String(r["office-id"] || r["Office ID"] || r["SOL ID"] || vals[0] || "").trim(),
+                            digitalCount: Number(r["digital-count"] || r["Digital Txn"] || vals[2] || 0),
+                            cashCount: Number(r["cash-count"] || r["Cash Txn"] || vals[3] || 0)
+                        };
                     }).filter(i => i.officeId);
 
                     processDigitalData();
@@ -685,21 +676,29 @@
             });
         }
 
+        // ================= BOOKING RAW FILE PARSER FIX =================
         document.getElementById('rawFileInput').addEventListener('change', function(e) {
             if (!e.target.files[0]) return;
             let reader = new FileReader();
             reader.onload = function(evt) {
-                let json = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(evt.target.result), {type: 'array'}).Sheets[XLSX.read(new Uint8Array(evt.target.result), {type: 'array'}).SheetNames[0]], { defval: "" });
-                rawData = json.map(r => {
-                    let keys = Object.keys(r);
-                    return {
-                        officeId: String(r["office-id"] || r["Office ID"] || r["SOL ID"] || keys[0] ? r[keys[0]] : "").trim(),
-                        service: String(r["product-name"] || r["Service Name"] || r["Service"] || keys[2] ? r[keys[2]] : "").trim(),
-                        articles: Number(r["article-count"] || r["Articles"] || r["Count"] || keys[3] ? r[keys[3]] : 0),
-                        postage: Number(r["postage"] || r["Postage"] || keys[4] ? r[keys[4]] : 0)
-                    };
-                }).filter(i => i.officeId);
-                updateDashboard();
+                try {
+                    let workbook = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+                    let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+                    
+                    rawData = json.map(r => {
+                        let vals = Object.values(r);
+                        return {
+                            officeId: String(r["office-id"] || r["Office ID"] || r["SOL ID"] || vals[0] || "").trim(),
+                            service: String(r["product-name"] || r["Service Name"] || r["Service"] || vals[2] || "").trim(),
+                            articles: Number(r["article-count"] || r["Articles"] || r["Count"] || vals[3] || 0),
+                            postage: Number(r["postage"] || r["Postage"] || vals[4] || 0)
+                        };
+                    }).filter(i => i.officeId);
+
+                    updateDashboard();
+                } catch(err) {
+                    alert("Error reading Booking file: " + err.message);
+                }
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
