@@ -1013,7 +1013,8 @@
                 
                 let oIdVal = String(row[oIdKey] || "").trim();
 
-                if (!oIdVal || oIdVal.toUpperCase().includes('SUMMARY') || oIdVal.toUpperCase().includes('TOTAL') || oIdVal.toUpperCase().includes('GRAND')) {
+                // 🛑 FIXED: Skip summary rows or header summary lines in raw file
+                if (!oIdVal || oIdVal.toUpperCase().includes('SUMMARY') || oIdVal.toUpperCase().includes('TOTAL') || oIdVal.toUpperCase().includes('GRAND') || oIdVal.toLowerCase() === 'nan') {
                     return;
                 }
 
@@ -1044,7 +1045,6 @@
                     };
                 }
 
-                // 🎯 PRECISE COLUMN MAPPING FIX FOR V COLUMN (SBI POS BHARAT QR)
                 let cashVal = 0, dqrVal = 0, qrVal = 0;
 
                 rowKeys.forEach((k, colIndex) => {
@@ -1052,8 +1052,7 @@
                     let val = parseInt(String(row[k]).replace(/,/g, ''), 10) || 0;
                     if (val < 0) val = 0;
 
-                    // If it's V column (index 21 assuming 0-indexed, or matching header names)
-                    if (colIndex === 21 || lk.includes('sbipos') || lk.includes('bharat qr') || lk.includes('franchise sb') || lk.includes('sbipos bharat qr')) {
+                    if (colIndex === 21 || lk.includes('sbipos bharatqr') || lk.includes('bharat qr') || lk.includes('sbipos-bharatqr')) {
                         qrVal += val;
                     } else if (lk.includes('cash (cnt)') || lk === 'cash') {
                         cashVal += val;
