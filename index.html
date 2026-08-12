@@ -948,7 +948,7 @@
         }
 
         // ==========================================
-        // DIGITAL TXN & COD REPORT LOGIC
+        // DIGITAL TXN & COD REPORT LOGIC (FIXED)
         // ==========================================
         function openDigitalModal() {
             document.getElementById('digitalModal').classList.remove('hidden');
@@ -1004,24 +1004,28 @@
                 thSubDiv.style.display = 'none';
             }
 
-            // Aggregate data by Division or Sub-Division based on master offices
             const groupMap = {};
 
             digitalRawData.forEach(row => {
-                // Try finding office ID or name from various possible columns
-                let oId = String(row["office-id"] || row["Office ID"] || row["Facility ID"] || row["Office ID/Name"] || Object.values(row)[0] || "").trim();
-                oId = oId.replace(/\.0$/, '');
+                // Find office ID or facility name key dynamically from row headers
+                let rowKeys = Object.keys(row);
+                let oIdKey = rowKeys.find(k => k.toLowerCase().includes('office') || k.toLowerCase().includes('facility') || k.toLowerCase().includes('id')) || rowKeys[0];
+                let oId = String(row[oIdKey] || "").trim().replace(/\.0$/, '');
 
-                const master = masterOfficesMap[oId] || { name: String(Object.values(row)[1] || "Unknown").trim(), class: "SO", sd: "UNKNOWN SD", division: "UNKNOWN DIVISION" };
+                const master = masterOfficesMap[oId] || { 
+                    name: String(row[rowKeys[1]] || "Unknown").trim(), 
+                    class: "SO", 
+                    sd: "UNKNOWN SD", 
+                    division: "UNKNOWN DIVISION" 
+                };
 
-                // BO filtering check
+                // BO filter option
                 if (boFilter === 'excluding' && master.class === 'BO') {
-                    return; // Skip BOs if excluding
+                    return; 
                 }
 
                 let division = (master.division || "UNKNOWN DIVISION").toUpperCase();
                 let subDivision = (master.sd || "UNKNOWN SD").toUpperCase();
-
                 let key = viewType === 'subdivision' ? (division + "||" + subDivision) : division;
 
                 if (!groupMap[key]) {
@@ -1034,13 +1038,30 @@
                     };
                 }
 
-                // Detect numerical values across columns for Cash, DQR, SBIPOS QR
-                let vals = Object.values(row).map(v => Number(v) || 0).filter(v => v >= 0 && v < 1000000);
-                
-                // Intelligent fallback extraction if specific headers exist or position based
-                let cashVal = Number(row["Cash (Cnt)"] || row["Cash"] || row["Cash Count"] || vals[0] || 0);
-                let dqrVal = Number(row["DQR Scan (Cnt)"] || row["DQR Scan"] || row["DQR"] || vals[1] || 0);
-                let qrVal = Number(row["SBIPOS BHARAT QR (Cnt)"] || row["SBIPOS"] || row["Bharat QR"] || vals[2] || 0);
+                // Flexible column header search for Cash, DQR, SBIPOS QR
+                let cashVal = 0, dqrVal = 0, qrVal = 0;
+
+                rowKeys.forEach(k => {
+                    let lk = k.toLowerCase();
+                    let val = Number(row[k]) || 0;
+                    if (lk.includes('cash') || lk.includes('csh')) {
+                        cashVal += val;
+                    } else if (lk.includes('dqr') || lk.includes('scan') || lk.includes('dynamic')) {
+                        dqrVal += val;
+                    } else if (lk.includes('sbipos') || lk.includes('bharat') || lk.includes('qr') || lk.includes('upi')) {
+                        qrVal += val;
+                    }
+                });
+
+                // Fallback if specific names weren't matched precisely
+                if (cashVal === 0 && dqrVal === 0 && qrVal === 0) {
+                    let numericVals = rowKeys.map(k => Number(row[k])).filter(v => !isNaN(v) && v >= 0 && v < 1000000);
+                    if (numericVals.length >= 3) {
+                        cashVal = numericVals[0];
+                        dqrVal = numericVals[1];
+                        qrVal = numericVals[2];
+                    }
+                }
 
                 groupMap[key].cash += cashVal;
                 groupMap[key].dqr += dqrVal;
@@ -1090,7 +1111,6 @@
                 let digitalTxn = item.dqr + item.sbipos;
                 let digPct = totalTxn > 0 ? ((digitalTxn / totalTxn) * 100).toFixed(2) : "0.00";
 
-                // Color code like reference image
                 let colorClass = "bg-emerald-100 text-emerald-800";
                 let numPct = parseFloat(digPct);
                 if (numPct < 60) colorClass = "bg-rose-100 text-rose-800";
