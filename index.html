@@ -726,6 +726,7 @@
             masterOfficeDatabase = Array.from(officeMap.values());
         }
 
+        // 🎯 YAHAN PAR NAYA FIX APPLY KIYA GAYA HAI 🎯
         function parseRevenueSheet(rows) {
             let currentVert = "PARCEL", records = [];
             rows.forEach((row) => {
@@ -742,13 +743,19 @@
                 if (divUpper.includes('TOTAL') || divUpper.includes('GRAND TOTAL') || divUpper.includes('VERTICAL') || divUpper.includes('NAME OF')) return;
 
                 let isIRGB = (currentVert === "IRGB");
-                // IRGB के आंकड़े शीट में ही लाख में होते हैं, अतः क्रोर कन्वर्जन के लिए 100 से भाग दें ताकि वह अन्य वर्टिकल के साथ सही अनुपात में जुड़ सके
                 let scaleDivisor = isIRGB ? 100 : 1; 
 
-                let rawT = cleanNumber(row[1]), rawM = cleanNumber(row[2]), rawTM = cleanNumber(row[3]);
-                let rawAp = cleanNumber(row[4]), rawMy = cleanNumber(row[5]), rawJn = cleanNumber(row[6]), rawJl = cleanNumber(row[7]), rawAg = cleanNumber(row[8]);
+                // Updated Index Mapping according to the sheet structure
+                let rawT = cleanNumber(row[1]);       
+                let rawTM = cleanNumber(row[2]);      
+                let rawM = rawT / 12;                 
                 
-                // अगस्त तक के वास्तविक व्यक्तिगत महीनों का योग (Till Month कॉलम को न जोड़ें ताकि डबल काउंटिंग न हो)
+                let rawAp = cleanNumber(row[3]);      
+                let rawMy = cleanNumber(row[4]);      
+                let rawJn = cleanNumber(row[5]);      
+                let rawJl = cleanNumber(row[6]);      
+                let rawAg = cleanNumber(row[7]);      
+                
                 let calcTotalAch = rawAp + rawMy + rawJn + rawJl + rawAg;
 
                 records.push({
@@ -759,7 +766,9 @@
                     rawTarget: rawT, rawMonthly: rawM, rawTillMonth: rawTM, 
                     rawApr: rawAp, rawMay: rawMy, rawJun: rawJn, rawJul: rawJl, rawAug: rawAg, 
                     rawTotalAch: calcTotalAch, 
-                    propPct: row[10] || "0%", totalPct: row[11] || "0%", isIRGB: isIRGB
+                    propPct: row[9] || "0%",   
+                    totalPct: row[10] || "0%", 
+                    isIRGB: isIRGB
                 });
             });
             return records;
@@ -859,14 +868,12 @@
 
             let filtered = dataset.filter(r => (selectedDiv === 'ALL' || isMatchingDivision(r.divName, selectedDiv)) && (currentVertical === 'ALL' || r.vertical === currentVertical));
             let sumTarget = 0, sumAch = 0, sumAug = 0;
-            // यदि सिर्फ IRGB सेलेक्ट है या ऑल में IRGB भी शामिल है, तो इकाई मैनेज करें
             let isIRGBOnly = (currentVertical === 'IRGB');
 
             filtered.forEach(r => {
                 if (currentDataType === 'count') { 
                     sumTarget += r.target; sumAug += r.aug; sumAch += r.aug; 
                 } else {
-                    // यदि IRGB अकेला है तो मान लाख में दिखाएं, अन्यथा क्रोर में
                     let multiplier = (r.vertical === 'IRGB') ? 100 : 1;
                     sumTarget += r.target * multiplier; 
                     sumAch += r.totalAch * multiplier;
@@ -1553,7 +1560,7 @@
             revenueRecords.forEach(r => {
                 if (selectedDiv === 'ALL' || isMatchingDivision(r.divName, selectedDiv)) {
                     if (vertRevenueTotals[r.vertical] !== undefined) {
-                        let mult = (r.vertical === 'IRGB') ? 1 : 1; // डोनेट चार्ट के लिए समानुपातिक वैल्यू
+                        let mult = (r.vertical === 'IRGB') ? 1 : 1;
                         vertRevenueTotals[r.vertical] += ((r.totalAch || 0) * mult);
                     }
                 }
