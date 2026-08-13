@@ -726,7 +726,6 @@
             masterOfficeDatabase = Array.from(officeMap.values());
         }
 
-        // 🎯 YAHAN PAR NAYA FIX APPLY KIYA GAYA HAI 🎯
         function parseRevenueSheet(rows) {
             let currentVert = "PARCEL", records = [];
             rows.forEach((row) => {
@@ -745,7 +744,6 @@
                 let isIRGB = (currentVert === "IRGB");
                 let scaleDivisor = isIRGB ? 100 : 1; 
 
-                // Updated Index Mapping according to the sheet structure
                 let rawT = cleanNumber(row[1]);       
                 let rawTM = cleanNumber(row[2]);      
                 let rawM = rawT / 12;                 
@@ -860,6 +858,7 @@
             }
         }
 
+        // 🎯 YAHAN PAR FIXED & ACCURATE LOGIC HAI 🎯
         function updateDashboard() {
             const selectedDiv = document.getElementById('divisionSelect').value;
             currentVertical = document.getElementById('verticalSelect').value;
@@ -874,17 +873,23 @@
                 if (currentDataType === 'count') { 
                     sumTarget += r.target; sumAug += r.aug; sumAch += r.aug; 
                 } else {
-                    let multiplier = (r.vertical === 'IRGB') ? 100 : 1;
-                    sumTarget += r.target * multiplier; 
-                    sumAch += r.totalAch * multiplier;
+                    // Normalize addition - Har cheez pehle se Cr me mapped hai, directly add karo
+                    sumTarget += r.target; 
+                    sumAch += r.totalAch;
                 }
             });
 
-            let unitSuffix = (currentDataType === 'revenue') ? (isIRGBOnly ? ' Lakhs' : ' Cr') : ' Articles';
-            let decimals = (currentDataType === 'revenue') ? (isIRGBOnly ? 2 : 3) : 0;
+            // Sirf agar user particular IRGB tab me hai, toh lakh me convert karke dikhao 
+            if (currentDataType === 'revenue' && isIRGBOnly) {
+                sumTarget *= 100;
+                sumAch *= 100;
+            }
 
-            document.getElementById('kpiTarget').innerText = `${sumTarget.toLocaleString('en-IN', { maximumFractionDigits: decimals })}${unitSuffix}`;
-            document.getElementById('kpiAchievement').innerText = `${sumAch.toLocaleString('en-IN', { maximumFractionDigits: decimals })}${unitSuffix}`;
+            let unitSuffix = (currentDataType === 'revenue') ? (isIRGBOnly ? ' Lakhs' : ' Cr') : ' Articles';
+            let decimals = (currentDataType === 'revenue') ? 3 : 0; // Fixed to 3 decimals
+
+            document.getElementById('kpiTarget').innerText = `${sumTarget.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${unitSuffix}`;
+            document.getElementById('kpiAchievement').innerText = `${sumAch.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${unitSuffix}`;
             document.getElementById('kpiPropPct').innerText = sumTarget > 0 ? ((sumAch / sumTarget) * 100).toFixed(2) + "%" : "0%";
             document.getElementById('kpiActiveDivText').innerText = selectedDiv === 'ALL' ? "All Divisions" : selectedDiv;
             document.getElementById('kpiActiveVertText').innerText = currentVertical === 'ALL' ? "All Verticals Combined" : `${currentVertical} Vertical`;
@@ -901,18 +906,21 @@
             let rows = [], sumT = 0, sumAp = 0, sumMy = 0, sumJn = 0, sumJl = 0, sumAg = 0, sumAch = 0;
             filteredData.forEach(r => {
                 let vertBadge = `<span class="px-2.5 py-1 rounded-md font-bold text-xs bg-blue-100 text-blue-800">${r.vertical}</span>`;
-                let mult = (r.vertical === 'IRGB') ? 100 : 1;
+                
+                // 🎯 Fixed: Agar All Verticals he toh multiplier nahi lagega, sab Cr me rahenge taaki rows me unit mismatch na ho
+                let mult = (isIRGBOnly && r.vertical === 'IRGB') ? 100 : 1;
                 let t = r.target * mult, ap = r.apr * mult, my = r.may * mult, jn = r.jun * mult, jl = r.jul * mult, ag = r.aug * mult, ach = r.totalAch * mult;
                 
                 sumT += t; sumAp += ap; sumMy += my; sumJn += jn; sumJl += jl; sumAg += ag; sumAch += ach;
-                let dec = isCount ? 0 : 2, rowPctVal = isCount ? (t > 0 ? (ag / t) * 100 : 0) : (t > 0 ? (ach / t) * 100 : 0);
+                let dec = isCount ? 0 : 3; 
+                let rowPctVal = isCount ? (t > 0 ? (ag / t) * 100 : 0) : (t > 0 ? (ach / t) * 100 : 0);
 
-                rows.push(`<tr class="hover:bg-slate-50 transition border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3">${vertBadge}</td><td class="p-3">${t.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3">${ap.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3">${my.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3">${jn.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3">${jl.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3 font-bold text-blue-700">${ag.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3 font-extrabold text-emerald-700">${ach.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3 font-semibold text-amber-700">${rowPctVal.toFixed(2)}%</td></tr>`);
+                rows.push(`<tr class="hover:bg-slate-50 transition border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3">${vertBadge}</td><td class="p-3">${t.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3">${ap.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3">${my.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3">${jn.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3">${jl.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3 font-bold text-blue-700">${ag.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3 font-extrabold text-emerald-700">${ach.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3 font-semibold text-amber-700">${rowPctVal.toFixed(2)}%</td></tr>`);
             });
 
             document.getElementById('tableBody').innerHTML = rows.join('');
-            let dec = isCount ? 0 : 2, totalAchPctVal = isCount ? (sumT > 0 ? (sumAg / sumT) * 100 : 0) : (sumT > 0 ? (sumAch / sumT) * 100 : 0);
-            document.getElementById('tableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 uppercase text-amber-300">TOTAL</td><td class="p-3.5">ALL FILTERED</td><td class="p-3.5">${sumT.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3.5">${sumAp.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3.5">${sumMy.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3.5">${sumJn.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3.5">${sumJl.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3.5 text-blue-300 font-bold">${sumAg.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3.5 text-emerald-300 font-black">${sumAch.toLocaleString('en-IN', { maximumFractionDigits: dec })}</td><td class="p-3.5 text-amber-300 font-black">${totalAchPctVal.toFixed(2)}%</td></tr>`;
+            let dec = isCount ? 0 : 3, totalAchPctVal = isCount ? (sumT > 0 ? (sumAg / sumT) * 100 : 0) : (sumT > 0 ? (sumAch / sumT) * 100 : 0);
+            document.getElementById('tableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 uppercase text-amber-300">TOTAL</td><td class="p-3.5">ALL FILTERED</td><td class="p-3.5">${sumT.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5">${sumAp.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5">${sumMy.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5">${sumJn.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5">${sumJl.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5 text-blue-300 font-bold">${sumAg.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5 text-emerald-300 font-black">${sumAch.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5 text-amber-300 font-black">${totalAchPctVal.toFixed(2)}%</td></tr>`;
             document.getElementById('recordBadge').innerText = `${filteredData.length} Records Loaded`;
         }
 
@@ -1314,20 +1322,20 @@
                 let mult = (r.vertical === 'IRGB') ? 100 : 1;
                 let annT = r.target * mult, q1T = annT / 4, ap = r.apr * mult, mayVal = r.may * mult, jn = r.jun * mult, q1Ach = ap + mayVal + jn;
                 sumAnnT += annT; sumQ1T += q1T; sumAprR += ap; sumMayR += mayVal; sumJunR += jn; sumQ1AchR += q1Ach;
-                rowsRev.push(`<tr class="border-b border-slate-200 hover:bg-teal-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3">${annT.toFixed(2)}</td><td class="p-3 font-bold text-teal-800">${q1T.toFixed(2)}</td><td class="p-3">${ap.toFixed(2)}</td><td class="p-3">${mayVal.toFixed(2)}</td><td class="p-3">${jn.toFixed(2)}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toFixed(2)}</td><td class="p-3 text-center font-black text-teal-700">${q1T > 0 ? ((q1Ach / q1T) * 100).toFixed(1) + "%" : "0%"}</td></tr>`);
+                rowsRev.push(`<tr class="border-b border-slate-200 hover:bg-teal-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3">${annT.toFixed(3)}</td><td class="p-3 font-bold text-teal-800">${q1T.toFixed(3)}</td><td class="p-3">${ap.toFixed(3)}</td><td class="p-3">${mayVal.toFixed(3)}</td><td class="p-3">${jn.toFixed(3)}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toFixed(3)}</td><td class="p-3 text-center font-black text-teal-700">${q1T > 0 ? ((q1Ach / q1T) * 100).toFixed(2) + "%" : "0%"}</td></tr>`);
             });
             document.getElementById('q1RevTableBody').innerHTML = rowsRev.join('');
-            document.getElementById('q1RevTableFoot').innerHTML = `<tr class="bg-teal-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL Q-1 REVENUE</td><td class="p-3.5">${vKey}</td><td class="p-3.5">${sumAnnT.toFixed(2)}</td><td class="p-3.5 text-teal-200">${sumQ1T.toFixed(2)}</td><td class="p-3.5">${sumAprR.toFixed(2)}</td><td class="p-3.5">${sumMayR.toFixed(2)}</td><td class="p-3.5">${sumJunR.toFixed(2)}</td><td class="p-3.5 text-emerald-300">${sumQ1AchR.toFixed(2)}</td><td class="p-3.5 text-center text-amber-300">${sumQ1T > 0 ? ((sumQ1AchR/sumQ1T)*100).toFixed(1) : 0}%</td></tr>`;
+            document.getElementById('q1RevTableFoot').innerHTML = `<tr class="bg-teal-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL Q-1 REVENUE</td><td class="p-3.5">${vKey}</td><td class="p-3.5">${sumAnnT.toFixed(3)}</td><td class="p-3.5 text-teal-200">${sumQ1T.toFixed(3)}</td><td class="p-3.5">${sumAprR.toFixed(3)}</td><td class="p-3.5">${sumMayR.toFixed(3)}</td><td class="p-3.5">${sumJunR.toFixed(3)}</td><td class="p-3.5 text-emerald-300">${sumQ1AchR.toFixed(3)}</td><td class="p-3.5 text-center text-amber-300">${sumQ1T > 0 ? ((sumQ1AchR/sumQ1T)*100).toFixed(2) : 0}%</td></tr>`;
 
             let rowsCnt = [], sumQ1CountTgt = 0, sumAprC = 0, sumMayC = 0, sumJunC = 0, sumQ1AchC = 0;
             countRecords.filter(r => r.vertical === vKey && !r.divName.toUpperCase().includes('VERTICAL')).forEach(r => {
                 let stdKey = getStandardDivKey(r.divName), q1Tgts = (Q1_COUNT_TARGETS[vKey] && Q1_COUNT_TARGETS[vKey][stdKey]) ? Q1_COUNT_TARGETS[vKey][stdKey] : { apr: 0, may: 0, jun: 0 };
                 let q1TgtCount = q1Tgts.apr + q1Tgts.may + q1Tgts.jun, ap = r.apr, mayVal = r.may, jn = r.jun, q1Ach = ap + mayVal + jn;
                 sumQ1CountTgt += q1TgtCount; sumAprC += ap; sumMayC += mayVal; sumJunC += jn; sumQ1AchC += q1Ach;
-                rowsCnt.push(`<tr class="border-b border-slate-200 hover:bg-indigo-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3 font-bold text-indigo-800">${q1TgtCount.toLocaleString()}</td><td class="p-3">${ap.toLocaleString()}</td><td class="p-3">${mayVal.toLocaleString()}</td><td class="p-3">${jn.toLocaleString()}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toLocaleString()}</td><td class="p-3 text-center font-black text-indigo-700">${q1TgtCount > 0 ? ((q1Ach / q1TgtCount) * 100).toFixed(1) + "%" : "0%"}</td></tr>`);
+                rowsCnt.push(`<tr class="border-b border-slate-200 hover:bg-indigo-50/50"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${r.vertical}</td><td class="p-3 font-bold text-indigo-800">${q1TgtCount.toLocaleString()}</td><td class="p-3">${ap.toLocaleString()}</td><td class="p-3">${mayVal.toLocaleString()}</td><td class="p-3">${jn.toLocaleString()}</td><td class="p-3 font-extrabold text-emerald-700">${q1Ach.toLocaleString()}</td><td class="p-3 text-center font-black text-indigo-700">${q1TgtCount > 0 ? ((q1Ach / q1TgtCount) * 100).toFixed(2) + "%" : "0%"}</td></tr>`);
             });
             document.getElementById('q1CountTableBody').innerHTML = rowsCnt.join('');
-            document.getElementById('q1CountTableFoot').innerHTML = `<tr class="bg-indigo-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL Q-1 COUNT</td><td class="p-3.5">${vKey}</td><td class="p-3.5 text-indigo-200">${sumQ1CountTgt.toLocaleString()}</td><td class="p-3.5">${sumAprC.toLocaleString()}</td><td class="p-3.5">${sumMayC.toLocaleString()}</td><td class="p-3.5">${sumJunC.toLocaleString()}</td><td class="p-3.5 text-emerald-300">${sumQ1AchC.toLocaleString()}</td><td class="p-3.5 text-center text-amber-300">${sumQ1CountTgt > 0 ? ((sumQ1AchC/sumQ1CountTgt)*100).toFixed(1) : 0}%</td></tr>`;
+            document.getElementById('q1CountTableFoot').innerHTML = `<tr class="bg-indigo-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL Q-1 COUNT</td><td class="p-3.5">${vKey}</td><td class="p-3.5 text-indigo-200">${sumQ1CountTgt.toLocaleString()}</td><td class="p-3.5">${sumAprC.toLocaleString()}</td><td class="p-3.5">${sumMayC.toLocaleString()}</td><td class="p-3.5">${sumJunC.toLocaleString()}</td><td class="p-3.5 text-emerald-300">${sumQ1AchC.toLocaleString()}</td><td class="p-3.5 text-center text-amber-300">${sumQ1CountTgt > 0 ? ((sumQ1AchC/sumQ1CountTgt)*100).toFixed(2) : 0}%</td></tr>`;
         }
 
         function renderMomAnalysis() {
@@ -1349,7 +1357,7 @@
                 let mult = (r.vertical === 'IRGB') ? 100 : 1;
                 let apR = r.apr * mult, mayVal = r.may * mult, jnR = r.jun * mult, jlR = r.jul * mult, agR = r.aug * mult;
                 let formatG = (v) => v >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${v}%</span>` : `<span class="text-rose-600 font-bold">▼ ${v}%</span>`;
-                rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs">${r.vertical}</td><td class="p-2.5">${apR.toFixed(2)}</td><td class="p-2.5">${mayVal.toFixed(2)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(apR>0?(((mayVal-apR)/apR)*100).toFixed(1):0)}</td><td class="p-2.5">${jnR.toFixed(2)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(mayVal>0?(((jnR-mayVal)/mayVal)*100).toFixed(1):0)}</td><td class="p-2.5">${jlR.toFixed(2)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(jnR>0?(((jlR-jnR)/jnR)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agR.toFixed(2)}</td><td class="p-2.5 text-center bg-amber-100">${formatG(jlR>0?(((agR-jlR)/jlR)*100).toFixed(1):0)}</td></tr>`);
+                rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs">${r.vertical}</td><td class="p-2.5">${apR.toFixed(3)}</td><td class="p-2.5">${mayVal.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(apR>0?(((mayVal-apR)/apR)*100).toFixed(2):0)}</td><td class="p-2.5">${jnR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(mayVal>0?(((jnR-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-50">${formatG(jnR>0?(((jlR-jnR)/jnR)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agR.toFixed(3)}</td><td class="p-2.5 text-center bg-amber-100">${formatG(jlR>0?(((agR-jlR)/jlR)*100).toFixed(2):0)}</td></tr>`);
             });
             document.getElementById('momTableBody').innerHTML = rows.join(''); document.getElementById('momTableFoot').innerHTML = '';
         }
@@ -1361,7 +1369,7 @@
 
             countRecords.filter(r => ['PARCEL', 'MAIL', 'IRGB'].includes(r.vertical) && (div === 'ALL' || isMatchingDivision(r.divName, div)) && (vert === 'ALL' || r.vertical === vert)).forEach(r => {
                 let apC = r.apr, mayVal = r.may, jnC = r.jun, jlC = r.jul, agC = r.aug;
-                rows.push(`<tr class="hover:bg-indigo-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs font-semibold text-indigo-800">${r.vertical}</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-indigo-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
+                rows.push(`<tr class="hover:bg-indigo-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs font-semibold text-indigo-800">${r.vertical}</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(2):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-indigo-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(2):0)}</td></tr>`);
             });
 
             if (vert === 'ALL' || vert === 'SB') {
@@ -1373,7 +1381,7 @@
                     let jlC = (SBN_CURRENT_NET['jul'] && SBN_CURRENT_NET['jul'][dName]) ? SBN_CURRENT_NET['jul'][dName] : 0;
                     let agC = (SBN_CURRENT_NET['aug'] && SBN_CURRENT_NET['aug'][dName]) ? SBN_CURRENT_NET['aug'][dName] : 0;
 
-                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(1):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(1):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jlC)*100).toFixed(1):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(1):0)}</td></tr>`);
+                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(2):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jlC)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(2):0)}</td></tr>`);
                 });
             }
 
@@ -1397,7 +1405,7 @@
             let rows = [];
             let formatG = (v) => v >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${v}%</span>` : `<span class="text-rose-600 font-bold">▼ ${v}%</span>`;
             sdMap.forEach(item => {
-                rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${item.div}</td><td class="p-2.5 font-bold text-purple-700">${item.sd}</td><td class="p-2.5">${item.may.toLocaleString()}</td><td class="p-2.5">${item.jun.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-50">${formatG(item.may>0?(((item.jun-item.may)/item.may)*100).toFixed(1):0)}</td><td class="p-2.5">${item.jul.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-50">${formatG(item.jun>0?(((item.jul-item.jun)/item.jun)*100).toFixed(1):0)}</td><td class="p-2.5 font-extrabold text-blue-700">${item.aug.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-100">${formatG(item.jul>0?(((item.aug-item.jul)/item.jul)*100).toFixed(1):0)}</td></tr>`);
+                rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${item.div}</td><td class="p-2.5 font-bold text-purple-700">${item.sd}</td><td class="p-2.5">${item.may.toLocaleString()}</td><td class="p-2.5">${item.jun.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-50">${formatG(item.may>0?(((item.jun-item.may)/item.may)*100).toFixed(2):0)}</td><td class="p-2.5">${item.jul.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-50">${formatG(item.jun>0?(((item.jul-item.jun)/item.jun)*100).toFixed(2):0)}</td><td class="p-2.5 font-extrabold text-blue-700">${item.aug.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-100">${formatG(item.jul>0?(((item.aug-item.jul)/item.jul)*100).toFixed(2):0)}</td></tr>`);
             });
             document.getElementById('momTableBody').innerHTML = rows.join(''); document.getElementById('momTableFoot').innerHTML = '';
         }
@@ -1417,7 +1425,7 @@
                 let mult = (rItem.vertical === 'IRGB') ? 100 : 1;
                 let tyRevVal = rItem ? ((rItem[month] || 0) * mult) : 0; 
                 let stdKey = getStandardDivKey(rItem.divName);
-                let vKey = rItem.vertical === 'MAIL' ? 'MAIL' : (rItem.vertical === 'IRGB' ? 'IRGB' : (rItem.vertical === 'PLI' ? 'PLI/RPLI' : (rItem.vertical === 'SB' ? 'POSB' : (rItem.vertical === 'CCS' ? 'CCS' : 'PARCEL'))));
+                let vKey = rItem.vertical === 'MAIL' ? 'MAIL' : (rItem.vertical === 'IRGB' ? 'IRGB' : (rItem.vertical === 'PLI' ? 'PLI/RPLI' : (rItem.vertical === 'SB' ? 'POSB' : (rItem.vertical === 'CCS' ? 'PARCEL')))); // fallback for others
 
                 let lyCountVal = 0, lyRevVal = 0;
                 if (HISTORICAL_LY_DATA[vKey]) {
@@ -1430,11 +1438,11 @@
                 totalLYCount += lyCountVal; totalTYCount += tyCountVal; totalLYRev += lyRevVal; totalTYRev += tyRevVal;
                 let countGrowthVal = lyCountVal > 0 ? (((tyCountVal - lyCountVal) / lyCountVal) * 100) : 0, revGrowthVal = lyRevVal > 0 ? (((tyRevVal - lyRevVal) / lyRevVal) * 100) : 0;
 
-                rows.push(`<tr class="hover:bg-indigo-50/50 border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${rItem.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${rItem.vertical}</td><td class="p-3">${isSbOrPli ? "0" : lyCountVal.toLocaleString()}</td><td class="p-3 text-indigo-700 font-bold">${isSbOrPli ? "0" : tyCountVal.toLocaleString()}</td><td class="p-3 text-center">${isSbOrPli ? 'N/A' : (countGrowthVal >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${countGrowthVal.toFixed(1)}%</span>` : `<span class="text-rose-600 font-bold">▼ ${countGrowthVal.toFixed(1)}%</span>`)}</td><td class="p-3">${lyRevVal.toFixed(2)}</td><td class="p-3 text-emerald-700 font-bold">${tyRevVal.toFixed(2)}</td><td class="p-3 text-center">${revGrowthVal >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${revGrowthVal.toFixed(1)}%</span>` : `<span class="text-rose-600 font-bold">▼ ${revGrowthVal.toFixed(1)}%</span>`}</td></tr>`);
+                rows.push(`<tr class="hover:bg-indigo-50/50 border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${rItem.divName}</td><td class="p-3 text-xs font-semibold text-slate-500">${rItem.vertical}</td><td class="p-3">${isSbOrPli ? "0" : lyCountVal.toLocaleString()}</td><td class="p-3 text-indigo-700 font-bold">${isSbOrPli ? "0" : tyCountVal.toLocaleString()}</td><td class="p-3 text-center">${isSbOrPli ? 'N/A' : (countGrowthVal >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${countGrowthVal.toFixed(2)}%</span>` : `<span class="text-rose-600 font-bold">▼ ${countGrowthVal.toFixed(2)}%</span>`)}</td><td class="p-3">${lyRevVal.toFixed(3)}</td><td class="p-3 text-emerald-700 font-bold">${tyRevVal.toFixed(3)}</td><td class="p-3 text-center">${revGrowthVal >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${revGrowthVal.toFixed(2)}%</span>` : `<span class="text-rose-600 font-bold">▼ ${revGrowthVal.toFixed(2)}%</span>`}</td></tr>`);
             });
 
             document.getElementById('yoyTableBody').innerHTML = rows.join('');
-            document.getElementById('yoyTableFoot').innerHTML = `<tr class="bg-indigo-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL SUMMARY</td><td class="p-3.5">ALL FILTERED</td><td class="p-3.5">${totalLYCount.toLocaleString()}</td><td class="p-3.5 text-indigo-300">${totalTYCount.toLocaleString()}</td><td class="p-3.5 text-center">${totalLYCount > 0 ? (((totalTYCount - totalLYCount) / totalLYCount) * 100).toFixed(1) : 0}%</td><td class="p-3.5">${totalLYRev.toFixed(2)}</td><td class="p-3.5 text-emerald-300">${totalTYRev.toFixed(2)}</td><td class="p-3.5 text-center">${totalLYRev > 0 ? (((totalTYRev - totalLYRev) / totalLYRev) * 100).toFixed(1) : 0}%</td></tr>`;
+            document.getElementById('yoyTableFoot').innerHTML = `<tr class="bg-indigo-950 text-white font-extrabold text-xs"><td class="p-3.5 text-amber-300">TOTAL SUMMARY</td><td class="p-3.5">ALL FILTERED</td><td class="p-3.5">${totalLYCount.toLocaleString()}</td><td class="p-3.5 text-indigo-300">${totalTYCount.toLocaleString()}</td><td class="p-3.5 text-center">${totalLYCount > 0 ? (((totalTYCount - totalLYCount) / totalLYCount) * 100).toFixed(2) : 0}%</td><td class="p-3.5">${totalLYRev.toFixed(3)}</td><td class="p-3.5 text-emerald-300">${totalTYRev.toFixed(3)}</td><td class="p-3.5 text-center">${totalLYRev > 0 ? (((totalTYRev - totalLYRev) / totalLYRev) * 100).toFixed(2) : 0}%</td></tr>`;
         }
 
         function renderRankings() {
@@ -1502,23 +1510,23 @@
                     let yearlyTarget = cleanNumber(row[2]) * mult, monthlyTarget = yearlyTarget / 12;
                     totals.annT += yearlyTarget; totals.monT += monthlyTarget;
                     let rowHtml = `<tr class="hover:bg-sky-50/50 border-b border-slate-200"><td class="p-2.5 font-bold">${stdDiv}</td><td class="p-2.5 font-semibold">${row[1] || vertKey}</td>`;
-                    if (dataType === 'revenue') rowHtml += `<td class="p-2.5 font-bold bg-slate-50">${yearlyTarget.toFixed(2)}</td><td class="p-2.5 font-bold text-sky-800 bg-sky-50">${monthlyTarget.toFixed(2)}</td>`;
+                    if (dataType === 'revenue') rowHtml += `<td class="p-2.5 font-bold bg-slate-50">${yearlyTarget.toFixed(3)}</td><td class="p-2.5 font-bold text-sky-800 bg-sky-50">${monthlyTarget.toFixed(3)}</td>`;
 
                     let rowSum = 0;
                     monthKeys.forEach((mKey, mIdx) => {
                         let val = cleanNumber(row[3 + mIdx]) * mult; rowSum += val; totals.sumMonths[mIdx] += val;
-                        rowHtml += `<td class="p-2 text-right">${dataType === 'revenue' ? val.toFixed(2) : val.toLocaleString()}</td>`;
+                        rowHtml += `<td class="p-2 text-right">${dataType === 'revenue' ? val.toFixed(3) : val.toLocaleString()}</td>`;
                     });
                     totals.grandTotal += rowSum;
-                    tbodyHtml.push(rowHtml + `<td class="p-2.5 text-right font-black text-emerald-700 bg-emerald-50">${dataType === 'revenue' ? rowSum.toFixed(2) : rowSum.toLocaleString()}</td></tr>`);
+                    tbodyHtml.push(rowHtml + `<td class="p-2.5 text-right font-black text-emerald-700 bg-emerald-50">${dataType === 'revenue' ? rowSum.toFixed(3) : rowSum.toLocaleString()}</td></tr>`);
                 });
             }
 
             document.getElementById('histTableBody').innerHTML = tbodyHtml.join('');
             let footHtml = `<tr class="bg-slate-900 text-white font-black text-xs uppercase"><td class="p-3 text-amber-300">TOTAL</td><td class="p-3">FILTERED</td>`;
-            if (dataType === 'revenue') footHtml += `<td class="p-3">${totals.annT.toFixed(2)}</td><td class="p-3 text-amber-300">${totals.monT.toFixed(2)}</td>`;
-            totals.sumMonths.forEach(mVal => footHtml += `<td class="p-2.5 text-right">${dataType === 'revenue' ? mVal.toFixed(2) : mVal.toLocaleString()}</td>`);
-            document.getElementById('histTableFoot').innerHTML = footHtml + `<td class="p-3 text-right text-emerald-300">${dataType === 'revenue' ? totals.grandTotal.toFixed(2) : totals.grandTotal.toLocaleString()}</td></tr>`;
+            if (dataType === 'revenue') footHtml += `<td class="p-3">${totals.annT.toFixed(3)}</td><td class="p-3 text-amber-300">${totals.monT.toFixed(3)}</td>`;
+            totals.sumMonths.forEach(mVal => footHtml += `<td class="p-2.5 text-right">${dataType === 'revenue' ? mVal.toFixed(3) : mVal.toLocaleString()}</td>`);
+            document.getElementById('histTableFoot').innerHTML = footHtml + `<td class="p-3 text-right text-emerald-300">${dataType === 'revenue' ? totals.grandTotal.toFixed(3) : totals.grandTotal.toLocaleString()}</td></tr>`;
         }
 
         function renderCharts(fullDataset, filteredData, selectedDiv, isIRGBOnly) {
@@ -1560,7 +1568,7 @@
             revenueRecords.forEach(r => {
                 if (selectedDiv === 'ALL' || isMatchingDivision(r.divName, selectedDiv)) {
                     if (vertRevenueTotals[r.vertical] !== undefined) {
-                        let mult = (r.vertical === 'IRGB') ? 1 : 1;
+                        let mult = (r.vertical === 'IRGB') ? 1 : 1; 
                         vertRevenueTotals[r.vertical] += ((r.totalAch || 0) * mult);
                     }
                 }
