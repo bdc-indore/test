@@ -858,7 +858,12 @@
             }
         }
 
-        // 🎯 YAHAN PAR FIXED & ACCURATE LOGIC HAI 🎯
+        // Helper function for Safe Formatting without Crashing String Interpolation
+        function fmtSafe(val, isCount) {
+            if (val === undefined || isNaN(val) || val === null) val = 0;
+            return isCount ? Number(val).toLocaleString('en-IN') : Number(val).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        }
+
         function updateDashboard() {
             const selectedDiv = document.getElementById('divisionSelect').value;
             currentVertical = document.getElementById('verticalSelect').value;
@@ -873,23 +878,24 @@
                 if (currentDataType === 'count') { 
                     sumTarget += r.target; sumAug += r.aug; sumAch += r.aug; 
                 } else {
-                    // Normalize addition - Har cheez pehle se Cr me mapped hai, directly add karo
+                    // Sab kuch Crore me already properly converted hai, direct add karo
                     sumTarget += r.target; 
                     sumAch += r.totalAch;
                 }
             });
 
-            // Sirf agar user particular IRGB tab me hai, toh lakh me convert karke dikhao 
+            // Sirf jab exactly IRGB vertical khula ho, tab display Lakhs me dikhane ke liye scale karo
             if (currentDataType === 'revenue' && isIRGBOnly) {
                 sumTarget *= 100;
                 sumAch *= 100;
             }
 
             let unitSuffix = (currentDataType === 'revenue') ? (isIRGBOnly ? ' Lakhs' : ' Cr') : ' Articles';
-            let decimals = (currentDataType === 'revenue') ? 3 : 0; // Fixed to 3 decimals
+            let fmtSumTarget = currentDataType === 'revenue' ? Number(sumTarget).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : Number(sumTarget).toLocaleString('en-IN');
+            let fmtSumAch = currentDataType === 'revenue' ? Number(sumAch).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : Number(sumAch).toLocaleString('en-IN');
 
-            document.getElementById('kpiTarget').innerText = `${sumTarget.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${unitSuffix}`;
-            document.getElementById('kpiAchievement').innerText = `${sumAch.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${unitSuffix}`;
+            document.getElementById('kpiTarget').innerText = `${fmtSumTarget}${unitSuffix}`;
+            document.getElementById('kpiAchievement').innerText = `${fmtSumAch}${unitSuffix}`;
             document.getElementById('kpiPropPct').innerText = sumTarget > 0 ? ((sumAch / sumTarget) * 100).toFixed(2) + "%" : "0%";
             document.getElementById('kpiActiveDivText').innerText = selectedDiv === 'ALL' ? "All Divisions" : selectedDiv;
             document.getElementById('kpiActiveVertText').innerText = currentVertical === 'ALL' ? "All Verticals Combined" : `${currentVertical} Vertical`;
@@ -904,23 +910,23 @@
             document.getElementById('tableHead').innerHTML = `<tr class="bg-slate-900 text-white font-bold uppercase text-xs"><th class="p-3.5 border-b">Division Name</th><th class="p-3.5 border-b">Vertical</th><th class="p-3.5 border-b">${isCount ? 'August Target' : (isIRGBOnly ? 'Total Target (Lakhs)' : 'Total Target (Cr)')}</th><th class="p-3.5 border-b">April 26</th><th class="p-3.5 border-b">May 26</th><th class="p-3.5 border-b">June 26</th><th class="p-3.5 border-b">July 26</th><th class="p-3.5 border-b">August 26 Count</th><th class="p-3.5 border-b font-extrabold text-emerald-300">${isCount ? 'Total Booking' : 'Total Achievement'}</th><th class="p-3.5 border-b">% Achievement</th></tr>`;
 
             let rows = [], sumT = 0, sumAp = 0, sumMy = 0, sumJn = 0, sumJl = 0, sumAg = 0, sumAch = 0;
+            
             filteredData.forEach(r => {
                 let vertBadge = `<span class="px-2.5 py-1 rounded-md font-bold text-xs bg-blue-100 text-blue-800">${r.vertical}</span>`;
                 
-                // 🎯 Fixed: Agar All Verticals he toh multiplier nahi lagega, sab Cr me rahenge taaki rows me unit mismatch na ho
+                // Fixed Multiplier Logic: All Verticals mein multiplier use NAHI hoga, tabhi pure Crores sahi sum honge
                 let mult = (isIRGBOnly && r.vertical === 'IRGB') ? 100 : 1;
                 let t = r.target * mult, ap = r.apr * mult, my = r.may * mult, jn = r.jun * mult, jl = r.jul * mult, ag = r.aug * mult, ach = r.totalAch * mult;
                 
                 sumT += t; sumAp += ap; sumMy += my; sumJn += jn; sumJl += jl; sumAg += ag; sumAch += ach;
-                let dec = isCount ? 0 : 3; 
                 let rowPctVal = isCount ? (t > 0 ? (ag / t) * 100 : 0) : (t > 0 ? (ach / t) * 100 : 0);
 
-                rows.push(`<tr class="hover:bg-slate-50 transition border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3">${vertBadge}</td><td class="p-3">${t.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3">${ap.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3">${my.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3">${jn.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3">${jl.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3 font-bold text-blue-700">${ag.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3 font-extrabold text-emerald-700">${ach.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3 font-semibold text-amber-700">${rowPctVal.toFixed(2)}%</td></tr>`);
+                rows.push(`<tr class="hover:bg-slate-50 transition border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3">${vertBadge}</td><td class="p-3">${fmtSafe(t, isCount)}</td><td class="p-3">${fmtSafe(ap, isCount)}</td><td class="p-3">${fmtSafe(my, isCount)}</td><td class="p-3">${fmtSafe(jn, isCount)}</td><td class="p-3">${fmtSafe(jl, isCount)}</td><td class="p-3 font-bold text-blue-700">${fmtSafe(ag, isCount)}</td><td class="p-3 font-extrabold text-emerald-700">${fmtSafe(ach, isCount)}</td><td class="p-3 font-semibold text-amber-700">${rowPctVal.toFixed(2)}%</td></tr>`);
             });
 
             document.getElementById('tableBody').innerHTML = rows.join('');
-            let dec = isCount ? 0 : 3, totalAchPctVal = isCount ? (sumT > 0 ? (sumAg / sumT) * 100 : 0) : (sumT > 0 ? (sumAch / sumT) * 100 : 0);
-            document.getElementById('tableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 uppercase text-amber-300">TOTAL</td><td class="p-3.5">ALL FILTERED</td><td class="p-3.5">${sumT.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5">${sumAp.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5">${sumMy.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5">${sumJn.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5">${sumJl.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5 text-blue-300 font-bold">${sumAg.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5 text-emerald-300 font-black">${sumAch.toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</td><td class="p-3.5 text-amber-300 font-black">${totalAchPctVal.toFixed(2)}%</td></tr>`;
+            let totalAchPctVal = isCount ? (sumT > 0 ? (sumAg / sumT) * 100 : 0) : (sumT > 0 ? (sumAch / sumT) * 100 : 0);
+            document.getElementById('tableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 uppercase text-amber-300">TOTAL</td><td class="p-3.5">ALL FILTERED</td><td class="p-3.5">${fmtSafe(sumT, isCount)}</td><td class="p-3.5">${fmtSafe(sumAp, isCount)}</td><td class="p-3.5">${fmtSafe(sumMy, isCount)}</td><td class="p-3.5">${fmtSafe(sumJn, isCount)}</td><td class="p-3.5">${fmtSafe(sumJl, isCount)}</td><td class="p-3.5 text-blue-300 font-bold">${fmtSafe(sumAg, isCount)}</td><td class="p-3.5 text-emerald-300 font-black">${fmtSafe(sumAch, isCount)}</td><td class="p-3.5 text-amber-300 font-black">${totalAchPctVal.toFixed(2)}%</td></tr>`;
             document.getElementById('recordBadge').innerText = `${filteredData.length} Records Loaded`;
         }
 
@@ -1425,7 +1431,7 @@
                 let mult = (rItem.vertical === 'IRGB') ? 100 : 1;
                 let tyRevVal = rItem ? ((rItem[month] || 0) * mult) : 0; 
                 let stdKey = getStandardDivKey(rItem.divName);
-                let vKey = rItem.vertical === 'MAIL' ? 'MAIL' : (rItem.vertical === 'IRGB' ? 'IRGB' : (rItem.vertical === 'PLI' ? 'PLI/RPLI' : (rItem.vertical === 'SB' ? 'POSB' : (rItem.vertical === 'CCS' ? 'PARCEL')))); // fallback for others
+                let vKey = rItem.vertical === 'MAIL' ? 'MAIL' : (rItem.vertical === 'IRGB' ? 'IRGB' : (rItem.vertical === 'PLI' ? 'PLI/RPLI' : (rItem.vertical === 'SB' ? 'POSB' : (rItem.vertical === 'CCS' ? 'CCS' : 'PARCEL')))); // fallback
 
                 let lyCountVal = 0, lyRevVal = 0;
                 if (HISTORICAL_LY_DATA[vKey]) {
