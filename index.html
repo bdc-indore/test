@@ -777,7 +777,6 @@
             return records;
         }
 
-        // Updated Parsing based on exact format mapping:
         function parseCountSheetUpdated(rows) {
             let currentVert = "PARCEL", records = [];
             rows.forEach((row) => {
@@ -873,8 +872,16 @@
                 currentDataType = (viewType === 'revenue') ? 'revenue' : 'count';
                 if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-blue-600 text-blue-600 transition flex items-center gap-1.5";
                 document.getElementById('chart1UnitBadge').innerText = currentDataType === 'revenue' ? "in Crores" : "Article Count";
-                document.getElementById('kpiTargetLabel').innerText = currentDataType === 'revenue' ? "वार्षिक लक्ष्य (ANNUAL TARGET)" : "कुल लक्ष्य (TOTAL TARGET ARTICLES)";
-                document.getElementById('kpiAchLabel').innerText = currentDataType === 'revenue' ? "कुल उपलब्धि (TOTAL ACHIEVEMENT)" : "कुल बुकिंग (TOTAL ARTICLE COUNT)";
+                
+                // अपडेटेड लेबल्स: आर्टिकल काउंट में केवल अगस्त (वर्तमान महीने) का टारगेट और उपलब्धि दिखाई देगी
+                if (currentDataType === 'revenue') {
+                    document.getElementById('kpiTargetLabel').innerText = "वार्षिक लक्ष्य (ANNUAL TARGET)";
+                    document.getElementById('kpiAchLabel').innerText = "कुल उपलब्धि (TOTAL ACHIEVEMENT)";
+                } else {
+                    document.getElementById('kpiTargetLabel').innerText = "अगस्त लक्ष्य (AUGUST TARGET)";
+                    document.getElementById('kpiAchLabel').innerText = "अगस्त उपलब्धि (AUGUST ACHIEVEMENT)";
+                }
+
                 document.getElementById('countMonthWiseContainer').classList.toggle('hidden', currentDataType === 'revenue');
                 updateDashboard();
             }
@@ -892,12 +899,13 @@
             if (!dataset || dataset.length === 0) return;
 
             let filtered = dataset.filter(r => (selectedDiv === 'ALL' || isMatchingDivision(r.divName, selectedDiv)) && (currentVertical === 'ALL' || r.vertical === currentVertical));
-            let sumTarget = 0, sumAch = 0, sumAug = 0;
+            let sumTarget = 0, sumAch = 0;
             let isIRGBOnly = (currentVertical === 'IRGB');
 
             filtered.forEach(r => {
                 if (currentDataType === 'count') { 
-                    sumTarget += r.target; sumAug += r.aug; sumAch += r.totalAch; 
+                    sumTarget += r.augTgt; // केवल अगस्त का टारगेट 
+                    sumAch += r.aug;       // केवल अगस्त की उपलब्धि 
                 } else {
                     sumTarget += r.target; 
                     sumAch += r.totalAch;
