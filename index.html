@@ -126,7 +126,7 @@
                 <!-- Charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="card p-6 lg:col-span-2">
-                        <div class="flex justify-between items-center mb-4"><h2 class="text-base font-bold text-slate-800 flex items-center gap-2">📈 <span id="chart1Title">मासिक तुलनात्मक ट्रेंड</span></h2><span id="chart1UnitBadge" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-bold">Others in Crore, IRGB Revenue in Lakhs</span></div>
+                        <div class="flex justify-between items-center mb-4"><h2 class="text-base font-bold text-slate-800 flex items-center gap-2">📈 <span id="chart1Title">मासिक तुलनात्मक ट्रेंड</span></h2><span id="chart1UnitBadge" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-bold">in Crores</span></div>
                         <div class="h-72"><canvas id="monthlyTrendChart"></canvas></div>
                     </div>
                     <div class="card p-6">
@@ -149,7 +149,7 @@
                     <div class="overflow-x-auto max-h-[500px]">
                         <table id="dataTable" class="w-full text-left text-sm border-collapse"><thead id="tableHead"></thead><tbody id="tableBody" class="divide-y divide-slate-100 font-medium"></tbody><tfoot id="tableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot></table>
                     </div>
-                    <p class="text-xs text-amber-700 mt-2 font-semibold">* Note: For Revenue, IRGB data is displayed in Lakhs, while others are in Crore. Article counts represent pure quantities.</p>
+                    <p id="tableRemark" class="text-xs text-amber-700 mt-2 font-semibold">* Note: IRGB data is displayed in Lakhs, while other verticals are in Crores.</p>
                 </div>
 
                 <!-- Month-Wise Division Detail Table -->
@@ -276,7 +276,7 @@
                     </div>
                 </div>
                 <div class="card p-6 space-y-3">
-                    <h3 id="q1RevHeaderTitle" class="text-base font-bold text-teal-900 flex items-center gap-2">Q-1 Revenue Performance Table (Others in Crore, IRGB in Lakhs)</h3>
+                    <h3 id="q1RevHeaderTitle" class="text-base font-bold text-teal-900 flex items-center gap-2">Q-1 Revenue Performance Table</h3>
                     <div class="overflow-x-auto">
                         <table id="q1RevTable" class="w-full text-left text-sm border-collapse">
                             <thead><tr class="bg-teal-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5">Vertical</th><th class="p-3.5 bg-teal-900" id="q1ThAnn">Annual Target (Cr)</th><th class="p-3.5 bg-teal-800" id="q1ThQ1T">Q-1 Target (Cr)</th><th class="p-3.5">April 26</th><th class="p-3.5">May 26</th><th class="p-3.5">June 26</th><th class="p-3.5 font-black text-emerald-300 bg-teal-900" id="q1ThTot">Q-1 Total Revenue</th><th class="p-3.5 text-center bg-teal-800">Q-1 % Ach</th></tr></thead>
@@ -284,6 +284,7 @@
                             <tfoot id="q1RevTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot>
                         </table>
                     </div>
+                    <p id="q1RevRemark" class="text-xs text-amber-700 mt-2 font-semibold">* Note: IRGB data is displayed in Lakhs, while other verticals are in Crores.</p>
                 </div>
                 <div class="card p-6 space-y-3">
                     <div class="flex justify-between items-center">
@@ -319,7 +320,7 @@
 
                 <!-- MoM Revenue Table Container -->
                 <div class="card p-6 space-y-3">
-                    <h3 class="text-base font-bold text-amber-900 flex items-center gap-2">💰 Revenue MoM Growth Analysis (Others in Crore, IRGB in Lakhs)</h3>
+                    <h3 class="text-base font-bold text-amber-900 flex items-center gap-2">💰 Revenue MoM Growth Analysis</h3>
                     <div class="overflow-x-auto">
                         <table id="momDataTable" class="w-full text-left text-xs border-collapse">
                             <thead id="momTableHead"></thead>
@@ -327,6 +328,7 @@
                             <tfoot id="momTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot>
                         </table>
                     </div>
+                    <p id="momRevRemark" class="text-xs text-amber-700 mt-2 font-semibold">* Note: IRGB data is displayed in Lakhs, while other verticals are in Crores.</p>
                 </div>
 
                 <!-- MoM Article Count Table Container -->
@@ -363,8 +365,9 @@
                     </div>
                 </div>
                 <div class="card p-6">
-                    <h3 class="text-base font-bold text-indigo-900 mb-3">🔄 YoY Comparison Report (Others in Crore, IRGB in Lakhs)</h3>
+                    <h3 class="text-base font-bold text-indigo-900 mb-3">🔄 YoY Comparison Report</h3>
                     <div class="overflow-x-auto"><table id="yoyDataTable" class="w-full text-left text-sm border-collapse"><thead></thead><tbody id="yoyTableBody" class="divide-y divide-slate-100"></tbody><tfoot id="yoyTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot></table></div>
+                    <p id="yoyRemark" class="text-xs text-amber-700 mt-2 font-semibold">* Note: IRGB revenue data is displayed in Lakhs, while other verticals are in Crores.</p>
                 </div>
             </div>
 
@@ -392,7 +395,7 @@
                 <div class="bg-white rounded-xl p-5 border border-sky-100 card flex flex-wrap items-center justify-between gap-4">
                     <h2 class="text-base font-bold text-sky-900 flex items-center gap-2">📜 Historical Performance Archive (2025-26)</h2>
                     <div class="flex flex-wrap items-center gap-3">
-                        <select id="histDataTypeSelect" onchange="onHistDataTypeChange()" class="bg-sky-100 border border-sky-300 text-sky-900 font-bold text-xs rounded-lg p-2"><option value="revenue">💰 Revenue Historical Data (Others in Crore, IRGB in Lakhs)</option><option value="count">📦 Article Count Historical Data</option><option value="sbn_open">🏦 SB Account Opened (2025-26)</option><option value="sbn_net">🏦 SB Net Addition (2025-26)</option></select>
+                        <select id="histDataTypeSelect" onchange="onHistDataTypeChange()" class="bg-sky-100 border border-sky-300 text-sky-900 font-bold text-xs rounded-lg p-2"><option value="revenue">💰 Revenue Historical Data</option><option value="count">📦 Article Count Historical Data</option><option value="sbn_open">🏦 SB Account Opened (2025-26)</option><option value="sbn_net">🏦 SB Net Addition (2025-26)</option></select>
                         <select id="histVertSelect" onchange="renderHistoricalTable()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2"></select>
                         <select id="histDivSelect" onchange="renderHistoricalTable()" class="bg-slate-800 text-white text-xs font-semibold rounded-lg p-2 div-select-options"></select>
                         <button onclick="downloadTablePDF('histDataTable', 'Historical_Performance_Data_FY_2025_26')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📄 PDF</button>
@@ -400,18 +403,23 @@
                         <button onclick="exportTableByID('histDataTable', 'Historical_Performance_Data_FY_2025_26.xlsx')" class="bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Excel</button>
                     </div>
                 </div>
-                <div class="card p-6"><div class="overflow-x-auto max-h-[550px]"><table id="histDataTable" class="w-full text-left text-xs border-collapse"><thead id="histTableHead"></thead><tbody id="histTableBody" class="divide-y divide-slate-100 font-medium"></tbody><tfoot id="histTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot></table></div></div>
+                <div class="card p-6">
+                    <div class="overflow-x-auto max-h-[550px]">
+                        <table id="histDataTable" class="w-full text-left text-xs border-collapse"><thead id="histTableHead"></thead><tbody id="histTableBody" class="divide-y divide-slate-100 font-medium"></tbody><tfoot id="histTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot></table>
+                    </div>
+                    <p id="histRemark" class="text-xs text-amber-700 mt-2 font-semibold">* Note: IRGB data is displayed in Lakhs, while other verticals are in Crores.</p>
+                </div>
             </div>
 
             <!-- POSB View -->
             <div id="posbDataView" class="hidden space-y-6">
                 <div class="bg-white rounded-xl p-5 border border-emerald-100 card space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-4">
-                        <h2 class="text-base font-bold text-emerald-900 flex items-center gap-2">🏦 POSB Performance Dashboard (Revenue in Crore)</h2>
+                        <h2 class="text-base font-bold text-emerald-900 flex items-center gap-2">🏦 POSB Performance Dashboard</h2>
                         <div class="flex flex-wrap items-center gap-3">
                             <button onclick="setPosbOption('net')" id="btn-posb-net" class="px-3.5 py-2 font-bold text-xs rounded-lg transition bg-emerald-700 text-white shadow">🏦 POSB Net Addition</button>
                             <button onclick="setPosbOption('open')" id="btn-posb-open" class="px-3.5 py-2 font-bold text-xs rounded-lg transition bg-slate-100 text-slate-700 hover:bg-slate-200">📖 POSB Account Opening</button>
-                            <button onclick="setPosbOption('revenue')" id="btn-posb-revenue" class="px-3.5 py-2 font-bold text-xs rounded-lg transition bg-slate-100 text-slate-700 hover:bg-slate-200">Target & Achievement (Crore)</button>
+                            <button onclick="setPosbOption('revenue')" id="btn-posb-revenue" class="px-3.5 py-2 font-bold text-xs rounded-lg transition bg-slate-100 text-slate-700 hover:bg-slate-200">Target & Achievement</button>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-100">
@@ -430,7 +438,7 @@
             <!-- PLI View -->
             <div id="pliDataView" class="hidden space-y-6">
                 <div class="bg-white rounded-xl p-5 border border-teal-100 card space-y-4">
-                    <h2 class="text-base font-bold text-teal-900 flex items-center gap-2">🛡️ PLI / RPLI Revenue Target & Achievement (in Crore)</h2>
+                    <h2 class="text-base font-bold text-teal-900 flex items-center gap-2">🛡️ PLI / RPLI Revenue Target & Achievement</h2>
                     <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-100">
                         <select id="pliMonthSelect" onchange="renderPliDataView()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2 month-select-options"></select>
                         <select id="pliDivSelect" onchange="renderPliDataView()" class="bg-slate-800 text-white text-xs font-semibold rounded-lg p-2 div-select-options"></select>
@@ -447,7 +455,7 @@
             <!-- CCS View -->
             <div id="ccsDataView" class="hidden space-y-6">
                 <div class="bg-white rounded-xl p-5 border border-amber-100 card space-y-4">
-                    <h2 class="text-base font-bold text-amber-900 flex items-center gap-2">💳 CCS Revenue Target & Achievement (in Crore)</h2>
+                    <h2 class="text-base font-bold text-amber-900 flex items-center gap-2">💳 CCS Revenue Target & Achievement</h2>
                     <div class="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-100">
                         <select id="ccsMonthSelect" onchange="renderCcsDataView()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2 month-select-options"></select>
                         <select id="ccsDivSelect" onchange="renderCcsDataView()" class="bg-slate-800 text-white text-xs font-semibold rounded-lg p-2 div-select-options"></select>
@@ -853,7 +861,7 @@
                 document.getElementById('standardDashboardView').classList.remove('hidden');
                 currentDataType = (viewType === 'revenue') ? 'revenue' : 'count';
                 if (activeBtn) activeBtn.className = "px-4 py-3 font-extrabold text-sm border-b-2 border-blue-600 text-blue-600 transition flex items-center gap-1.5";
-                document.getElementById('chart1UnitBadge').innerText = currentDataType === 'revenue' ? "Others in Crore, IRGB Revenue in Lakhs" : "Article Count";
+                document.getElementById('chart1UnitBadge').innerText = currentDataType === 'revenue' ? "in Crores" : "Article Count";
                 document.getElementById('kpiTargetLabel').innerText = currentDataType === 'revenue' ? "वार्षिक लक्ष्य (ANNUAL TARGET)" : "अगस्त लक्ष्य (AUGUST TARGET ARTICLES)";
                 document.getElementById('kpiAchLabel').innerText = currentDataType === 'revenue' ? "कुल उपलब्धि (TOTAL ACHIEVEMENT)" : "अगस्त बुकिंग (AUGUST ARTICLE COUNT)";
                 document.getElementById('countMonthWiseContainer').classList.toggle('hidden', currentDataType === 'revenue');
@@ -891,7 +899,7 @@
                 sumAch *= 100;
             }
 
-            let unitSuffix = (currentDataType === 'revenue') ? (isIRGBOnly ? ' Lakhs' : ' Cr (Others) / Lakhs (IRGB)') : ' Articles';
+            let unitSuffix = (currentDataType === 'revenue') ? (isIRGBOnly ? ' Lakhs' : ' Cr') : ' Articles';
             let fmtSumTarget = currentDataType === 'revenue' ? Number(sumTarget).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : Number(sumTarget).toLocaleString('en-IN');
             let fmtSumAch = currentDataType === 'revenue' ? Number(sumAch).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : Number(sumAch).toLocaleString('en-IN');
 
@@ -899,7 +907,7 @@
             document.getElementById('kpiAchievement').innerText = `${fmtSumAch}${unitSuffix}`;
             document.getElementById('kpiPropPct').innerText = sumTarget > 0 ? ((sumAch / sumTarget) * 100).toFixed(2) + "%" : "0%";
             document.getElementById('kpiActiveDivText').innerText = selectedDiv === 'ALL' ? "All Divisions" : selectedDiv;
-            document.getElementById('kpiActiveVertText').innerText = currentVertical === 'ALL' ? "All Verticals Combined (Others in Crore, IRGB Revenue in Lakhs)" : `${currentVertical} Vertical`;
+            document.getElementById('kpiActiveVertText').innerText = currentVertical === 'ALL' ? "All Verticals Combined" : `${currentVertical} Vertical`;
 
             renderTable(filtered, isIRGBOnly);
             renderCharts(dataset, filtered, selectedDiv, isIRGBOnly);
@@ -908,7 +916,7 @@
 
         function renderTable(filteredData, isIRGBOnly) {
             let isCount = (currentDataType === 'count');
-            let headerTitleCol = isCount ? 'August Target' : (isIRGBOnly ? 'Total Target (Lakhs)' : 'Total Target (Others: Cr, IRGB: Lakhs)');
+            let headerTitleCol = isCount ? 'August Target' : (isIRGBOnly ? 'Total Target (Lakhs)' : 'Total Target (Cr)');
             document.getElementById('tableHead').innerHTML = `<tr class="bg-slate-900 text-white font-bold uppercase text-xs"><th class="p-3.5 border-b">Division Name</th><th class="p-3.5 border-b">Vertical</th><th class="p-3.5 border-b">${headerTitleCol}</th><th class="p-3.5 border-b">April 26</th><th class="p-3.5 border-b">May 26</th><th class="p-3.5 border-b">June 26</th><th class="p-3.5 border-b">July 26</th><th class="p-3.5 border-b">August 26</th><th class="p-3.5 border-b font-extrabold text-emerald-300">${isCount ? 'Total Booking' : 'Total Achievement'}</th><th class="p-3.5 border-b">% Achievement</th></tr>`;
 
             let rows = [], sumT = 0, sumAp = 0, sumMy = 0, sumJn = 0, sumJl = 0, sumAg = 0, sumAch = 0;
@@ -938,6 +946,16 @@
             document.getElementById('tableBody').innerHTML = rows.join('');
             document.getElementById('tableFoot').innerHTML = `<tr class="bg-slate-900 text-white font-extrabold text-xs"><td class="p-3.5 uppercase text-amber-300">TOTAL</td><td class="p-3.5">ALL FILTERED</td><td class="p-3.5">${fmtSafe(sumT * displayMult, isCount)}</td><td class="p-3.5">${fmtSafe(sumAp * displayMult, isCount)}</td><td class="p-3.5">${fmtSafe(sumMy * displayMult, isCount)}</td><td class="p-3.5">${fmtSafe(sumJn * displayMult, isCount)}</td><td class="p-3.5">${fmtSafe(sumJl * displayMult, isCount)}</td><td class="p-3.5 text-blue-300 font-bold">${fmtSafe(sumAg * displayMult, isCount)}</td><td class="p-3.5 text-emerald-300 font-black">${fmtSafe(sumAch * displayMult, isCount)}</td><td class="p-3.5 text-amber-300 font-black">${totalAchPctVal.toFixed(2)}%</td></tr>`;
             document.getElementById('recordBadge').innerText = `${filteredData.length} Records Loaded`;
+            
+            // Dynamic Table Remark update based on Revenue vs Count view
+            const remarkEl = document.getElementById('tableRemark');
+            if (remarkEl) {
+                if (isCount) {
+                    remarkEl.innerText = "* Note: Article counts represent actual item quantities.";
+                } else {
+                    remarkEl.innerText = "* Note: IRGB data is displayed in Lakhs, while other verticals are in Crores.";
+                }
+            }
         }
 
         function renderCountMonthWiseDivisionTable(filteredCountData) {
@@ -945,7 +963,7 @@
             filteredCountData.forEach(row => {
                 let stdKey = getStandardDivKey(row.divName), q1Tgts = (Q1_COUNT_TARGETS[row.vertical] && Q1_COUNT_TARGETS[row.vertical][stdKey]) ? Q1_COUNT_TARGETS[row.vertical][stdKey] : { apr: 0, may: 0, jun: 0 };
                 let apT = q1Tgts.apr, apA = row.apr, myT = q1Tgts.may, myA = row.may, jnT = q1Tgts.jun, jnA = row.jun, jlT = row.target, jlA = row.jul, agT = row.target, agA = row.aug;
-                let totTgtTillDate = apT + myT + jnT + jlT + agT, totAchTillDate = apA + myA + jnA + jlA + agA;
+                let totTgtTillDate = apT + myT + jnT + jlT + agT, totAchTillDate = apA + mayA + jnA + jlA + agA;
 
                 sumApT += apT; sumApA += apA; sumMyT += myT; sumMyA += myA; sumJnT += jnT; sumJnA += jnA; sumJlT += jlT; sumJlA += jlA; sumAgT += agT; sumAgA += agA; sumTotalTgt += totTgtTillDate; sumTotalAch += totAchTillDate;
 
@@ -969,7 +987,7 @@
             let tbodyRows = [], totals = { col1: 0, col2: 0, col3: 0 };
 
             if (currentPosbOption === 'revenue') {
-                document.getElementById('posbTableHead').innerHTML = `<tr class="bg-emerald-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-emerald-900">Annual Target (Cr)</th><th class="p-3.5 bg-emerald-800 text-amber-200">Monthly Target (Cr)</th><th class="p-3.5">Achievement (${mKey.toUpperCase()}) (Cr)</th><th class="p-3.5 text-center bg-emerald-900">% Achievement</th></tr>`;
+                document.getElementById('posbTableHead').innerHTML = `<tr class="bg-emerald-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-emerald-900">Annual Target (Cr)</th><th class="p-3.5 bg-emerald-800 text-amber-200">Monthly Target</th><th class="p-3.5">Achievement (${mKey.toUpperCase()})</th><th class="p-3.5 text-center bg-emerald-900">% Achievement</th></tr>`;
                 revenueRecords.filter(r => r.vertical === 'SB').forEach(r => {
                     if (divFilter !== 'ALL' && !isMatchingDivision(r.divName, divFilter)) return;
                     let annT = r.target, monT = annT / 12, ach = r[mKey] || 0;
@@ -1003,7 +1021,7 @@
 
         function renderPliDataView() {
             const mKey = document.getElementById('pliMonthSelect').value, divFilter = document.getElementById('pliDivSelect').value;
-            document.getElementById('pliTableHead').innerHTML = `<tr class="bg-teal-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-teal-900">Annual Target (Cr)</th><th class="p-3.5 bg-teal-800 text-amber-200">Monthly Target (Cr)</th><th class="p-3.5">Achievement (${mKey.toUpperCase()}) (Cr)</th><th class="p-3.5 text-center bg-teal-900">% Achievement</th></tr>`;
+            document.getElementById('pliTableHead').innerHTML = `<tr class="bg-teal-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-teal-900">Annual Target (Cr)</th><th class="p-3.5 bg-teal-800 text-amber-200">Monthly Target</th><th class="p-3.5">Achievement (${mKey.toUpperCase()})</th><th class="p-3.5 text-center bg-teal-900">% Achievement</th></tr>`;
             let tbodyRows = [], totals = { col1: 0, col2: 0, col3: 0 };
             revenueRecords.filter(r => r.vertical === 'PLI').forEach(r => {
                 if (divFilter !== 'ALL' && !isMatchingDivision(r.divName, divFilter)) return;
@@ -1017,7 +1035,7 @@
 
         function renderCcsDataView() {
             const mKey = document.getElementById('ccsMonthSelect').value, divFilter = document.getElementById('ccsDivSelect').value;
-            document.getElementById('ccsTableHead').innerHTML = `<tr class="bg-amber-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-amber-900">Annual Target (Cr)</th><th class="p-3.5 bg-amber-800 text-amber-200">Monthly Target (Cr)</th><th class="p-3.5">Achievement (${mKey.toUpperCase()}) (Cr)</th><th class="p-3.5 text-center bg-amber-900">% Achievement</th></tr>`;
+            document.getElementById('ccsTableHead').innerHTML = `<tr class="bg-amber-950 text-white font-bold text-xs uppercase"><th class="p-3.5">Division Name</th><th class="p-3.5 bg-amber-900">Annual Target (Cr)</th><th class="p-3.5 bg-amber-800 text-amber-200">Monthly Target</th><th class="p-3.5">Achievement (${mKey.toUpperCase()})</th><th class="p-3.5 text-center bg-amber-900">% Achievement</th></tr>`;
             let tbodyRows = [], totals = { col1: 0, col2: 0, col3: 0 };
             revenueRecords.filter(r => r.vertical === 'CCS').forEach(r => {
                 if (divFilter !== 'ALL' && !isMatchingDivision(r.divName, divFilter)) return;
@@ -1393,7 +1411,7 @@
 
             countRecords.filter(r => ['PARCEL', 'MAIL', 'IRGB'].includes(r.vertical) && (div === 'ALL' || isMatchingDivision(r.divName, div)) && (vert === 'ALL' || r.vertical === vert)).forEach(r => {
                 let apC = r.apr, mayVal = r.may, jnC = r.jun, jlC = r.jul, agC = r.aug;
-                rows.push(`<tr class="hover:bg-indigo-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs font-semibold text-indigo-800">${r.vertical}</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(2):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-indigo-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(2):0)}</td></tr>`);
+                rows.push(`<tr class="hover:bg-indigo-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${r.divName}</td><td class="p-2.5 text-xs font-semibold text-indigo-800">${r.vertical}</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(2):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-50">${formatG(jnC>0?(((jlC-jnC)/jlC)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-indigo-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-indigo-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(2):0)}</td></tr>`);
             });
 
             if (vert === 'ALL' || vert === 'SB') {
@@ -1405,7 +1423,7 @@
                     let jlC = (SBN_CURRENT_NET['jul'] && SBN_CURRENT_NET['jul'][dName]) ? SBN_CURRENT_NET['jul'][dName] : 0;
                     let agC = (SBN_CURRENT_NET['aug'] && SBN_CURRENT_NET['aug'][dName]) ? SBN_CURRENT_NET['aug'][dName] : 0;
 
-                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(2):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jnC)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(2):0)}</td></tr>`);
+                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(2):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jlC)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(2):0)}</td></tr>`);
                 });
             }
 
@@ -1556,6 +1574,18 @@
                 footHtml += `<td class="p-2.5 text-right">${dataType === 'revenue' ? mVal.toFixed(3) : mVal.toLocaleString()}</td>`;
             });
             document.getElementById('histTableFoot').innerHTML = footHtml + `<td class="p-3 text-right text-emerald-300">${dataType === 'revenue' ? totals.grandTotal.toFixed(3) : totals.grandTotal.toLocaleString()}</td></tr>`;
+            
+            // Historical table remark
+            const histRem = document.getElementById('histRemark');
+            if (histRem) {
+                if (dataType === 'revenue') {
+                    histRem.innerText = "* Note: IRGB revenue data is displayed in Lakhs, while other verticals are in Crores.";
+                } else if (dataType === 'count') {
+                    histRem.innerText = "* Note: Article counts represent actual item quantities.";
+                } else {
+                    histRem.innerText = "* Note: Savings Bank account quantities represent absolute numbers.";
+                }
+            }
         }
 
         function renderCharts(fullDataset, filteredData, selectedDiv, isIRGBOnly) {
@@ -1682,7 +1712,7 @@
             headerTitle.style.color = '#0f172a';
             headerTitle.style.borderBottom = '2px solid #0f172a';
             
-            headerTitle.innerText = `Indore Region - ${fileName.replace(/_/g, ' ')} (Others in Crore, IRGB Revenue in Lakhs)`;
+            headerTitle.innerText = `Indore Region - ${fileName.replace(/_/g, ' ')}`;
             container.appendChild(headerTitle);
 
             const clonedTable = tableElement.cloneNode(true);
@@ -1720,7 +1750,7 @@
             headerTitle.style.margin = '0 0 12px 0';
             headerTitle.style.color = '#0f172a';
             
-            headerTitle.innerText = `Indore Region - ${fileName.replace(/_/g, ' ')} (Others in Crore, IRGB Revenue in Lakhs)`;
+            headerTitle.innerText = `Indore Region - ${fileName.replace(/_/g, ' ')}`;
             container.appendChild(headerTitle);
 
             const clonedTable = tableElement.cloneNode(true);
