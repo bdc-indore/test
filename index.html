@@ -135,7 +135,7 @@
                     </div>
                 </div>
 
-                <!-- Main Data Table -->
+                <!-- Main Data Table (Removed Bottom Table from here as requested) -->
                 <div class="card p-6">
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
                         <h2 class="text-base font-bold text-slate-800">📋 विस्तृत तालिका विवरण (Detailed Performance Table)</h2>
@@ -152,7 +152,7 @@
                     <p id="tableRemark" class="text-xs text-amber-700 mt-2 font-semibold">* Note: IRGB data is displayed in Lakhs, while other verticals are in Crores.</p>
                 </div>
 
-                <!-- Revenue Month-Wise Division Detail Table (Added for Revenue Page) -->
+                <!-- Revenue Month-Wise Division Detail Table (For Revenue Page) -->
                 <div id="revMonthWiseContainer" class="card p-6">
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-3">
                         <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">📅 Detailed Month-Wise Revenue Target & Achievement</h3>
@@ -172,7 +172,7 @@
                                     <th class="p-2.5 border bg-slate-800">Jun Tgt</th><th class="p-2.5 border bg-slate-800">Jun Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Jun %</th>
                                     <th class="p-2.5 border bg-slate-800">Jul Tgt</th><th class="p-2.5 border bg-slate-800">Jul Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Jul %</th>
                                     <th class="p-2.5 border bg-slate-800">Aug Tgt</th><th class="p-2.5 border bg-slate-800">Aug Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Aug %</th>
-                                    <th class="p-2.5 border bg-indigo-900 font-extrabold text-indigo-100">Total Tgt (5M)</th><th class="p-2.5 border bg-indigo-900 font-extrabold text-emerald-200">Total Ach</th>
+                                    <th class="p-2.5 border bg-indigo-900 font-extrabold text-indigo-100">Total Tgt Till Date</th><th class="p-2.5 border bg-indigo-900 font-extrabold text-emerald-200">Total Ach Till Date</th>
                                     <th class="p-2.5 border bg-amber-600 font-black text-white text-center">Overall %</th>
                                 </tr>
                             </thead>
@@ -182,7 +182,7 @@
                     </div>
                 </div>
 
-                <!-- Month-Wise Division Detail Table (Article Count) -->
+                <!-- Month-Wise Division Detail Table (Article Count - For Article Count Page) -->
                 <div id="countMonthWiseContainer" class="card p-6 hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-3">
                         <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">📅 Detailed Month-Wise Division Target & Achievement</h3>
@@ -196,13 +196,13 @@
                         <table id="countMonthWiseTable" class="w-full text-left text-xs border-collapse">
                             <thead>
                                 <tr class="bg-slate-900 text-white font-bold uppercase">
-                                    <th class="p-2.5 border">Division Name</th>
+                                    <th class="p-2.5 border">Division Name & Vertical</th>
                                     <th class="p-2.5 border bg-slate-800">Apr Tgt</th><th class="p-2.5 border bg-slate-800">Apr Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Apr %</th>
                                     <th class="p-2.5 border bg-slate-800">May Tgt</th><th class="p-2.5 border bg-slate-800">May Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">May %</th>
                                     <th class="p-2.5 border bg-slate-800">Jun Tgt</th><th class="p-2.5 border bg-slate-800">Jun Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Jun %</th>
                                     <th class="p-2.5 border bg-slate-800">Jul Tgt</th><th class="p-2.5 border bg-slate-800">Jul Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Jul %</th>
                                     <th class="p-2.5 border bg-slate-800">Aug Tgt</th><th class="p-2.5 border bg-slate-800">Aug Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Aug %</th>
-                                    <th class="p-2.5 border bg-indigo-900 font-extrabold text-indigo-100">Total Tgt</th><th class="p-2.5 border bg-indigo-900 font-extrabold text-emerald-200">Total Ach</th>
+                                    <th class="p-2.5 border bg-indigo-900 font-extrabold text-indigo-100">Total Tgt Till Date</th><th class="p-2.5 border bg-indigo-900 font-extrabold text-emerald-200">Total Ach Till Date</th>
                                     <th class="p-2.5 border bg-amber-600 font-black text-white text-center">Overall %</th>
                                 </tr>
                             </thead>
@@ -1025,14 +1025,14 @@
             }
         }
 
-        // Revenue Month-Wise Table Generator Function
+        // Revenue Month-Wise Table Generator Function with Monthly Target = Total Target / 12
         function renderRevMonthWiseDivisionTable(filteredRevenueData, isIRGBOnly) {
             let rows = [], sumApT=0, sumApA=0, sumMyT=0, sumMyA=0, sumJnT=0, sumJnA=0, sumJlT=0, sumJlA=0, sumAgT=0, sumAgA=0, sumTotalTgt=0, sumTotalAch=0;
             
             filteredRevenueData.forEach(row => {
                 let mult = (row.vertical === 'IRGB' || isIRGBOnly) ? 100 : 1;
                 let annualTarget = row.target * mult;
-                let monthlyTarget = annualTarget / 12; // Monthly Target = Total Target / 12
+                let monthlyTarget = annualTarget / 12; // Monthly Target = Total Target / 12 (same for all months)
 
                 let apT = monthlyTarget, apA = row.apr * mult;
                 let myT = monthlyTarget, myA = row.may * mult;
@@ -1055,13 +1055,13 @@
 
                 rows.push(`<tr class="hover:bg-slate-50 border-b border-slate-200">
                     <td class="p-2.5 font-bold text-slate-900 border-r">${row.divName} <span class="text-[10px] text-slate-500 font-semibold">(${row.vertical})</span></td>
-                    <td class="p-2.5">${apT.toFixed(2)}</td><td class="p-2.5">${apA.toFixed(2)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(apA, apT)}</td>
-                    <td class="p-2.5">${myT.toFixed(2)}</td><td class="p-2.5">${myA.toFixed(2)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(myA, myT)}</td>
-                    <td class="p-2.5">${jnT.toFixed(2)}</td><td class="p-2.5">${jnA.toFixed(2)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(jnA, jnT)}</td>
-                    <td class="p-2.5">${jlT.toFixed(2)}</td><td class="p-2.5">${jlA.toFixed(2)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(jlA, jlT)}</td>
-                    <td class="p-2.5">${agT.toFixed(2)}</td><td class="p-2.5">${agA.toFixed(2)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(agA, agT)}</td>
-                    <td class="p-2.5 font-bold bg-indigo-50 text-indigo-900">${totTgtTillDate.toFixed(2)}</td>
-                    <td class="p-2.5 font-extrabold bg-emerald-50 text-emerald-800">${totAchTillDate.toFixed(2)}</td>
+                    <td class="p-2.5">${apT.toFixed(3)}</td><td class="p-2.5">${apA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(apA, apT)}</td>
+                    <td class="p-2.5">${myT.toFixed(3)}</td><td class="p-2.5">${myA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(myA, myT)}</td>
+                    <td class="p-2.5">${jnT.toFixed(3)}</td><td class="p-2.5">${jnA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(jnA, jnT)}</td>
+                    <td class="p-2.5">${jlT.toFixed(3)}</td><td class="p-2.5">${jlA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(jlA, jlT)}</td>
+                    <td class="p-2.5">${agT.toFixed(3)}</td><td class="p-2.5">${agA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(agA, agT)}</td>
+                    <td class="p-2.5 font-bold bg-indigo-50 text-indigo-900">${totTgtTillDate.toFixed(3)}</td>
+                    <td class="p-2.5 font-extrabold bg-emerald-50 text-emerald-800">${totAchTillDate.toFixed(3)}</td>
                     <td class="p-2.5 text-center font-black bg-amber-100 text-amber-900">${getPct(totAchTillDate, totTgtTillDate)}</td>
                 </tr>`);
             });
@@ -1069,29 +1069,66 @@
             document.getElementById('revMonthWiseBody').innerHTML = rows.join('');
             document.getElementById('revMonthWiseFoot').innerHTML = `<tr class="bg-slate-900 text-white font-black text-xs">
                 <td class="p-2.5 text-amber-300 uppercase border-r">TOTAL</td>
-                <td class="p-2.5">${sumApT.toFixed(2)}</td><td class="p-2.5">${sumApA.toFixed(2)}</td><td class="p-2.5 text-amber-300 border-r">${sumApT > 0 ? ((sumApA/sumApT)*100).toFixed(1) : 0}%</td>
-                <td class="p-2.5">${sumMyT.toFixed(2)}</td><td class="p-2.5">${sumMyA.toFixed(2)}</td><td class="p-2.5 text-amber-300 border-r">${sumMyT > 0 ? ((sumMyA/sumMyT)*100).toFixed(1) : 0}%</td>
-                <td class="p-2.5">${sumJnT.toFixed(2)}</td><td class="p-2.5">${sumJnA.toFixed(2)}</td><td class="p-2.5 text-amber-300 border-r">${sumJnT > 0 ? ((sumJnA/sumJnT)*100).toFixed(1) : 0}%</td>
-                <td class="p-2.5">${sumJlT.toFixed(2)}</td><td class="p-2.5">${sumJlA.toFixed(2)}</td><td class="p-2.5 text-amber-300 border-r">${sumJlT > 0 ? ((sumJlA/sumJlT)*100).toFixed(1) : 0}%</td>
-                <td class="p-2.5">${sumAgT.toFixed(2)}</td><td class="p-2.5">${sumAgA.toFixed(2)}</td><td class="p-2.5 text-amber-300 border-r">${sumAgT > 0 ? ((sumAgA/sumAgT)*100).toFixed(1) : 0}%</td>
-                <td class="p-2.5 text-indigo-200">${sumTotalTgt.toFixed(2)}</td>
-                <td class="p-2.5 text-emerald-300">${sumTotalAch.toFixed(2)}</td>
+                <td class="p-2.5">${sumApT.toFixed(3)}</td><td class="p-2.5">${sumApA.toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${sumApT > 0 ? ((sumApA/sumApT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5">${sumMyT.toFixed(3)}</td><td class="p-2.5">${sumMyA.toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${sumMyT > 0 ? ((sumMyA/sumMyT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5">${sumJnT.toFixed(3)}</td><td class="p-2.5">${sumJnA.toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${sumJnT > 0 ? ((sumJnA/sumJnT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5">${sumJlT.toFixed(3)}</td><td class="p-2.5">${sumJlA.toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${sumJlT > 0 ? ((sumJlA/sumJlT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5">${sumAgT.toFixed(3)}</td><td class="p-2.5">${sumAgA.toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${sumAgT > 0 ? ((sumAgA/sumAgT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5 text-indigo-200">${sumTotalTgt.toFixed(3)}</td>
+                <td class="p-2.5 text-emerald-300">${sumTotalAch.toFixed(3)}</td>
                 <td class="p-2.5 text-center text-amber-300 font-black">${sumTotalTgt > 0 ? ((sumTotalAch/sumTotalTgt)*100).toFixed(1) : 0}%</td>
             </tr>`;
         }
 
+        // Article Count Month-Wise Table Generator Function (Simple from Spreadsheet data as requested)
         function renderCountMonthWiseDivisionTable(filteredCountData) {
             let rows = [], sumApT=0, sumApA=0, sumMyT=0, sumMyA=0, sumJnT=0, sumJnA=0, sumJlT=0, sumJlA=0, sumAgT=0, sumAgA=0, sumTotalTgt=0, sumTotalAch=0;
+            
             filteredCountData.forEach(row => {
-                let apT = row.aprTgt, apA = row.apr, myT = row.mayTgt, myA = row.may, jnT = row.junTgt, jnA = row.jun, jlT = row.julTgt, jlA = row.jul, agT = row.augTgt, agA = row.aug;
-                let totTgtTillDate = row.target, totAchTillDate = row.totalAch;
+                let apT = row.aprTgt, apA = row.apr;
+                let myT = row.mayTgt, mayA = row.may;
+                let jnT = row.junTgt, jnA = row.jun;
+                let jlT = row.julTgt, jlA = row.jul;
+                let agT = row.augTgt, agA = row.aug;
 
-                sumApT += apT; sumApA += apA; sumMyT += myT; sumMyA += mayA; sumJnT += jnT; sumJnA += jnA; sumJlT += jlT; sumJlA += jlA; sumAgT += agT; sumAgA += agA; sumTotalTgt += totTgtTillDate; sumTotalAch += totAchTillDate;
+                let totTgtTillDate = row.target;
+                let totAchTillDate = row.totalAch;
 
-                rows.push(`<tr class="hover:bg-slate-50 border-b border-slate-200"><td class="p-2.5 font-bold text-slate-900 border-r">${row.divName} <span class="text-[10px] text-slate-400">(${row.vertical})</span></td><td class="p-2.5">${apT.toLocaleString()}</td><td class="p-2.5">${apA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${apT > 0 ? ((apA/apT)*100).toFixed(1) : 0}%</td><td class="p-2.5">${myT.toLocaleString()}</td><td class="p-2.5">${myA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${myT > 0 ? ((myA/myT)*100).toFixed(1) : 0}%</td><td class="p-2.5">${jnT.toLocaleString()}</td><td class="p-2.5">${jnA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${jnT > 0 ? ((jnA/jnT)*100).toFixed(1) : 0}%</td><td class="p-2.5">${jlT.toLocaleString()}</td><td class="p-2.5">${jlA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${jlT > 0 ? ((jlA/jlT)*100).toFixed(1) : 0}%</td><td class="p-2.5">${agT.toLocaleString()}</td><td class="p-2.5">${agA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${agT > 0 ? ((agA/agT)*100).toFixed(1) : 0}%</td><td class="p-2.5 font-bold bg-indigo-50 text-indigo-900">${totTgtTillDate.toLocaleString()}</td><td class="p-2.5 font-extrabold bg-emerald-50 text-emerald-800">${totAchTillDate.toLocaleString()}</td><td class="p-2.5 text-center font-black bg-amber-100 text-amber-900">${totTgtTillDate > 0 ? ((totAchTillDate/totTgtTillDate)*100).toFixed(1) : 0}%</td></tr>`);
+                sumApT += apT; sumApA += apA; 
+                sumMyT += myT; sumMyA += mayA; 
+                sumJnT += jnT; sumJnA += jnA; 
+                sumJlT += jlT; sumJlA += jlA; 
+                sumAgT += agT; sumAgA += agA; 
+                sumTotalTgt += totTgtTillDate; 
+                sumTotalAch += totAchTillDate;
+
+                let getPct = (a, t) => t > 0 ? ((a / t) * 100).toFixed(1) + '%' : '0%';
+
+                rows.push(`<tr class="hover:bg-slate-50 border-b border-slate-200">
+                    <td class="p-2.5 font-bold text-slate-900 border-r">${row.divName} <span class="text-[10px] text-slate-500 font-semibold">(${row.vertical})</span></td>
+                    <td class="p-2.5">${apT.toLocaleString()}</td><td class="p-2.5">${apA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(apA, apT)}</td>
+                    <td class="p-2.5">${myT.toLocaleString()}</td><td class="p-2.5">${mayA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(mayA, myT)}</td>
+                    <td class="p-2.5">${jnT.toLocaleString()}</td><td class="p-2.5">${jnA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(jnA, jnT)}</td>
+                    <td class="p-2.5">${jlT.toLocaleString()}</td><td class="p-2.5">${jlA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(jlA, jlT)}</td>
+                    <td class="p-2.5">${agT.toLocaleString()}</td><td class="p-2.5">${agA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${getPct(agA, agT)}</td>
+                    <td class="p-2.5 font-bold bg-indigo-50 text-indigo-900">${totTgtTillDate.toLocaleString()}</td>
+                    <td class="p-2.5 font-extrabold bg-emerald-50 text-emerald-800">${totAchTillDate.toLocaleString()}</td>
+                    <td class="p-2.5 text-center font-black bg-amber-100 text-amber-900">${getPct(totAchTillDate, totTgtTillDate)}</td>
+                </tr>`);
             });
+
             document.getElementById('countMonthWiseBody').innerHTML = rows.join('');
-            document.getElementById('countMonthWiseFoot').innerHTML = `<tr class="bg-slate-900 text-white font-black text-xs"><td class="p-2.5 text-amber-300 uppercase border-r">TOTAL</td><td class="p-2.5">${sumApT.toLocaleString()}</td><td class="p-2.5">${sumApA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumApT > 0 ? ((sumApA/sumApT)*100).toFixed(1) : 0}%</td><td class="p-2.5">${sumMyT.toLocaleString()}</td><td class="p-2.5">${sumMyA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumMyT > 0 ? ((sumMyA/sumMyT)*100).toFixed(1) : 0}%</td><td class="p-2.5">${sumJnT.toLocaleString()}</td><td class="p-2.5">${sumJnA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumJnT > 0 ? ((sumJnA/sumJnT)*100).toFixed(1) : 0}%</td><td class="p-2.5">${sumJlT.toLocaleString()}</td><td class="p-2.5">${sumJlA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumJlT > 0 ? ((sumJlA/sumJlT)*100).toFixed(1) : 0}%</td><td class="p-2.5">${sumAgT.toLocaleString()}</td><td class="p-2.5">${sumAgA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumAgT > 0 ? ((sumAgA/sumAgT)*100).toFixed(1) : 0}%</td><td class="p-2.5 text-indigo-200">${sumTotalTgt.toLocaleString()}</td><td class="p-2.5 text-emerald-300">${sumTotalAch.toLocaleString()}</td><td class="p-2.5 text-center text-amber-300 font-black">${sumTotalTgt > 0 ? ((sumTotalAch/sumTotalTgt)*100).toFixed(1) : 0}%</td></tr>`;
+            document.getElementById('countMonthWiseFoot').innerHTML = `<tr class="bg-slate-900 text-white font-black text-xs">
+                <td class="p-2.5 text-amber-300 uppercase border-r">TOTAL</td>
+                <td class="p-2.5">${sumApT.toLocaleString()}</td><td class="p-2.5">${sumApA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumApT > 0 ? ((sumApA/sumApT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5">${sumMyT.toLocaleString()}</td><td class="p-2.5">${sumMyA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumMyT > 0 ? ((sumMyA/sumMyT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5">${sumJnT.toLocaleString()}</td><td class="p-2.5">${sumJnA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumJnT > 0 ? ((sumJnA/sumJnT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5">${sumJlT.toLocaleString()}</td><td class="p-2.5">${sumJlA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumJlT > 0 ? ((sumJlA/sumJlT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5">${sumAgT.toLocaleString()}</td><td class="p-2.5">${sumAgA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${sumAgT > 0 ? ((sumAgA/sumAgT)*100).toFixed(1) : 0}%</td>
+                <td class="p-2.5 text-indigo-200">${sumTotalTgt.toLocaleString()}</td>
+                <td class="p-2.5 text-emerald-300">${sumTotalAch.toLocaleString()}</td>
+                <td class="p-2.5 text-center text-amber-300 font-black">${sumTotalTgt > 0 ? ((sumTotalAch/sumTotalTgt)*100).toFixed(1) : 0}%</td>
+            </tr>`;
         }
 
         function setPosbOption(opt) {
@@ -1543,7 +1580,7 @@
                     let jlC = (SBN_CURRENT_NET['jul'] && SBN_CURRENT_NET['jul'][dName]) ? SBN_CURRENT_NET['jul'][dName] : 0;
                     let agC = (SBN_CURRENT_NET['aug'] && SBN_CURRENT_NET['aug'][dName]) ? SBN_CURRENT_NET['aug'][dName] : 0;
 
-                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(2):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jnC)/jlC)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(2):0)}</td></tr>`);
+                    rows.push(`<tr class="hover:bg-emerald-50/40 border-b border-slate-200 bg-emerald-50/20"><td class="p-2.5 font-bold">${dName}</td><td class="p-2.5 text-xs font-semibold text-emerald-800">SB Net Addition</td><td class="p-2.5">${apC.toLocaleString()}</td><td class="p-2.5">${mayVal.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(apC>0?(((mayVal-apC)/apC)*100).toFixed(2):0)}</td><td class="p-2.5">${jnC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(mayVal>0?(((jnC-mayVal)/mayVal)*100).toFixed(2):0)}</td><td class="p-2.5">${jlC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-50">${formatG(jnC>0?(((jlC-jlC)/jlC)*100).toFixed(2):0)}</td><td class="p-2.5 font-bold text-emerald-700">${agC.toLocaleString()}</td><td class="p-2.5 text-center bg-emerald-100">${formatG(jlC>0?(((agC-jlC)/jlC)*100).toFixed(2):0)}</td></tr>`);
                 });
             }
 
