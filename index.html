@@ -153,7 +153,7 @@
                 </div>
 
                 <!-- Month-Wise Division Detail Table (For Revenue View) -->
-                <div id="revenueMonthWiseContainer" class="card p-6">
+                <div id="revenueMonthWiseContainer" class="card p-6 hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-3">
                         <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">📅 Detailed Month-Wise Division Target & Achievement</h3>
                         <div class="flex items-center gap-2">
@@ -936,11 +936,11 @@
 
             filtered.forEach(r => {
                 if (currentDataType === 'count') { 
-                    sumTarget += r.augTgt; 
-                    sumAch += r.aug;       
+                    sumTarget += (Number(r.augTgt) || 0); 
+                    sumAch += (Number(r.aug) || 0);       
                 } else {
-                    sumTarget += r.target; 
-                    sumAch += r.totalAch;
+                    sumTarget += (Number(r.target) || 0); 
+                    sumAch += (Number(r.totalAch) || 0);
                 }
             });
 
@@ -985,19 +985,19 @@
                 let vertBadge = `<span class="px-2.5 py-1 rounded-md font-bold text-xs bg-blue-100 text-blue-800">${r.vertical}</span>`;
                 
                 if (isCount) {
-                    sumApA += r.apr; sumMyA += r.may; sumJnA += r.jun; sumJlA += r.jul; sumAgA += r.aug; sumAch += r.totalAch;
-                    rows.push(`<tr class="hover:bg-slate-50 transition border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3">${vertBadge}</td><td class="p-3 text-blue-700">${r.apr.toLocaleString()}</td><td class="p-3 text-blue-700">${r.may.toLocaleString()}</td><td class="p-3 text-blue-700">${r.jun.toLocaleString()}</td><td class="p-3 text-blue-700">${r.jul.toLocaleString()}</td><td class="p-3 text-blue-700">${r.aug.toLocaleString()}</td><td class="p-3 font-extrabold text-emerald-700">${r.totalAch.toLocaleString()}</td></tr>`);
+                    sumApA += (Number(r.apr) || 0); sumMyA += (Number(r.may) || 0); sumJnA += (Number(r.jun) || 0); sumJlA += (Number(r.jul) || 0); sumAgA += (Number(r.aug) || 0); sumAch += (Number(r.totalAch) || 0);
+                    rows.push(`<tr class="hover:bg-slate-50 transition border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3">${vertBadge}</td><td class="p-3 text-blue-700">${(Number(r.apr)||0).toLocaleString()}</td><td class="p-3 text-blue-700">${(Number(r.may)||0).toLocaleString()}</td><td class="p-3 text-blue-700">${(Number(r.jun)||0).toLocaleString()}</td><td class="p-3 text-blue-700">${(Number(r.jul)||0).toLocaleString()}</td><td class="p-3 text-blue-700">${(Number(r.aug)||0).toLocaleString()}</td><td class="p-3 font-extrabold text-emerald-700">${(Number(r.totalAch)||0).toLocaleString()}</td></tr>`);
                 } else {
                     let mult = (!isCount && (isIRGBOnly || r.vertical === 'IRGB')) ? 100 : 1;
-                    let t = r.target * mult, ap = r.apr * mult, my = r.may * mult, jn = r.jun * mult, jl = r.jul * mult, ag = r.aug * mult, ach = r.totalAch * mult;
+                    let t = (Number(r.target) || 0) * mult, ap = (Number(r.apr) || 0) * mult, my = (Number(r.may) || 0) * mult, jn = (Number(r.jun) || 0) * mult, jl = (Number(r.jul) || 0) * mult, ag = (Number(r.aug) || 0) * mult, ach = (Number(r.totalAch) || 0) * mult;
                     
-                    sumT += (r.vertical === 'IRGB' ? r.target : t / mult); 
-                    sumApA += (r.vertical === 'IRGB' ? r.apr : ap / mult); 
-                    sumMyA += (r.vertical === 'IRGB' ? r.may : my / mult); 
-                    sumJnA += (r.vertical === 'IRGB' ? r.jun : jn / mult); 
-                    sumJlA += (r.vertical === 'IRGB' ? r.jul : jl / mult); 
-                    sumAgA += (r.vertical === 'IRGB' ? r.aug : ag / mult); 
-                    sumAch += (r.vertical === 'IRGB' ? r.totalAch : ach / mult);
+                    sumT += (r.vertical === 'IRGB' ? (Number(r.target) || 0) : t / mult); 
+                    sumApA += (r.vertical === 'IRGB' ? (Number(r.apr) || 0) : ap / mult); 
+                    sumMyA += (r.vertical === 'IRGB' ? (Number(r.may) || 0) : my / mult); 
+                    sumJnA += (r.vertical === 'IRGB' ? (Number(r.jun) || 0) : jn / mult); 
+                    sumJlA += (r.vertical === 'IRGB' ? (Number(r.jul) || 0) : jl / mult); 
+                    sumAgA += (r.vertical === 'IRGB' ? (Number(r.aug) || 0) : ag / mult); 
+                    sumAch += (r.vertical === 'IRGB' ? (Number(r.totalAch) || 0) : ach / mult);
 
                     let rowPctVal = t > 0 ? (ach / t) * 100 : 0;
                     rows.push(`<tr class="hover:bg-slate-50 transition border-b border-slate-200"><td class="p-3 font-bold text-slate-900">${r.divName}</td><td class="p-3">${vertBadge}</td><td class="p-3">${fmtSafe(t, false)}</td><td class="p-3">${fmtSafe(ap, false)}</td><td class="p-3">${fmtSafe(my, false)}</td><td class="p-3">${fmtSafe(jn, false)}</td><td class="p-3">${fmtSafe(jl, false)}</td><td class="p-3 font-bold text-blue-700">${fmtSafe(ag, false)}</td><td class="p-3 font-extrabold text-emerald-700">${fmtSafe(ach, false)}</td><td class="p-3 font-semibold text-amber-700">${rowPctVal.toFixed(2)}%</td></tr>`);
@@ -1034,23 +1034,24 @@
                 let mult = (isIRGBOnly || row.vertical === 'IRGB') ? 100 : 1;
                 
                 // Target is 1/12 of the Annual Target for each month
-                let monTgt = (row.target / 12) * mult;
-                let apA = row.apr * mult;
-                let myA = row.may * mult;
-                let jnA = row.jun * mult;
-                let jlA = row.jul * mult;
-                let agA = row.aug * mult;
+                let tgt = Number(row.target) || 0;
+                let monTgt = (tgt / 12) * mult;
+                let apA = (Number(row.apr) || 0) * mult;
+                let myA = (Number(row.may) || 0) * mult;
+                let jnA = (Number(row.jun) || 0) * mult;
+                let jlA = (Number(row.jul) || 0) * mult;
+                let agA = (Number(row.aug) || 0) * mult;
                 
                 // 5 months target (Apr to Aug)
                 let totTgtTillDate = monTgt * 5;
                 let totAchTillDate = apA + myA + jnA + jlA + agA;
 
-                sumApT += (row.target / 12); sumApA += row.apr;
-                sumMyT += (row.target / 12); sumMyA += row.may;
-                sumJnT += (row.target / 12); sumJnA += row.jun;
-                sumJlT += (row.target / 12); sumJlA += row.jul;
-                sumAgT += (row.target / 12); sumAgA += row.aug;
-                sumTotalTgt += ((row.target / 12) * 5); sumTotalAch += (row.totalAch);
+                sumApT += (tgt / 12); sumApA += (Number(row.apr) || 0);
+                sumMyT += (tgt / 12); sumMyA += (Number(row.may) || 0);
+                sumJnT += (tgt / 12); sumJnA += (Number(row.jun) || 0);
+                sumJlT += (tgt / 12); sumJlA += (Number(row.jul) || 0);
+                sumAgT += (tgt / 12); sumAgA += (Number(row.aug) || 0);
+                sumTotalTgt += ((tgt / 12) * 5); sumTotalAch += (Number(row.totalAch) || 0);
 
                 let apPct = monTgt > 0 ? ((apA / monTgt) * 100).toFixed(1) : "0.0";
                 let myPct = monTgt > 0 ? ((myA / monTgt) * 100).toFixed(1) : "0.0";
@@ -1061,13 +1062,13 @@
 
                 rows.push(`<tr class="hover:bg-slate-50 border-b border-slate-200">
                     <td class="p-2.5 font-bold text-slate-900 border-r">${row.divName} <span class="text-[10px] text-slate-400">(${row.vertical})</span></td>
-                    <td class="p-2.5">${monTgt.toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${apA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${apPct}%</td>
-                    <td class="p-2.5">${monTgt.toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${myA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${myPct}%</td>
-                    <td class="p-2.5">${monTgt.toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${jnA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${jnPct}%</td>
-                    <td class="p-2.5">${monTgt.toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${jlA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${jlPct}%</td>
-                    <td class="p-2.5">${monTgt.toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${agA.toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${agPct}%</td>
-                    <td class="p-2.5 font-bold bg-indigo-50 text-indigo-900">${totTgtTillDate.toFixed(3)}</td>
-                    <td class="p-2.5 font-extrabold bg-emerald-50 text-emerald-800">${totAchTillDate.toFixed(3)}</td>
+                    <td class="p-2.5">${Number(monTgt || 0).toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${Number(apA || 0).toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${apPct}%</td>
+                    <td class="p-2.5">${Number(monTgt || 0).toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${Number(myA || 0).toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${myPct}%</td>
+                    <td class="p-2.5">${Number(monTgt || 0).toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${Number(jnA || 0).toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${jnPct}%</td>
+                    <td class="p-2.5">${Number(monTgt || 0).toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${Number(jlA || 0).toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${jlPct}%</td>
+                    <td class="p-2.5">${Number(monTgt || 0).toFixed(3)}</td><td class="p-2.5 font-medium text-blue-700">${Number(agA || 0).toFixed(3)}</td><td class="p-2.5 font-bold text-amber-600 border-r">${agPct}%</td>
+                    <td class="p-2.5 font-bold bg-indigo-50 text-indigo-900">${Number(totTgtTillDate || 0).toFixed(3)}</td>
+                    <td class="p-2.5 font-extrabold bg-emerald-50 text-emerald-800">${Number(totAchTillDate || 0).toFixed(3)}</td>
                     <td class="p-2.5 text-center font-black bg-amber-100 text-amber-900">${overallPct}%</td>
                 </tr>`);
             });
@@ -1084,13 +1085,13 @@
 
             document.getElementById('revenueMonthWiseFoot').innerHTML = `<tr class="bg-slate-900 text-white font-black text-xs">
                 <td class="p-2.5 text-amber-300 uppercase border-r">TOTAL</td>
-                <td class="p-2.5">${(sumApT * displayMult).toFixed(3)}</td><td class="p-2.5 text-blue-300">${(sumApA * displayMult).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totApPct}%</td>
-                <td class="p-2.5">${(sumMyT * displayMult).toFixed(3)}</td><td class="p-2.5 text-blue-300">${(sumMyA * displayMult).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totMyPct}%</td>
-                <td class="p-2.5">${(sumJnT * displayMult).toFixed(3)}</td><td class="p-2.5 text-blue-300">${(sumJnA * displayMult).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totJnPct}%</td>
-                <td class="p-2.5">${(sumJlT * displayMult).toFixed(3)}</td><td class="p-2.5 text-blue-300">${(sumJlA * displayMult).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totJlPct}%</td>
-                <td class="p-2.5">${(sumAgT * displayMult).toFixed(3)}</td><td class="p-2.5 text-blue-300">${(sumAgA * displayMult).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totAgPct}%</td>
-                <td class="p-2.5 text-indigo-200">${(sumTotalTgt * displayMult).toFixed(3)}</td>
-                <td class="p-2.5 text-emerald-300">${(sumTotalAch * displayMult).toFixed(3)}</td>
+                <td class="p-2.5">${Number(sumApT * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-blue-300">${Number(sumApA * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totApPct}%</td>
+                <td class="p-2.5">${Number(sumMyT * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-blue-300">${Number(sumMyA * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totMyPct}%</td>
+                <td class="p-2.5">${Number(sumJnT * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-blue-300">${Number(sumJnA * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totJnPct}%</td>
+                <td class="p-2.5">${Number(sumJlT * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-blue-300">${Number(sumJlA * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totJlPct}%</td>
+                <td class="p-2.5">${Number(sumAgT * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-blue-300">${Number(sumAgA * displayMult || 0).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totAgPct}%</td>
+                <td class="p-2.5 text-indigo-200">${Number(sumTotalTgt * displayMult || 0).toFixed(3)}</td>
+                <td class="p-2.5 text-emerald-300">${Number(sumTotalAch * displayMult || 0).toFixed(3)}</td>
                 <td class="p-2.5 text-center text-amber-300 font-black">${totOverallPct}%</td>
             </tr>`;
         }
@@ -1101,15 +1102,15 @@
             let sumApT=0, sumApA=0, sumMyT=0, sumMyA=0, sumJnT=0, sumJnA=0, sumJlT=0, sumJlA=0, sumAgT=0, sumAgA=0, sumTotalTgt=0, sumTotalAch=0;
 
             filteredCountData.forEach(row => {
-                let apT = row.aprTgt, apA = row.apr;
-                let myT = row.mayTgt, myA = row.may;
-                let jnT = row.junTgt, jnA = row.jun;
-                let jlT = row.julTgt, jlA = row.jul;
-                let agT = row.augTgt, agA = row.aug;
+                let apT = Number(row.aprTgt) || 0, apA = Number(row.apr) || 0;
+                let myT = Number(row.mayTgt) || 0, myA = Number(row.may) || 0;
+                let jnT = Number(row.junTgt) || 0, jnA = Number(row.jun) || 0;
+                let jlT = Number(row.julTgt) || 0, jlA = Number(row.jul) || 0;
+                let agT = Number(row.augTgt) || 0, agA = Number(row.aug) || 0;
                 
                 // Total targets & achievements till date
-                let totTgtTillDate = row.target; 
-                let totAchTillDate = row.totalAch;
+                let totTgtTillDate = Number(row.target) || 0; 
+                let totAchTillDate = Number(row.totalAch) || 0;
 
                 sumApT += apT; sumApA += apA;
                 sumMyT += myT; sumMyA += myA;
@@ -1809,7 +1810,9 @@
             if (secondChart) secondChart.destroy();
             
             let vertTotals = { "PARCEL": 0, "MAIL": 0, "IRGB": 0, "SB": 0, "PLI": 0, "CCS": 0 };
-            dataset.forEach(r => {
+            
+            // Fixed the bug: Changed "dataset" to "fullDataset"
+            fullDataset.forEach(r => {
                 if (selectedDiv === 'ALL' || isMatchingDivision(r.divName, selectedDiv)) {
                     if (vertTotals[r.vertical] !== undefined) {
                         vertTotals[r.vertical] += (r.totalAch || 0);
