@@ -181,6 +181,36 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Month-Wise Division Detail Table (For Article Count View) -->
+                <div id="countMonthWiseContainer" class="card p-6 hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-3">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">📅 Detailed Month-Wise Division Target & Achievement (Count)</h3>
+                        <div class="flex items-center gap-2">
+                            <button onclick="downloadTablePDF('countMonthWiseTable', 'MonthWise_Division_Count_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📄 PDF</button>
+                            <button onclick="downloadTableJPEG('countMonthWiseTable', 'MonthWise_Division_Count_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📸 JPEG</button>
+                            <button onclick="exportTableByID('countMonthWiseTable', 'MonthWise_Division_Count_Report.xlsx')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📊 Excel</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="countMonthWiseTable" class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-900 text-white font-bold uppercase">
+                                    <th class="p-2.5 border">Division Name</th>
+                                    <th class="p-2.5 border bg-slate-800">Apr Tgt</th><th class="p-2.5 border bg-slate-800">Apr Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Apr %</th>
+                                    <th class="p-2.5 border bg-slate-800">May Tgt</th><th class="p-2.5 border bg-slate-800">May Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">May %</th>
+                                    <th class="p-2.5 border bg-slate-800">Jun Tgt</th><th class="p-2.5 border bg-slate-800">Jun Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Jun %</th>
+                                    <th class="p-2.5 border bg-slate-800">Jul Tgt</th><th class="p-2.5 border bg-slate-800">Jul Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Jul %</th>
+                                    <th class="p-2.5 border bg-slate-800">Aug Tgt</th><th class="p-2.5 border bg-slate-800">Aug Ach</th><th class="p-2.5 border bg-slate-800 text-amber-300">Aug %</th>
+                                    <th class="p-2.5 border bg-indigo-900 font-extrabold text-indigo-100">Total Tgt</th><th class="p-2.5 border bg-indigo-900 font-extrabold text-emerald-200">Total Ach</th>
+                                    <th class="p-2.5 border bg-amber-600 font-black text-white text-center">Overall %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="countMonthWiseBody" class="divide-y divide-slate-200 font-medium"></tbody>
+                            <tfoot id="countMonthWiseFoot" class="bg-slate-900 text-white font-bold uppercase"></tfoot>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- Sub-Division Analysis Section -->
@@ -877,11 +907,12 @@
                     document.getElementById('kpiTargetLabel').innerText = "वार्षिक लक्ष्य (ANNUAL TARGET)";
                     document.getElementById('kpiAchLabel').innerText = "कुल उपलब्धि (TOTAL ACHIEVEMENT)";
                     document.getElementById('revenueMonthWiseContainer').classList.remove('hidden');
+                    document.getElementById('countMonthWiseContainer').classList.add('hidden');
                 } else {
                     document.getElementById('kpiTargetLabel').innerText = "अगस्त लक्ष्य (AUGUST TARGET)";
                     document.getElementById('kpiAchLabel').innerText = "अगस्त उपलब्धि (AUGUST ACHIEVEMENT)";
-                    // आर्टिकल काउंट पेज पर केवल एक ही मुख्य टेबल रहेगी
                     document.getElementById('revenueMonthWiseContainer').classList.add('hidden');
+                    document.getElementById('countMonthWiseContainer').classList.remove('hidden');
                 }
 
                 updateDashboard();
@@ -933,6 +964,8 @@
             
             if (currentDataType === 'revenue') {
                 renderRevenueMonthWiseDivisionTable(filtered, isIRGBOnly);
+            } else if (currentDataType === 'count') {
+                renderCountMonthWiseDivisionTable(filtered);
             }
         }
 
@@ -1058,6 +1091,71 @@
                 <td class="p-2.5">${(sumAgT * displayMult).toFixed(3)}</td><td class="p-2.5 text-blue-300">${(sumAgA * displayMult).toFixed(3)}</td><td class="p-2.5 text-amber-300 border-r">${totAgPct}%</td>
                 <td class="p-2.5 text-indigo-200">${(sumTotalTgt * displayMult).toFixed(3)}</td>
                 <td class="p-2.5 text-emerald-300">${(sumTotalAch * displayMult).toFixed(3)}</td>
+                <td class="p-2.5 text-center text-amber-300 font-black">${totOverallPct}%</td>
+            </tr>`;
+        }
+
+        // Detailed Month-Wise Division Target & Achievement Table Generator (For Article Count)
+        function renderCountMonthWiseDivisionTable(filteredCountData) {
+            let rows = [];
+            let sumApT=0, sumApA=0, sumMyT=0, sumMyA=0, sumJnT=0, sumJnA=0, sumJlT=0, sumJlA=0, sumAgT=0, sumAgA=0, sumTotalTgt=0, sumTotalAch=0;
+
+            filteredCountData.forEach(row => {
+                let apT = row.aprTgt, apA = row.apr;
+                let myT = row.mayTgt, myA = row.may;
+                let jnT = row.junTgt, jnA = row.jun;
+                let jlT = row.julTgt, jlA = row.jul;
+                let agT = row.augTgt, agA = row.aug;
+                
+                // Total targets & achievements till date
+                let totTgtTillDate = row.target; 
+                let totAchTillDate = row.totalAch;
+
+                sumApT += apT; sumApA += apA;
+                sumMyT += myT; sumMyA += myA;
+                sumJnT += jnT; sumJnA += jnA;
+                sumJlT += jlT; sumJlA += jlA;
+                sumAgT += agT; sumAgA += agA;
+                sumTotalTgt += totTgtTillDate; sumTotalAch += totAchTillDate;
+
+                let apPct = apT > 0 ? ((apA / apT) * 100).toFixed(1) : "0.0";
+                let myPct = myT > 0 ? ((myA / myT) * 100).toFixed(1) : "0.0";
+                let jnPct = jnT > 0 ? ((jnA / jnT) * 100).toFixed(1) : "0.0";
+                let jlPct = jlT > 0 ? ((jlA / jlT) * 100).toFixed(1) : "0.0";
+                let agPct = agT > 0 ? ((agA / agT) * 100).toFixed(1) : "0.0";
+                let overallPct = totTgtTillDate > 0 ? ((totAchTillDate / totTgtTillDate) * 100).toFixed(1) : "0.0";
+
+                rows.push(`<tr class="hover:bg-slate-50 border-b border-slate-200">
+                    <td class="p-2.5 font-bold text-slate-900 border-r">${row.divName} <span class="text-[10px] text-slate-400">(${row.vertical})</span></td>
+                    <td class="p-2.5">${apT.toLocaleString()}</td><td class="p-2.5 font-medium text-blue-700">${apA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${apPct}%</td>
+                    <td class="p-2.5">${myT.toLocaleString()}</td><td class="p-2.5 font-medium text-blue-700">${myA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${myPct}%</td>
+                    <td class="p-2.5">${jnT.toLocaleString()}</td><td class="p-2.5 font-medium text-blue-700">${jnA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${jnPct}%</td>
+                    <td class="p-2.5">${jlT.toLocaleString()}</td><td class="p-2.5 font-medium text-blue-700">${jlA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${jlPct}%</td>
+                    <td class="p-2.5">${agT.toLocaleString()}</td><td class="p-2.5 font-medium text-blue-700">${agA.toLocaleString()}</td><td class="p-2.5 font-bold text-amber-600 border-r">${agPct}%</td>
+                    <td class="p-2.5 font-bold bg-indigo-50 text-indigo-900">${totTgtTillDate.toLocaleString()}</td>
+                    <td class="p-2.5 font-extrabold bg-emerald-50 text-emerald-800">${totAchTillDate.toLocaleString()}</td>
+                    <td class="p-2.5 text-center font-black bg-amber-100 text-amber-900">${overallPct}%</td>
+                </tr>`);
+            });
+
+            document.getElementById('countMonthWiseBody').innerHTML = rows.join('');
+            
+            let totApPct = sumApT > 0 ? ((sumApA / sumApT) * 100).toFixed(1) : "0.0";
+            let totMyPct = sumMyT > 0 ? ((sumMyA / sumMyT) * 100).toFixed(1) : "0.0";
+            let totJnPct = sumJnT > 0 ? ((sumJnA / sumJnT) * 100).toFixed(1) : "0.0";
+            let totJlPct = sumJlT > 0 ? ((sumJlA / sumJlT) * 100).toFixed(1) : "0.0";
+            let totAgPct = sumAgT > 0 ? ((sumAgA / sumAgT) * 100).toFixed(1) : "0.0";
+            let totOverallPct = sumTotalTgt > 0 ? ((sumTotalAch / sumTotalTgt) * 100).toFixed(1) : "0.0";
+
+            document.getElementById('countMonthWiseFoot').innerHTML = `<tr class="bg-slate-900 text-white font-black text-xs">
+                <td class="p-2.5 text-amber-300 uppercase border-r">TOTAL</td>
+                <td class="p-2.5">${sumApT.toLocaleString()}</td><td class="p-2.5 text-blue-300">${sumApA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${totApPct}%</td>
+                <td class="p-2.5">${sumMyT.toLocaleString()}</td><td class="p-2.5 text-blue-300">${sumMyA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${totMyPct}%</td>
+                <td class="p-2.5">${sumJnT.toLocaleString()}</td><td class="p-2.5 text-blue-300">${sumJnA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${totJnPct}%</td>
+                <td class="p-2.5">${sumJlT.toLocaleString()}</td><td class="p-2.5 text-blue-300">${sumJlA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${totJlPct}%</td>
+                <td class="p-2.5">${sumAgT.toLocaleString()}</td><td class="p-2.5 text-blue-300">${sumAgA.toLocaleString()}</td><td class="p-2.5 text-amber-300 border-r">${totAgPct}%</td>
+                <td class="p-2.5 text-indigo-200">${sumTotalTgt.toLocaleString()}</td>
+                <td class="p-2.5 text-emerald-300">${sumTotalAch.toLocaleString()}</td>
                 <td class="p-2.5 text-center text-amber-300 font-black">${totOverallPct}%</td>
             </tr>`;
         }
