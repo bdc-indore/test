@@ -257,10 +257,10 @@
                     <div class="card p-4 border-l-4 border-slate-700"><div class="text-slate-500 text-[11px] font-bold uppercase">TOTAL POST OFFICES</div><div id="offKpiTotal" class="text-xl font-black text-slate-900 mt-1">0</div></div>
                     <div class="card p-4 border-l-4 border-blue-600"><div class="text-slate-500 text-[11px] font-bold uppercase">TOTAL BOOKINGS</div><div id="offKpiBookings" class="text-xl font-black text-blue-700 mt-1">0</div></div>
                     <div onclick="exportCategoryExcel('ALL', 'NIL')" class="card clickable-card p-4 border-l-4 border-rose-600 bg-rose-50/40 group"><div class="text-rose-700 text-[11px] font-extrabold uppercase flex justify-between"><span>NIL BOOKINGS (0)</span><span>📥</span></div><div id="offKpiNil" class="text-xl font-black text-rose-700 mt-1">0</div></div>
-                    <div onclick="exportCategoryExcel('ALL', 'LOW')" class="card clickable-card p-4 border-l-4 border-amber-500 bg-amber-50/40 group"><div class="text-amber-800 text-[11px] font-extrabold uppercase flex justify-between"><span>LOW BOOKING (1-10)*</span><span>📥</span></div><div id="offKpiLow" class="text-xl font-black text-amber-700 mt-1">0</div></div>
-                    <div onclick="exportCategoryExcel('ALL', 'GOOD')" class="card clickable-card p-4 border-l-4 border-emerald-500 bg-emerald-50/40 group"><div class="text-emerald-800 text-[11px] font-extrabold uppercase flex justify-between"><span>GOOD BOOKING (>10)</span><span>📥</span></div><div id="offKpiGood" class="text-xl font-black text-emerald-600 mt-1">0</div></div>
+                    <div onclick="exportCategoryExcel('ALL', 'LOW')" class="card clickable-card p-4 border-l-4 border-amber-500 bg-amber-50/40 group"><div class="text-amber-800 text-[11px] font-extrabold uppercase flex justify-between"><span id="offLowKpiLabel">LOW BOOKING (1-10)*</span><span>📥</span></div><div id="offKpiLow" class="text-xl font-black text-amber-700 mt-1">0</div></div>
+                    <div onclick="exportCategoryExcel('ALL', 'GOOD')" class="card clickable-card p-4 border-l-4 border-emerald-500 bg-emerald-50/40 group"><div class="text-emerald-800 text-[11px] font-extrabold uppercase flex justify-between"><span id="offGoodKpiLabel">GOOD BOOKING (>10)</span><span>📥</span></div><div id="offKpiGood" class="text-xl font-black text-emerald-600 mt-1">0</div></div>
                     <div class="card p-4 border-l-4 border-purple-500"><div class="text-purple-800 text-[11px] font-extrabold uppercase">% NIL BOOKINGS</div><div id="offKpiNilPct" class="text-xl font-black text-purple-700 mt-1">0%</div></div>
-                    <div class="card p-4 border-l-4 border-teal-500"><div class="text-teal-800 text-[11px] font-extrabold uppercase">% GOOD (>10) BOOKINGS</div><div id="offKpiGoodPct" class="text-xl font-black text-teal-700 mt-1">0%</div></div>
+                    <div class="card p-4 border-l-4 border-teal-500"><div class="text-teal-800 text-[11px] font-extrabold uppercase">% <span id="offGoodPctLabel">GOOD (>10)</span> BOOKINGS</div><div id="offKpiGoodPct" class="text-xl font-black text-teal-700 mt-1">0%</div></div>
                 </div>
                 <div class="card p-6">
                     <div class="overflow-x-auto">
@@ -272,17 +272,17 @@
                                     <th style="width: 15%;">Name of Sub Dn</th>
                                     <th style="width: 11%;">Total Offices in Sub Dn</th>
                                     <th style="width: 11%;">NIL (0) Offices</th>
-                                    <th style="width: 11%;">Low Booking (1-10)*</th>
-                                    <th style="width: 11%;">Good Booking (>10)</th>
+                                    <th style="width: 11%;" id="offLowHeaderLabel">Low Booking (1-10)*</th>
+                                    <th style="width: 11%;" id="offGoodHeaderLabel">Good Booking (>10)</th>
                                     <th style="width: 12%;">% NIL Offices in Sub Dn</th>
-                                    <th style="width: 13%;">% Offices with >10 Booking</th>
+                                    <th style="width: 13%;" id="offGoodPctHeaderLabel">% Offices with >10 Booking</th>
                                 </tr>
                             </thead>
                             <tbody id="sdPerformanceTableBody"></tbody>
                             <tfoot id="sdPerformanceTableFoot"></tfoot>
                         </table>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-2 font-semibold">*Note: IDC offices are non-booking offices and included under Low Booking to avoid booking count confusion.</p>
+                    <p class="text-[11px] text-slate-500 mt-2 font-semibold">*Note: IDC offices are non-booking offices and included under Low Booking to avoid booking count confusion. Threshold auto-adjusts: SO + All Verticals → 1-100 Low / &gt;100 Good; SO + Single Vertical (Parcel/MO/IRGB) → 1-50 Low / &gt;50 Good; otherwise 1-10 Low / &gt;10 Good.</p>
                 </div>
             </div>
 
@@ -593,16 +593,13 @@
 
                 <!-- Sub Division Analysis - Month-wise Compare View -->
                 <div class="card p-6 hidden" id="sdMonthCompareContainer">
-                    <p class="text-[11px] text-slate-400 font-semibold mb-2">Cumulative Average (Apr-Aug) — Sorted Highest → Lowest | Chart: Top 15 Sub-Divisions, Month-wise Trend</p>
-                    <div class="overflow-x-auto mb-6">
-                        <table id="divRevSDMonthTable" class="w-full text-center text-xs border-collapse">
-                            <thead class="bg-slate-900 text-white font-bold uppercase">
-                                <tr id="divRevSDMonthTableHeadRow"></tr>
-                            </thead>
+                    <p class="text-[11px] text-slate-400 font-semibold mb-2">Month-wise Average Booking per Office (April → August) — Sorted Highest → Lowest by Total (Apr-Aug) Average</p>
+                    <div class="overflow-x-auto">
+                        <table id="divRevSDMonthTable" class="w-full text-center text-[10px] border-collapse">
+                            <thead id="divRevSDMonthTableHead" class="bg-slate-900 text-white font-bold uppercase"></thead>
                             <tbody id="divRevSDMonthTableBody" class="divide-y divide-slate-200 font-medium"></tbody>
                         </table>
                     </div>
-                    <div class="h-96"><canvas id="sdMonthCompareChart"></canvas></div>
                 </div>
             </div>
 
@@ -639,7 +636,6 @@
         let currentPosbOption = 'net', masterOfficeDatabase = [];
         let currentActiveView = 'revenue', currentDataType = 'revenue', currentVertical = 'ALL';
         let trendChart = null, secondChart = null, sdMChart = null, revenueRecords = [], countRecords = [];
-        let sdMonthCompareChartInstance = null;
 
         function initDynamicDropdowns() {
             document.querySelectorAll('.div-select-options').forEach(select => {
@@ -1463,9 +1459,27 @@
             sdMChart = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: datasetLabel, data: dataValues, backgroundColor: colorHex, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { font: { size: 10 } } }, y: { beginAtZero: true } } } });
         }
 
+        // Dynamic Low/Good booking threshold: SO class gets higher thresholds based on vertical filter
+        function getLowBookingThreshold(clsKey, vertKey) {
+            if (clsKey === 'SO') {
+                return (vertKey === 'ALL') ? 100 : 50;
+            }
+            return 10;
+        }
+
         function renderOfficeAnalytics() {
             const vertKey = document.getElementById('offVertSelect').value, divKey = document.getElementById('offDivSelect').value, sdKey = document.getElementById('offSdSelect').value, mKey = document.getElementById('offMonthSelect').value, clsKey = document.getElementById('offClassSelect').value;
             let divGroup = new Map(), totalOfficesCount = 0, totalBookings = 0, totalNil = 0, totalLow = 0, totalGood = 0;
+
+            const lowMax = getLowBookingThreshold(clsKey, vertKey);
+
+            // Update dynamic labels for headers & KPI cards
+            document.getElementById('offLowKpiLabel').innerText = `LOW BOOKING (1-${lowMax})*`;
+            document.getElementById('offGoodKpiLabel').innerText = `GOOD BOOKING (>${lowMax})`;
+            document.getElementById('offGoodPctLabel').innerText = `GOOD (>${lowMax})`;
+            document.getElementById('offLowHeaderLabel').innerText = `Low Booking (1-${lowMax})*`;
+            document.getElementById('offGoodHeaderLabel').innerText = `Good Booking (>${lowMax})`;
+            document.getElementById('offGoodPctHeaderLabel').innerText = `% Offices with >${lowMax} Booking`;
 
             masterOfficeDatabase.forEach(o => {
                 if (clsKey !== 'ALL' && o.cls !== clsKey.toUpperCase()) return;
@@ -1481,7 +1495,7 @@
                 let cnt = vertKey === 'PARCEL' ? (o[`parcel_${mKey}`]||0) : (vertKey === 'MAIL' ? (o[`mo_${mKey}`]||0) : (vertKey === 'IRGB' ? (o[`irgb_${mKey}`]||0) : ((o[`parcel_${mKey}`]||0)+(o[`mo_${mKey}`]||0)+(o[`irgb_${mKey}`]||0))));
                 totalBookings += cnt;
 
-                let isNil = (cnt === 0) && !o.isIDC, isLow = (cnt > 0 && cnt <= 10) || (cnt === 0 && o.isIDC), isGood = (cnt > 10);
+                let isNil = (cnt === 0) && !o.isIDC, isLow = (cnt > 0 && cnt <= lowMax) || (cnt === 0 && o.isIDC), isGood = (cnt > lowMax);
 
                 if (isNil) { sdObj.nil++; totalNil++; }
                 else if (isLow) { sdObj.low++; totalLow++; }
@@ -1576,6 +1590,7 @@
             const vertKey = document.getElementById('offVertSelect').value;
             const mKey = document.getElementById('offMonthSelect').value;
             const clsKey = document.getElementById('offClassSelect').value;
+            const lowMax = getLowBookingThreshold(clsKey, vertKey);
 
             let filteredList = masterOfficeDatabase.filter(o => {
                 if (clsKey !== 'ALL' && o.cls !== clsKey.toUpperCase()) return false;
@@ -1591,8 +1606,8 @@
                 let cnt = vertKey === 'PARCEL' ? (o[`parcel_${mKey}`]||0) : (vertKey === 'MAIL' ? (o[`mo_${mKey}`]||0) : (vertKey === 'IRGB' ? (o[`irgb_${mKey}`]||0) : ((o[`parcel_${mKey}`]||0)+(o[`mo_${mKey}`]||0)+(o[`irgb_${mKey}`]||0))));
 
                 if (catType === 'NIL') return (cnt === 0) && !o.isIDC;
-                if (catType === 'LOW') return (cnt > 0 && cnt <= 10) || (cnt === 0 && o.isIDC);
-                if (catType === 'GOOD') return (cnt > 10);
+                if (catType === 'LOW') return (cnt > 0 && cnt <= lowMax) || (cnt === 0 && o.isIDC);
+                if (catType === 'GOOD') return (cnt > lowMax);
                 return true;
             }).map(o => {
                 let cnt = vertKey === 'PARCEL' ? (o[`parcel_${mKey}`]||0) : (vertKey === 'MAIL' ? (o[`mo_${mKey}`]||0) : (vertKey === 'IRGB' ? (o[`irgb_${mKey}`]||0) : ((o[`parcel_${mKey}`]||0)+(o[`mo_${mKey}`]||0)+(o[`irgb_${mKey}`]||0))));
@@ -2283,6 +2298,7 @@
         }
 
         // --- MONTH-WISE COMPARE VIEW: reference table + Apr-Aug trend chart per Sub-Division ---
+        // Month-wise Compare: table with April, May, June, July, August + Total(Apr-Aug) columns, grouped by Class
         function renderSDMonthCompare() {
             const divName = document.getElementById('divReviewDivSelect').value;
             const classFilter = document.getElementById('sdClassSelect').value;
@@ -2291,76 +2307,90 @@
             const monthsL = ['April','May','June','July','August'];
             const classes = classFilter === 'ALL' ? ['BO','SO','HO'] : [classFilter];
             const verticals = vertFilter === 'ALL' ? ['PARCEL','MO','IRGB'] : [vertFilter];
+            const colsPerBlock = classes.length;
 
-            // Reference table uses cumulative (Apr-Aug) totals
-            const sdMapTotal = aggregateSDData(divName, 'total');
+            // Pre-compute per-month aggregation + cumulative total
+            let monthMaps = {};
+            monthsK.forEach(mk => monthMaps[mk] = aggregateSDData(divName, mk));
+            const totalMap = aggregateSDData(divName, 'total');
 
-            // Build header
-            let headHtml = '<th class="p-2 border">Sub-Division</th>';
-            classes.forEach(c => headHtml += `<th class="p-2 border">Avg Booking / ${c}</th>`);
-            document.getElementById('divRevSDMonthTableHeadRow').innerHTML = headHtml;
+            // --- Build Header (2 rows) ---
+            let headRow1 = '<th class="p-2 border" rowspan="2">Sub-Division</th>';
+            monthsL.forEach(ml => headRow1 += `<th class="p-2 border bg-indigo-900" colspan="${colsPerBlock}">${ml}</th>`);
+            headRow1 += `<th class="p-2 border bg-amber-800" colspan="${colsPerBlock}">Total (Apr-Aug)</th>`;
 
+            let headRow2 = '';
+            monthsL.forEach(() => { classes.forEach(c => headRow2 += `<th class="p-1 border bg-indigo-800">Avg/${c}</th>`); });
+            classes.forEach(c => headRow2 += `<th class="p-1 border bg-amber-700 text-amber-100">Avg/${c}</th>`);
+
+            document.getElementById('divRevSDMonthTableHead').innerHTML = `<tr>${headRow1}</tr><tr>${headRow2}</tr>`;
+
+            // --- Build Rows ---
             let rowsData = [];
-            sdMapTotal.forEach((data, sdName) => {
-                let cellsHtml = `<td class="p-2 font-bold text-left">${sdName}</td>`;
+            totalMap.forEach((totalData, sdName) => {
+                let cellsHtml = `<td class="p-2 font-bold text-left bg-slate-50 border-r">${sdName}</td>`;
+
+                // Month-wise cells
+                monthsK.forEach(mk => {
+                    const monthData = monthMaps[mk].get(sdName);
+                    classes.forEach(c => {
+                        const cd = monthData ? monthData[c] : { count: 0, PARCEL: 0, MO: 0, IRGB: 0 };
+                        let vSum = verticals.reduce((s, v) => s + cd[v], 0);
+                        let avg = cd.count > 0 ? (vSum / cd.count) : 0;
+                        cellsHtml += `<td class="p-2">${avg.toFixed(1)}</td>`;
+                    });
+                });
+
+                // Cumulative Total (Apr-Aug) cells
                 let sortSum = 0, sortCnt = 0;
                 classes.forEach(c => {
-                    const cd = data[c];
+                    const cd = totalData[c];
                     let vSum = verticals.reduce((s, v) => s + cd[v], 0);
                     let avg = cd.count > 0 ? (vSum / cd.count) : 0;
                     sortSum += vSum; sortCnt += cd.count;
-                    cellsHtml += `<td class="p-2 font-bold text-purple-700">${avg.toFixed(1)}</td>`;
+                    cellsHtml += `<td class="p-2 font-extrabold text-amber-800 bg-amber-50">${avg.toFixed(1)}</td>`;
                 });
+
                 let sortAvg = sortCnt > 0 ? (sortSum / sortCnt) : 0;
-                rowsData.push({ html: cellsHtml, sortAvg, sdName });
+                rowsData.push({ html: cellsHtml, sortAvg });
             });
+
+            // Highest -> Lowest sort
             rowsData.sort((a, b) => b.sortAvg - a.sortAvg);
-            document.getElementById('divRevSDMonthTableBody').innerHTML = rowsData.map(r => `<tr class="hover:bg-slate-50 border-b border-slate-200 text-right">${r.html}</tr>`).join('');
+            let rowsHtml = rowsData.map(r => `<tr class="hover:bg-slate-50 border-b border-slate-200 text-right">${r.html}</tr>`).join('');
 
-            // Chart - Top 15 Sub-Divisions by average, month-wise trend line
-            const topSD = rowsData.slice(0, 15).map(r => r.sdName);
-            const palette = ['#2563eb','#dc2626','#059669','#d97706','#7c3aed','#db2777','#0891b2','#65a30d','#ea580c','#4338ca','#0d9488','#be123c','#4d7c0f','#9333ea','#0284c7'];
-
-            let datasets = topSD.map((sdName, idx) => {
-                let dataPoints = monthsK.map(mk => {
-                    const sdMapMonth = aggregateSDData(divName, mk);
-                    const data = sdMapMonth.get(sdName);
-                    if (!data) return 0;
-                    let sum = 0, cnt = 0;
+            // --- Grand Total Row ---
+            let grandRowHtml = `<td class="p-2 font-extrabold text-left bg-amber-100 border-r">TOTAL</td>`;
+            monthsK.forEach(mk => {
+                let sums = {}; classes.forEach(c => sums[c] = { cnt: 0, vSum: 0 });
+                monthMaps[mk].forEach(data => {
                     classes.forEach(c => {
                         const cd = data[c];
-                        let vSum = verticals.reduce((s, v) => s + cd[v], 0);
-                        sum += vSum; cnt += cd.count;
+                        sums[c].cnt += cd.count;
+                        sums[c].vSum += verticals.reduce((s, v) => s + cd[v], 0);
                     });
-                    return cnt > 0 ? +(sum / cnt).toFixed(2) : 0;
                 });
-                return {
-                    label: sdName,
-                    data: dataPoints,
-                    borderColor: palette[idx % palette.length],
-                    backgroundColor: palette[idx % palette.length],
-                    fill: false,
-                    tension: 0.3,
-                    borderWidth: 2,
-                    pointRadius: 3
-                };
+                classes.forEach(c => {
+                    let avg = sums[c].cnt > 0 ? (sums[c].vSum / sums[c].cnt) : 0;
+                    grandRowHtml += `<td class="p-2 font-extrabold bg-amber-100">${avg.toFixed(1)}</td>`;
+                });
             });
 
-            if (sdMonthCompareChartInstance) sdMonthCompareChartInstance.destroy();
-            const ctx = document.getElementById('sdMonthCompareChart').getContext('2d');
-            sdMonthCompareChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: { labels: monthsL, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
-                        title: { display: true, text: 'Sub-Division Average Booking Trend (Month-wise)' }
-                    },
-                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Avg Booking per Office' } } }
-                }
+            let sumsT = {}; classes.forEach(c => sumsT[c] = { cnt: 0, vSum: 0 });
+            totalMap.forEach(data => {
+                classes.forEach(c => {
+                    const cd = data[c];
+                    sumsT[c].cnt += cd.count;
+                    sumsT[c].vSum += verticals.reduce((s, v) => s + cd[v], 0);
+                });
             });
+            classes.forEach(c => {
+                let avg = sumsT[c].cnt > 0 ? (sumsT[c].vSum / sumsT[c].cnt) : 0;
+                grandRowHtml += `<td class="p-2 font-extrabold bg-amber-200">${avg.toFixed(1)}</td>`;
+            });
+
+            rowsHtml += `<tr class="row-grand-total">${grandRowHtml}</tr>`;
+            document.getElementById('divRevSDMonthTableBody').innerHTML = rowsHtml;
         }
 
         window.onload = function() {
