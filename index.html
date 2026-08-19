@@ -499,7 +499,7 @@
                 <div class="card p-6"><div class="overflow-x-auto"><table id="ccsDataTable" class="w-full text-left text-sm border-collapse"><thead id="ccsTableHead"></thead><tbody id="ccsTableBody" class="divide-y divide-slate-100 font-medium"></tbody><tfoot id="ccsTableFoot" class="bg-slate-900 text-white font-bold uppercase text-xs"></tfoot></table></div></div>
             </div>
 
-            <!-- Division Performance Review Section (UPDATED) -->
+            <!-- Division Performance Review Section (NEW) -->
             <div id="divReviewDataView" class="hidden space-y-6">
                 <!-- Division Selection -->
                 <div class="bg-white rounded-xl p-5 border border-blue-100 card flex flex-wrap items-center justify-between gap-4">
@@ -540,47 +540,69 @@
                 <div class="bg-white rounded-xl p-5 border border-purple-100 card flex flex-wrap items-center justify-between gap-4 mt-6">
                     <h2 class="text-base font-bold text-purple-900 flex items-center gap-2">🏢 Sub-Division Analysis</h2>
                     <div class="flex flex-wrap items-center gap-3">
-                        <select id="divRevViewType" onchange="renderDivReviewSD()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
-                            <option value="overall">OVERALL VIEW</option>
-                            <option value="month">MONTH WISE COMPARE</option>
-                        </select>
-                        <select id="divRevClass" onchange="renderDivReviewSD()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
-                            <option value="ALL">All Classes (BO, SO, HO)</option>
-                            <option value="BO">BO Only</option>
-                            <option value="SO">SO Only</option>
-                            <option value="HO">HO Only</option>
-                        </select>
-                        <select id="divRevVertical" onchange="renderDivReviewSD()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
-                            <option value="ALL">All Verticals</option>
-                            <option value="PARCEL">Parcel</option>
-                            <option value="MO">MO</option>
-                            <option value="IRGB">IRGB</option>
-                        </select>
-                        <select id="divRevMonthSelect" onchange="renderDivReviewSD()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
-                            <option value="total">Cumulative (Total)</option>
-                            <option value="apr">April</option>
-                            <option value="may">May</option>
-                            <option value="jun">June</option>
-                            <option value="jul">July</option>
-                            <option value="aug">August</option>
-                        </select>
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">View Type:</label>
+                            <select id="sdViewTypeSelect" onchange="onSdViewTypeChange()" class="bg-purple-50 border border-purple-300 text-purple-900 text-xs font-bold rounded-lg p-2">
+                                <option value="overall">📊 Overall View</option>
+                                <option value="monthwise">📈 Month-wise Compare</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1.5" id="sdMonthSelectWrap">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Period:</label>
+                            <select id="divRevMonthSelect" onchange="renderDivReviewSD()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
+                                <option value="total">Cumulative (Total)</option>
+                                <option value="apr">April</option>
+                                <option value="may">May</option>
+                                <option value="jun">June</option>
+                                <option value="jul">July</option>
+                                <option value="aug">August</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Class:</label>
+                            <select id="sdClassSelect" onchange="renderDivReviewSD()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
+                                <option value="ALL">All (BO+SO+HO)</option>
+                                <option value="BO">BO</option>
+                                <option value="SO">SO</option>
+                                <option value="HO">HO</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Vertical:</label>
+                            <select id="sdVerticalSelect" onchange="renderDivReviewSD()" class="bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
+                                <option value="ALL">All Verticals</option>
+                                <option value="PARCEL">Parcel</option>
+                                <option value="MO">MO</option>
+                                <option value="IRGB">IRGB</option>
+                            </select>
+                        </div>
                         <button onclick="exportTableByID('divRevSDTable', 'Sub_Division_Analysis.xlsx')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition shadow">📊 Export SD Excel</button>
                     </div>
                 </div>
 
-                <!-- Sub Division Analysis Chart (Toggled) -->
-                <div id="divRevSDChartContainer" class="card p-6 mt-6 hidden">
-                    <div class="h-80"><canvas id="divRevSDChart"></canvas></div>
-                </div>
-
-                <!-- Sub Division Analysis Table -->
-                <div id="divRevSDTableContainer" class="card p-6 mt-6">
+                <!-- Sub Division Analysis Table - Overall View -->
+                <div class="card p-6" id="sdOverallContainer">
+                    <p class="text-[11px] text-slate-400 font-semibold mb-2">Sorted by Highest → Lowest Average Booking</p>
                     <div class="overflow-x-auto">
                         <table id="divRevSDTable" class="w-full text-center text-[10px] border-collapse">
                             <thead id="divRevSDTableHead" class="bg-slate-900 text-white font-bold uppercase"></thead>
                             <tbody id="divRevSDTableBody" class="divide-y divide-slate-200 font-medium text-slate-800 text-right"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Sub Division Analysis - Month-wise Compare View -->
+                <div class="card p-6 hidden" id="sdMonthCompareContainer">
+                    <p class="text-[11px] text-slate-400 font-semibold mb-2">Cumulative Average (Apr-Aug) — Sorted Highest → Lowest | Chart: Top 15 Sub-Divisions, Month-wise Trend</p>
+                    <div class="overflow-x-auto mb-6">
+                        <table id="divRevSDMonthTable" class="w-full text-center text-xs border-collapse">
+                            <thead class="bg-slate-900 text-white font-bold uppercase">
+                                <tr id="divRevSDMonthTableHeadRow"></tr>
+                            </thead>
+                            <tbody id="divRevSDMonthTableBody" class="divide-y divide-slate-200 font-medium"></tbody>
+                        </table>
+                    </div>
+                    <div class="h-96"><canvas id="sdMonthCompareChart"></canvas></div>
                 </div>
             </div>
 
@@ -617,6 +639,7 @@
         let currentPosbOption = 'net', masterOfficeDatabase = [];
         let currentActiveView = 'revenue', currentDataType = 'revenue', currentVertical = 'ALL';
         let trendChart = null, secondChart = null, sdMChart = null, revenueRecords = [], countRecords = [];
+        let sdMonthCompareChartInstance = null;
 
         function initDynamicDropdowns() {
             document.querySelectorAll('.div-select-options').forEach(select => {
@@ -643,7 +666,7 @@
                 { id: 'posb', icon: '🏦', text: 'POSB', hover: 'hover:text-emerald-600' },
                 { id: 'pli', icon: '🛡️', text: 'PLI', hover: 'hover:text-teal-600' },
                 { id: 'ccs', icon: '💳', text: 'CCS', hover: 'hover:text-amber-600' },
-                { id: 'divReview', icon: '📋', text: 'DIVISION REVIEW', hover: 'hover:text-blue-600' }
+                { id: 'divReview', icon: '📋', text: 'Division Review', hover: 'hover:text-blue-600' }
             ];
             let tabsHtml = '';
             tabs.forEach(t => {
@@ -2037,14 +2060,14 @@
             });
         }
 
-        // --- UPDATED FUNCTIONS FOR DIVISION REVIEW DATA ---
+        // --- NEW FUNCTIONS FOR DIVISION REVIEW DATA ---
         function renderDivReviewData() {
             const divName = document.getElementById('divReviewDivSelect').value;
             let rows = [];
             const verticals = ["PARCEL", "MAIL", "IRGB", "SB", "PLI", "CCS"];
-            
-            let gT = 0, gMT = 0, gTTD = 0, gAp = 0, gMy = 0, gJn = 0, gJl = 0, gAg = 0, gAch = 0;
 
+            let grandT = 0, grandAp = 0, grandMy = 0, grandJn = 0, grandJl = 0, grandAg = 0, grandAch = 0;
+            
             verticals.forEach(v => {
                 let records = revenueRecords.filter(r => r.vertical === v);
                 if (divName !== 'ALL') records = records.filter(r => isMatchingDivision(r.divName, divName));
@@ -2063,9 +2086,6 @@
                 let mTarget = sumT / 12;
                 let tTillDate = mTarget * 5; // Target multiplied by 5 (for August)
                 
-                gT += sumT; gMT += mTarget; gTTD += tTillDate;
-                gAp += sumAp; gMy += sumMy; gJn += sumJn; gJl += sumJl; gAg += sumAg; gAch += sumAch;
-
                 let pctProp = tTillDate > 0 ? ((sumAch / tTillDate) * 100).toFixed(2) : "0.00";
                 let pctTot = sumT > 0 ? ((sumAch / sumT) * 100).toFixed(2) : "0.00";
 
@@ -2083,21 +2103,270 @@
                     <td class="p-2 font-bold text-amber-600">${pctProp}%</td>
                     <td class="p-2 font-bold text-emerald-600">${pctTot}%</td>
                 </tr>`);
+
+                grandT += sumT; grandAp += sumAp; grandMy += sumMy; grandJn += sumJn; grandJl += sumJl; grandAg += sumAg; grandAch += sumAch;
             });
 
-            // Grand Total Row
-            let gPctProp = gTTD > 0 ? ((gAch / gTTD) * 100).toFixed(2) : "0.00";
-            let gPctTot = gT > 0 ? ((gAch / gT) * 100).toFixed(2) : "0.00";
-            rows.push(`<tr class="bg-slate-900 text-white font-bold text-right uppercase">
-                <td class="p-2 text-left text-amber-300">TOTAL</td>
-                <td class="p-2">${gT.toFixed(3)}</td>
-                <td class="p-2">${gMT.toFixed(3)}</td>
-                <td class="p-2 text-amber-300">${gTTD.toFixed(3)}</td>
-                <td class="p-2">${gAp.toFixed(3)}</td>
-                <td class="p-2">${gMy.toFixed(3)}</td>
-                <td class="p-2">${gJn.toFixed(3)}</td>
-                <td class="p-2">${gJl.toFixed(3)}</td>
-                <td class="p-2">${gAg.toFixed(3)}</td>
-                <td class="p-2 text-emerald-300 font-extrabold">${gAch.toFixed(3)}</td>
-                <td class="p-2 text-amber-300">${gPctProp}%</td>
-                <td class="p-2 text-emerald-300">${gPctTot}%Main aapki madad nahin kar sakta, main sirf ek language model hoon. Mujhe is vishay ke baare mein jaankari nahin hai.
+            // --- Grand Total Row ---
+            let grandMTarget = grandT / 12;
+            let grandTillDate = grandMTarget * 5;
+            let grandPctProp = grandTillDate > 0 ? ((grandAch / grandTillDate) * 100).toFixed(2) : "0.00";
+            let grandPctTot = grandT > 0 ? ((grandAch / grandT) * 100).toFixed(2) : "0.00";
+
+            rows.push(`<tr class="row-grand-total text-right">
+                <td class="p-2 font-extrabold text-left">TOTAL</td>
+                <td class="p-2 font-extrabold">${grandT.toFixed(3)}</td>
+                <td class="p-2 font-extrabold">${grandMTarget.toFixed(3)}</td>
+                <td class="p-2 font-extrabold text-amber-800">${grandTillDate.toFixed(3)}</td>
+                <td class="p-2 font-extrabold">${grandAp.toFixed(3)}</td>
+                <td class="p-2 font-extrabold">${grandMy.toFixed(3)}</td>
+                <td class="p-2 font-extrabold">${grandJn.toFixed(3)}</td>
+                <td class="p-2 font-extrabold">${grandJl.toFixed(3)}</td>
+                <td class="p-2 font-extrabold text-blue-900">${grandAg.toFixed(3)}</td>
+                <td class="p-2 font-extrabold text-emerald-900">${grandAch.toFixed(3)}</td>
+                <td class="p-2 font-extrabold text-amber-800">${grandPctProp}%</td>
+                <td class="p-2 font-extrabold text-emerald-800">${grandPctTot}%</td>
+            </tr>`);
+
+            document.getElementById('divRevTableBody').innerHTML = rows.join('');
+            
+            // Sync the SD table refresh
+            renderDivReviewSD();
+        }
+
+        // Class-wise color styling used across SD tables
+        const SD_CLASS_STYLE = {
+            BO: { headBg: 'bg-blue-900', subBg: 'bg-blue-800', cellBg: 'bg-blue-50', totalBg: 'bg-blue-100', text: 'text-blue-800', text2: 'text-blue-900' },
+            SO: { headBg: 'bg-purple-900', subBg: 'bg-purple-800', cellBg: 'bg-purple-50', totalBg: 'bg-purple-100', text: 'text-purple-800', text2: 'text-purple-900' },
+            HO: { headBg: 'bg-emerald-900', subBg: 'bg-emerald-800', cellBg: 'bg-emerald-50', totalBg: 'bg-emerald-100', text: 'text-emerald-800', text2: 'text-emerald-900' }
+        };
+        const SD_VERT_LABEL = { PARCEL: 'Parcel', MO: 'MO', IRGB: 'IRGB' };
+
+        // Aggregate office-level data into Sub-Division -> Class -> Vertical counts, for a given month (or 'total' for Apr-Aug cumulative)
+        function aggregateSDData(divName, monthKey) {
+            let sdMap = new Map();
+            masterOfficeDatabase.forEach(o => {
+                if (divName !== 'ALL' && !isMatchingDivision(o.div, divName)) return;
+
+                let sd = o.sd || 'UNASSIGNED';
+                if (!sdMap.has(sd)) {
+                    sdMap.set(sd, {
+                        BO: { count: 0, PARCEL: 0, MO: 0, IRGB: 0 },
+                        SO: { count: 0, PARCEL: 0, MO: 0, IRGB: 0 },
+                        HO: { count: 0, PARCEL: 0, MO: 0, IRGB: 0 }
+                    });
+                }
+
+                let obj = sdMap.get(sd);
+                let cls = o.cls === 'BO' ? 'BO' : (o.cls === 'HO' ? 'HO' : 'SO');
+                obj[cls].count++;
+
+                let p = 0, m = 0, i = 0;
+                if (monthKey === 'total') {
+                    ['apr','may','jun','jul','aug'].forEach(mon => {
+                        p += (o[`parcel_${mon}`]||0); m += (o[`mo_${mon}`]||0); i += (o[`irgb_${mon}`]||0);
+                    });
+                } else {
+                    p = (o[`parcel_${monthKey}`]||0); m = (o[`mo_${monthKey}`]||0); i = (o[`irgb_${monthKey}`]||0);
+                }
+
+                obj[cls].PARCEL += p; obj[cls].MO += m; obj[cls].IRGB += i;
+            });
+            return sdMap;
+        }
+
+        // Dispatcher - decides between Overall View and Month-wise Compare View
+        function renderDivReviewSD() {
+            const viewType = document.getElementById('sdViewTypeSelect').value;
+            if (viewType === 'monthwise') {
+                renderSDMonthCompare();
+            } else {
+                renderSDOverall();
+            }
+        }
+
+        function onSdViewTypeChange() {
+            const vt = document.getElementById('sdViewTypeSelect').value;
+            document.getElementById('sdOverallContainer').classList.toggle('hidden', vt === 'monthwise');
+            document.getElementById('sdMonthCompareContainer').classList.toggle('hidden', vt !== 'monthwise');
+            document.getElementById('sdMonthSelectWrap').classList.toggle('hidden', vt === 'monthwise');
+            renderDivReviewSD();
+        }
+
+        // --- OVERALL VIEW: table with dynamic Class/Vertical filter columns, sorted highest->lowest avg, with Total row ---
+        function renderSDOverall() {
+            const divName = document.getElementById('divReviewDivSelect').value;
+            const month = document.getElementById('divRevMonthSelect').value;
+            const classFilter = document.getElementById('sdClassSelect').value;
+            const vertFilter = document.getElementById('sdVerticalSelect').value;
+
+            const sdMap = aggregateSDData(divName, month);
+            const classes = classFilter === 'ALL' ? ['BO','SO','HO'] : [classFilter];
+            const verticals = vertFilter === 'ALL' ? ['PARCEL','MO','IRGB'] : [vertFilter];
+            const showTotalAvgCol = verticals.length > 1;
+            const colsPerClass = 1 + (verticals.length * 2) + (showTotalAvgCol ? 1 : 0);
+
+            // Build header
+            let headRow1 = '<th class="p-2 border" rowspan="2">Name of SD</th>';
+            classes.forEach(c => {
+                headRow1 += `<th class="p-2 border ${SD_CLASS_STYLE[c].headBg}" colspan="${colsPerClass}">${c} Class</th>`;
+            });
+            let headRow2 = '';
+            classes.forEach(c => {
+                const st = SD_CLASS_STYLE[c];
+                headRow2 += `<th class="p-1 border ${st.subBg}">Total ${c}</th>`;
+                verticals.forEach(v => {
+                    headRow2 += `<th class="p-1 border ${st.subBg}">${SD_VERT_LABEL[v]}</th><th class="p-1 border ${st.subBg} text-amber-200">Avg ${SD_VERT_LABEL[v]}/${c}</th>`;
+                });
+                if (showTotalAvgCol) headRow2 += `<th class="p-1 border ${st.subBg} text-amber-200">Total Avg/${c}</th>`;
+            });
+            document.getElementById('divRevSDTableHead').innerHTML = `<tr>${headRow1}</tr><tr>${headRow2}</tr>`;
+
+            // Build body rows + compute sort value
+            let rowsData = [];
+            let grandTotals = {};
+            classes.forEach(c => grandTotals[c] = { count: 0, PARCEL: 0, MO: 0, IRGB: 0 });
+
+            sdMap.forEach((data, sdName) => {
+                let sumBookings = 0, sumOffices = 0;
+                let rowHtml = `<td class="p-2 font-bold text-left bg-slate-50 border-r">${sdName}</td>`;
+
+                classes.forEach(c => {
+                    const st = SD_CLASS_STYLE[c];
+                    const cd = data[c];
+                    grandTotals[c].count += cd.count;
+
+                    let rowTotalVertSum = 0;
+                    let cellsHtml = `<td class="p-2 font-bold ${st.text} ${st.cellBg}">${cd.count}</td>`;
+                    verticals.forEach(v => {
+                        grandTotals[c][v] += cd[v];
+                        let avg = cd.count > 0 ? (cd[v] / cd.count) : 0;
+                        rowTotalVertSum += cd[v];
+                        cellsHtml += `<td class="p-2">${cd[v].toLocaleString()}</td><td class="p-2 font-bold text-amber-700">${avg.toFixed(1)}</td>`;
+                    });
+                    if (showTotalAvgCol) {
+                        let totalAvg = cd.count > 0 ? (rowTotalVertSum / cd.count) : 0;
+                        cellsHtml += `<td class="p-2 font-extrabold ${st.text2} ${st.totalBg}">${totalAvg.toFixed(1)}</td>`;
+                    }
+                    rowHtml += cellsHtml;
+                    sumBookings += rowTotalVertSum;
+                    sumOffices += cd.count;
+                });
+
+                let sortAvg = sumOffices > 0 ? (sumBookings / sumOffices) : 0;
+                rowsData.push({ html: rowHtml, sortAvg });
+            });
+
+            // Highest -> Lowest average sort
+            rowsData.sort((a, b) => b.sortAvg - a.sortAvg);
+            let rowsHtml = rowsData.map(r => `<tr class="hover:bg-slate-50 border-b border-slate-200">${r.html}</tr>`).join('');
+
+            // Total row
+            let totalRowHtml = `<td class="p-2 font-extrabold text-left bg-amber-100 border-r">TOTAL</td>`;
+            classes.forEach(c => {
+                const gt = grandTotals[c];
+                let rowTotalVertSum = 0;
+                totalRowHtml += `<td class="p-2 font-extrabold bg-amber-100">${gt.count}</td>`;
+                verticals.forEach(v => {
+                    let avg = gt.count > 0 ? (gt[v] / gt.count) : 0;
+                    rowTotalVertSum += gt[v];
+                    totalRowHtml += `<td class="p-2 font-extrabold bg-amber-100">${gt[v].toLocaleString()}</td><td class="p-2 font-extrabold bg-amber-100 text-amber-800">${avg.toFixed(1)}</td>`;
+                });
+                if (showTotalAvgCol) {
+                    let totalAvg = gt.count > 0 ? (rowTotalVertSum / gt.count) : 0;
+                    totalRowHtml += `<td class="p-2 font-extrabold bg-amber-200">${totalAvg.toFixed(1)}</td>`;
+                }
+            });
+            rowsHtml += `<tr class="row-grand-total">${totalRowHtml}</tr>`;
+
+            document.getElementById('divRevSDTableBody').innerHTML = rowsHtml;
+        }
+
+        // --- MONTH-WISE COMPARE VIEW: reference table + Apr-Aug trend chart per Sub-Division ---
+        function renderSDMonthCompare() {
+            const divName = document.getElementById('divReviewDivSelect').value;
+            const classFilter = document.getElementById('sdClassSelect').value;
+            const vertFilter = document.getElementById('sdVerticalSelect').value;
+            const monthsK = ['apr','may','jun','jul','aug'];
+            const monthsL = ['April','May','June','July','August'];
+            const classes = classFilter === 'ALL' ? ['BO','SO','HO'] : [classFilter];
+            const verticals = vertFilter === 'ALL' ? ['PARCEL','MO','IRGB'] : [vertFilter];
+
+            // Reference table uses cumulative (Apr-Aug) totals
+            const sdMapTotal = aggregateSDData(divName, 'total');
+
+            // Build header
+            let headHtml = '<th class="p-2 border">Sub-Division</th>';
+            classes.forEach(c => headHtml += `<th class="p-2 border">Avg Booking / ${c}</th>`);
+            document.getElementById('divRevSDMonthTableHeadRow').innerHTML = headHtml;
+
+            let rowsData = [];
+            sdMapTotal.forEach((data, sdName) => {
+                let cellsHtml = `<td class="p-2 font-bold text-left">${sdName}</td>`;
+                let sortSum = 0, sortCnt = 0;
+                classes.forEach(c => {
+                    const cd = data[c];
+                    let vSum = verticals.reduce((s, v) => s + cd[v], 0);
+                    let avg = cd.count > 0 ? (vSum / cd.count) : 0;
+                    sortSum += vSum; sortCnt += cd.count;
+                    cellsHtml += `<td class="p-2 font-bold text-purple-700">${avg.toFixed(1)}</td>`;
+                });
+                let sortAvg = sortCnt > 0 ? (sortSum / sortCnt) : 0;
+                rowsData.push({ html: cellsHtml, sortAvg, sdName });
+            });
+            rowsData.sort((a, b) => b.sortAvg - a.sortAvg);
+            document.getElementById('divRevSDMonthTableBody').innerHTML = rowsData.map(r => `<tr class="hover:bg-slate-50 border-b border-slate-200 text-right">${r.html}</tr>`).join('');
+
+            // Chart - Top 15 Sub-Divisions by average, month-wise trend line
+            const topSD = rowsData.slice(0, 15).map(r => r.sdName);
+            const palette = ['#2563eb','#dc2626','#059669','#d97706','#7c3aed','#db2777','#0891b2','#65a30d','#ea580c','#4338ca','#0d9488','#be123c','#4d7c0f','#9333ea','#0284c7'];
+
+            let datasets = topSD.map((sdName, idx) => {
+                let dataPoints = monthsK.map(mk => {
+                    const sdMapMonth = aggregateSDData(divName, mk);
+                    const data = sdMapMonth.get(sdName);
+                    if (!data) return 0;
+                    let sum = 0, cnt = 0;
+                    classes.forEach(c => {
+                        const cd = data[c];
+                        let vSum = verticals.reduce((s, v) => s + cd[v], 0);
+                        sum += vSum; cnt += cd.count;
+                    });
+                    return cnt > 0 ? +(sum / cnt).toFixed(2) : 0;
+                });
+                return {
+                    label: sdName,
+                    data: dataPoints,
+                    borderColor: palette[idx % palette.length],
+                    backgroundColor: palette[idx % palette.length],
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3
+                };
+            });
+
+            if (sdMonthCompareChartInstance) sdMonthCompareChartInstance.destroy();
+            const ctx = document.getElementById('sdMonthCompareChart').getContext('2d');
+            sdMonthCompareChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: monthsL, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                        title: { display: true, text: 'Sub-Division Average Booking Trend (Month-wise)' }
+                    },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Avg Booking per Office' } } }
+                }
+            });
+        }
+
+        window.onload = function() {
+            initDynamicDropdowns();
+            fetchAllLiveData();
+        };
+    </script>
+</body>
+</html>
