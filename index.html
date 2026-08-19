@@ -1727,7 +1727,7 @@
             let rows = [];
             let formatG = (v) => v >= 0 ? `<span class="text-emerald-600 font-bold">▲ +${v}%</span>` : `<span class="text-rose-600 font-bold">▼ ${v}%</span>`;
             sdMap.forEach(item => {
-                rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${item.div}</td><td class="p-2.5 font-bold text-purple-700">${item.sd}</td><td class="p-2.5">${item.may.toLocaleString()}</td><td class="p-2.5">${item.jun.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-50">${formatG(item.may>0?(((item.jun-item.may)/item.may)*100).toFixed(2):0)}</td><td class="p-2.5">${item.jul.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-50">${formatG(item.jun>0?(((item.jul-item.jun)/item.jul)*100).toFixed(2):0)}</td><td class="p-2.5 font-extrabold text-blue-700">${item.aug.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-100">${formatG(item.jul>0?(((item.aug-item.jul)/item.jul)*100).toFixed(2):0)}</td></tr>`);
+                rows.push(`<tr class="hover:bg-amber-50/40 border-b border-slate-200"><td class="p-2.5 font-bold">${item.div}</td><td class="p-2.5 font-bold text-purple-700">${item.sd}</td><td class="p-2.5">${item.may.toLocaleString()}</td><td class="p-2.5">${item.jun.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-50">${formatG(item.may>0?(((item.jun-item.may)/item.may)*100).toFixed(2):0)}</td><td class="p-2.5">${item.jul.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-50">${formatG(item.jun>0?(((item.jul-item.jun)/item.jun)*100).toFixed(2):0)}</td><td class="p-2.5 font-extrabold text-blue-700">${item.aug.toLocaleString()}</td><td class="p-2.5 text-center bg-amber-100">${formatG(item.jul>0?(((item.aug-item.jul)/item.jul)*100).toFixed(2):0)}</td></tr>`);
             });
             document.getElementById('momTableBody').innerHTML = rows.join(''); document.getElementById('momTableFoot').innerHTML = '';
         }
@@ -2140,14 +2140,21 @@
                 let obj = sdMap.get(sd);
                 let cls = o.cls === 'BO' ? 'bo' : (o.cls === 'HO' ? 'ho' : 'so');
 
-                obj[cls].count++;
-                ['apr','may','jun','jul','aug'].forEach(mon => {
-                    obj[cls][mon].p += (o[`parcel_${mon}`]||0);
-                    obj[cls][mon].m += (o[`mo_${mon}`]||0);
-                    obj[cls][mon].i += (o[`irgb_${mon}`]||0);
-                });
+                if (['BO', 'SO', 'HO'].includes(o.cls)) {
+                    obj[cls].count++;
+                    ['apr','may','jun','jul','aug'].forEach(mon => {
+                        obj[cls][mon].p += (o[`parcel_${mon}`]||0);
+                        obj[cls][mon].m += (o[`mo_${mon}`]||0);
+                        obj[cls][mon].i += (o[`irgb_${mon}`]||0);
+                    });
+                }
             });
 
+            let classesToShow = clsF === 'ALL' ? ['bo', 'so', 'ho'] : [clsF.toLowerCase()];
+            let vertsToShow = vertF === 'ALL' ? ['p', 'm', 'i', 't'] : [vertF === 'PARCEL' ? 'p' : (vertF === 'MAIL' ? 'm' : 'i')];
+            let vertNames = { p: 'Parcel', m: 'MO', i: 'IRGB', t: 'Total' };
+
             let sdArray = [];
-            let grandTotals = {
-                bo: { countAapke anurodh ko poora karna meri programming ke dayre se baahar hai. Main sirf text generate karta hoon.
+            let grandTotals = { bo: {count:0, p:0, m:0, i:0}, so: {count:0, p:0, m:0, i:0}, ho: {count:0, p:0, m:0, i:0} };
+
+            sdMap.forEach((Aapke anurodh ko poora karna meri programming ke dayre se baahar hai. Main sirf text generate karta hoon.
