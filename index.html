@@ -64,7 +64,7 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-3 md:px-8 py-6 space-y-6 w-full flex-grow">
-        <!-- Module 1 -->
+        <!-- Module 1: Booking -->
         <div id="moduleBooking" class="space-y-6">
             <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div>
@@ -102,6 +102,7 @@
                 </div>
             </div>
 
+            <!-- Summary Table Section -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionSummaryContainer">
                 <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <h2 class="font-bold text-base flex items-center gap-2"><span>📊</span> Division & Sub-Division Category-wise Articles & Revenue Report</h2>
@@ -123,34 +124,50 @@
                 </div>
             </div>
 
+            <!-- Nil Booking Section with Category Filter & Avg Booking -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionNilBookingContainer">
                 <div class="px-6 py-4 report-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <h2 class="font-bold text-base flex items-center gap-2"><span>🏢</span> Nil Booking Report & Office Activity Status</h2>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <label class="text-xs font-bold text-purple-200">Office Class:</label>
-                        <select id="nilFilterClass" onchange="updateDashboard()" class="bg-[#31103f] text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-purple-700 outline-none cursor-pointer">
+                        <label class="text-xs font-bold text-purple-200">Class:</label>
+                        <select id="nilFilterClass" onchange="updateDashboard()" class="bg-[#31103f] text-white text-xs font-bold px-2 py-1.5 rounded-lg border border-purple-700 outline-none cursor-pointer">
                             <option value="All">All Classes</option><option value="BO">BO</option><option value="SO">SO</option><option value="HO">HO</option>
                         </select>
-                        <button onclick="exportTableToExcel('tableNilBookingSummary', 'Nil_Booking_Report.xlsx')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow">📥 Excel</button>
-                        <button onclick="exportSingleTableToPDF('tableNilBookingSummary', 'Nil Booking Report')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow">📄 PDF Report</button>
-                        <button onclick="exportTableJPEG('sectionNilBookingContainer', 'Nil_Booking_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow">📸 JPEG</button>
+                        <label class="text-xs font-bold text-purple-200">Category:</label>
+                        <select id="nilFilterCategory" onchange="updateDashboard()" class="bg-[#31103f] text-white text-xs font-bold px-2 py-1.5 rounded-lg border border-purple-700 outline-none cursor-pointer">
+                            <option value="All">All Verticals</option><option value="PARCEL">PARCEL</option><option value="MO">Mail Operations</option><option value="IRGB">IRGB</option>
+                        </select>
+                        <button onclick="exportMultiSheetNilExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel (3 Sheets)</button>
+                        <button onclick="exportSingleTableToPDF('tableNilBookingSummary', 'Nil Booking Report')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF</button>
+                        <button onclick="exportTableJPEG('sectionNilBookingContainer', 'Nil_Booking_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto p-3">
                     <table class="nil-table" id="tableNilBookingSummary">
                         <thead>
                             <tr>
-                                <th style="width: 5%;">S.No.</th><th style="width: 15%;">Name of Division</th><th style="width: 20%;">Name of Sub Dn</th><th style="width: 12%;">Total Offices in Sub Dn</th><th style="width: 12%;">NIL (0) Offices</th><th style="width: 12%;">Low Booking (1-10)*</th><th style="width: 12%;">Good Booking (>10)</th><th style="width: 12%;">% NIL Offices in Sub Dn</th><th style="width: 12%;">% Offices with >10 Booking</th>
+                                <th style="width: 4%;">S.No.</th>
+                                <th style="width: 14%;">Name of Division</th>
+                                <th style="width: 18%;">Name of Sub Dn</th>
+                                <th style="width: 9%;">Total Offices</th>
+                                <th style="width: 9%;">Total Art</th>
+                                <th style="width: 9%;">Avg Art/Office</th>
+                                <th style="width: 9%;">NIL (0)</th>
+                                <th id="thLowBooking" style="width: 10%;">Low Booking</th>
+                                <th id="thGoodBooking" style="width: 10%;">Good Booking</th>
+                                <th style="width: 8%;">% NIL</th>
+                                <th id="thGoodPct" style="width: 8%;">% Good</th>
                             </tr>
                         </thead>
                         <tbody></tbody><tfoot></tfoot>
                     </table>
                 </div>
                 <div class="px-6 py-2.5 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-600 font-medium">
-                    ⚠️ <strong>Note:</strong> Khudel BO is excluded / merged into Khudel SO automatically. IDC offices are non-booking offices and included under Low Booking. Click on any office number count to download list.
+                    ⚠️ <strong>Thresholds Applied:</strong> BO = Low: 1-10, Good: >10 | SO/HO (Parcel) = Low: 1-50, Good: >50 | SO/HO (Mail/All) = Low: 1-100, Good: >100. Average booking = Total Sub Dn Articles ÷ Total Offices in Sub Dn.
                 </div>
             </div>
 
+            <!-- Top / Bottom 10 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionTop10Container">
                     <div class="px-5 py-3.5 bg-[#0B6623] text-white flex justify-between items-center">
@@ -177,7 +194,7 @@
             </div>
         </div>
 
-        <!-- Module 2 -->
+        <!-- Module 2: PLI -->
         <div id="modulePli" class="space-y-6 hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -220,7 +237,7 @@
             </div>
         </div>
 
-        <!-- Module 3 -->
+        <!-- Module 3: Digital -->
         <div id="moduleDigital" class="space-y-6 hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -357,7 +374,7 @@
         const MAPPING_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1575541045&single=true&output=csv";
         const IDP_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1439866773&single=true&output=csv";
 
-        let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
+        let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllOfficesRaw = [];
         let pliRawData = [], currentPliProcessedList = [], currentNilPliOfficesList = [], digitalRawData = [], pliModalExportData = [], idpCredentialsMap = {}, generatedReportsLog = [], loggedInAdminId = "";
 
         const divClassMap = {
@@ -413,11 +430,7 @@
             }
         }
 
-        function openAdminDashboard() {
-            renderAdminLogs();
-            openModal('adminDashboardModal');
-        }
-
+        function openAdminDashboard() { renderAdminLogs(); openModal('adminDashboardModal'); }
         function clearAdminLogs() { generatedReportsLog = []; renderAdminLogs(); }
 
         function renderAdminLogs() {
@@ -473,9 +486,20 @@
             populate('filterCategory', [...new Set(Object.values(serviceMapping))].filter(Boolean).sort());
         }
 
+        function getThresholds(officeClass, category) {
+            const cls = (officeClass || "").toUpperCase();
+            const cat = (category || "").toUpperCase();
+            if (cls === 'SO' || cls === 'HO') {
+                if (cat === 'PARCEL') return { lowMin: 1, lowMax: 50, goodMin: 51, labelLow: "Low Booking (1-50)*", labelGood: "Good Booking (>50)", pctGoodLabel: "% Offices with >50 Booking" };
+                return { lowMin: 1, lowMax: 100, goodMin: 101, labelLow: "Low Booking (1-100)*", labelGood: "Good Booking (>100)", pctGoodLabel: "% Offices with >100 Booking" };
+            }
+            return { lowMin: 1, lowMax: 10, goodMin: 11, labelLow: "Low Booking (1-10)*", labelGood: "Good Booking (>10)", pctGoodLabel: "% Offices with >10 Booking" };
+        }
+
         function updateDashboard() {
             const selDiv = document.getElementById('filterDivision').value, selClass = document.getElementById('filterClass').value;
-            const selCat = document.getElementById('filterCategory').value, summaryView = document.getElementById('summaryViewType').value, nilFilterClass = document.getElementById('nilFilterClass').value;
+            const selCat = document.getElementById('filterCategory').value, summaryView = document.getElementById('summaryViewType').value;
+            const nilFilterClass = document.getElementById('nilFilterClass').value, nilFilterCategory = document.getElementById('nilFilterCategory').value;
 
             const processed = rawData.map(item => {
                 const master = masterOfficesMap[item.officeId] || { name: "Unknown", class: "BO", sd: "Unknown SD", division: "Unknown Division" };
@@ -489,13 +513,11 @@
             const officeTotals = {};
             Object.entries(masterOfficesMap).forEach(([id, m]) => {
                 if (m.name.toUpperCase().includes("KHUDEL") && m.class === "BO") return;
-                if ((selDiv === "All" || m.division === selDiv) && (selClass === "All" || m.class === selClass)) {
-                    officeTotals[id] = { ...m, officeId: id, articles: 0, postage: 0, categories: { PARCEL: { articles: 0, postage: 0 }, MO: { articles: 0, postage: 0 }, IRGB: { articles: 0, postage: 0 } } };
-                }
+                officeTotals[id] = { ...m, officeId: id, articles: 0, postage: 0, categories: { PARCEL: { articles: 0, postage: 0 }, MO: { articles: 0, postage: 0 }, IRGB: { articles: 0, postage: 0 } } };
             });
 
             processed.forEach(item => {
-                if (officeTotals[item.officeId] && (selCat === "All" || item.category === selCat)) {
+                if (officeTotals[item.officeId]) {
                     officeTotals[item.officeId].articles += item.articles;
                     officeTotals[item.officeId].postage += item.postage;
                     if (officeTotals[item.officeId].categories[item.category]) {
@@ -505,17 +527,20 @@
                 }
             });
 
-            globalAllFilteredOffices = Object.values(officeTotals);
+            globalAllOfficesRaw = Object.values(officeTotals);
+
+            const filteredSummaryOffices = globalAllOfficesRaw.filter(m => (selDiv === "All" || m.division === selDiv) && (selClass === "All" || m.class === selClass));
+
             document.getElementById('kpiArticles').textContent = currentFilteredRows.reduce((a, c) => a + c.articles, 0).toLocaleString('en-IN');
             document.getElementById('kpiPostage').textContent = currentFilteredRows.reduce((a, c) => a + c.postage, 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
-            document.getElementById('kpiOffices').textContent = `${globalAllFilteredOffices.length}`;
+            document.getElementById('kpiOffices').textContent = `${filteredSummaryOffices.length}`;
 
-            renderSummaryTable(globalAllFilteredOffices, summaryView);
-            renderNilBookingTable(globalAllFilteredOffices, nilFilterClass);
-            renderTopBottom10(globalAllFilteredOffices);
+            renderSummaryTable(filteredSummaryOffices, summaryView, selCat);
+            renderNilBookingTable(globalAllOfficesRaw, nilFilterClass, nilFilterCategory);
+            renderTopBottom10(filteredSummaryOffices);
         }
 
-        function renderSummaryTable(allOffices, viewType) {
+        function renderSummaryTable(allOffices, viewType, selCat) {
             const thead = document.querySelector('#tableDivisionSummary thead'), tbody = document.querySelector('#tableDivisionSummary tbody'), tfoot = document.querySelector('#tableDivisionSummary tfoot');
             tbody.innerHTML = tfoot.innerHTML = "";
             const isDiv = viewType === 'division';
@@ -546,70 +571,228 @@
             tfoot.innerHTML = `<tr class="report-grand text-[11px]"><td colspan="${isDiv ? 1 : 2}" class="py-3 px-3">GRAND TOTAL</td><td class="py-3 px-2 text-center">${gOffices.size}</td><td class="py-3 px-2 text-right">${gP_A}</td><td class="py-3 px-2 text-right">${gP_P.toLocaleString('en-IN')}</td><td class="py-3 px-2 text-right">${gM_A}</td><td class="py-3 px-2 text-right">${gM_P.toLocaleString('en-IN')}</td><td class="py-3 px-2 text-right">${gI_A}</td><td class="py-3 px-2 text-right">${gI_P.toLocaleString('en-IN')}</td><td class="py-3 px-3 text-right">${gTotA}</td><td class="py-3 px-3 text-right">${gTotP.toLocaleString('en-IN')}</td></tr>`;
         }
 
-        function renderNilBookingTable(allOffices, filterClass) {
+        function calculateSubDivisionNilData(allOffices, filterClass, filterCategory) {
+            const th = getThresholds(filterClass, filterCategory);
+            const sdMap = {};
+
+            allOffices.filter(o => filterClass === "All" || o.class === filterClass).forEach(o => {
+                const key = (o.division || "OTHER") + "||" + (o.sd || "OTHER SD");
+                if (!sdMap[key]) sdMap[key] = { division: o.division || "OTHER", sd: o.sd || "OTHER SD", nil: [], low: [], good: [], total: 0, totalArticles: 0 };
+                
+                const cnt = (filterCategory === "All") ? o.articles : (o.categories[filterCategory] ? o.categories[filterCategory].articles : 0);
+                const isIDC = o.name.toUpperCase().includes("IDC");
+
+                if (cnt === 0 && !isIDC) sdMap[key].nil.push({ ...o, evaluatedArticles: cnt });
+                else if ((cnt >= th.lowMin && cnt <= th.lowMax) || (cnt === 0 && isIDC)) sdMap[key].low.push({ ...o, evaluatedArticles: cnt });
+                else if (cnt >= th.goodMin) sdMap[key].good.push({ ...o, evaluatedArticles: cnt });
+
+                sdMap[key].total++;
+                sdMap[key].totalArticles += cnt;
+            });
+
+            return { sdMap, th };
+        }
+
+        function renderNilBookingTable(allOffices, filterClass, filterCategory) {
             const tbody = document.querySelector('#tableNilBookingSummary tbody'), tfoot = document.querySelector('#tableNilBookingSummary tfoot');
             tbody.innerHTML = tfoot.innerHTML = "";
 
-            const sdMap = {};
-            allOffices.filter(o => filterClass === "All" || o.class === filterClass).forEach(o => {
-                const key = (o.division || "OTHER") + "||" + (o.sd || "OTHER SD");
-                if (!sdMap[key]) sdMap[key] = { division: o.division || "OTHER", sd: o.sd || "OTHER SD", nil: [], low: [], good: [], total: 0 };
-                const isIDC = o.name.toUpperCase().includes("IDC");
-                if (o.articles === 0 && !isIDC) sdMap[key].nil.push(o);
-                else if ((o.articles > 0 && o.articles <= 10) || (o.articles === 0 && isIDC)) sdMap[key].low.push(o);
-                else sdMap[key].good.push(o);
-                sdMap[key].total++;
-            });
+            const { sdMap, th } = calculateSubDivisionNilData(allOffices, filterClass, filterCategory);
+
+            document.getElementById('thLowBooking').textContent = th.labelLow;
+            document.getElementById('thGoodBooking').textContent = th.labelGood;
+            document.getElementById('thGoodPct').textContent = th.pctGoodLabel;
 
             const divGroups = {};
             Object.values(sdMap).forEach(item => { (divGroups[item.division] = divGroups[item.division] || []).push(item); });
 
-            let sno = 1, gTot = 0, gNil = 0, gLow = 0, gGood = 0;
+            let sno = 1, gTot = 0, gTotArt = 0, gNil = 0, gLow = 0, gGood = 0;
             Object.entries(divGroups).forEach(([divName, sdItems]) => {
-                let dTot = 0, dNil = 0, dLow = 0, dGood = 0;
+                let dTot = 0, dTotArt = 0, dNil = 0, dLow = 0, dGood = 0;
                 sdItems.forEach(item => {
-                    dTot += item.total; dNil += item.nil.length; dLow += item.low.length; dGood += item.good.length;
+                    dTot += item.total; dTotArt += item.totalArticles; dNil += item.nil.length; dLow += item.low.length; dGood += item.good.length;
+                    const avgArt = item.total > 0 ? (item.totalArticles / item.total).toFixed(2) : "0.00";
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${sno++}</td><td class="${divClassMap[divName] || 'div-bg-indore-city'}">${divName}</td><td class="text-left font-semibold">${item.sd}</td><td>${item.total}</td><td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'NIL')">${item.nil.length}</td><td class="clickable-cell font-bold text-amber-700 bg-amber-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'LOW')">${item.low.length}</td><td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'GOOD')">${item.good.length}</td><td class="font-bold text-rose-800 bg-rose-100/60">${item.total ? Math.round((item.nil.length/item.total)*100)+'%' : '0%'}</td><td class="font-bold text-emerald-800 bg-emerald-100/60">${item.total ? Math.round((item.good.length/item.total)*100)+'%' : '0%'}</td>`;
+                    tr.innerHTML = `
+                        <td>${sno++}</td>
+                        <td class="${divClassMap[divName] || 'div-bg-indore-city'}">${divName}</td>
+                        <td class="text-left font-semibold">${item.sd}</td>
+                        <td>${item.total}</td>
+                        <td class="font-bold text-purple-950">${item.totalArticles}</td>
+                        <td class="font-bold text-blue-900 bg-blue-50/60">${avgArt}</td>
+                        <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'NIL')">${item.nil.length}</td>
+                        <td class="clickable-cell font-bold text-amber-700 bg-amber-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'LOW')">${item.low.length}</td>
+                        <td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openOfficeCategoryListModal('${divName}', '${item.sd}', 'GOOD')">${item.good.length}</td>
+                        <td class="font-bold text-rose-800 bg-rose-100/60">${item.total ? Math.round((item.nil.length/item.total)*100)+'%' : '0%'}</td>
+                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${item.total ? Math.round((item.good.length/item.total)*100)+'%' : '0%'}</td>
+                    `;
                     tbody.appendChild(tr);
                 });
-                gTot += dTot; gNil += dNil; gLow += dLow; gGood += dGood;
+                gTot += dTot; gTotArt += dTotArt; gNil += dNil; gLow += dLow; gGood += dGood;
+                const dAvg = dTot > 0 ? (dTotArt / dTot).toFixed(2) : "0.00";
                 const dTr = document.createElement('tr');
                 dTr.className = "row-div-total";
-                dTr.innerHTML = `<td colspan="3">${divName} Total</td><td>${dTot}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'NIL')">${dNil}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'LOW')">${dLow}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'GOOD')">${dGood}</td><td>${dTot ? Math.round((dNil/dTot)*100)+'%' : '0%'}</td><td>${dTot ? Math.round((dGood/dTot)*100)+'%' : '0%'}</td>`;
+                dTr.innerHTML = `
+                    <td colspan="3">${divName} Total</td>
+                    <td>${dTot}</td>
+                    <td>${dTotArt}</td>
+                    <td>${dAvg}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'NIL')">${dNil}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'LOW')">${dLow}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${divName}', 'ALL', 'GOOD')">${dGood}</td>
+                    <td>${dTot ? Math.round((dNil/dTot)*100)+'%' : '0%'}</td>
+                    <td>${dTot ? Math.round((dGood/dTot)*100)+'%' : '0%'}</td>
+                `;
                 tbody.appendChild(dTr);
             });
 
-            tfoot.innerHTML = `<tr class="row-grand-total"><td colspan="3">Grand Total</td><td>${gTot}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'NIL')">${gNil}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'LOW')">${gLow}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'GOOD')">${gGood}</td><td>${gTot ? Math.round((gNil/gTot)*100)+'%' : '0%'}</td><td>${gTot ? Math.round((gGood/gTot)*100)+'%' : '0%'}</td></tr>`;
+            const gAvg = gTot > 0 ? (gTotArt / gTot).toFixed(2) : "0.00";
+            tfoot.innerHTML = `
+                <tr class="row-grand-total">
+                    <td colspan="3">Grand Total</td>
+                    <td>${gTot}</td>
+                    <td>${gTotArt}</td>
+                    <td>${gAvg}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'NIL')">${gNil}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'LOW')">${gLow}</td>
+                    <td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'GOOD')">${gGood}</td>
+                    <td>${gTot ? Math.round((gNil/gTot)*100)+'%' : '0%'}</td>
+                    <td>${gTot ? Math.round((gGood/gTot)*100)+'%' : '0%'}</td>
+                </tr>
+            `;
         }
 
         function openOfficeCategoryListModal(divisionName, subDivisionName, categoryType) {
             const filterClass = document.getElementById('nilFilterClass').value;
-            const targetOffices = globalAllFilteredOffices.filter(o => {
-                if (filterClass !== "All" && o.class !== filterClass) return false;
-                if (divisionName !== "ALL" && o.division !== divisionName) return false;
-                if (subDivisionName !== "ALL" && o.sd !== subDivisionName) return false;
+            const filterCategory = document.getElementById('nilFilterCategory').value;
+            const th = getThresholds(filterClass, filterCategory);
+
+            const targetOffices = [];
+            globalAllOfficesRaw.forEach(o => {
+                if (filterClass !== "All" && o.class !== filterClass) return;
+                if (divisionName !== "ALL" && o.division !== divisionName) return;
+                if (subDivisionName !== "ALL" && o.sd !== subDivisionName) return;
+                
+                const cnt = (filterCategory === "All") ? o.articles : (o.categories[filterCategory] ? o.categories[filterCategory].articles : 0);
                 const isIDC = o.name.toUpperCase().includes("IDC");
-                return (categoryType === 'NIL' && o.articles === 0 && !isIDC) || (categoryType === 'LOW' && ((o.articles > 0 && o.articles <= 10) || (o.articles === 0 && isIDC))) || (categoryType === 'GOOD' && o.articles > 10);
+
+                let match = false;
+                if (categoryType === 'NIL' && cnt === 0 && !isIDC) match = true;
+                if (categoryType === 'LOW' && ((cnt >= th.lowMin && cnt <= th.lowMax) || (cnt === 0 && isIDC))) match = true;
+                if (categoryType === 'GOOD' && cnt >= th.goodMin) match = true;
+
+                if (match) {
+                    targetOffices.push({
+                        officeId: o.officeId,
+                        officeName: o.name,
+                        class: o.class,
+                        subDivision: o.sd,
+                        division: o.division,
+                        articles: cnt,
+                        totalPostage: o.postage
+                    });
+                }
             });
 
-            if (!targetOffices.length) return alert(`No offices found for specified selection.`);
+            if (!targetOffices.length) return alert(`No offices found for selected filter.`);
 
-            modalExportData = targetOffices.map(o => ({ "Office ID": o.officeId, "Office Name": o.name, "Class": o.class, "Sub-Division": o.sd, "Division": o.division, "Articles Booked": o.articles }));
+            modalExportData = targetOffices.map(o => ({
+                "Office ID": o.officeId,
+                "Office Name": o.officeName,
+                "Class": o.class,
+                "Sub-Division": o.subDivision,
+                "Division": o.division,
+                "Category Evaluated": filterCategory,
+                "Articles Booked": o.articles
+            }));
+
             document.getElementById('modalTitle').textContent = `Office List: ${categoryType} Booking (${subDivisionName === 'ALL' ? divisionName : subDivisionName})`;
-            document.getElementById('modalSubtitle').textContent = `Total ${targetOffices.length} offices found.`;
+            document.getElementById('modalSubtitle').textContent = `Category: ${filterCategory} | Threshold Applied: ${categoryType === 'NIL' ? '0' : (categoryType === 'LOW' ? `${th.lowMin}-${th.lowMax}` : `>${th.goodMin-1}`)} | Total: ${targetOffices.length} offices`;
             
             document.querySelector('#tableModalOffices tbody').innerHTML = targetOffices.map(item => `
                 <tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="py-3 px-4 font-semibold">${item.name} <span class="text-xs text-slate-400">(${item.officeId})</span></td>
+                    <td class="py-3 px-4 font-semibold">${item.officeName} <span class="text-xs text-slate-400">(${item.officeId})</span></td>
                     <td class="py-3 px-4"><span class="bg-purple-100 text-purple-950 text-xs px-2 py-1 rounded font-bold">${item.class}</span></td>
-                    <td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.sd}</td>
+                    <td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.subDivision}</td>
                     <td class="py-3 px-4 text-center text-xs">-</td><td class="py-3 px-4 text-center text-xs">-</td><td class="py-3 px-4 text-center text-xs">-</td>
-                    <td class="py-3 px-4 text-right font-extrabold text-purple-950">${item.articles}</td><td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-purple-950">${item.articles}</td>
+                    <td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td>
                 </tr>`).join('');
 
             openModal('drilldownModal');
             logGeneratedReport(`Office List (${categoryType} - ${subDivisionName})`, () => exportModalToExcel());
+        }
+
+        function exportMultiSheetNilExcel() {
+            if (!globalAllOfficesRaw.length) return alert("Please upload Booking Raw File first.");
+
+            const wb = XLSX.utils.book_new();
+
+            const createSheetData = (fClass, fCat) => {
+                const { sdMap, th } = calculateSubDivisionNilData(globalAllOfficesRaw, fClass, fCat);
+                const rows = [];
+                let sno = 1, gTot = 0, gTotArt = 0, gNil = 0, gLow = 0, gGood = 0;
+
+                const divGroups = {};
+                Object.values(sdMap).forEach(i => { (divGroups[i.division] = divGroups[i.division] || []).push(i); });
+
+                Object.entries(divGroups).forEach(([divName, sds]) => {
+                    let dTot = 0, dTotArt = 0, dNil = 0, dLow = 0, dGood = 0;
+                    sds.forEach(item => {
+                        dTot += item.total; dTotArt += item.totalArticles; dNil += item.nil.length; dLow += item.low.length; dGood += item.good.length;
+                        rows.push({
+                            "S.No": sno++,
+                            "Division": divName,
+                            "Sub Division": item.sd,
+                            "Total Offices": item.total,
+                            "Total Articles": item.totalArticles,
+                            "Avg Booking/Office": item.total > 0 ? Number((item.totalArticles / item.total).toFixed(2)) : 0,
+                            "Nil (0) Offices": item.nil.length,
+                            [`Low Booking (${th.lowMin}-${th.lowMax})`]: item.low.length,
+                            [`Good Booking (>${th.goodMin-1})`]: item.good.length,
+                            "% Nil": item.total ? `${Math.round((item.nil.length/item.total)*100)}%` : "0%",
+                            "% Good": item.total ? `${Math.round((item.good.length/item.total)*100)}%` : "0%"
+                        });
+                    });
+                    gTot += dTot; gTotArt += dTotArt; gNil += dNil; gLow += dLow; gGood += dGood;
+                    rows.push({
+                        "S.No": "",
+                        "Division": `${divName} Total`,
+                        "Sub Division": "",
+                        "Total Offices": dTot,
+                        "Total Articles": dTotArt,
+                        "Avg Booking/Office": dTot > 0 ? Number((dTotArt / dTot).toFixed(2)) : 0,
+                        "Nil (0) Offices": dNil,
+                        [`Low Booking (${th.lowMin}-${th.lowMax})`]: dLow,
+                        [`Good Booking (>${th.goodMin-1})`]: dGood,
+                        "% Nil": dTot ? `${Math.round((dNil/dTot)*100)}%` : "0%",
+                        "% Good": dTot ? `${Math.round((dGood/dTot)*100)}%` : "0%"
+                    });
+                });
+
+                rows.push({
+                    "S.No": "",
+                    "Division": "Grand Total",
+                    "Sub Division": "",
+                    "Total Offices": gTot,
+                    "Total Articles": gTotArt,
+                    "Avg Booking/Office": gTot > 0 ? Number((gTotArt / gTot).toFixed(2)) : 0,
+                    "Nil (0) Offices": gNil,
+                    [`Low Booking (${th.lowMin}-${th.lowMax})`]: gLow,
+                    [`Good Booking (>${th.goodMin-1})`]: gGood,
+                    "% Nil": gTot ? `${Math.round((gNil/gTot)*100)}%` : "0%",
+                    "% Good": gTot ? `${Math.round((gGood/gTot)*100)}%` : "0%"
+                });
+
+                return XLSX.utils.json_to_sheet(rows);
+            };
+
+            XLSX.utils.book_append_sheet(wb, createSheetData("BO", "All"), "BO_Booking_Status");
+            XLSX.utils.book_append_sheet(wb, createSheetData("SO", "PARCEL"), "SO_Parcel_Category");
+            XLSX.utils.book_append_sheet(wb, createSheetData("SO", "MO"), "SO_Mail_Operations");
+
+            XLSX.writeFile(wb, "Nil_and_Office_Activity_Report_3_Sheets.xlsx");
+            logGeneratedReport("Nil Booking Report (3 Sheets Excel)", () => exportMultiSheetNilExcel());
         }
 
         function renderTopBottom10(offices) {
@@ -664,7 +847,7 @@
         }
         const exportAllToPDF = () => exportSingleTableToPDF('tableDivisionSummary', 'Summary Report');
 
-        // Digital Module Logic
+        // Digital Logic
         document.getElementById('digitalFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
             const statusEl = document.getElementById('digitalUploadStatus');
@@ -731,7 +914,7 @@
 
         const exportDigitalExcel = () => exportTableToExcel('tableDigitalSummary', 'Digital_Booking_Txn_Status.xlsx');
 
-        // PLI Module Logic
+        // PLI Logic
         document.getElementById('pliFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
             const statusEl = document.getElementById('pliUploadStatus');
