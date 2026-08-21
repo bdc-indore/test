@@ -64,7 +64,7 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-3 md:px-8 py-6 space-y-6 w-full flex-grow">
-        <!-- Module 1: Booking -->
+        <!-- MODULE 1: BOOKING -->
         <div id="moduleBooking" class="space-y-6">
             <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div>
@@ -163,7 +163,7 @@
                     </table>
                 </div>
                 <div class="px-6 py-2.5 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-600 font-medium">
-                    ⚠️ <strong>Note:</strong> Khudel BO is excluded / merged into Khudel SO automatically. IDC offices are non-booking offices and included under Low Booking. Click on count to download list.
+                    ⚠️ <strong>Note:</strong> Khudel BO is excluded / merged into Khudel SO automatically[cite: 1]. IDC offices are non-booking offices and included under Low Booking[cite: 1]. Click on count to download list[cite: 1].
                 </div>
             </div>
 
@@ -194,18 +194,18 @@
             </div>
         </div>
 
-        <!-- Module 2: PLI -->
+        <!-- MODULE 2: PLI TXN CALCULATOR -->
         <div id="modulePli" class="space-y-6 hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                         <h3 class="font-extrabold text-lg flex items-center gap-2">🛡️ PLI / RPLI Nil Transaction Report (Indore Region - Branch Offices Only)</h3>
-                        <p class="text-xs text-purple-200">Strictly matching spreadsheet BO IDs with PLI Excel. Click any count to view/download office list.</p>
+                        <p class="text-xs text-purple-200">Strictly matching spreadsheet BO IDs with PLI Excel[cite: 1]. Click any count to view/download office list[cite: 1].</p>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <button onclick="exportPliExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📥 Excel (2 Sheets)</button>
-                        <button onclick="exportPliPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📄 PDF Report</button>
-                        <button onclick="exportTableJPEG('pliTableContainer', 'PLI_Nil_Txn_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📸 JPEG</button>
+                        <button onclick="exportPliExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel (2 Sheets)</button>
+                        <button onclick="exportPliPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
+                        <button onclick="exportTableJPEG('pliTableContainer', 'PLI_Nil_Txn_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                     </div>
                 </div>
                 <div class="p-6 space-y-5" id="pliTableContainer">
@@ -226,10 +226,19 @@
                         <table class="nil-table" id="tablePliSummary">
                             <thead>
                                 <tr>
-                                    <th style="width: 5%;">S.No.</th><th style="width: 15%;">Name of Division</th><th style="width: 20%;">Name of Sub Dn</th><th style="width: 12%;">Total Offices in SD</th><th style="width: 12%;">Nil PLI/RPLI Txn (0)</th><th style="width: 12%;">Good PLI Txn (>10)</th><th style="width: 12%;">% Nil Offices</th><th style="width: 12%;">% Offices with >10 Txn</th>
+                                    <th style="width: 4%;">S.No.</th>
+                                    <th style="width: 14%;">Name of Division</th>
+                                    <th style="width: 18%;">Name of Sub Dn</th>
+                                    <th style="width: 9%;">Total Offices in SD</th>
+                                    <th style="width: 9%;">Total Txn</th>
+                                    <th style="width: 9%;">Avg Txn/Office</th>
+                                    <th style="width: 9%;">Nil PLI/RPLI Txn (0)</th>
+                                    <th style="width: 10%;">Good PLI Txn (>10)</th>
+                                    <th style="width: 9%;">% Nil Offices</th>
+                                    <th style="width: 9%;">% Offices with >10 Txn</th>
                                 </tr>
                             </thead>
-                            <tbody><tr><td colspan="8" class="py-8 text-center text-slate-400 font-medium">Please upload Pan India PLI Transaction Excel/CSV raw data.</td></tr></tbody>
+                            <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Pan India PLI Transaction Excel/CSV raw data[cite: 1].</td></tr></tbody>
                             <tfoot></tfoot>
                         </table>
                     </div>
@@ -237,13 +246,13 @@
             </div>
         </div>
 
-        <!-- Module 3: Digital -->
+        <!-- MODULE 3: DIGITAL -->
         <div id="moduleDigital" class="space-y-6 hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
                         <h3 class="font-extrabold text-lg flex items-center gap-2">💳 Digital Booking Txn Status Calculator</h3>
-                        <p class="text-xs text-purple-200">Upload Booking Paymentwise Report to calculate Cash, DQR Scan, SBIPOS Bharat QR and % Digital Txn.</p>
+                        <p class="text-xs text-purple-200">Upload Booking Paymentwise Report to calculate Cash, DQR Scan, SBIPOS Bharat QR and % Digital Txn[cite: 1].</p>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <button onclick="exportDigitalExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📥 Excel</button>
@@ -282,7 +291,7 @@
                             <thead>
                                 <tr><th id="digitalHeaderGrouping" style="width: 25%;">Division</th><th style="width: 15%;">Cash (Cnt)</th><th style="width: 15%;">DQR Scan (Cnt)</th><th style="width: 20%;">SBIPOS BHARAT QR (Cnt)</th><th style="width: 25%;">% of Digital Txn</th></tr>
                             </thead>
-                            <tbody><tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">Please upload Booking Paymentwise Report file.</td></tr></tbody>
+                            <tbody><tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">Please upload Booking Paymentwise Report file[cite: 1].</td></tr></tbody>
                             <tfoot></tfoot>
                         </table>
                     </div>
@@ -366,7 +375,7 @@
     </div>
 
     <footer class="report-header text-purple-200 text-xs py-4 px-6 text-center border-t border-purple-950 mt-12">
-        <p class="font-medium">Developed by <span class="text-white font-bold">Kapil Rajput</span>, PA, Regional Office Indore</p>
+        <p class="font-medium">Developed by <span class="text-white font-bold">Kapil Rajput</span>, PA, Regional Office Indore[cite: 1]</p>
     </footer>
 
     <script>
@@ -623,7 +632,6 @@
             `;
         }
 
-        // Dedicated helper for Nil calculation with accurate thresholds
         function getNilRuleConfig(selClass, selCat) {
             const cls = String(selClass || 'All').toUpperCase();
             const cat = String(selCat || 'All').toUpperCase();
@@ -640,7 +648,6 @@
         function getOfficeActivityData(filterClass, filterCat) {
             const config = getNilRuleConfig(filterClass, filterCat);
 
-            // 1. Build office map strictly from master
             const officeSummary = {};
             Object.entries(masterOfficesMap).forEach(([id, m]) => {
                 if (m.name.toUpperCase().includes("KHUDEL") && m.class === "BO") return;
@@ -648,7 +655,6 @@
                 officeSummary[id] = { officeId: id, name: m.name, class: m.class, sd: m.sd, division: m.division, cnt: 0 };
             });
 
-            // 2. Tally raw articles matching the selected category
             rawData.forEach(item => {
                 if (officeSummary[item.officeId]) {
                     const sKey = String(item.service).trim().toLowerCase();
@@ -659,7 +665,6 @@
                 }
             });
 
-            // 3. Group by Sub-Division
             const sdMap = {};
             Object.values(officeSummary).forEach(o => {
                 const div = o.division || "OTHER DIVISION";
@@ -930,6 +935,247 @@
             logGeneratedReport("Nil Booking Report (3 Sheets Excel)", () => exportMultiSheetNilExcel());
         }
 
+        // PLI / RPLI NIL TRANSACTION REPORT LOGIC (Fixed Good Booking >10 & Added Total/Avg Txn)
+        document.getElementById('pliFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const statusEl = document.getElementById('pliUploadStatus');
+            statusEl.innerHTML = `🔄 Reading File...`;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const sheet = XLSX.read(evt.target.result, {type: 'array', cellDates: true, dense: true}).Sheets[XLSX.read(evt.target.result, {type: 'array'}).SheetNames[0]];
+                    const jsonRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+                    
+                    const indoreBoMaster = {};
+                    Object.entries(masterOfficesMap).forEach(([id, m]) => {
+                        const name = String(m.name || "").toUpperCase();
+                        if (name.includes("KHUDEL") && String(m.class).toUpperCase() === "BO") return;
+                        if (String(m.class).toUpperCase() === "BO") indoreBoMaster[id] = m;
+                    });
+
+                    pliRawData = [];
+                    for (let i = 1; i < jsonRows.length; i++) {
+                        const row = jsonRows[i];
+                        if (!row || row.length === 0) continue;
+
+                        let oId = String(row[8] || row[0] || "").trim().replace(/\.0$/, '');
+                        if (!oId) continue;
+
+                        let transCount = 0;
+                        for (let j = 0; j < row.length; j++) {
+                            let val = Number(row[j]);
+                            if (!isNaN(val) && val >= 0 && val < 500000 && j !== 8) {
+                                transCount = val;
+                            }
+                        }
+
+                        pliRawData.push({
+                            officeId: oId,
+                            transCount: transCount
+                        });
+                    }
+
+                    statusEl.innerHTML = `✅ Uploaded! (${Object.keys(indoreBoMaster).length} BOs matched)`;
+                    processPliData(indoreBoMaster);
+                } catch (err) { 
+                    console.error(err);
+                    statusEl.innerHTML = `❌ Error reading PLI file.`; 
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processPliData(indoreBoMaster) {
+            const officeTxnMap = {};
+            pliRawData.forEach(item => {
+                officeTxnMap[item.officeId] = (officeTxnMap[item.officeId] || 0) + item.transCount;
+            });
+
+            currentNilPliOfficesList = [];
+            Object.entries(indoreBoMaster).forEach(([id, m]) => {
+                const hasEntryInExcel = officeTxnMap.hasOwnProperty(id);
+                const txn = officeTxnMap[id] || 0;
+                if (hasEntryInExcel && txn === 0) {
+                    currentNilPliOfficesList.push({
+                        officeId: id,
+                        officeName: m.name,
+                        subDivision: m.sd,
+                        division: m.division,
+                        txn: 0
+                    });
+                }
+            });
+
+            const sdMap = {};
+            Object.entries(indoreBoMaster).forEach(([id, m]) => {
+                const div = m.division || "UNKNOWN DIVISION";
+                const sd = m.sd || "UNKNOWN SD";
+                const key = div + "||" + sd;
+                if (!sdMap[key]) {
+                    sdMap[key] = {
+                        division: div,
+                        sd: sd,
+                        offices: [],
+                        nilOfficesList: [],
+                        goodOfficesList: [],
+                        totalTxn: 0
+                    };
+                }
+                sdMap[key].offices.push({ id: id, master: m });
+            });
+
+            Object.values(sdMap).forEach(item => {
+                let nilList = [];
+                let goodList = [];
+                let sdTotalTxn = 0;
+
+                item.offices.forEach(off => {
+                    const id = off.id;
+                    const m = off.master;
+                    const hasEntryInExcel = officeTxnMap.hasOwnProperty(id);
+                    const txn = officeTxnMap[id] || 0;
+
+                    sdTotalTxn += txn;
+
+                    if (hasEntryInExcel && txn === 0) {
+                        nilList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd, txn: 0 });
+                    } else if (txn > 10) {
+                        goodList.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd, txn: txn });
+                    }
+                });
+
+                item.totalOffices = item.offices.length;
+                item.totalTxn = sdTotalTxn;
+                item.nilOfficesList = nilList;
+                item.goodOfficesList = goodList;
+            });
+
+            currentPliProcessedList = Object.values(sdMap);
+
+            let sno = 1, gTotalOff = 0, gTotalTxn = 0, gNilOff = 0, gGoodOff = 0;
+
+            const divGroups = {};
+            currentPliProcessedList.forEach(item => {
+                if (!divGroups[item.division]) divGroups[item.division] = [];
+                divGroups[item.division].push(item);
+            });
+
+            const tbody = document.querySelector('#tablePliSummary tbody');
+            tbody.innerHTML = "";
+
+            Object.entries(divGroups).forEach(([divName, sdItems]) => {
+                let divTotOff = 0, divTotTxn = 0, divNilOff = 0, divGoodOff = 0;
+                let cssClass = divClassMap[divName] || "div-bg-indore-city";
+
+                sdItems.forEach(item => {
+                    divTotOff += item.totalOffices;
+                    divTotTxn += item.totalTxn;
+                    divNilOff += item.nilOfficesList.length;
+                    divGoodOff += item.goodOfficesList.length;
+
+                    const avgTxn = item.totalOffices > 0 ? (item.totalTxn / item.totalOffices).toFixed(2) : "0.00";
+                    const nilPct = item.totalOffices > 0 ? Math.round((item.nilOfficesList.length / item.totalOffices) * 100) + "%" : "0%";
+                    const goodPct = item.totalOffices > 0 ? Math.round((item.goodOfficesList.length / item.totalOffices) * 100) + "%" : "0%";
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${sno++}</td>
+                        <td class="${cssClass}">${divName}</td>
+                        <td style="text-align: left; font-weight: 600;">${item.sd}</td>
+                        <td>${item.totalOffices}</td>
+                        <td class="font-bold text-purple-950">${item.totalTxn.toLocaleString('en-IN')}</td>
+                        <td class="font-bold text-blue-900 bg-blue-50/50">${avgTxn}</td>
+                        <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openPliOfficeListModal('${divName}', '${item.sd}', 'NIL')">${item.nilOfficesList.length}</td>
+                        <td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openPliOfficeListModal('${divName}', '${item.sd}', 'GOOD')">${item.goodOfficesList.length}</td>
+                        <td class="font-bold text-rose-800 bg-rose-100/60">${nilPct}</td>
+                        <td class="font-bold text-emerald-800 bg-emerald-100/60">${goodPct}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                gTotalOff += divTotOff; gTotalTxn += divTotTxn; gNilOff += divNilOff; gGoodOff += divGoodOff;
+                const divAvg = divTotOff > 0 ? (divTotTxn / divTotOff).toFixed(2) : "0.00";
+                const divNilPct = divTotOff > 0 ? Math.round((divNilOff / divTotOff) * 100) + "%" : "0%";
+                const divGoodPct = divTotOff > 0 ? Math.round((divGoodOff / divTotOff) * 100) + "%" : "0%";
+
+                const divTr = document.createElement('tr');
+                divTr.className = "row-div-total";
+                divTr.innerHTML = `
+                    <td colspan="3">${divName} Total</td>
+                    <td>${divTotOff}</td>
+                    <td>${divTotTxn.toLocaleString('en-IN')}</td>
+                    <td>${divAvg}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('${divName}', 'ALL', 'NIL')">${divNilOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('${divName}', 'ALL', 'GOOD')">${divGoodOff}</td>
+                    <td>${divNilPct}</td>
+                    <td>${divGoodPct}</td>
+                `;
+                tbody.appendChild(divTr);
+            });
+
+            const grandAvg = gTotalOff > 0 ? (gTotalTxn / gTotalOff).toFixed(2) : "0.00";
+            const grandNilPct = gTotalOff > 0 ? Math.round((gNilOff / gTotalOff) * 100) + "%" : "0%";
+            const grandGoodPct = gTotalOff > 0 ? Math.round((gGoodOff / gTotalOff) * 100) + "%" : "0%";
+
+            document.querySelector('#tablePliSummary tfoot').innerHTML = `
+                <tr class="row-grand-total">
+                    <td colspan="3">Grand Total (Indore Region - BO)</td>
+                    <td>${gTotalOff}</td>
+                    <td>${gTotalTxn.toLocaleString('en-IN')}</td>
+                    <td>${grandAvg}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('ALL', 'ALL', 'NIL')">${gNilOff}</td>
+                    <td class="clickable-cell underline" onclick="openPliOfficeListModal('ALL', 'ALL', 'GOOD')">${gGoodOff}</td>
+                    <td>${grandNilPct}</td>
+                    <td>${grandGoodPct}</td>
+                </tr>
+            `;
+        }
+
+        function openPliOfficeListModal(divName, sdName, type) {
+            const targetList = [];
+            currentPliProcessedList.forEach(i => {
+                if ((divName === 'ALL' || i.division === divName) && (sdName === 'ALL' || i.sd === sdName)) {
+                    targetList.push(...(type === 'NIL' ? i.nilOfficesList : i.goodOfficesList));
+                }
+            });
+            if (!targetList.length) return alert(`No offices found under ${type === 'NIL' ? 'Nil PLI' : 'Good PLI (>10)'} category.`);
+
+            pliModalExportData = targetList.map((o, idx) => ({
+                "S.No": idx + 1,
+                "Office ID": o.officeId,
+                "Office Name": o.officeName,
+                "Class": o.class,
+                "Sub-Division": o.sd,
+                "Division": o.division,
+                "PLI Transactions": o.txn
+            }));
+
+            document.getElementById('pliModalTitle').textContent = `PLI Office List (${type === 'NIL' ? 'Nil Txn' : 'Good Txn (>10)'} - ${sdName === 'ALL' ? divName : sdName})`;
+            document.getElementById('pliModalSubtitle').textContent = `Total ${targetList.length} branch offices found.`;
+            document.querySelector('#tablePliModalOffices tbody').innerHTML = targetList.map((item, idx) => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="py-3 px-4 font-bold">${idx + 1}</td>
+                    <td class="py-3 px-4 font-semibold">${item.officeName} <span class="text-xs text-slate-400">(${item.officeId})</span></td>
+                    <td class="py-3 px-4"><span class="bg-purple-100 text-purple-950 text-xs px-2 py-1 rounded font-bold">${item.class}</span></td>
+                    <td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.sd}</td>
+                    <td class="py-3 px-4 text-right font-extrabold ${item.txn === 0 ? 'text-rose-700' : 'text-emerald-800'}">${item.txn}</td>
+                </tr>
+            `).join('');
+            openModal('pliDrilldownModal');
+            logGeneratedReport(`PLI Office List Details (${type} - ${sdName})`, () => exportPliModalToExcel());
+        }
+
+        function exportPliModalToExcel() { XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(pliModalExportData), "PLI_Offices"), "PLI_Office_Details_List.xlsx"); }
+        function exportPliExcel() {
+            if (!currentPliProcessedList.length) return alert("No PLI report data available.");
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById('tablePliSummary')), "PLI_Summary_Report");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(currentNilPliOfficesList.length ? currentNilPliOfficesList.map((o, idx) => ({ "S.No": idx + 1, "Office ID": o.officeId, "Branch Office Name (BO)": o.officeName, "Sub-Division Name (SD)": o.subDivision, "Division Name": o.division })) : [{ "Message": "No Nil PLI offices" }]), "Nil_PLI_Offices_List");
+            XLSX.writeFile(wb, "PLI_Nil_Transaction_Report_Indore_Region_BO.xlsx");
+            logGeneratedReport("PLI Nil Transaction Report (2-Sheet Excel)", () => exportPliExcel());
+        }
+        const exportPliPDF = () => exportSingleTableToPDF('tablePliSummary', 'PLI Nil Transaction Report');
+
         function renderTopBottom10(offices) {
             const sorted = [...offices].sort((a, b) => b.articles - a.articles);
             [['tableTop10', sorted.slice(0, 10), 'text-[#0B6623]'], ['tableBottom10', [...sorted].reverse().slice(0, 10), 'text-[#8B0000]']].forEach(([id, list, color]) => {
@@ -998,7 +1244,7 @@
         }
         const exportAllToPDF = () => exportSingleTableToPDF('tableDivisionSummary', 'Summary Report');
 
-        // Digital Module
+        // Digital Module Logic
         document.getElementById('digitalFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
             const statusEl = document.getElementById('digitalUploadStatus');
@@ -1064,101 +1310,6 @@
         }
 
         const exportDigitalExcel = () => exportTableToExcel('tableDigitalSummary', 'Digital_Booking_Txn_Status.xlsx');
-
-        // PLI Module
-        document.getElementById('pliFileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0]; if (!file) return;
-            const statusEl = document.getElementById('pliUploadStatus');
-            statusEl.innerHTML = `🔄 Reading File...`;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const sheet = XLSX.read(evt.target.result, {type: 'array', cellDates: true, dense: true}).Sheets[XLSX.read(evt.target.result, {type: 'array'}).SheetNames[0]];
-                    const jsonRows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
-                    
-                    const indoreBoMaster = {};
-                    Object.entries(masterOfficesMap).forEach(([id, m]) => {
-                        if (m.class === "BO" && !m.name.toUpperCase().includes("KHUDEL")) indoreBoMaster[id] = m;
-                    });
-
-                    pliRawData = jsonRows.slice(1).map(r => {
-                        const oId = String(r[8] || r[0] || "").trim().replace(/\.0$/, '');
-                        if (!oId) return null;
-                        let tc = 0;
-                        for (let j = 0; j < r.length; j++) { const v = Number(r[j]); if (!isNaN(v) && v >= 0 && v < 500000 && j !== 8) tc = v; }
-                        return { officeId: oId, transCount: tc };
-                    }).filter(Boolean);
-
-                    statusEl.innerHTML = `✅ Uploaded! (${Object.keys(indoreBoMaster).length} BOs matched)`;
-                    processPliData(indoreBoMaster);
-                } catch (err) { statusEl.innerHTML = `❌ Error reading PLI file.`; }
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        function processPliData(indoreBoMaster) {
-            const officeTxnMap = {};
-            pliRawData.forEach(i => { officeTxnMap[i.officeId] = (officeTxnMap[i.officeId] || 0) + i.transCount; });
-            currentNilPliOfficesList = Object.entries(indoreBoMaster).filter(([id]) => officeTxnMap.hasOwnProperty(id) && officeTxnMap[id] === 0).map(([id, m]) => ({ officeId: id, officeName: m.name, subDivision: m.sd, division: m.division, txn: 0 }));
-
-            const sdMap = {};
-            Object.entries(indoreBoMaster).forEach(([id, m]) => {
-                const key = (m.division || "UNKNOWN") + "||" + (m.sd || "UNKNOWN");
-                const item = sdMap[key] = sdMap[key] || { division: m.division, sd: m.sd, total: 0, nil: [], good: [] };
-                const txn = officeTxnMap[id] || 0;
-                if (officeTxnMap.hasOwnProperty(id) && txn === 0) item.nil.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd, txn: 0 });
-                else item.good.push({ officeId: id, officeName: m.name, class: m.class, division: item.division, sd: item.sd, txn });
-                item.total++;
-            });
-
-            currentPliProcessedList = Object.values(sdMap);
-            const divGroups = {};
-            currentPliProcessedList.forEach(i => { (divGroups[i.division] = divGroups[i.division] || []).push(i); });
-
-            let sno = 1, gTot = 0, gNil = 0, gGood = 0;
-            const tbody = document.querySelector('#tablePliSummary tbody'); tbody.innerHTML = "";
-            Object.entries(divGroups).forEach(([divName, sdItems]) => {
-                let dTot = 0, dNil = 0, dGood = 0;
-                sdItems.forEach(i => {
-                    dTot += i.total; dNil += i.nil.length; dGood += i.good.length;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${sno++}</td><td class="${divClassMap[divName] || 'div-bg-indore-city'}">${divName}</td><td class="text-left font-semibold">${i.sd}</td><td>${i.total}</td><td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openPliOfficeListModal('${divName}', '${i.sd}', 'NIL')">${i.nil.length}</td><td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openPliOfficeListModal('${divName}', '${i.sd}', 'GOOD')">${i.good.length}</td><td class="font-bold text-rose-800 bg-rose-100/60">${i.total ? Math.round((i.nil.length/i.total)*100)+'%' : '0%'}</td><td class="font-bold text-emerald-800 bg-emerald-100/60">${i.total ? Math.round((i.good.length/i.total)*100)+'%' : '0%'}</td>`;
-                    tbody.appendChild(tr);
-                });
-                gTot += dTot; gNil += dNil; gGood += dGood;
-                const dTr = document.createElement('tr');
-                dTr.className = "row-div-total";
-                dTr.innerHTML = `<td colspan="3">${divName} Total</td><td>${dTot}</td><td class="clickable-cell underline" onclick="openPliOfficeListModal('${divName}', 'ALL', 'NIL')">${dNil}</td><td class="clickable-cell underline" onclick="openPliOfficeListModal('${divName}', 'ALL', 'GOOD')">${dGood}</td><td>${dTot ? Math.round((dNil/dTot)*100)+'%' : '0%'}</td><td>${dTot ? Math.round((dGood/dTot)*100)+'%' : '0%'}</td>`;
-                tbody.appendChild(dTr);
-            });
-
-            document.querySelector('#tablePliSummary tfoot').innerHTML = `<tr class="row-grand-total"><td colspan="3">Grand Total (Indore Region - BO)</td><td>${gTot}</td><td class="clickable-cell underline" onclick="openPliOfficeListModal('ALL', 'ALL', 'NIL')">${gNil}</td><td class="clickable-cell underline" onclick="openPliOfficeListModal('ALL', 'ALL', 'GOOD')">${gGood}</td><td>${gTot ? Math.round((gNil/gTot)*100)+'%' : '0%'}</td><td>${gTot ? Math.round((gGood/gTot)*100)+'%' : '0%'}</td></tr>`;
-        }
-
-        function openPliOfficeListModal(divName, sdName, type) {
-            const targetList = [];
-            currentPliProcessedList.forEach(i => {
-                if ((divName === 'ALL' || i.division === divName) && (sdName === 'ALL' || i.sd === sdName)) targetList.push(...(type === 'NIL' ? i.nil : i.good));
-            });
-            if (!targetList.length) return alert(`No offices found.`);
-
-            pliModalExportData = targetList.map((o, idx) => ({ "S.No": idx + 1, "Office ID": o.officeId, "Office Name": o.officeName, "Class": o.class, "Sub-Division": o.sd, "Division": o.division, "PLI Transactions": o.txn }));
-            document.getElementById('pliModalTitle').textContent = `PLI Office List (${type} - ${sdName === 'ALL' ? divName : sdName})`;
-            document.getElementById('pliModalSubtitle').textContent = `Total ${targetList.length} branch offices found.`;
-            document.querySelector('#tablePliModalOffices tbody').innerHTML = targetList.map((item, idx) => `
-                <tr class="hover:bg-slate-50 border-b border-slate-100"><td class="py-3 px-4 font-bold">${idx + 1}</td><td class="py-3 px-4 font-semibold">${item.officeName} <span class="text-xs text-slate-400">(${item.officeId})</span></td><td class="py-3 px-4"><span class="bg-purple-100 text-purple-950 text-xs px-2 py-1 rounded font-bold">${item.class}</span></td><td class="py-3 px-4 text-xs text-slate-600">${item.division} / ${item.sd}</td><td class="py-3 px-4 text-right font-extrabold ${item.txn === 0 ? 'text-rose-700' : 'text-emerald-800'}">${item.txn}</td></tr>`).join('');
-            openModal('pliDrilldownModal');
-        }
-
-        function exportPliModalToExcel() { XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(pliModalExportData), "PLI_Offices"), "PLI_Office_Details_List.xlsx"); }
-        function exportPliExcel() {
-            if (!currentPliProcessedList.length) return alert("No PLI report data available.");
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById('tablePliSummary')), "PLI_Summary_Report");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(currentNilPliOfficesList.length ? currentNilPliOfficesList.map((o, idx) => ({ "S.No": idx + 1, "Office ID": o.officeId, "Branch Office Name (BO)": o.officeName, "Sub-Division Name (SD)": o.subDivision, "Division Name": o.division })) : [{ "Message": "No Nil PLI offices" }]), "Nil_PLI_Offices_List");
-            XLSX.writeFile(wb, "PLI_Nil_Transaction_Report_Indore_Region_BO.xlsx");
-        }
-        const exportPliPDF = () => exportSingleTableToPDF('tablePliSummary', 'PLI Nil Transaction Report');
 
         // Raw File Parsing
         document.getElementById('rawFileInput').addEventListener('change', function(e) {
