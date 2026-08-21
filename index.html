@@ -163,7 +163,7 @@
                     </table>
                 </div>
                 <div class="px-6 py-2.5 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-600 font-medium">
-                    ⚠️ <strong>Note:</strong> Khudel BO is excluded / merged into Khudel SO automatically[cite: 1]. IDC offices are non-booking offices and included under Low Booking[cite: 1]. Click on count to download list[cite: 1].
+                    ⚠️ <strong>Note:</strong> Khudel BO is excluded / merged into Khudel SO automatically[cite: 1]. IDC offices are non-booking offices and included under Low Booking[cite: 1].
                 </div>
             </div>
 
@@ -194,7 +194,7 @@
             </div>
         </div>
 
-        <!-- MODULE 2: PLI TXN CALCULATOR (Updated with Low Txn & 3-Sheet Excel Export) -->
+        <!-- MODULE 2: PLI TXN CALCULATOR -->
         <div id="modulePli" class="space-y-6 hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -247,8 +247,9 @@
             </div>
         </div>
 
-        <!-- MODULE 3: DIGITAL -->
+        <!-- MODULE 3: DIGITAL TXN REPORT -->
         <div id="moduleDigital" class="space-y-6 hidden">
+            <!-- Main Grouped Digital Report Card -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
@@ -256,9 +257,9 @@
                         <p class="text-xs text-purple-200">Upload Booking Paymentwise Report to calculate Cash, DQR Scan, SBIPOS Bharat QR and % Digital Txn[cite: 1].</p>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <button onclick="exportDigitalExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📥 Excel</button>
-                        <button onclick="exportSingleTableToPDF('tableDigitalSummary', 'Digital Booking Txn Status')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📄 PDF Report</button>
-                        <button onclick="exportTableJPEG('digitalTableContainer', 'Digital_Booking_Txn_Status')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📸 JPEG</button>
+                        <button onclick="exportDigitalMultiSheetExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel (3 Sheets)</button>
+                        <button onclick="exportSingleTableToPDF('tableDigitalSummary', 'Digital Booking Txn Status')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
+                        <button onclick="exportTableJPEG('digitalTableContainer', 'Digital_Booking_Txn_Status')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                     </div>
                 </div>
                 <div class="p-6 space-y-5" id="digitalTableContainer">
@@ -270,7 +271,8 @@
                         <div>
                             <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Select Mode</label>
                             <select id="digitalModeSelect" onchange="processDigitalReport()" class="w-full border border-purple-300 rounded-lg p-2 text-xs bg-white font-bold text-purple-950 outline-none">
-                                <option value="excluding_bo">Excluding BO</option><option value="including_bo">Including BO (HO+BO+SO)</option>
+                                <option value="excluding_bo">Excluding BO</option>
+                                <option value="including_bo">Including BO (HO+BO+SO)</option>
                             </select>
                         </div>
                     </div>
@@ -279,7 +281,8 @@
                         <div class="flex items-center gap-2">
                             <label class="text-xs font-bold text-slate-700">View By:</label>
                             <select id="digitalViewType" onchange="processDigitalReport()" class="bg-[#31103f] text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-purple-700 outline-none cursor-pointer">
-                                <option value="division">Division Level</option><option value="subdivision">Sub-Division Level</option>
+                                <option value="subdivision">Sub-Division Level (Grouped by Division)</option>
+                                <option value="division">Division Level</option>
                             </select>
                         </div>
                     </div>
@@ -290,10 +293,73 @@
                         </div>
                         <table class="nil-table" id="tableDigitalSummary">
                             <thead>
-                                <tr><th id="digitalHeaderGrouping" style="width: 25%;">Division</th><th style="width: 15%;">Cash (Cnt)</th><th style="width: 15%;">DQR Scan (Cnt)</th><th style="width: 20%;">SBIPOS BHARAT QR (Cnt)</th><th style="width: 25%;">% of Digital Txn</th></tr>
+                                <tr>
+                                    <th id="digitalHeaderDivision" style="width: 18%;">Division</th>
+                                    <th id="digitalHeaderGrouping" style="width: 22%;">Sub-Division</th>
+                                    <th style="width: 15%;">Cash (Cnt)</th>
+                                    <th style="width: 15%;">DQR Scan (Cnt)</th>
+                                    <th style="width: 15%;">SBIPOS BHARAT QR (Cnt)</th>
+                                    <th style="width: 15%;">% of Digital Txn</th>
+                                </tr>
                             </thead>
-                            <tbody><tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">Please upload Booking Paymentwise Report file[cite: 1].</td></tr></tbody>
+                            <tbody><tr><td colspan="6" class="py-8 text-center text-slate-400 font-medium">Please upload Booking Paymentwise Report file[cite: 1].</td></tr></tbody>
                             <tfoot></tfoot>
+                        </table>
+                    </div>
+                    <div class="px-3 py-2 text-[11px] text-slate-500">
+                        💡 <strong>Hint:</strong> Division ya Sub-Division ke naam par click karke direct unke post offices ki live status dekhein aur Excel export karein.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dedicated Office-wise Digital Txn Filter Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-extrabold text-base flex items-center gap-2">🔍 Office-Wise Digital Transaction Explorer</h3>
+                        <p class="text-xs text-purple-200">Filter and analyze digital performance office by office</p>
+                    </div>
+                    <button onclick="exportOfficeDigitalExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Download Office Excel</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Select Division</label>
+                            <select id="officeFilterDiv" onchange="renderOfficeDigitalTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none focus:border-purple-800">
+                                <option value="All">All Divisions</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Select Office Class</label>
+                            <select id="officeFilterClass" onchange="renderOfficeDigitalTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none focus:border-purple-800">
+                                <option value="All">All Classes</option>
+                                <option value="HO">HO</option>
+                                <option value="SO">SO</option>
+                                <option value="BO">BO</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="renderOfficeDigitalTable()" class="w-full bg-[#31103f] hover:bg-purple-950 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow transition cursor-pointer">Filter Offices</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="nil-table" id="tableOfficeDigital">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th style="width: 12%;">Office ID</th>
+                                    <th style="width: 25%; text-align: left;">Office Name</th>
+                                    <th style="width: 8%;">Class</th>
+                                    <th style="width: 15%;">Sub-Division</th>
+                                    <th style="width: 12%;">Division</th>
+                                    <th style="width: 7%;">Cash</th>
+                                    <th style="width: 7%;">DQR Scan</th>
+                                    <th style="width: 7%;">SBIPOS QR</th>
+                                    <th style="width: 8%;">% Digital</th>
+                                </tr>
+                            </thead>
+                            <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload report file to view office-level data.</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -321,10 +387,40 @@
         </div>
     </div>
 
+    <!-- Digital Drilldown Modal -->
+    <div id="digitalDrilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
+                <div><h3 id="digitalModalTitle" class="font-bold text-lg">Digital Transactions Office List</h3><p id="digitalModalSubtitle" class="text-xs text-purple-200">Office-wise digital performance</p></div>
+                <div class="flex items-center gap-3">
+                    <button onclick="exportDigitalModalToExcel()" class="bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📥 Excel</button>
+                    <button onclick="closeModal('digitalDrilldownModal')" class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow overflow-x-auto">
+                <table class="nil-table" id="tableDigitalModalOffices">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 15%;">Office ID</th>
+                            <th style="width: 25%; text-align: left;">Office Name</th>
+                            <th style="width: 8%;">Class</th>
+                            <th style="width: 12%;">Cash (Cnt)</th>
+                            <th style="width: 12%;">DQR Scan (Cnt)</th>
+                            <th style="width: 13%;">SBIPOS BHARAT QR</th>
+                            <th style="width: 10%;">% Digital</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div id="pliDrilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
             <div class="report-header px-6 py-4 flex justify-between items-center">
-                <div><h3 id="pliModalTitle" class="font-bold text-lg">PLI Office Details List</h3><p id="pliModalSubtitle" class="text-xs text-purple-200">Branch Office list with PLI Transaction status</p></div>
+                <div><h3 id="pliModalTitle" class="font-bold text-lg">PLI Office Details List</h3><p id="pliModalSubtitle" class="text-xs text-purple-200">Branch Office list with PLI Transaction status[cite: 1]</p></div>
                 <div class="flex items-center gap-3">
                     <button onclick="exportPliModalToExcel()" class="bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📥 Excel</button>
                     <button onclick="closeModal('pliDrilldownModal')" class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
@@ -386,6 +482,7 @@
 
         let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
         let pliRawData = [], currentPliProcessedList = [], currentNilPliOfficesList = [], currentAllPliOfficesList = [], digitalRawData = [], pliModalExportData = [], idpCredentialsMap = {}, generatedReportsLog = [], loggedInAdminId = "";
+        let digitalModalExportData = [];
 
         const divClassMap = {
             "INDORE CITY": "div-bg-indore-city", "INDORE MFL": "div-bg-indore-mfl", "KHANDWA": "div-bg-khandwa",
@@ -488,12 +585,20 @@
         }
 
         function initDropdowns() {
+            const divs = [...new Set(Object.values(masterOfficesMap).map(o => o.division))].filter(Boolean).sort();
             const populate = (id, items) => {
                 const el = document.getElementById(id);
+                el.innerHTML = `<option value="All">All Divisions</option>`;
                 items.forEach(v => { const opt = document.createElement('option'); opt.value = opt.textContent = v; el.appendChild(opt); });
             };
-            populate('filterDivision', [...new Set(Object.values(masterOfficesMap).map(o => o.division))].filter(Boolean).sort());
-            populate('filterCategory', [...new Set(Object.values(serviceMapping))].filter(Boolean).sort());
+            populate('filterDivision', divs);
+            populate('officeFilterDiv', divs);
+
+            const catEl = document.getElementById('filterCategory');
+            catEl.innerHTML = `<option value="All">All Categories</option>`;
+            [...new Set(Object.values(serviceMapping))].filter(Boolean).sort().forEach(v => {
+                const opt = document.createElement('option'); opt.value = opt.textContent = v; catEl.appendChild(opt);
+            });
         }
 
         function updateDashboard() {
@@ -922,7 +1027,7 @@
                     [`Low Booking (${config.lowMin}-${config.lowMax})`]: gLow,
                     [`Good Booking (>${config.goodMin - 1})`]: gGood,
                     "% Nil": gTotOff ? `${Math.round((gNil / gTotOff) * 100)}%` : "0%",
-                    "% Good": gTotOff ? `${Math.round((gGood / gTotOff) * 100)}%` : "0%"
+                    "% Good": gTotOff ? `${Math.round((dGood / gTotOff) * 100)}%` : "0%"
                 });
 
                 return XLSX.utils.json_to_sheet(rows);
@@ -937,7 +1042,7 @@
         }
 
         // ==========================================
-        // PLI / RPLI NIL TRANSACTION REPORT LOGIC (Updated with Low Txn 1-10 & 3-Sheet Excel)
+        // PLI / RPLI NIL TRANSACTION REPORT LOGIC
         // ==========================================
         document.getElementById('pliFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
@@ -1195,11 +1300,9 @@
             if (!currentPliProcessedList || !currentPliProcessedList.length) return alert("No PLI report data available. Please upload raw file first.");
             const wb = XLSX.utils.book_new();
 
-            // Sheet 1: Summary Table
             const ws1 = XLSX.utils.table_to_sheet(document.getElementById('tablePliSummary'));
             XLSX.utils.book_append_sheet(wb, ws1, "PLI_Summary_Report");
 
-            // Sheet 2: Nil Offices List (0 Txn)
             const excelRows2 = currentNilPliOfficesList.length > 0 ? currentNilPliOfficesList.map((o, idx) => ({
                 "S.No": idx + 1,
                 "Office ID": o.officeId,
@@ -1211,7 +1314,6 @@
             const ws2 = XLSX.utils.json_to_sheet(excelRows2);
             XLSX.utils.book_append_sheet(wb, ws2, "Nil_PLI_Offices_List");
 
-            // Sheet 3: Complete BO List with exact Transactions
             const excelRows3 = currentAllPliOfficesList.length > 0 ? currentAllPliOfficesList.map((o, idx) => ({
                 "S.No": idx + 1,
                 "Office ID": o.officeId,
@@ -1231,6 +1333,450 @@
 
         const exportPliPDF = () => exportSingleTableToPDF('tablePliSummary', 'PLI Nil Transaction Report');
 
+        // ==========================================
+        // DIGITAL TXN REPORT LOGIC (Grouped by Division, % Sorted, Drilldown, and Filter Explorer)
+        // ==========================================
+        document.getElementById('digitalFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const statusEl = document.getElementById('digitalUploadStatus');
+            statusEl.innerHTML = `🔄 Reading File...`;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const sheet = XLSX.read(evt.target.result, {type: 'array', cellDates: true, dense: true}).Sheets[XLSX.read(evt.target.result, {type: 'array'}).SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+                    let hIdx = 0;
+                    for (let i = 0; i < Math.min(10, rows.length); i++) {
+                        const str = rows[i].map(c => String(c).trim().toLowerCase());
+                        if (str.includes('office id') || str.includes('office name')) { hIdx = i; break; }
+                    }
+                    const headers = rows[hIdx].map(c => String(c).trim().toLowerCase());
+                    const idIdx = Math.max(headers.indexOf('office id'), 0), nameIdx = Math.max(headers.indexOf('office name'), 1);
+                    const cashIdx = headers.indexOf('cash (cnt)') > -1 ? headers.indexOf('cash (cnt)') : 3;
+                    const dqrIdx = headers.indexOf('dqr scan (cnt)') > -1 ? headers.indexOf('dqr scan (cnt)') : 15;
+                    const sbiposIdx = headers.indexOf('sbipos bharatqr (cnt)') > -1 ? headers.indexOf('sbipos bharatqr (cnt)') : 21;
+
+                    digitalRawData = [];
+                    for (let i = hIdx + 1; i < rows.length; i++) {
+                        const r = rows[i]; if (!r || !r.length) continue;
+                        const oName = String(r[nameIdx] || "").trim();
+                        if (!oName || oName.toUpperCase().includes("SUMMARY")) continue;
+                        digitalRawData.push({ officeId: String(r[idIdx] || "").trim().replace(/\.0$/, ''), officeName: oName, cash: Number(r[cashIdx]) || 0, dqr: Number(r[dqrIdx]) || 0, sbiposQr: Number(r[sbiposIdx]) || 0 });
+                    }
+                    statusEl.innerHTML = `✅ Uploaded! (${digitalRawData.length} records parsed)`;
+                    processDigitalReport();
+                    renderOfficeDigitalTable();
+                } catch (err) { statusEl.innerHTML = `❌ Error reading file.`; }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function getDigitalColorStyle(pctVal) {
+            if (pctVal < 60) return "background-color: #f8cbad; color: #a61c1c;";
+            if (pctVal >= 60 && pctVal < 75) return "background-color: #ffeb9c; color: #835c00;";
+            if (pctVal >= 75 && pctVal < 85) return "background-color: #c6efce; color: #006100;";
+            return "background-color: #a9d18e; color: #003800;";
+        }
+
+        function processDigitalReport() {
+            if (!digitalRawData.length) return;
+            const isExBo = document.getElementById('digitalModeSelect').value === 'excluding_bo';
+            const viewType = document.getElementById('digitalViewType').value;
+            
+            document.getElementById('digitalReportTitle').textContent = `Digital Booking Txn Status (${isExBo ? 'Excluding BO' : 'Including BO'})`;
+            document.getElementById('digitalReportDate').textContent = `Report Date: ${getReportPrevDate()}`;
+
+            const thead = document.querySelector('#tableDigitalSummary thead');
+            const tbody = document.querySelector('#tableDigitalSummary tbody');
+            const tfoot = document.querySelector('#tableDigitalSummary tfoot');
+            tbody.innerHTML = ""; tfoot.innerHTML = "";
+
+            if (viewType === 'division') {
+                thead.innerHTML = `
+                    <tr>
+                        <th style="width: 35%;">Division Name</th>
+                        <th style="width: 15%;">Cash (Cnt)</th>
+                        <th style="width: 15%;">DQR Scan (Cnt)</th>
+                        <th style="width: 20%;">SBIPOS BHARAT QR</th>
+                        <th style="width: 15%;">% of Digital Txn</th>
+                    </tr>
+                `;
+
+                const divMap = {};
+                digitalRawData.forEach(item => {
+                    const master = masterOfficesMap[item.officeId];
+                    if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") || (isExBo && master.class === "BO")) return;
+                    const div = master.division || "OTHER DIVISION";
+                    if (!divMap[div]) divMap[div] = { name: div, cash: 0, dqr: 0, sbiposQr: 0 };
+                    divMap[div].cash += item.cash;
+                    divMap[div].dqr += item.dqr;
+                    divMap[div].sbiposQr += item.sbiposQr;
+                });
+
+                const rowsArray = Object.values(divMap).map(r => {
+                    const totalDig = r.dqr + r.sbiposQr;
+                    const totalTxn = r.cash + totalDig;
+                    return { ...r, pct: totalTxn > 0 ? (totalDig / totalTxn) * 100 : 0 };
+                });
+
+                rowsArray.sort((a, b) => b.pct - a.pct);
+
+                let totC = 0, totD = 0, totS = 0;
+                rowsArray.forEach(r => {
+                    totC += r.cash; totD += r.dqr; totS += r.sbiposQr;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="font-bold text-left px-3 clickable-cell" onclick="openDigitalOfficeModal('${r.name}', 'ALL')">${r.name}</td>
+                        <td class="text-right px-3">${r.cash.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3">${r.dqr.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3">${r.sbiposQr.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3 font-bold" style="${getDigitalColorStyle(r.pct)}">${r.pct.toFixed(2)}%</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                const gDig = totD + totS, gTxn = totC + gDig;
+                const gPct = gTxn > 0 ? (gDig / gTxn) * 100 : 0;
+                tfoot.innerHTML = `
+                    <tr class="row-grand-total">
+                        <td class="text-left px-3">Grand Total</td>
+                        <td class="text-right px-3">${totC.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3">${totD.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3">${totS.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3 font-bold" style="${getDigitalColorStyle(gPct)}">${gPct.toFixed(2)}%</td>
+                    </tr>
+                `;
+
+            } else {
+                // Grouped by Division, then Sub-Divisions inside Division sorted by %
+                thead.innerHTML = `
+                    <tr>
+                        <th style="width: 20%;">Division</th>
+                        <th style="width: 25%;">Sub-Division</th>
+                        <th style="width: 13%;">Cash (Cnt)</th>
+                        <th style="width: 14%;">DQR Scan (Cnt)</th>
+                        <th style="width: 15%;">SBIPOS BHARAT QR</th>
+                        <th style="width: 13%;">% of Digital Txn</th>
+                    </tr>
+                `;
+
+                const divGroups = {};
+                digitalRawData.forEach(item => {
+                    const master = masterOfficesMap[item.officeId];
+                    if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") || (isExBo && master.class === "BO")) return;
+                    const div = master.division || "OTHER DIVISION";
+                    const sd = master.sd || "OTHER SD";
+
+                    if (!divGroups[div]) divGroups[div] = { division: div, subDivs: {}, cash: 0, dqr: 0, sbiposQr: 0 };
+                    if (!divGroups[div].subDivs[sd]) divGroups[div].subDivs[sd] = { name: sd, division: div, cash: 0, dqr: 0, sbiposQr: 0 };
+
+                    divGroups[div].cash += item.cash;
+                    divGroups[div].dqr += item.dqr;
+                    divGroups[div].sbiposQr += item.sbiposQr;
+
+                    divGroups[div].subDivs[sd].cash += item.cash;
+                    divGroups[div].subDivs[sd].dqr += item.dqr;
+                    divGroups[div].subDivs[sd].sbiposQr += item.sbiposQr;
+                });
+
+                // Calculate % for division and sub-divisions
+                const divList = Object.values(divGroups).map(d => {
+                    const totalDig = d.dqr + d.sbiposQr, totalTxn = d.cash + totalDig;
+                    d.pct = totalTxn > 0 ? (totalDig / totalTxn) * 100 : 0;
+
+                    d.subList = Object.values(d.subDivs).map(s => {
+                        const sDig = s.dqr + s.sbiposQr, sTxn = s.cash + sDig;
+                        return { ...s, pct: sTxn > 0 ? (sDig / sTxn) * 100 : 0 };
+                    });
+
+                    // Sort sub-divisions within division by % highest to lowest
+                    d.subList.sort((a, b) => b.pct - a.pct);
+                    return d;
+                });
+
+                // Sort Divisions by overall % highest to lowest
+                divList.sort((a, b) => b.pct - a.pct);
+
+                let totC = 0, totD = 0, totS = 0;
+
+                divList.forEach(d => {
+                    totC += d.cash; totD += d.dqr; totS += d.sbiposQr;
+                    const cssClass = divClassMap[d.division] || "div-bg-indore-city";
+
+                    d.subList.forEach((s, idx) => {
+                        const tr = document.createElement('tr');
+                        const divCell = idx === 0 ? `<td rowspan="${d.subList.length}" class="${cssClass} align-middle clickable-cell" onclick="openDigitalOfficeModal('${d.division}', 'ALL')">${d.division}</td>` : '';
+                        tr.innerHTML = `
+                            ${divCell}
+                            <td class="text-left font-semibold px-3 clickable-cell" onclick="openDigitalOfficeModal('${d.division}', '${s.name}')">${s.name}</td>
+                            <td class="text-right px-3">${s.cash.toLocaleString('en-IN')}</td>
+                            <td class="text-right px-3">${s.dqr.toLocaleString('en-IN')}</td>
+                            <td class="text-right px-3">${s.sbiposQr.toLocaleString('en-IN')}</td>
+                            <td class="text-right px-3 font-bold" style="${getDigitalColorStyle(s.pct)}">${s.pct.toFixed(2)}%</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // Division Sub-Total Row
+                    const dTr = document.createElement('tr');
+                    dTr.className = "row-div-total";
+                    dTr.innerHTML = `
+                        <td colspan="2" class="text-left px-3 font-bold">${d.division} Total</td>
+                        <td class="text-right px-3">${d.cash.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3">${d.dqr.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3">${d.sbiposQr.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3 font-bold" style="${getDigitalColorStyle(d.pct)}">${d.pct.toFixed(2)}%</td>
+                    `;
+                    tbody.appendChild(dTr);
+                });
+
+                const gDig = totD + totS, gTxn = totC + gDig;
+                const gPct = gTxn > 0 ? (gDig / gTxn) * 100 : 0;
+
+                tfoot.innerHTML = `
+                    <tr class="row-grand-total">
+                        <td colspan="2" class="text-left px-3">Grand Total</td>
+                        <td class="text-right px-3">${totC.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3">${totD.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3">${totS.toLocaleString('en-IN')}</td>
+                        <td class="text-right px-3 font-bold" style="${getDigitalColorStyle(gPct)}">${gPct.toFixed(2)}%</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function openDigitalOfficeModal(divName, sdName) {
+            const isExBo = document.getElementById('digitalModeSelect').value === 'excluding_bo';
+            const targetOffices = [];
+
+            digitalRawData.forEach(item => {
+                const master = masterOfficesMap[item.officeId];
+                if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") || (isExBo && master.class === "BO")) return;
+                if (divName !== "ALL" && master.division !== divName) return;
+                if (sdName !== "ALL" && master.sd !== sdName) return;
+
+                const totDig = item.dqr + item.sbiposQr;
+                const totTxn = item.cash + totDig;
+                const pct = totTxn > 0 ? (totDig / totTxn) * 100 : 0;
+
+                targetOffices.push({
+                    officeId: item.officeId,
+                    officeName: master.name,
+                    class: master.class,
+                    sd: master.sd,
+                    division: master.division,
+                    cash: item.cash,
+                    dqr: item.dqr,
+                    sbiposQr: item.sbiposQr,
+                    pct: pct
+                });
+            });
+
+            if (!targetOffices.length) return alert(`No post offices found for ${divName} / ${sdName}.`);
+
+            targetOffices.sort((a, b) => b.pct - a.pct);
+
+            digitalModalExportData = targetOffices.map((o, idx) => ({
+                "S.No": idx + 1,
+                "Office ID": o.officeId,
+                "Office Name": o.officeName,
+                "Class": o.class,
+                "Sub-Division": o.sd,
+                "Division": o.division,
+                "Cash": o.cash,
+                "DQR Scan": o.dqr,
+                "SBIPOS Bharat QR": o.sbiposQr,
+                "% Digital Txn": `${o.pct.toFixed(2)}%`
+            }));
+
+            document.getElementById('digitalModalTitle').textContent = `Office List: ${sdName === 'ALL' ? divName : `${sdName} (${divName})`}`;
+            document.getElementById('digitalModalSubtitle').textContent = `Total ${targetOffices.length} offices found.`;
+
+            document.querySelector('#tableDigitalModalOffices tbody').innerHTML = targetOffices.map((o, idx) => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="font-bold">${idx + 1}</td>
+                    <td>${o.officeId}</td>
+                    <td class="text-left font-semibold">${o.officeName}</td>
+                    <td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${o.class}</span></td>
+                    <td class="text-right">${o.cash}</td>
+                    <td class="text-right">${o.dqr}</td>
+                    <td class="text-right">${o.sbiposQr}</td>
+                    <td class="text-right font-bold" style="${getDigitalColorStyle(o.pct)}">${o.pct.toFixed(2)}%</td>
+                </tr>
+            `).join('');
+
+            openModal('digitalDrilldownModal');
+            logGeneratedReport(`Digital Offices Modal (${sdName === 'ALL' ? divName : sdName})`, () => exportDigitalModalToExcel());
+        }
+
+        function exportDigitalModalToExcel() {
+            XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(digitalModalExportData), "Digital_Offices"), "Digital_Office_Details.xlsx");
+        }
+
+        function renderOfficeDigitalTable() {
+            if (!digitalRawData || !digitalRawData.length) return;
+            const selDiv = document.getElementById('officeFilterDiv').value;
+            const selClass = document.getElementById('officeFilterClass').value;
+
+            const list = [];
+            digitalRawData.forEach(item => {
+                const master = masterOfficesMap[item.officeId];
+                if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO")) return;
+                if (selDiv !== "All" && master.division !== selDiv) return;
+                if (selClass !== "All" && master.class !== selClass) return;
+
+                const totDig = item.dqr + item.sbiposQr;
+                const totTxn = item.cash + totDig;
+                const pct = totTxn > 0 ? (totDig / totTxn) * 100 : 0;
+
+                list.push({
+                    officeId: item.officeId,
+                    officeName: master.name,
+                    class: master.class,
+                    sd: master.sd,
+                    division: master.division,
+                    cash: item.cash,
+                    dqr: item.dqr,
+                    sbiposQr: item.sbiposQr,
+                    pct: pct
+                });
+            });
+
+            list.sort((a, b) => b.pct - a.pct);
+
+            const tbody = document.querySelector('#tableOfficeDigital tbody');
+            tbody.innerHTML = list.length === 0 ? `<tr><td colspan="10" class="py-8 text-center text-slate-400">No matching offices found.</td></tr>` : 
+                list.map((o, idx) => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td>${idx + 1}</td>
+                    <td class="font-mono text-purple-950 font-bold">${o.officeId}</td>
+                    <td class="text-left font-semibold">${o.officeName}</td>
+                    <td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${o.class}</span></td>
+                    <td>${o.sd}</td>
+                    <td>${o.division}</td>
+                    <td class="text-right">${o.cash.toLocaleString('en-IN')}</td>
+                    <td class="text-right">${o.dqr.toLocaleString('en-IN')}</td>
+                    <td class="text-right">${o.sbiposQr.toLocaleString('en-IN')}</td>
+                    <td class="text-right font-bold" style="${getDigitalColorStyle(o.pct)}">${o.pct.toFixed(2)}%</td>
+                </tr>
+            `).join('');
+        }
+
+        function exportOfficeDigitalExcel() {
+            const rows = [];
+            document.querySelectorAll('#tableOfficeDigital tbody tr').forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                if (tds.length === 10) {
+                    rows.push({
+                        "#": tds[0].innerText,
+                        "Office ID": tds[1].innerText,
+                        "Office Name": tds[2].innerText,
+                        "Class": tds[3].innerText,
+                        "Sub-Division": tds[4].innerText,
+                        "Division": tds[5].innerText,
+                        "Cash": tds[6].innerText,
+                        "DQR Scan": tds[7].innerText,
+                        "SBIPOS Bharat QR": tds[8].innerText,
+                        "% Digital": tds[9].innerText
+                    });
+                }
+            });
+            if (!rows.length) return alert("No office data to export.");
+            XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(rows), "Filtered_Offices"), "Office_Digital_Transactions.xlsx");
+        }
+
+        function exportDigitalMultiSheetExcel() {
+            if (!digitalRawData.length) return alert("Please upload Booking Paymentwise Report file first.");
+            const isExBo = document.getElementById('digitalModeSelect').value === 'excluding_bo';
+            const wb = XLSX.utils.book_new();
+
+            // 1. Division Sheet
+            const divMap = {};
+            digitalRawData.forEach(item => {
+                const master = masterOfficesMap[item.officeId];
+                if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") || (isExBo && master.class === "BO")) return;
+                const div = master.division || "OTHER DIVISION";
+                if (!divMap[div]) divMap[div] = { "Division": div, "Cash (Cnt)": 0, "DQR Scan (Cnt)": 0, "SBIPOS BHARAT QR (Cnt)": 0 };
+                divMap[div]["Cash (Cnt)"] += item.cash;
+                divMap[div]["DQR Scan (Cnt)"] += item.dqr;
+                divMap[div]["SBIPOS BHARAT QR (Cnt)"] += item.sbiposQr;
+            });
+            const divRows = Object.values(divMap).map(d => {
+                const dig = d["DQR Scan (Cnt)"] + d["SBIPOS BHARAT QR (Cnt)"], tot = d["Cash (Cnt)"] + dig;
+                return { ...d, "% Digital Txn": tot > 0 ? Number(((dig / tot) * 100).toFixed(2)) : 0 };
+            }).sort((a, b) => b["% Digital Txn"] - a["% Digital Txn"]);
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(divRows), "Division_View");
+
+            // 2. SubDivision Sheet Grouped by Division
+            const divGroups = {};
+            digitalRawData.forEach(item => {
+                const master = masterOfficesMap[item.officeId];
+                if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") || (isExBo && master.class === "BO")) return;
+                const div = master.division || "OTHER DIVISION", sd = master.sd || "OTHER SD";
+                if (!divGroups[div]) divGroups[div] = { div, sds: {}, cash: 0, dqr: 0, sbiposQr: 0 };
+                if (!divGroups[div].sds[sd]) divGroups[div].sds[sd] = { division: div, sd, cash: 0, dqr: 0, sbiposQr: 0 };
+                divGroups[div].cash += item.cash; divGroups[div].dqr += item.dqr; divGroups[div].sbiposQr += item.sbiposQr;
+                divGroups[div].sds[sd].cash += item.cash; divGroups[div].sds[sd].dqr += item.dqr; divGroups[div].sds[sd].sbiposQr += item.sbiposQr;
+            });
+
+            const sdExcelRows = [];
+            const divList = Object.values(divGroups).map(d => {
+                const dig = d.dqr + d.sbiposQr, tot = d.cash + dig;
+                d.pct = tot > 0 ? (dig / tot) * 100 : 0;
+                d.subList = Object.values(d.sds).map(s => {
+                    const sDig = s.dqr + s.sbiposQr, sTot = s.cash + sDig;
+                    return { ...s, pct: sTot > 0 ? (sDig / sTot) * 100 : 0 };
+                }).sort((a, b) => b.pct - a.pct);
+                return d;
+            }).sort((a, b) => b.pct - a.pct);
+
+            divList.forEach(d => {
+                d.subList.forEach(s => {
+                    sdExcelRows.push({
+                        "Division": s.division,
+                        "Sub-Division": s.sd,
+                        "Cash (Cnt)": s.cash,
+                        "DQR Scan (Cnt)": s.dqr,
+                        "SBIPOS BHARAT QR (Cnt)": s.sbiposQr,
+                        "% Digital Txn": Number(s.pct.toFixed(2))
+                    });
+                });
+                sdExcelRows.push({
+                    "Division": `${d.div} Total`,
+                    "Sub-Division": "",
+                    "Cash (Cnt)": d.cash,
+                    "DQR Scan (Cnt)": d.dqr,
+                    "SBIPOS BHARAT QR (Cnt)": d.sbiposQr,
+                    "% Digital Txn": Number(d.pct.toFixed(2))
+                });
+            });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sdExcelRows), "SubDivision_View");
+
+            // 3. Complete Detailed Office Sheet
+            const officeRows = digitalRawData.map((item, idx) => {
+                const master = masterOfficesMap[item.officeId];
+                if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") || (isExBo && master.class === "BO")) return null;
+                const dig = item.dqr + item.sbiposQr, tot = item.cash + dig;
+                return {
+                    "S.No": idx + 1,
+                    "Office ID": item.officeId,
+                    "Office Name": master.name,
+                    "Class": master.class,
+                    "Sub-Division": master.sd,
+                    "Division": master.division,
+                    "Cash (Cnt)": item.cash,
+                    "DQR Scan (Cnt)": item.dqr,
+                    "SBIPOS BHARAT QR (Cnt)": item.sbiposQr,
+                    "% Digital Txn": tot > 0 ? Number(((dig / tot) * 100).toFixed(2)) : 0
+                };
+            }).filter(Boolean);
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(officeRows), "Office_Detailed_View");
+
+            XLSX.writeFile(wb, "Digital_Booking_Txn_Status_3_Sheets.xlsx");
+            logGeneratedReport("Digital Booking Txn Report (3 Sheets Excel)", () => exportDigitalMultiSheetExcel());
+        }
+
+        // Top/Bottom 10 & Global Exports
         function renderTopBottom10(offices) {
             const sorted = [...offices].sort((a, b) => b.articles - a.articles);
             [['tableTop10', sorted.slice(0, 10), 'text-[#0B6623]'], ['tableBottom10', [...sorted].reverse().slice(0, 10), 'text-[#8B0000]']].forEach(([id, list, color]) => {
@@ -1298,73 +1844,6 @@
             logGeneratedReport(titleText + " (PDF)", () => exportSingleTableToPDF(tableId, titleText));
         }
         const exportAllToPDF = () => exportSingleTableToPDF('tableDivisionSummary', 'Summary Report');
-
-        // Digital Module Logic
-        document.getElementById('digitalFileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0]; if (!file) return;
-            const statusEl = document.getElementById('digitalUploadStatus');
-            statusEl.innerHTML = `🔄 Reading File...`;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const sheet = XLSX.read(evt.target.result, {type: 'array', cellDates: true, dense: true}).Sheets[XLSX.read(evt.target.result, {type: 'array'}).SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
-                    let hIdx = 0;
-                    for (let i = 0; i < Math.min(10, rows.length); i++) {
-                        const str = rows[i].map(c => String(c).trim().toLowerCase());
-                        if (str.includes('office id') || str.includes('office name')) { hIdx = i; break; }
-                    }
-                    const headers = rows[hIdx].map(c => String(c).trim().toLowerCase());
-                    const idIdx = Math.max(headers.indexOf('office id'), 0), nameIdx = Math.max(headers.indexOf('office name'), 1);
-                    const cashIdx = headers.indexOf('cash (cnt)') > -1 ? headers.indexOf('cash (cnt)') : 3;
-                    const dqrIdx = headers.indexOf('dqr scan (cnt)') > -1 ? headers.indexOf('dqr scan (cnt)') : 15;
-                    const sbiposIdx = headers.indexOf('sbipos bharatqr (cnt)') > -1 ? headers.indexOf('sbipos bharatqr (cnt)') : 21;
-
-                    digitalRawData = [];
-                    for (let i = hIdx + 1; i < rows.length; i++) {
-                        const r = rows[i]; if (!r || !r.length) continue;
-                        const oName = String(r[nameIdx] || "").trim();
-                        if (!oName || oName.toUpperCase().includes("SUMMARY")) continue;
-                        digitalRawData.push({ officeId: String(r[idIdx] || "").trim().replace(/\.0$/, ''), officeName: oName, cash: Number(r[cashIdx]) || 0, dqr: Number(r[dqrIdx]) || 0, sbiposQr: Number(r[sbiposIdx]) || 0 });
-                    }
-                    statusEl.innerHTML = `✅ Uploaded! (${digitalRawData.length} records)`;
-                    processDigitalReport();
-                } catch (err) { statusEl.innerHTML = `❌ Error reading file.`; }
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        function processDigitalReport() {
-            if (!digitalRawData.length) return;
-            const isExBo = document.getElementById('digitalModeSelect').value === 'excluding_bo', isDiv = document.getElementById('digitalViewType').value === 'division';
-            document.getElementById('digitalReportTitle').textContent = `Digital Booking Txn Status (${isExBo ? 'Excluding BO' : 'Including BO'})`;
-            document.getElementById('digitalHeaderGrouping').textContent = isDiv ? 'Division' : 'Sub-Division';
-            document.getElementById('digitalReportDate').textContent = `Report Date: ${getReportPrevDate()}`;
-
-            const groupingMap = {};
-            digitalRawData.forEach(item => {
-                const master = masterOfficesMap[item.officeId];
-                if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") || (isExBo && master.class === "BO")) return;
-                const gKey = (isDiv ? master.division : master.sd) || "OTHER";
-                const g = groupingMap[gKey] = groupingMap[gKey] || { name: gKey, cash: 0, dqr: 0, sbiposQr: 0 };
-                g.cash += item.cash; g.dqr += item.dqr; g.sbiposQr += item.sbiposQr;
-            });
-
-            const rowsArray = Object.values(groupingMap).map(r => ({ ...r, pct: (r.cash + r.dqr + r.sbiposQr) > 0 ? ((r.dqr + r.sbiposQr)/(r.cash + r.dqr + r.sbiposQr))*100 : 0 }));
-            rowsArray.sort(isDiv ? (a, b) => b.pct - a.pct : (a, b) => a.name.localeCompare(b.name));
-
-            let totC = 0, totD = 0, totS = 0;
-            document.querySelector('#tableDigitalSummary tbody').innerHTML = rowsArray.map(r => {
-                totC += r.cash; totD += r.dqr; totS += r.sbiposQr;
-                const bg = r.pct < 60 ? "background-color: #f8cbad; color: #a61c1c;" : r.pct < 75 ? "background-color: #ffeb9c; color: #835c00;" : r.pct < 85 ? "background-color: #c6efce; color: #006100;" : "background-color: #a9d18e; color: #003800;";
-                return `<tr><td class="font-bold text-left px-3">${r.name}</td><td class="text-right px-3">${r.cash.toLocaleString('en-IN')}</td><td class="text-right px-3">${r.dqr.toLocaleString('en-IN')}</td><td class="text-right px-3">${r.sbiposQr.toLocaleString('en-IN')}</td><td class="text-right px-3 font-bold" style="${bg}">${r.pct.toFixed(2)}</td></tr>`;
-            }).join('');
-
-            const gPct = (totC + totD + totS) > 0 ? ((totD + totS)/(totC + totD + totS))*100 : 0;
-            document.querySelector('#tableDigitalSummary tfoot').innerHTML = `<tr class="row-grand-total"><td class="text-left px-3">Total</td><td class="text-right px-3">${totC.toLocaleString('en-IN')}</td><td class="text-right px-3">${totD.toLocaleString('en-IN')}</td><td class="text-right px-3">${totS.toLocaleString('en-IN')}</td><td class="text-right px-3 font-bold" style="background-color: #f8cbad; color: #a61c1c;">${gPct.toFixed(2)}</td></tr>`;
-        }
-
-        const exportDigitalExcel = () => exportTableToExcel('tableDigitalSummary', 'Digital_Booking_Txn_Status.xlsx');
 
         // Raw File Parsing
         document.getElementById('rawFileInput').addEventListener('change', function(e) {
