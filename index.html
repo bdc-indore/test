@@ -2375,7 +2375,7 @@
                     if (targetDivision !== 'All' && div !== targetDivision) return;
 
                     if (!divGroups[div]) divGroups[div] = { div, sds: {}, cash: 0, dqr: 0, sbiposQr: 0 };
-                    if (!divGroups[div].sds[sd]) divGroups[div].subDivs[sd] = { division: div, sd, cash: 0, dqr: 0, sbiposQr: 0 };
+                    if (!divGroups[div].sds[sd]) divGroups[div].sds[sd] = { division: div, sd, cash: 0, dqr: 0, sbiposQr: 0 };
                     divGroups[div].cash += item.cash; divGroups[div].dqr += item.dqr; divGroups[div].sbiposQr += item.sbiposQr;
                     divGroups[div].sds[sd].cash += item.cash; divGroups[div].sds[sd].dqr += item.dqr; divGroups[div].sds[sd].sbiposQr += item.sbiposQr;
                 });
