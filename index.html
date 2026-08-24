@@ -387,7 +387,7 @@ function cleanUnitId(val){
 }
 
 function normalizeDivName(divStr){
-    if(!divStr) return "UNKNOWN DIVISION";
+    if(!divStr) return "Not IN Alloted List";
     let d = String(divStr).trim().toUpperCase().replace(/\s+DIVISION$/,"").trim();
     if(d.includes("MFL")) return "INDORE MFL";
     if(d.includes("CITY")) return "INDORE CITY";
@@ -567,7 +567,7 @@ function processPmegpData(){
         let phase = master ? master.phase : "1st";
         let inspName = rawItem.inspBy || "Unassigned";
 
-        if(divName === "UNKNOWN DIVISION" && rawItem.fileDiv){
+        if(divName === "Not in QC List" && rawItem.fileDiv){
             divName = normalizeDivName(rawItem.fileDiv);
         }
 
