@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking & Txn Calculator - Department of Posts</title>
+    <title>Booking, PLI, Digital & PMEGP Dashboard - Department of Posts</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -38,8 +38,8 @@
                 </div>
                 <div>
                     <span class="text-[11px] font-bold tracking-widest text-purple-200 uppercase bg-purple-950/60 px-2.5 py-0.5 rounded-md border border-purple-800">DEPARTMENT OF POSTS</span>
-                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white mt-1">Booking & Txn Calculator</h1>
-                    <p class="text-xs md:text-sm text-purple-200 mt-0.5 font-medium">for Regional/Divisional Monitoring</p>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white mt-1">Operations & Monitoring Dashboard</h1>
+                    <p class="text-xs md:text-sm text-purple-200 mt-0.5 font-medium">Booking, PLI, Digital & PMEGP Calculator</p>
                 </div>
             </div>
             <div class="flex items-center flex-wrap gap-3">
@@ -57,9 +57,10 @@
 
     <nav class="bg-white border-b border-slate-200 shadow-sm py-3 px-4 md:px-8">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
-            <button onclick="switchModule('booking')" id="btnNavBooking" class="bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border-b-2 border-purple-600"><span>📊</span> Nil Article Booking Calculator</button>
+            <button onclick="switchModule('booking')" id="btnNavBooking" class="bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border-b-2 border-purple-600"><span>📊</span> Nil Article Booking</button>
             <button onclick="switchModule('pli')" id="btnNavPli" class="bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200"><span>🛡️</span> PLI Txn Calculator</button>
             <button onclick="switchModule('digital')" id="btnNavDigital" class="bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200"><span>💳</span> Digital Txn Report</button>
+            <button onclick="switchModule('pmegp')" id="btnNavPmegp" class="bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer border border-slate-200"><span>🏢</span> PMEGP Monitoring</button>
         </div>
     </nav>
 
@@ -93,7 +94,7 @@
                     <p id="kpiArticles" class="text-3xl font-extrabold mt-2 text-purple-950">0</p>
                 </div>
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-600">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Postage (Rupye)</p>
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Postage (₹)</p>
                     <p id="kpiPostage" class="text-3xl font-extrabold mt-2 text-emerald-700">0.00</p>
                 </div>
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600">
@@ -241,7 +242,7 @@
             </div>
         </div>
 
-        <!-- MODULE 3: DIGITAL TXN REPORT (Updated with Dynamic 5-Sheet Excel Options) -->
+        <!-- MODULE 3: DIGITAL TXN REPORT -->
         <div id="moduleDigital" class="space-y-6 hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -249,7 +250,6 @@
                         <h3 class="font-extrabold text-lg flex items-center gap-2">💳 Digital Booking Txn Status Calculator</h3>
                         <p class="text-xs text-purple-200">Upload Booking Paymentwise Report to calculate Cash, DQR Scan, SBIPOS Bharat QR and % Digital Txn.</p>
                     </div>
-                    <!-- Global Top Level Region 5-Sheet Excel -->
                     <div class="flex items-center gap-2 flex-wrap">
                         <button onclick="exportDigitalFiveSheetExcel('All')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow cursor-pointer border border-emerald-500 flex items-center gap-1">📑 Complete Region (5 Sheets)</button>
                         <button onclick="exportSingleTableToPDF('tableDigitalSummary', 'Digital Booking Txn Status')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
@@ -277,7 +277,6 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic Action & Summary Bar with Context-Aware Export Buttons -->
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-2">
                         <div id="digitalUploadStatus" class="text-xs font-bold text-purple-950">⏳ Waiting for Booking Paymentwise Report upload...</div>
                         <div class="flex items-center gap-2 flex-wrap">
@@ -314,7 +313,7 @@
                 </div>
             </div>
 
-            <!-- Dedicated Post Office Digital Transaction View Card -->
+            <!-- Post Office Digital View -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div>
@@ -337,17 +336,13 @@
                         <div>
                             <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Select Office Class</label>
                             <select id="officeFilterClass" onchange="renderOfficeDigitalTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none focus:border-purple-800">
-                                <option value="All">All Classes</option>
-                                <option value="HO">HO</option>
-                                <option value="SO">SO</option>
-                                <option value="BO">BO</option>
+                                <option value="All">All Classes</option><option value="HO">HO</option><option value="SO">SO</option><option value="BO">BO</option>
                             </select>
                         </div>
                         <div class="flex items-end">
                             <button onclick="renderOfficeDigitalTable()" class="w-full bg-[#31103f] hover:bg-purple-950 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow transition cursor-pointer">Filter Offices</button>
                         </div>
                     </div>
-
                     <div class="overflow-x-auto">
                         <table class="nil-table" id="tableOfficeDigital">
                             <thead>
@@ -365,6 +360,108 @@
                                 </tr>
                             </thead>
                             <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload report file to view office-level data.</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 4: PMEGP MONITORING -->
+        <div id="modulePmegp" class="space-y-6 hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-extrabold text-lg flex items-center gap-2">🏢 PMEGP Physical Verification & Inspection Dashboard</h3>
+                        <p class="text-xs text-purple-200">Phase-wise unit inspection status cross-referenced with PMEGP Master Database.</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportPmegpExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel (All Views)</button>
+                        <button onclick="exportSingleTableToPDF('tablePmegpDivision', 'PMEGP Division Report')" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF Report</button>
+                        <button onclick="exportTableJPEG('pmegpTableContainer', 'PMEGP_Inspection_Report')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-5" id="pmegpTableContainer">
+                    <div class="bg-purple-50/60 p-4 rounded-xl border border-purple-200 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📤 Upload Inspection Excel/CSV File (With Unit ID & Insp By)</label>
+                            <input type="file" id="pmegpFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-900 file:text-white hover:file:bg-purple-950 cursor-pointer border border-purple-300 rounded-lg bg-white p-1"/>
+                        </div>
+                        <div class="text-right">
+                            <div id="pmegpUploadStatus" class="text-xs font-bold text-purple-950 bg-purple-200/80 p-2.5 rounded-xl border border-purple-300 inline-block">⏳ Syncing PMEGP Master...</div>
+                        </div>
+                    </div>
+
+                    <!-- Filter / Switch View Bar -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <label class="text-xs font-bold text-purple-950">Select Report View:</label>
+                            <div class="inline-flex rounded-lg border border-purple-300 p-0.5 bg-purple-50">
+                                <button onclick="switchPmegpView('division')" id="btnPmegpViewDiv" class="px-3 py-1.5 text-xs font-bold rounded-md bg-[#31103f] text-white shadow">Division Wise List</button>
+                                <button onclick="switchPmegpView('inspector')" id="btnPmegpViewInsp" class="px-3 py-1.5 text-xs font-bold rounded-md text-slate-700 hover:bg-purple-200/60">Inspected By List</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold text-slate-600">Filter Region:</label>
+                            <select id="pmegpFilterRegion" onchange="renderPmegpViews()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-slate-50 font-bold outline-none">
+                                <option value="All">All Regions</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- View 1: Division Wise List -->
+                    <div id="pmegpDivisionView" class="overflow-x-auto p-1">
+                        <div class="text-center mb-3">
+                            <h2 class="text-lg font-extrabold text-[#31103f]">PMEGP Division-Wise Phase Target vs Inspected Report</h2>
+                        </div>
+                        <table class="nil-table" id="tablePmegpDivision">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" style="width: 4%;">S.No.</th>
+                                    <th rowspan="2" style="width: 14%;">Name of Division</th>
+                                    <th rowspan="2" style="width: 10%;">Region</th>
+                                    <th colspan="2" style="background-color: #d9edf7;">1st Phase</th>
+                                    <th colspan="2" style="background-color: #e2efda;">2nd Phase</th>
+                                    <th colspan="2" style="background-color: #fce4d6;">3rd Phase</th>
+                                    <th colspan="2" style="background-color: #e1d5e7;">4th Phase</th>
+                                    <th colspan="2" style="background-color: #fff2cc;">Total Overall</th>
+                                    <th rowspan="2" style="width: 7%;">% Inspected</th>
+                                </tr>
+                                <tr>
+                                    <th style="background-color: #d9edf7;">Alloted</th>
+                                    <th style="background-color: #d9edf7;">Inspected</th>
+                                    <th style="background-color: #e2efda;">Alloted</th>
+                                    <th style="background-color: #e2efda;">Inspected</th>
+                                    <th style="background-color: #fce4d6;">Alloted</th>
+                                    <th style="background-color: #fce4d6;">Inspected</th>
+                                    <th style="background-color: #e1d5e7;">Alloted</th>
+                                    <th style="background-color: #e1d5e7;">Inspected</th>
+                                    <th style="background-color: #fff2cc;">Alloted</th>
+                                    <th style="background-color: #fff2cc;">Inspected</th>
+                                </tr>
+                            </thead>
+                            <tbody><tr><td colspan="14" class="py-8 text-center text-slate-400 font-medium">Please upload PMEGP inspected excel file.</td></tr></tbody>
+                            <tfoot></tfoot>
+                        </table>
+                    </div>
+
+                    <!-- View 2: Inspected By List -->
+                    <div id="pmegpInspectorView" class="overflow-x-auto p-1 hidden">
+                        <div class="text-center mb-3">
+                            <h2 class="text-lg font-extrabold text-[#31103f]">PMEGP Inspector Wise Performance & Total Units Inspected</h2>
+                        </div>
+                        <table class="nil-table" id="tablePmegpInspector">
+                            <thead>
+                                <tr>
+                                    <th style="width: 6%;">S.No.</th>
+                                    <th style="width: 25%; text-align: left;">Name of Division</th>
+                                    <th style="width: 15%;">Region</th>
+                                    <th style="width: 35%; text-align: left;">Inspected By (Inspector Name)</th>
+                                    <th style="width: 19%;">Total Units Inspected</th>
+                                </tr>
+                            </thead>
+                            <tbody><tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">Please upload PMEGP inspected excel file.</td></tr></tbody>
+                            <tfoot></tfoot>
                         </table>
                     </div>
                 </div>
@@ -392,14 +489,41 @@
         </div>
     </div>
 
-    <!-- Digital Drilldown Modal -->
+    <div id="pmegpDrilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
+                <div><h3 id="pmegpModalTitle" class="font-bold text-lg">PMEGP Unit Details List</h3><p id="pmegpModalSubtitle" class="text-xs text-purple-200">Inspected unit information</p></div>
+                <div class="flex items-center gap-3">
+                    <button onclick="exportPmegpModalToExcel()" class="bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📥 Excel</button>
+                    <button onclick="closeModal('pmegpDrilldownModal')" class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow overflow-x-auto">
+                <table class="nil-table" id="tablePmegpModalUnits">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 20%;">Unit ID (App ID)</th>
+                            <th style="width: 15%;">Division</th>
+                            <th style="width: 10%;">Region</th>
+                            <th style="width: 10%;">Phase</th>
+                            <th style="width: 20%;">Inspected By</th>
+                            <th style="width: 10%;">Date</th>
+                            <th style="width: 10%;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div id="digitalDrilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
             <div class="report-header px-6 py-4 flex justify-between items-center">
                 <div><h3 id="digitalModalTitle" class="font-bold text-lg">Digital Transactions Office List</h3><p id="digitalModalSubtitle" class="text-xs text-purple-200">Office-wise digital performance</p></div>
                 <div class="flex items-center gap-3">
                     <button onclick="exportDigitalModalToExcel()" class="bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Download List Excel</button>
-                    <button onclick="exportDigitalFiveSheetExcel('All')" class="bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📑 Complete Region (5 Sheets)</button>
                     <button onclick="closeModal('digitalDrilldownModal')" class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold cursor-pointer">✕</button>
                 </div>
             </div>
@@ -485,10 +609,14 @@
         const MASTER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=0&single=true&output=csv";
         const MAPPING_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1575541045&single=true&output=csv";
         const IDP_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1439866773&single=true&output=csv";
+        const PMEGP_MASTER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=387173434&single=true&output=csv";
 
         let masterOfficesMap = {}, serviceMapping = {}, rawData = [], currentFilteredRows = [], modalExportData = [], globalAllFilteredOffices = [];
         let pliRawData = [], currentPliProcessedList = [], currentNilPliOfficesList = [], currentAllPliOfficesList = [], digitalRawData = [], pliModalExportData = [], idpCredentialsMap = {}, generatedReportsLog = [], loggedInAdminId = "";
         let digitalModalExportData = [];
+
+        // PMEGP Variables
+        let pmegpMasterMap = {}, pmegpUploadedRaw = [], pmegpProcessedDivisions = [], pmegpProcessedInspectors = [], pmegpModalExportData = [];
 
         const divClassMap = {
             "INDORE CITY": "div-bg-indore-city", "INDORE MFL": "div-bg-indore-mfl", "KHANDWA": "div-bg-khandwa",
@@ -499,7 +627,7 @@
         const openModal = id => document.getElementById(id).classList.remove('hidden');
 
         function switchModule(mod) {
-            ['booking', 'pli', 'digital'].forEach(m => {
+            ['booking', 'pli', 'digital', 'pmegp'].forEach(m => {
                 const isCurrent = m === mod;
                 document.getElementById('module' + m.charAt(0).toUpperCase() + m.slice(1)).classList.toggle('hidden', !isCurrent);
                 const btn = document.getElementById('btnNav' + m.charAt(0).toUpperCase() + m.slice(1));
@@ -564,6 +692,7 @@
 
         async function loadMasterData() {
             loadIdpCredentials();
+            loadPmegpMasterData();
             try {
                 const [masterRes, mapRes] = await Promise.all([fetch(MASTER_CSV_URL), fetch(MAPPING_CSV_URL)]);
                 const mParsed = XLSX.read(await masterRes.text(), {type: 'string'});
@@ -609,6 +738,475 @@
             });
         }
 
+        // ==========================================
+        // PMEGP MODULE IMPLEMENTATION
+        // ==========================================
+        async function loadPmegpMasterData() {
+            const statusEl = document.getElementById('pmegpUploadStatus');
+            try {
+                const res = await fetch(PMEGP_MASTER_CSV_URL);
+                const parsed = XLSX.read(await res.text(), {type: 'string'});
+                const rows = XLSX.utils.sheet_to_json(parsed.Sheets[parsed.SheetNames[0]], {header: 1, defval: ""});
+                
+                let hIdx = 0;
+                for (let i = 0; i < Math.min(5, rows.length); i++) {
+                    const rowStr = rows[i].map(c => String(c).trim().toUpperCase());
+                    if (rowStr.includes('APP_ID') || rowStr.includes('UNIT ID')) { hIdx = i; break; }
+                }
+                const headers = rows[hIdx].map(c => String(c).trim().toUpperCase());
+                const appIdx = Math.max(headers.indexOf('APP_ID'), headers.indexOf('UNIT ID'), 2);
+                const phaseIdx = Math.max(headers.indexOf('PHASE'), 4);
+                const divIdx = Math.max(headers.indexOf('DIVISION'), 6);
+                const regIdx = Math.max(headers.indexOf('REGION'), 7);
+
+                pmegpMasterMap = {};
+                for (let i = hIdx + 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    const rawAppId = String(r[appIdx] || "").trim();
+                    if (!rawAppId) continue;
+
+                    let phaseRaw = String(r[phaseIdx] || "1st").trim().toLowerCase();
+                    let phaseKey = "1st";
+                    if (phaseRaw.includes("2") || phaseRaw.includes("2nd")) phaseKey = "2nd";
+                    else if (phaseRaw.includes("3") || phaseRaw.includes("3rd")) phaseKey = "3rd";
+                    else if (phaseRaw.includes("4") || phaseRaw.includes("4th")) phaseKey = "4th";
+
+                    const divName = (String(r[divIdx] || "").trim().toUpperCase() || "UNKNOWN DIVISION").replace(/\s+DIVISION$/, '');
+                    const regName = String(r[regIdx] || "HQ").trim().toUpperCase();
+
+                    pmegpMasterMap[rawAppId.toUpperCase()] = {
+                        appId: rawAppId,
+                        phase: phaseKey,
+                        division: divName,
+                        region: regName
+                    };
+                }
+
+                const regions = [...new Set(Object.values(pmegpMasterMap).map(u => u.region))].filter(Boolean).sort();
+                const regSelect = document.getElementById('pmegpFilterRegion');
+                regSelect.innerHTML = `<option value="All">All Regions</option>`;
+                regions.forEach(rg => {
+                    const opt = document.createElement('option');
+                    opt.value = opt.textContent = rg;
+                    regSelect.appendChild(opt);
+                });
+
+                statusEl.innerHTML = `✅ Master Loaded (${Object.keys(pmegpMasterMap).length} Units)`;
+            } catch (err) {
+                console.error("Error loading PMEGP Master:", err);
+                statusEl.innerHTML = `⚠️ PMEGP Master sync failed`;
+            }
+        }
+
+        document.getElementById('pmegpFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const statusEl = document.getElementById('pmegpUploadStatus');
+            statusEl.innerHTML = `🔄 Reading Inspection File...`;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const sheet = XLSX.read(evt.target.result, {type: 'array', cellDates: true, dense: true}).Sheets[XLSX.read(evt.target.result, {type: 'array'}).SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+
+                    let hIdx = 0;
+                    for (let i = 0; i < Math.min(10, rows.length); i++) {
+                        const rStr = rows[i].map(c => String(c).trim().toUpperCase());
+                        if (rStr.includes('UNIT ID') || rStr.includes('INSP BY') || rStr.includes('APP_ID')) { hIdx = i; break; }
+                    }
+                    const headers = rows[hIdx].map(c => String(c).trim().toUpperCase());
+                    const unitIdx = Math.max(headers.indexOf('UNIT ID'), headers.indexOf('APP_ID'), 0);
+                    
+                    let inspIdx = headers.indexOf('INSP BY');
+                    if (inspIdx === -1) inspIdx = headers.indexOf('INSPECTOR');
+                    if (inspIdx === -1) inspIdx = 5;
+
+                    const dateIdx = headers.indexOf('INSPECTED DATE') > -1 ? headers.indexOf('INSPECTED DATE') : 7;
+                    const statusValIdx = headers.indexOf('STATUS') > -1 ? headers.indexOf('STATUS') : 8;
+
+                    pmegpUploadedRaw = [];
+                    for (let i = hIdx + 1; i < rows.length; i++) {
+                        const r = rows[i];
+                        if (!r || !r.length) continue;
+                        const uId = String(r[unitIdx] || "").trim();
+                        if (!uId || uId.toUpperCase().includes("TOTAL") || uId.toUpperCase().includes("SUMMARY")) continue;
+
+                        const inspBy = String(r[inspIdx] || "Unassigned").trim();
+                        const inspDate = String(r[dateIdx] || "").trim();
+                        const inspStatus = String(r[statusValIdx] || "Inspected").trim();
+
+                        pmegpUploadedRaw.push({
+                            unitId: uId,
+                            inspBy: inspBy,
+                            date: inspDate,
+                            status: inspStatus
+                        });
+                    }
+
+                    statusEl.innerHTML = `✅ Uploaded! (${pmegpUploadedRaw.length} Inspections)`;
+                    processPmegpData();
+                } catch (err) {
+                    console.error(err);
+                    statusEl.innerHTML = `❌ Error reading inspection file.`;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processPmegpData() {
+            const inspectedUnitsMap = {};
+            pmegpUploadedRaw.forEach(item => {
+                inspectedUnitsMap[item.unitId.toUpperCase()] = item;
+            });
+
+            const divMap = {};
+            Object.values(pmegpMasterMap).forEach(master => {
+                const div = master.division || "OTHER DIVISION";
+                const reg = master.region || "HQ";
+                const phase = master.phase || "1st";
+
+                if (!divMap[div]) {
+                    divMap[div] = {
+                        division: div,
+                        region: reg,
+                        phases: {
+                            "1st": { alloted: 0, inspected: 0, units: [] },
+                            "2nd": { alloted: 0, inspected: 0, units: [] },
+                            "3rd": { alloted: 0, inspected: 0, units: [] },
+                            "4th": { alloted: 0, inspected: 0, units: [] }
+                        },
+                        totalAlloted: 0,
+                        totalInspected: 0
+                    };
+                }
+
+                divMap[div].phases[phase].alloted++;
+                divMap[div].totalAlloted++;
+
+                const isInspected = inspectedUnitsMap[master.appId.toUpperCase()];
+                if (isInspected) {
+                    divMap[div].phases[phase].inspected++;
+                    divMap[div].totalInspected++;
+                    divMap[div].phases[phase].units.push({
+                        ...master,
+                        inspBy: isInspected.inspBy,
+                        date: isInspected.date,
+                        status: isInspected.status
+                    });
+                }
+            });
+
+            pmegpProcessedDivisions = Object.values(divMap);
+
+            const inspMap = {};
+            pmegpUploadedRaw.forEach(item => {
+                const master = pmegpMasterMap[item.unitId.toUpperCase()] || { division: "Unknown", region: "Unknown", phase: "-" };
+                const inspName = item.inspBy || "Unknown";
+                const divName = master.division;
+                const regName = master.region;
+                const key = `${divName}||${inspName}`;
+
+                if (!inspMap[key]) {
+                    inspMap[key] = {
+                        division: divName,
+                        region: regName,
+                        inspBy: inspName,
+                        count: 0,
+                        units: []
+                    };
+                }
+                inspMap[key].count++;
+                inspMap[key].units.push({
+                    appId: item.unitId,
+                    division: divName,
+                    region: regName,
+                    phase: master.phase,
+                    inspBy: inspName,
+                    date: item.date,
+                    status: item.status
+                });
+            });
+
+            pmegpProcessedInspectors = Object.values(inspMap).sort((a, b) => b.count - a.count);
+
+            renderPmegpViews();
+        }
+
+        function switchPmegpView(view) {
+            const isDiv = (view === 'division');
+            document.getElementById('pmegpDivisionView').classList.toggle('hidden', !isDiv);
+            document.getElementById('pmegpInspectorView').classList.toggle('hidden', isDiv);
+
+            document.getElementById('btnPmegpViewDiv').className = isDiv ? "px-3 py-1.5 text-xs font-bold rounded-md bg-[#31103f] text-white shadow" : "px-3 py-1.5 text-xs font-bold rounded-md text-slate-700 hover:bg-purple-200/60";
+            document.getElementById('btnPmegpViewInsp').className = !isDiv ? "px-3 py-1.5 text-xs font-bold rounded-md bg-[#31103f] text-white shadow" : "px-3 py-1.5 text-xs font-bold rounded-md text-slate-700 hover:bg-purple-200/60";
+        }
+
+        function renderPmegpViews() {
+            const filterReg = document.getElementById('pmegpFilterRegion').value;
+
+            // 1. Division Wise Table
+            const tbodyDiv = document.querySelector('#tablePmegpDivision tbody');
+            const tfootDiv = document.querySelector('#tablePmegpDivision tfoot');
+            tbodyDiv.innerHTML = ""; tfootDiv.innerHTML = "";
+
+            const filteredDivs = pmegpProcessedDivisions.filter(d => filterReg === 'All' || d.region === filterReg);
+
+            if (!filteredDivs.length) {
+                tbodyDiv.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-slate-400 font-medium">No matching PMEGP records found.</td></tr>`;
+            } else {
+                let sno = 1;
+                let gP1A = 0, gP1I = 0, gP2A = 0, gP2I = 0, gP3A = 0, gP3I = 0, gP4A = 0, gP4I = 0, gTotA = 0, gTotI = 0;
+
+                filteredDivs.forEach(item => {
+                    const p1A = item.phases["1st"].alloted, p1I = item.phases["1st"].inspected;
+                    const p2A = item.phases["2nd"].alloted, p2I = item.phases["2nd"].inspected;
+                    const p3A = item.phases["3rd"].alloted, p3I = item.phases["3rd"].inspected;
+                    const p4A = item.phases["4th"].alloted, p4I = item.phases["4th"].inspected;
+                    const tA = item.totalAlloted, tI = item.totalInspected;
+                    const pct = tA > 0 ? ((tI / tA) * 100).toFixed(1) + "%" : "0%";
+
+                    gP1A += p1A; gP1I += p1I; gP2A += p2A; gP2I += p2I; gP3A += p3A; gP3I += p3I; gP4A += p4A; gP4I += p4I;
+                    gTotA += tA; gTotI += tI;
+
+                    const cssClass = divClassMap[item.division] || "";
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${sno++}</td>
+                        <td class="${cssClass} text-left font-bold">${item.division}</td>
+                        <td class="font-bold text-slate-600">${item.region}</td>
+                        <td>${p1A}</td>
+                        <td class="clickable-cell font-bold text-blue-900" onclick="openPmegpDrilldownModal('${item.division}', '1st')">${p1I}</td>
+                        <td>${p2A}</td>
+                        <td class="clickable-cell font-bold text-emerald-900" onclick="openPmegpDrilldownModal('${item.division}', '2nd')">${p2I}</td>
+                        <td>${p3A}</td>
+                        <td class="clickable-cell font-bold text-amber-900" onclick="openPmegpDrilldownModal('${item.division}', '3rd')">${p3I}</td>
+                        <td>${p4A}</td>
+                        <td class="clickable-cell font-bold text-purple-900" onclick="openPmegpDrilldownModal('${item.division}', '4th')">${p4I}</td>
+                        <td class="font-extrabold bg-amber-50">${tA}</td>
+                        <td class="clickable-cell font-extrabold text-purple-950 bg-amber-100" onclick="openPmegpDrilldownModal('${item.division}', 'ALL')">${tI}</td>
+                        <td class="font-bold text-emerald-800 bg-emerald-50">${pct}</td>
+                    `;
+                    tbodyDiv.appendChild(tr);
+                });
+
+                const grandPct = gTotA > 0 ? ((gTotI / gTotA) * 100).toFixed(1) + "%" : "0%";
+                tfootDiv.innerHTML = `
+                    <tr class="row-grand-total">
+                        <td colspan="3">Grand Total</td>
+                        <td>${gP1A}</td>
+                        <td class="clickable-cell underline" onclick="openPmegpDrilldownModal('ALL', '1st')">${gP1I}</td>
+                        <td>${gP2A}</td>
+                        <td class="clickable-cell underline" onclick="openPmegpDrilldownModal('ALL', '2nd')">${gP2I}</td>
+                        <td>${gP3A}</td>
+                        <td class="clickable-cell underline" onclick="openPmegpDrilldownModal('ALL', '3rd')">${gP3I}</td>
+                        <td>${gP4A}</td>
+                        <td class="clickable-cell underline" onclick="openPmegpDrilldownModal('ALL', '4th')">${gP4I}</td>
+                        <td>${gTotA}</td>
+                        <td class="clickable-cell underline" onclick="openPmegpDrilldownModal('ALL', 'ALL')">${gTotI}</td>
+                        <td>${grandPct}</td>
+                    </tr>
+                `;
+            }
+
+            // 2. Inspector Wise Table
+            const tbodyInsp = document.querySelector('#tablePmegpInspector tbody');
+            const tfootInsp = document.querySelector('#tablePmegpInspector tfoot');
+            tbodyInsp.innerHTML = ""; tfootInsp.innerHTML = "";
+
+            const filteredInsps = pmegpProcessedInspectors.filter(i => filterReg === 'All' || i.region === filterReg);
+
+            if (!filteredInsps.length) {
+                tbodyInsp.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">No matching inspector records found.</td></tr>`;
+            } else {
+                let sno = 1, gInspUnits = 0;
+                filteredInsps.forEach(i => {
+                    gInspUnits += i.count;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${sno++}</td>
+                        <td class="text-left font-bold text-purple-950">${i.division}</td>
+                        <td class="font-bold text-slate-600">${i.region}</td>
+                        <td class="text-left font-semibold text-blue-900">${i.inspBy}</td>
+                        <td class="clickable-cell font-bold text-emerald-800 text-right pr-6" onclick="openPmegpInspectorUnitsModal('${i.division}', '${i.inspBy}')">${i.count}</td>
+                    `;
+                    tbodyInsp.appendChild(tr);
+                });
+
+                tfootInsp.innerHTML = `
+                    <tr class="row-grand-total">
+                        <td colspan="4" class="text-left pl-6">Grand Total Units Inspected</td>
+                        <td class="text-right pr-6">${gInspUnits}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function openPmegpDrilldownModal(divName, phase) {
+            const inspectedUnitsMap = {};
+            pmegpUploadedRaw.forEach(item => { inspectedUnitsMap[item.unitId.toUpperCase()] = item; });
+
+            const targetUnits = [];
+            Object.values(pmegpMasterMap).forEach(master => {
+                if (divName !== 'ALL' && master.division !== divName) return;
+                if (phase !== 'ALL' && master.phase !== phase) return;
+
+                const insp = inspectedUnitsMap[master.appId.toUpperCase()];
+                if (insp) {
+                    targetUnits.push({
+                        appId: master.appId,
+                        division: master.division,
+                        region: master.region,
+                        phase: master.phase,
+                        inspBy: insp.inspBy,
+                        date: insp.date,
+                        status: insp.status
+                    });
+                }
+            });
+
+            if (!targetUnits.length) return alert(`No inspected units found for ${divName} under ${phase} phase.`);
+
+            pmegpModalExportData = targetUnits.map((u, idx) => ({
+                "S.No": idx + 1,
+                "Unit ID": u.appId,
+                "Division": u.division,
+                "Region": u.region,
+                "Phase": u.phase,
+                "Inspected By": u.inspBy,
+                "Inspected Date": u.date,
+                "Status": u.status
+            }));
+
+            document.getElementById('pmegpModalTitle').textContent = `Inspected Units: ${divName} (${phase === 'ALL' ? 'All Phases' : phase + ' Phase'})`;
+            document.getElementById('pmegpModalSubtitle').textContent = `Total ${targetUnits.length} units inspected.`;
+
+            document.querySelector('#tablePmegpModalUnits tbody').innerHTML = targetUnits.map((u, idx) => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td>${idx + 1}</td>
+                    <td class="font-mono font-bold text-purple-950">${u.appId}</td>
+                    <td>${u.division}</td>
+                    <td>${u.region}</td>
+                    <td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${u.phase}</span></td>
+                    <td class="text-left font-semibold text-blue-900">${u.inspBy}</td>
+                    <td>${u.date || '-'}</td>
+                    <td><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">${u.status}</span></td>
+                </tr>
+            `).join('');
+
+            openModal('pmegpDrilldownModal');
+            logGeneratedReport(`PMEGP Units Modal (${divName} - ${phase})`, () => exportPmegpModalToExcel());
+        }
+
+        function openPmegpInspectorUnitsModal(divName, inspName) {
+            const targetUnits = [];
+            pmegpUploadedRaw.forEach(item => {
+                const master = pmegpMasterMap[item.unitId.toUpperCase()] || { division: "Unknown", region: "Unknown", phase: "-" };
+                if (master.division === divName && item.inspBy === inspName) {
+                    targetUnits.push({
+                        appId: item.unitId,
+                        division: master.division,
+                        region: master.region,
+                        phase: master.phase,
+                        inspBy: item.inspBy,
+                        date: item.date,
+                        status: item.status
+                    });
+                }
+            });
+
+            if (!targetUnits.length) return alert(`No units found for ${inspName}.`);
+
+            pmegpModalExportData = targetUnits.map((u, idx) => ({
+                "S.No": idx + 1,
+                "Unit ID": u.appId,
+                "Division": u.division,
+                "Region": u.region,
+                "Phase": u.phase,
+                "Inspected By": u.inspBy,
+                "Inspected Date": u.date,
+                "Status": u.status
+            }));
+
+            document.getElementById('pmegpModalTitle').textContent = `Inspected Units by: ${inspName}`;
+            document.getElementById('pmegpModalSubtitle').textContent = `Division: ${divName} | Total ${targetUnits.length} units inspected.`;
+
+            document.querySelector('#tablePmegpModalUnits tbody').innerHTML = targetUnits.map((u, idx) => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td>${idx + 1}</td>
+                    <td class="font-mono font-bold text-purple-950">${u.appId}</td>
+                    <td>${u.division}</td>
+                    <td>${u.region}</td>
+                    <td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${u.phase}</span></td>
+                    <td class="text-left font-semibold text-blue-900">${u.inspBy}</td>
+                    <td>${u.date || '-'}</td>
+                    <td><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">${u.status}</span></td>
+                </tr>
+            `).join('');
+
+            openModal('pmegpDrilldownModal');
+            logGeneratedReport(`PMEGP Inspector Units Modal (${inspName})`, () => exportPmegpModalToExcel());
+        }
+
+        function exportPmegpModalToExcel() {
+            if (!pmegpModalExportData || !pmegpModalExportData.length) return alert("No unit records available to export.");
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pmegpModalExportData), "PMEGP_Units");
+            XLSX.writeFile(wb, "PMEGP_Inspected_Units_List.xlsx");
+        }
+
+        function exportPmegpExcel() {
+            if (!pmegpProcessedDivisions.length) return alert("Please upload PMEGP inspection file first.");
+            const wb = XLSX.utils.book_new();
+
+            // Sheet 1: Division Wise
+            const divRows = pmegpProcessedDivisions.map((item, idx) => {
+                const tA = item.totalAlloted, tI = item.totalInspected;
+                return {
+                    "S.No": idx + 1,
+                    "Division Name": item.division,
+                    "Region": item.region,
+                    "1st Phase Alloted": item.phases["1st"].alloted,
+                    "1st Phase Inspected": item.phases["1st"].inspected,
+                    "2nd Phase Alloted": item.phases["2nd"].alloted,
+                    "2nd Phase Inspected": item.phases["2nd"].inspected,
+                    "3rd Phase Alloted": item.phases["3rd"].alloted,
+                    "3rd Phase Inspected": item.phases["3rd"].inspected,
+                    "4th Phase Alloted": item.phases["4th"].alloted,
+                    "4th Phase Inspected": item.phases["4th"].inspected,
+                    "Total Alloted": tA,
+                    "Total Inspected": tI,
+                    "% Inspected": tA > 0 ? Number(((tI / tA) * 100).toFixed(2)) : 0
+                };
+            });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(divRows), "Division_Wise_Report");
+
+            // Sheet 2: Inspector Wise
+            const inspRows = pmegpProcessedInspectors.map((item, idx) => ({
+                "S.No": idx + 1,
+                "Division Name": item.division,
+                "Region": item.region,
+                "Inspected By (Inspector Name)": item.inspBy,
+                "Total Units Inspected": item.count
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inspRows), "Inspector_Wise_Report");
+
+            // Sheet 3: Master Alloted Units
+            const masterRows = Object.values(pmegpMasterMap).map((m, idx) => ({
+                "S.No": idx + 1,
+                "Unit ID (APP_ID)": m.appId,
+                "Division": m.division,
+                "Region": m.region,
+                "Phase": m.phase
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(masterRows), "Alloted_Master_Units");
+
+            XLSX.writeFile(wb, "PMEGP_Inspection_Complete_Report.xlsx");
+            logGeneratedReport("PMEGP Complete Report (3 Sheets Excel)", () => exportPmegpExcel());
+        }
+
+        // ==========================================
+        // BOOKING & GENERAL DASHBOARD UPDATE
+        // ==========================================
         function updateDashboard() {
             const selDiv = document.getElementById('filterDivision').value;
             const selClass = document.getElementById('filterClass').value;
@@ -1050,7 +1648,7 @@
         }
 
         // ==========================================
-        // PLI / RPLI NIL TRANSACTION REPORT LOGIC
+        // PLI / RPLI REPORT LOGIC
         // ==========================================
         document.getElementById('pliFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
@@ -1342,7 +1940,7 @@
         const exportPliPDF = () => exportSingleTableToPDF('tablePliSummary', 'PLI Nil Transaction Report');
 
         // ==========================================
-        // DIGITAL TXN REPORT LOGIC
+        // DIGITAL REPORT LOGIC
         // ==========================================
         document.getElementById('digitalFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
@@ -1726,9 +2324,6 @@
             logGeneratedReport("Filtered Office Digital Excel", () => exportOfficeDigitalExcel());
         }
 
-        // ==========================================
-        // DYNAMIC 5-SHEET DIGITAL EXCEL BUILDER
-        // ==========================================
         function exportSelectedDivisionFiveSheets() {
             const selDiv = document.getElementById('digitalFilterDivision').value;
             exportDigitalFiveSheetExcel(selDiv);
@@ -1780,7 +2375,7 @@
                     if (targetDivision !== 'All' && div !== targetDivision) return;
 
                     if (!divGroups[div]) divGroups[div] = { div, sds: {}, cash: 0, dqr: 0, sbiposQr: 0 };
-                    if (!divGroups[div].sds[sd]) divGroups[div].sds[sd] = { division: div, sd, cash: 0, dqr: 0, sbiposQr: 0 };
+                    if (!divGroups[div].sds[sd]) divGroups[div].subDivs[sd] = { division: div, sd, cash: 0, dqr: 0, sbiposQr: 0 };
                     divGroups[div].cash += item.cash; divGroups[div].dqr += item.dqr; divGroups[div].sbiposQr += item.sbiposQr;
                     divGroups[div].sds[sd].cash += item.cash; divGroups[div].sds[sd].dqr += item.dqr; divGroups[div].sds[sd].sbiposQr += item.sbiposQr;
                 });
@@ -1833,19 +2428,11 @@
                 return XLSX.utils.json_to_sheet(sdExcelRows);
             };
 
-            // Sheet 1: Division View Excluding BO
             XLSX.utils.book_append_sheet(wb, buildDivisionSheetData(true), "Div_Excluding_BO");
-
-            // Sheet 2: Division View Including BO (HO+SO+BO)
             XLSX.utils.book_append_sheet(wb, buildDivisionSheetData(false), "Div_Including_BO");
-
-            // Sheet 3: SubDivision View Excluding BO
             XLSX.utils.book_append_sheet(wb, buildSubDivisionSheetData(true), "SubDiv_Excluding_BO");
-
-            // Sheet 4: SubDivision View Including BO (HO+SO+BO)
             XLSX.utils.book_append_sheet(wb, buildSubDivisionSheetData(false), "SubDiv_Including_BO");
 
-            // Sheet 5: Detailed Office List
             const officeRows = digitalRawData.map((item, idx) => {
                 const master = masterOfficesMap[item.officeId];
                 if (!master || (master.name.toUpperCase().includes("KHUDEL") && master.class === "BO")) return null;
@@ -1941,7 +2528,6 @@
         }
         const exportAllToPDF = () => exportSingleTableToPDF('tableDivisionSummary', 'Summary Report');
 
-        // Raw File Parsing
         document.getElementById('rawFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
