@@ -182,7 +182,7 @@
         </div>
     </div>
 
-    <!-- PMEGP Module (Updated with Total Pending, Division Filter & Unknown Division Resolution) -->
+    <!-- PMEGP Module (Cascading Region & Division Filter) -->
     <div id="modulePmegp" class="space-y-6 hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -219,7 +219,7 @@
                     <div class="flex items-center gap-3 flex-wrap">
                         <div class="flex items-center gap-1.5">
                             <label class="text-xs font-bold text-slate-700">Filter Region:</label>
-                            <select id="pmegpFilterRegion" onchange="renderPmegpViews()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold outline-none">
+                            <select id="pmegpFilterRegion" onchange="onPmegpRegionChange()" class="border border-purple-300 rounded-lg p-1.5 text-xs bg-white font-bold text-purple-950 outline-none">
                                 <option value="All">All Regions</option>
                             </select>
                         </div>
@@ -479,14 +479,43 @@ async function loadPmegpMasterData(){
               pReg=document.getElementById("pmegpFilterRegion");
         pReg.innerHTML='<option value="All">All Regions</option>',regList.forEach(t=>{const e=document.createElement("option");e.value=e.textContent=t,pReg.appendChild(e)});
 
-        const divList=[...new Set(Object.values(pmegpMasterMap).map(t=>t.division))].filter(Boolean).sort(),
-              pDiv=document.getElementById("pmegpFilterDivision");
-        pDiv.innerHTML='<option value="All">All Divisions</option>',divList.forEach(t=>{const e=document.createElement("option");e.value=e.textContent=t,pDiv.appendChild(e)});
+        updatePmegpDivisionDropdown("All");
 
         t.innerHTML=`✅ Master Loaded (${Object.keys(pmegpMasterMap).length} Units)`;
     }catch(e){
         console.error("Error loading PMEGP Master:",e),t.innerHTML="⚠️ PMEGP Master sync failed";
     }
+}
+
+function updatePmegpDivisionDropdown(selectedRegion){
+    const pDiv=document.getElementById("pmegpFilterDivision");
+    const previousSelectedDiv = pDiv.value;
+
+    let availableDivs = [];
+    if(selectedRegion === "All"){
+        availableDivs = [...new Set(Object.values(pmegpMasterMap).map(t=>t.division))].filter(Boolean).sort();
+    } else {
+        availableDivs = [...new Set(Object.values(pmegpMasterMap).filter(t=>t.region===selectedRegion).map(t=>t.division))].filter(Boolean).sort();
+    }
+
+    pDiv.innerHTML='<option value="All">All Divisions</option>';
+    availableDivs.forEach(d=>{
+        const opt=document.createElement("option");
+        opt.value=opt.textContent=d;
+        pDiv.appendChild(opt);
+    });
+
+    if(availableDivs.includes(previousSelectedDiv)){
+        pDiv.value = previousSelectedDiv;
+    } else {
+        pDiv.value = "All";
+    }
+}
+
+function onPmegpRegionChange(){
+    const selReg = document.getElementById("pmegpFilterRegion").value;
+    updatePmegpDivisionDropdown(selReg);
+    renderPmegpViews();
 }
 
 function processPmegpData(){
