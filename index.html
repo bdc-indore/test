@@ -23,6 +23,7 @@
         .div-bg-sehore{background-color:#d9edf7;font-weight:700;color:#31708f}
         .div-bg-ujjain{background-color:#d9d9d9;font-weight:700;color:#333}
         .div-bg-id-division{background-color:#fff2cc;font-weight:700;color:#7f6000}
+        .div-bg-not-in-qc{background-color:#fee2e2;font-weight:700;color:#991b1b}
         .row-div-total{background-color:#fce4d6;font-weight:700;color:#000}
         .row-grand-total{background-color:#bdd7ee;font-weight:700;color:#000;font-size:12px}
         .clickable-cell{cursor:pointer;text-decoration:underline}
@@ -182,7 +183,7 @@
         </div>
     </div>
 
-    <!-- PMEGP Module (Cascading Region & Division Filter) -->
+    <!-- PMEGP Module (Updated with NOT IN QC LIST, Dynamic Filters & Division Clicks) -->
     <div id="modulePmegp" class="space-y-6 hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -236,6 +237,7 @@
                 <div id="pmegpDivisionView" class="overflow-x-auto p-1">
                     <div class="text-center mb-3">
                         <h2 class="text-lg font-extrabold text-[#31103f]">PMEGP Division-Wise Phase Target, Pending & % Inspected Report</h2>
+                        <p class="text-xs text-slate-500">Click any division name or pending/allotted count to view complete unit breakdown.</p>
                     </div>
                     <table class="nil-table" id="tablePmegpDivision">
                         <thead>
@@ -278,6 +280,7 @@
                 <div id="pmegpInspectorView" class="overflow-x-auto p-1 hidden">
                     <div class="text-center mb-3">
                         <h2 class="text-lg font-extrabold text-[#31103f]">PMEGP Inspector Wise Performance Grouped by Division</h2>
+                        <p class="text-xs text-slate-500">Click any division or inspected count to view unit details.</p>
                     </div>
                     <table class="nil-table" id="tablePmegpInspector">
                         <thead>
@@ -378,7 +381,17 @@ const MASTER_CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC
 
 let masterOfficesMap={},serviceMapping={},rawData=[],currentFilteredRows=[],modalExportData=[],globalAllFilteredOffices=[],pliRawData=[],currentPliProcessedList=[],currentNilPliOfficesList=[],currentAllPliOfficesList=[],digitalRawData=[],pliModalExportData=[],idpCredentialsMap={},generatedReportsLog=[],loggedInAdminId="",digitalModalExportData=[],pmegpMasterMap={},pmegpMasterNormalizedMap={},pmegpUploadedRaw=[],pmegpProcessedDivisions=[],pmegpProcessedInspectors=[],pmegpModalExportData=[];
 
-const divClassMap={"INDORE CITY":"div-bg-indore-city","INDORE MFL":"div-bg-indore-mfl",KHANDWA:"div-bg-khandwa",MANDSAUR:"div-bg-mandsaur",RATLAM:"div-bg-ratlam",SEHORE:"div-bg-sehore",UJJAIN:"div-bg-ujjain","ID DIVISION":"div-bg-id-division"};
+const divClassMap={
+    "INDORE CITY":"div-bg-indore-city",
+    "INDORE MFL":"div-bg-indore-mfl",
+    "KHANDWA":"div-bg-khandwa",
+    "MANDSAUR":"div-bg-mandsaur",
+    "RATLAM":"div-bg-ratlam",
+    "SEHORE":"div-bg-sehore",
+    "UJJAIN":"div-bg-ujjain",
+    "ID DIVISION":"div-bg-id-division",
+    "NOT IN QC LIST":"div-bg-not-in-qc"
+};
 const closeModal=t=>document.getElementById(t).classList.add("hidden"),openModal=t=>document.getElementById(t).classList.remove("hidden");
 
 function cleanUnitId(val){
@@ -387,8 +400,9 @@ function cleanUnitId(val){
 }
 
 function normalizeDivName(divStr){
-    if(!divStr) return "Not IN Alloted List";
+    if(!divStr) return "NOT IN QC LIST";
     let d = String(divStr).trim().toUpperCase().replace(/\s+DIVISION$/,"").trim();
+    if(d.includes("UNKNOWN") || d.includes("OTHER") || !d) return "NOT IN QC LIST";
     if(d.includes("MFL")) return "INDORE MFL";
     if(d.includes("CITY")) return "INDORE CITY";
     if(d.includes("INDORE") && !d.includes("MFL") && !d.includes("CITY")) return "INDORE CITY";
@@ -468,7 +482,7 @@ async function loadPmegpMasterData(){
             
             const rawDiv=String(e[d]||"").trim();
             const divClean=normalizeDivName(rawDiv);
-            const regClean=String(e[r]||"INDORE").trim().toUpperCase()||"INDORE";
+            const regClean=divClean==="NOT IN QC LIST" ? "HQ" : (String(e[r]||"INDORE").trim().toUpperCase()||"INDORE");
             
             const unitObj={appId:o,phase:phase,division:divClean,region:regClean};
             pmegpMasterMap[o.toUpperCase()]=unitObj;
@@ -530,7 +544,7 @@ function processPmegpData(){
     // Division Level Processing
     const e={};
     Object.values(pmegpMasterMap).forEach(o=>{
-        const n=o.division||"OTHER DIVISION",i=o.region||"INDORE",s=o.phase||"1st";
+        const n=o.division||"NOT IN QC LIST",i=o.region||"HQ",s=o.phase||"1st";
         e[n]||(e[n]={division:n,region:i,phases:{"1st":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"2nd":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"3rd":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"4th":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]}},totalAlloted:0,totalInspected:0});
         e[n].phases[s].alloted++,e[n].totalAlloted++;
         
@@ -544,13 +558,27 @@ function processPmegpData(){
         }
     });
 
+    // Handle any uploaded inspection not in QC List
+    pmegpUploadedRaw.forEach(rawItem=>{
+        let master=pmegpMasterMap[rawItem.unitId.toUpperCase()] || pmegpMasterNormalizedMap[cleanUnitId(rawItem.unitId)];
+        if(!master){
+            const divName = "NOT IN QC LIST";
+            const regName = "HQ";
+            const phase = "1st";
+            e[divName]||(e[divName]={division:divName,region:regName,phases:{"1st":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"2nd":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"3rd":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"4th":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]}},totalAlloted:0,totalInspected:0});
+            e[divName].phases[phase].inspected++;
+            e[divName].totalInspected++;
+            e[divName].phases[phase].units.push({appId:rawItem.unitId,phase:phase,division:divName,region:regName,inspBy:rawItem.inspBy,date:rawItem.date,status:rawItem.status});
+        }
+    });
+
     Object.values(e).forEach(div=>{
         ["1st","2nd","3rd","4th"].forEach(ph=>{
-            div.phases[ph].pending = div.phases[ph].alloted - div.phases[ph].inspected;
+            div.phases[ph].pending = Math.max(0, div.phases[ph].alloted - div.phases[ph].inspected);
         });
         div.pending123 = div.phases["1st"].pending + div.phases["2nd"].pending + div.phases["3rd"].pending;
         div.pending4th = div.phases["4th"].pending;
-        div.totalPending = div.totalAlloted - div.totalInspected;
+        div.totalPending = div.pending123 + div.pending4th;
         div.pctOverall = div.totalAlloted > 0 ? (div.totalInspected / div.totalAlloted * 100) : 0;
         div.pct4th = div.phases["4th"].alloted > 0 ? (div.phases["4th"].inspected / div.phases["4th"].alloted * 100) : 0;
     });
@@ -563,12 +591,13 @@ function processPmegpData(){
         let master=pmegpMasterMap[rawItem.unitId.toUpperCase()] || pmegpMasterNormalizedMap[cleanUnitId(rawItem.unitId)];
         
         let divName = master ? master.division : normalizeDivName(rawItem.fileDiv);
-        let regName = master ? master.region : "INDORE";
+        let regName = master ? master.region : (divName==="NOT IN QC LIST" ? "HQ" : "INDORE");
         let phase = master ? master.phase : "1st";
         let inspName = rawItem.inspBy || "Unassigned";
 
-        if(divName === "Not in QC List" && rawItem.fileDiv){
-            divName = normalizeDivName(rawItem.fileDiv);
+        if(divName === "NOT IN QC LIST" || !divName){
+            divName = "NOT IN QC LIST";
+            regName = "HQ";
         }
 
         const key=`${divName}||${inspName}`;
@@ -644,7 +673,7 @@ function renderPmegpViews(){
             const tr=document.createElement("tr");
             tr.innerHTML=`
                 <td>${sno++}</td>
-                <td class="${divStyle} text-left font-bold">${item.division}</td>
+                <td class="${divStyle} text-left font-bold clickable-cell" onclick="openPmegpDivisionCompleteModal('${item.division}')">${item.division}</td>
                 <td class="font-bold text-slate-600">${item.region}</td>
                 <td>${a1}</td>
                 <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openPmegpPendingUnitsModal('${item.division}', '1st')">${p1}</td>
@@ -654,7 +683,7 @@ function renderPmegpViews(){
                 <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openPmegpPendingUnitsModal('${item.division}', '3rd')">${p3}</td>
                 <td>${a4}</td>
                 <td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openPmegpPendingUnitsModal('${item.division}', '4th')">${p4}</td>
-                <td class="font-extrabold bg-amber-50">${totA}</td>
+                <td class="font-extrabold bg-amber-50 clickable-cell" onclick="openPmegpDivisionCompleteModal('${item.division}')">${totA}</td>
                 <td class="clickable-cell font-extrabold text-amber-900 bg-amber-100" onclick="openPmegpPendingUnitsModal('${item.division}', '123')">${p123}</td>
                 <td class="clickable-cell font-extrabold text-rose-900 bg-rose-100" onclick="openPmegpPendingUnitsModal('${item.division}', '4th')">${p4th}</td>
                 <td class="clickable-cell font-black text-[#9c0006] bg-[#f8cbad]" onclick="openPmegpPendingUnitsModal('${item.division}', 'ALL')">${totPend}</td>
@@ -669,7 +698,7 @@ function renderPmegpViews(){
 
         o.innerHTML=`
             <tr class="row-grand-total">
-                <td colspan="3">Grand Total</td>
+                <td colspan="3" class="clickable-cell" onclick="openPmegpDivisionCompleteModal('ALL')">Grand Total</td>
                 <td>${totAllot1}</td>
                 <td class="clickable-cell underline" onclick="openPmegpPendingUnitsModal('ALL', '1st')">${totPend1}</td>
                 <td>${totAllot2}</td>
@@ -678,7 +707,7 @@ function renderPmegpViews(){
                 <td class="clickable-cell underline" onclick="openPmegpPendingUnitsModal('ALL', '3rd')">${totPend3}</td>
                 <td>${totAllot4}</td>
                 <td class="clickable-cell underline" onclick="openPmegpPendingUnitsModal('ALL', '4th')">${totPend4}</td>
-                <td>${totAllot}</td>
+                <td class="clickable-cell underline" onclick="openPmegpDivisionCompleteModal('ALL')">${totAllot}</td>
                 <td class="clickable-cell underline" onclick="openPmegpPendingUnitsModal('ALL', '123')">${totPend123}</td>
                 <td class="clickable-cell underline" onclick="openPmegpPendingUnitsModal('ALL', '4th')">${totPend4th}</td>
                 <td class="clickable-cell underline font-black text-[#9c0006]" onclick="openPmegpPendingUnitsModal('ALL', 'ALL')">${totPendingAll}</td>
@@ -690,7 +719,7 @@ function renderPmegpViews(){
         e.innerHTML='<tr><td colspan="17" class="py-8 text-center text-slate-400 font-medium">No matching PMEGP records found.</td></tr>';
     }
 
-    // Inspector Table Rendering with Colorful Division Styling
+    // Inspector Table Rendering
     const tbodyInsp=document.querySelector("#tablePmegpInspector tbody"),
           tfootInsp=document.querySelector("#tablePmegpInspector tfoot");
     tbodyInsp.innerHTML=""; tfootInsp.innerHTML="";
@@ -712,9 +741,9 @@ function renderPmegpViews(){
             const tr=document.createElement("tr");
             tr.innerHTML=`
                 <td>${sno++}</td>
-                <td class="${divStyle} text-left font-bold px-3">${item.division}</td>
+                <td class="${divStyle} text-left font-bold px-3 clickable-cell" onclick="openPmegpDivisionCompleteModal('${item.division}')">${item.division}</td>
                 <td class="font-bold text-slate-600">${item.region}</td>
-                <td class="text-left font-semibold text-blue-900 px-3">${item.inspBy}</td>
+                <td class="text-left font-semibold text-blue-900 px-3 clickable-cell" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', 'ALL')">${item.inspBy}</td>
                 <td class="clickable-cell font-bold text-emerald-800 text-right pr-4 bg-emerald-50/40" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', '123')">${item.insp123}</td>
                 <td class="clickable-cell font-bold text-purple-800 text-right pr-4 bg-purple-50/40" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', '4th')">${item.insp4th}</td>
                 <td class="clickable-cell font-bold text-purple-950 text-right pr-4 bg-amber-100" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', 'ALL')">${item.totalCount}</td>
@@ -724,15 +753,78 @@ function renderPmegpViews(){
 
         tfootInsp.innerHTML=`
             <tr class="row-grand-total">
-                <td colspan="4" class="text-left pl-6">Grand Total Units Inspected</td>
-                <td class="text-right pr-4">${total123}</td>
-                <td class="text-right pr-4">${total4th}</td>
-                <td class="text-right pr-4">${grandTotal}</td>
+                <td colspan="4" class="text-left pl-6 clickable-cell" onclick="openPmegpDivisionCompleteModal('ALL')">Grand Total Units Inspected</td>
+                <td class="text-right pr-4 clickable-cell" onclick="openPmegpInspectorPhaseUnitsModal('ALL', 'ALL', '123')">${total123}</td>
+                <td class="text-right pr-4 clickable-cell" onclick="openPmegpInspectorPhaseUnitsModal('ALL', 'ALL', '4th')">${total4th}</td>
+                <td class="text-right pr-4 clickable-cell" onclick="openPmegpInspectorPhaseUnitsModal('ALL', 'ALL', 'ALL')">${grandTotal}</td>
             </tr>
         `;
     } else {
         tbodyInsp.innerHTML='<tr><td colspan="7" class="py-8 text-center text-slate-400 font-medium">No matching inspector records found.</td></tr>';
     }
+}
+
+// Modal for Complete Division Details (Inspected + Pending Units)
+function openPmegpDivisionCompleteModal(division){
+    const inspectedMap={};
+    pmegpUploadedRaw.forEach(t=>{
+        inspectedMap[t.unitId.toUpperCase()]=t;
+        inspectedMap[cleanUnitId(t.unitId)]=t;
+    });
+
+    const allUnitsList=[];
+
+    Object.values(pmegpMasterMap).forEach(unit=>{
+        if("ALL"!==division && unit.division!==division) return;
+        const insp = inspectedMap[unit.appId.toUpperCase()] || inspectedMap[cleanUnitId(unit.appId)];
+        allUnitsList.push({
+            appId: unit.appId,
+            division: unit.division,
+            region: unit.region,
+            phase: unit.phase,
+            inspBy: insp ? insp.inspBy : "-",
+            date: insp ? (insp.date||"-") : "-",
+            status: insp ? (insp.status||"Inspected") : "Pending"
+        });
+    });
+
+    // Also include uploaded inspections not in master if looking at ALL or NOT IN QC LIST
+    pmegpUploadedRaw.forEach(rawItem=>{
+        let master=pmegpMasterMap[rawItem.unitId.toUpperCase()] || pmegpMasterNormalizedMap[cleanUnitId(rawItem.unitId)];
+        if(!master && ("ALL"===division || division==="NOT IN QC LIST")){
+            allUnitsList.push({
+                appId: rawItem.unitId,
+                division: "NOT IN QC LIST",
+                region: "HQ",
+                phase: "1st",
+                inspBy: rawItem.inspBy,
+                date: rawItem.date||"-",
+                status: rawItem.status||"Inspected"
+            });
+        }
+    });
+
+    if(!allUnitsList.length) return alert(`No units found for ${division}.`);
+
+    pmegpModalExportData = allUnitsList.map((t,e)=>({"S.No":e+1,"Unit ID":t.appId,Division:t.division,Region:t.region,Phase:t.phase,"Inspected By":t.inspBy,"Inspected Date":t.date,Status:t.status}));
+    
+    document.getElementById("pmegpModalTitle").textContent=`Division Details: ${division}`;
+    document.getElementById("pmegpModalSubtitle").textContent=`Total ${allUnitsList.length} units (Inspected & Pending).`;
+    document.querySelector("#tablePmegpModalUnits tbody").innerHTML=allUnitsList.map((t,e)=>`
+        <tr class="hover:bg-slate-50 border-b border-slate-100">
+            <td>${e+1}</td>
+            <td class="font-mono font-bold text-purple-950">${t.appId}</td>
+            <td>${t.division}</td>
+            <td>${t.region}</td>
+            <td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${t.phase}</span></td>
+            <td class="text-left font-semibold ${t.status==='Pending'?'text-slate-400':'text-blue-900'}">${t.inspBy}</td>
+            <td>${t.date}</td>
+            <td><span class="${t.status==='Pending'?'bg-rose-100 text-rose-800':'bg-emerald-100 text-emerald-800'} px-2 py-0.5 rounded font-bold">${t.status}</span></td>
+        </tr>
+    `).join("");
+    
+    openModal("pmegpDrilldownModal");
+    logGeneratedReport(`PMEGP Division Details Modal (${division})`,()=>exportPmegpModalToExcel());
 }
 
 // Modal for Pending Units
@@ -795,9 +887,14 @@ function openPmegpInspectorPhaseUnitsModal(division, inspectorName, phaseFilter)
         let master=pmegpMasterMap[rawItem.unitId.toUpperCase()] || pmegpMasterNormalizedMap[cleanUnitId(rawItem.unitId)];
         let divName = master ? master.division : normalizeDivName(rawItem.fileDiv);
         let phase = master ? master.phase : "1st";
-        let regName = master ? master.region : "INDORE";
+        let regName = master ? master.region : (divName==="NOT IN QC LIST"?"HQ":"INDORE");
 
-        if(divName===division && rawItem.inspBy===inspectorName){
+        if(divName==="NOT IN QC LIST" || !divName){
+            divName="NOT IN QC LIST";
+            regName="HQ";
+        }
+
+        if(("ALL"===division || divName===division) && ("ALL"===inspectorName || rawItem.inspBy===inspectorName)){
             if(phaseFilter==="123" && !(phase==="1st"||phase==="2nd"||phase==="3rd")) return;
             if(phaseFilter==="4th" && phase!=="4th") return;
             
