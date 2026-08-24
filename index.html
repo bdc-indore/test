@@ -182,7 +182,7 @@
         </div>
     </div>
 
-    <!-- PMEGP Module (Updated) -->
+    <!-- PMEGP Module (Updated with Total Pending, Division Filter & Unknown Division Resolution) -->
     <div id="modulePmegp" class="space-y-6 hidden">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -208,19 +208,27 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div class="flex items-center gap-3">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-100 p-3 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-3 flex-wrap">
                         <label class="text-xs font-bold text-purple-950">Select Report View:</label>
                         <div class="inline-flex rounded-lg border border-purple-300 p-0.5 bg-purple-50">
                             <button onclick='switchPmegpView("division")' id="btnPmegpViewDiv" class="px-3 py-1.5 text-xs font-bold rounded-md bg-[#31103f] text-white shadow">Division Wise List</button>
                             <button onclick='switchPmegpView("inspector")' id="btnPmegpViewInsp" class="px-3 py-1.5 text-xs font-bold rounded-md text-slate-700 hover:bg-purple-200/60">Inspected By List</button>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs font-bold text-slate-600">Filter Region:</label>
-                        <select id="pmegpFilterRegion" onchange="renderPmegpViews()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-slate-50 font-bold outline-none">
-                            <option value="All">All Regions</option>
-                        </select>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-xs font-bold text-slate-700">Filter Region:</label>
+                            <select id="pmegpFilterRegion" onchange="renderPmegpViews()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-bold outline-none">
+                                <option value="All">All Regions</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-xs font-bold text-slate-700">Filter Division:</label>
+                            <select id="pmegpFilterDivision" onchange="renderPmegpViews()" class="border border-purple-300 rounded-lg p-1.5 text-xs bg-white font-bold text-purple-950 outline-none">
+                                <option value="All">All Divisions</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -233,13 +241,13 @@
                         <thead>
                             <tr>
                                 <th rowspan="2" style="width:3%">S.No.</th>
-                                <th rowspan="2" style="width:12%">Name of Division</th>
-                                <th rowspan="2" style="width:7%">Region</th>
+                                <th rowspan="2" style="width:11%">Name of Division</th>
+                                <th rowspan="2" style="width:6%">Region</th>
                                 <th colspan="2" style="background-color:#d9edf7">1st Phase</th>
                                 <th colspan="2" style="background-color:#e2efda">2nd Phase</th>
                                 <th colspan="2" style="background-color:#fce4d6">3rd Phase</th>
                                 <th colspan="2" style="background-color:#e1d5e7">4th Phase</th>
-                                <th colspan="3" style="background-color:#fff2cc">Overall Summary</th>
+                                <th colspan="4" style="background-color:#fff2cc">Overall Summary</th>
                                 <th colspan="2" style="background-color:#c6efce">% Inspected</th>
                             </tr>
                             <tr>
@@ -253,13 +261,14 @@
                                 <th style="background-color:#e1d5e7">Pending</th>
                                 <th style="background-color:#fff2cc">Total Alloted</th>
                                 <th style="background-color:#fff2cc">Pending (1st+2nd+3rd)</th>
-                                <th style="background-color:#fff2cc">Pending (4th)</th>
+                                <th style="background-color:#fff2cc">Pending in 4th</th>
+                                <th style="background-color:#f8cbad; color:#9c0006">Total Pending</th>
                                 <th style="background-color:#c6efce">% Inspected Overall</th>
                                 <th style="background-color:#c6efce">% Inspected in 4th</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="16" class="py-8 text-center text-slate-400 font-medium">Please upload PMEGP inspected excel file.</td></tr>
+                            <tr><td colspan="17" class="py-8 text-center text-slate-400 font-medium">Please upload PMEGP inspected excel file.</td></tr>
                         </tbody>
                         <tfoot></tfoot>
                     </table>
@@ -273,13 +282,13 @@
                     <table class="nil-table" id="tablePmegpInspector">
                         <thead>
                             <tr>
-                                <th style="width:5%">S.No.</th>
-                                <th style="width:18%;text-align:left">Name of Division</th>
-                                <th style="width:10%">Region</th>
-                                <th style="width:27%;text-align:left">Inspected By (Inspector Name)</th>
-                                <th style="width:13%">Inspected in (1st+2nd+3rd)</th>
-                                <th style="width:13%">Inspected in 4th Phase</th>
-                                <th style="width:14%">Total Inspected</th>
+                                <th style="width:4%">S.No.</th>
+                                <th style="width:16%;text-align:left">Name of Division</th>
+                                <th style="width:8%">Region</th>
+                                <th style="width:28%;text-align:left">Inspected By (Inspector Name)</th>
+                                <th style="width:14%;background-color:#e2efda">Inspected in (1st+2nd+3rd)</th>
+                                <th style="width:14%;background-color:#e1d5e7">Inspected in 4th Phase</th>
+                                <th style="width:16%;background-color:#fff2cc">Total Units Inspected</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -367,10 +376,24 @@ const MASTER_CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC
       IDP_CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1439866773&single=true&output=csv",
       PMEGP_MASTER_CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=387173434&single=true&output=csv";
 
-let masterOfficesMap={},serviceMapping={},rawData=[],currentFilteredRows=[],modalExportData=[],globalAllFilteredOffices=[],pliRawData=[],currentPliProcessedList=[],currentNilPliOfficesList=[],currentAllPliOfficesList=[],digitalRawData=[],pliModalExportData=[],idpCredentialsMap={},generatedReportsLog=[],loggedInAdminId="",digitalModalExportData=[],pmegpMasterMap={},pmegpUploadedRaw=[],pmegpProcessedDivisions=[],pmegpProcessedInspectors=[],pmegpModalExportData=[];
+let masterOfficesMap={},serviceMapping={},rawData=[],currentFilteredRows=[],modalExportData=[],globalAllFilteredOffices=[],pliRawData=[],currentPliProcessedList=[],currentNilPliOfficesList=[],currentAllPliOfficesList=[],digitalRawData=[],pliModalExportData=[],idpCredentialsMap={},generatedReportsLog=[],loggedInAdminId="",digitalModalExportData=[],pmegpMasterMap={},pmegpMasterNormalizedMap={},pmegpUploadedRaw=[],pmegpProcessedDivisions=[],pmegpProcessedInspectors=[],pmegpModalExportData=[];
 
 const divClassMap={"INDORE CITY":"div-bg-indore-city","INDORE MFL":"div-bg-indore-mfl",KHANDWA:"div-bg-khandwa",MANDSAUR:"div-bg-mandsaur",RATLAM:"div-bg-ratlam",SEHORE:"div-bg-sehore",UJJAIN:"div-bg-ujjain","ID DIVISION":"div-bg-id-division"};
 const closeModal=t=>document.getElementById(t).classList.add("hidden"),openModal=t=>document.getElementById(t).classList.remove("hidden");
+
+function cleanUnitId(val){
+    if(!val) return "";
+    return String(val).trim().toUpperCase().replace(/[\s\-_/]/g,"").replace(/^0+/,"");
+}
+
+function normalizeDivName(divStr){
+    if(!divStr) return "UNKNOWN DIVISION";
+    let d = String(divStr).trim().toUpperCase().replace(/\s+DIVISION$/,"").trim();
+    if(d.includes("MFL")) return "INDORE MFL";
+    if(d.includes("CITY")) return "INDORE CITY";
+    if(d.includes("INDORE") && !d.includes("MFL") && !d.includes("CITY")) return "INDORE CITY";
+    return d;
+}
 
 function switchModule(t){
     ["booking","pli","digital","pmegp"].forEach(e=>{
@@ -433,36 +456,56 @@ async function loadPmegpMasterData(){
               a=Math.max(s.indexOf("PHASE"),4),
               d=Math.max(s.indexOf("DIVISION"),6),
               r=Math.max(s.indexOf("REGION"),7);
+              
         pmegpMasterMap={};
+        pmegpMasterNormalizedMap={};
+
         for(let t=i+1;t<n.length;t++){
             const e=n[t],o=String(e[l]||"").trim();
             if(!o)continue;
-            let i=String(e[a]||"1st").trim().toLowerCase(),s="1st";
-            i.includes("2")||i.includes("2nd")?s="2nd":i.includes("3")||i.includes("3rd")?s="3rd":(i.includes("4")||i.includes("4th"))&&(s="4th");
-            const c=(String(e[d]||"").trim().toUpperCase()||"UNKNOWN DIVISION").replace(/\s+DIVISION$/,""),
-                  p=String(e[r]||"HQ").trim().toUpperCase();
-            pmegpMasterMap[o.toUpperCase()]={appId:o,phase:s,division:c,region:p}
+            let phaseRaw=String(e[a]||"1st").trim().toLowerCase(),phase="1st";
+            phaseRaw.includes("2")||phaseRaw.includes("2nd")?phase="2nd":phaseRaw.includes("3")||phaseRaw.includes("3rd")?phase="3rd":(phaseRaw.includes("4")||phaseRaw.includes("4th"))&&(phase="4th");
+            
+            const rawDiv=String(e[d]||"").trim();
+            const divClean=normalizeDivName(rawDiv);
+            const regClean=String(e[r]||"INDORE").trim().toUpperCase()||"INDORE";
+            
+            const unitObj={appId:o,phase:phase,division:divClean,region:regClean};
+            pmegpMasterMap[o.toUpperCase()]=unitObj;
+            pmegpMasterNormalizedMap[cleanUnitId(o)]=unitObj;
         }
-        const c=[...new Set(Object.values(pmegpMasterMap).map(t=>t.region))].filter(Boolean).sort(),
-              p=document.getElementById("pmegpFilterRegion");
-        p.innerHTML='<option value="All">All Regions</option>',c.forEach(t=>{const e=document.createElement("option");e.value=e.textContent=t,p.appendChild(e)}),
-        t.innerHTML=`✅ Master Loaded (${Object.keys(pmegpMasterMap).length} Units)`
+
+        const regList=[...new Set(Object.values(pmegpMasterMap).map(t=>t.region))].filter(Boolean).sort(),
+              pReg=document.getElementById("pmegpFilterRegion");
+        pReg.innerHTML='<option value="All">All Regions</option>',regList.forEach(t=>{const e=document.createElement("option");e.value=e.textContent=t,pReg.appendChild(e)});
+
+        const divList=[...new Set(Object.values(pmegpMasterMap).map(t=>t.division))].filter(Boolean).sort(),
+              pDiv=document.getElementById("pmegpFilterDivision");
+        pDiv.innerHTML='<option value="All">All Divisions</option>',divList.forEach(t=>{const e=document.createElement("option");e.value=e.textContent=t,pDiv.appendChild(e)});
+
+        t.innerHTML=`✅ Master Loaded (${Object.keys(pmegpMasterMap).length} Units)`;
     }catch(e){
-        console.error("Error loading PMEGP Master:",e),t.innerHTML="⚠️ PMEGP Master sync failed"
+        console.error("Error loading PMEGP Master:",e),t.innerHTML="⚠️ PMEGP Master sync failed";
     }
 }
 
 function processPmegpData(){
-    const t={};
-    pmegpUploadedRaw.forEach(e=>{t[e.unitId.toUpperCase()]=e});
+    const inspectedMap={};
+    pmegpUploadedRaw.forEach(e=>{
+        const exactKey=e.unitId.toUpperCase();
+        const normKey=cleanUnitId(e.unitId);
+        inspectedMap[exactKey]=e;
+        inspectedMap[normKey]=e;
+    });
     
     // Division Level Processing
     const e={};
     Object.values(pmegpMasterMap).forEach(o=>{
-        const n=o.division||"OTHER DIVISION",i=o.region||"HQ",s=o.phase||"1st";
+        const n=o.division||"OTHER DIVISION",i=o.region||"INDORE",s=o.phase||"1st";
         e[n]||(e[n]={division:n,region:i,phases:{"1st":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"2nd":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"3rd":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]},"4th":{alloted:0,inspected:0,pending:0,units:[],pendingUnits:[]}},totalAlloted:0,totalInspected:0});
         e[n].phases[s].alloted++,e[n].totalAlloted++;
-        const l=t[o.appId.toUpperCase()];
+        
+        const l=inspectedMap[o.appId.toUpperCase()] || inspectedMap[cleanUnitId(o.appId)];
         if(l){
             e[n].phases[s].inspected++;
             e[n].totalInspected++;
@@ -478,6 +521,7 @@ function processPmegpData(){
         });
         div.pending123 = div.phases["1st"].pending + div.phases["2nd"].pending + div.phases["3rd"].pending;
         div.pending4th = div.phases["4th"].pending;
+        div.totalPending = div.totalAlloted - div.totalInspected;
         div.pctOverall = div.totalAlloted > 0 ? (div.totalInspected / div.totalAlloted * 100) : 0;
         div.pct4th = div.phases["4th"].alloted > 0 ? (div.phases["4th"].inspected / div.phases["4th"].alloted * 100) : 0;
     });
@@ -487,25 +531,31 @@ function processPmegpData(){
     // Inspector Wise Grouped Processing (Division + Inspector unique key)
     const o={};
     pmegpUploadedRaw.forEach(rawItem=>{
-        const master=pmegpMasterMap[rawItem.unitId.toUpperCase()]||{division:"Unknown Division",region:"Unknown",phase:"1st"};
-        const divName=master.division;
-        const regName=master.region;
-        const inspName=rawItem.inspBy||"Unassigned";
+        let master=pmegpMasterMap[rawItem.unitId.toUpperCase()] || pmegpMasterNormalizedMap[cleanUnitId(rawItem.unitId)];
+        
+        let divName = master ? master.division : normalizeDivName(rawItem.fileDiv);
+        let regName = master ? master.region : "INDORE";
+        let phase = master ? master.phase : "1st";
+        let inspName = rawItem.inspBy || "Unassigned";
+
+        if(divName === "UNKNOWN DIVISION" && rawItem.fileDiv){
+            divName = normalizeDivName(rawItem.fileDiv);
+        }
+
         const key=`${divName}||${inspName}`;
 
         if(!o[key]){
             o[key]={division:divName,region:regName,inspBy:inspName,insp123:0,insp4th:0,totalCount:0,units:[]};
         }
         o[key].totalCount++;
-        if(master.phase==="4th"){
+        if(phase==="4th"){
             o[key].insp4th++;
         } else {
             o[key].insp123++;
         }
-        o[key].units.push({appId:rawItem.unitId,division:divName,region:regName,phase:master.phase,inspBy:inspName,date:rawItem.date,status:rawItem.status});
+        o[key].units.push({appId:rawItem.unitId,division:divName,region:regName,phase:phase,inspBy:inspName,date:rawItem.date,status:rawItem.status});
     });
 
-    // Sort by Division name, then by Inspector Total Inspected desc
     pmegpProcessedInspectors=Object.values(o).sort((a,b)=>{
         if(a.division === b.division) return b.totalCount - a.totalCount;
         return a.division.localeCompare(b.division);
@@ -523,26 +573,33 @@ function switchPmegpView(t){
 }
 
 function renderPmegpViews(){
-    const t=document.getElementById("pmegpFilterRegion").value,
-          e=document.querySelector("#tablePmegpDivision tbody"),
+    const selReg=document.getElementById("pmegpFilterRegion").value;
+    const selDiv=document.getElementById("pmegpFilterDivision").value;
+
+    const e=document.querySelector("#tablePmegpDivision tbody"),
           o=document.querySelector("#tablePmegpDivision tfoot");
     e.innerHTML="",o.innerHTML="";
     
-    const filteredDivs=pmegpProcessedDivisions.filter(e=>"All"===t||e.region===t);
+    const filteredDivs=pmegpProcessedDivisions.filter(item=>{
+        const regMatch = ("All"===selReg || item.region===selReg);
+        const divMatch = ("All"===selDiv || item.division===selDiv);
+        return regMatch && divMatch;
+    });
+
     if(filteredDivs.length){
         let sno=1,
             totAllot1=0,totPend1=0,
             totAllot2=0,totPend2=0,
             totAllot3=0,totPend3=0,
             totAllot4=0,totPend4=0,
-            totAllot=0,totPend123=0,totPend4th=0,totInspected=0,totInsp4th=0;
+            totAllot=0,totPend123=0,totPend4th=0,totPendingAll=0,totInspected=0,totInsp4th=0;
 
         filteredDivs.forEach(item=>{
             const a1=item.phases["1st"].alloted, p1=item.phases["1st"].pending,
                   a2=item.phases["2nd"].alloted, p2=item.phases["2nd"].pending,
                   a3=item.phases["3rd"].alloted, p3=item.phases["3rd"].pending,
                   a4=item.phases["4th"].alloted, p4=item.phases["4th"].pending,
-                  totA=item.totalAlloted, p123=item.pending123, p4th=item.pending4th,
+                  totA=item.totalAlloted, p123=item.pending123, p4th=item.pending4th, totPend=item.totalPending,
                   pctO=item.pctOverall.toFixed(1)+"%",
                   pct4=item.pct4th.toFixed(1)+"%";
 
@@ -550,7 +607,7 @@ function renderPmegpViews(){
             totAllot2+=a2; totPend2+=p2;
             totAllot3+=a3; totPend3+=p3;
             totAllot4+=a4; totPend4+=p4;
-            totAllot+=totA; totPend123+=p123; totPend4th+=p4th;
+            totAllot+=totA; totPend123+=p123; totPend4th+=p4th; totPendingAll+=totPend;
             totInspected+=item.totalInspected;
             totInsp4th+=item.phases["4th"].inspected;
 
@@ -571,6 +628,7 @@ function renderPmegpViews(){
                 <td class="font-extrabold bg-amber-50">${totA}</td>
                 <td class="clickable-cell font-extrabold text-amber-900 bg-amber-100" onclick="openPmegpPendingUnitsModal('${item.division}', '123')">${p123}</td>
                 <td class="clickable-cell font-extrabold text-rose-900 bg-rose-100" onclick="openPmegpPendingUnitsModal('${item.division}', '4th')">${p4th}</td>
+                <td class="clickable-cell font-black text-[#9c0006] bg-[#f8cbad]" onclick="openPmegpPendingUnitsModal('${item.division}', 'ALL')">${totPend}</td>
                 <td class="font-bold text-emerald-800 bg-emerald-50">${pctO}</td>
                 <td class="font-bold text-indigo-800 bg-indigo-50">${pct4}</td>
             `;
@@ -594,20 +652,26 @@ function renderPmegpViews(){
                 <td>${totAllot}</td>
                 <td class="clickable-cell underline" onclick="openPmegpPendingUnitsModal('ALL', '123')">${totPend123}</td>
                 <td class="clickable-cell underline" onclick="openPmegpPendingUnitsModal('ALL', '4th')">${totPend4th}</td>
+                <td class="clickable-cell underline font-black text-[#9c0006]" onclick="openPmegpPendingUnitsModal('ALL', 'ALL')">${totPendingAll}</td>
                 <td>${grandPctO}</td>
                 <td>${grandPct4}</td>
             </tr>
         `;
     } else {
-        e.innerHTML='<tr><td colspan="16" class="py-8 text-center text-slate-400 font-medium">No matching PMEGP records found.</td></tr>';
+        e.innerHTML='<tr><td colspan="17" class="py-8 text-center text-slate-400 font-medium">No matching PMEGP records found.</td></tr>';
     }
 
-    // Inspector Table Rendering
+    // Inspector Table Rendering with Colorful Division Styling
     const tbodyInsp=document.querySelector("#tablePmegpInspector tbody"),
           tfootInsp=document.querySelector("#tablePmegpInspector tfoot");
     tbodyInsp.innerHTML=""; tfootInsp.innerHTML="";
     
-    const filteredInspectors=pmegpProcessedInspectors.filter(e=>"All"===t||e.region===t);
+    const filteredInspectors=pmegpProcessedInspectors.filter(item=>{
+        const regMatch = ("All"===selReg || item.region===selReg);
+        const divMatch = ("All"===selDiv || item.division===selDiv);
+        return regMatch && divMatch;
+    });
+
     if(filteredInspectors.length){
         let sno=1, total123=0, total4th=0, grandTotal=0;
         filteredInspectors.forEach(item=>{
@@ -615,15 +679,16 @@ function renderPmegpViews(){
             total4th+=item.insp4th;
             grandTotal+=item.totalCount;
 
+            const divStyle=divClassMap[item.division]||"font-bold text-purple-950";
             const tr=document.createElement("tr");
             tr.innerHTML=`
                 <td>${sno++}</td>
-                <td class="text-left font-bold text-purple-950">${item.division}</td>
+                <td class="${divStyle} text-left font-bold px-3">${item.division}</td>
                 <td class="font-bold text-slate-600">${item.region}</td>
-                <td class="text-left font-semibold text-blue-900">${item.inspBy}</td>
-                <td class="clickable-cell font-bold text-emerald-800 text-right pr-4" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', '123')">${item.insp123}</td>
-                <td class="clickable-cell font-bold text-purple-800 text-right pr-4" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', '4th')">${item.insp4th}</td>
-                <td class="clickable-cell font-bold text-purple-950 text-right pr-4 bg-purple-50" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', 'ALL')">${item.totalCount}</td>
+                <td class="text-left font-semibold text-blue-900 px-3">${item.inspBy}</td>
+                <td class="clickable-cell font-bold text-emerald-800 text-right pr-4 bg-emerald-50/40" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', '123')">${item.insp123}</td>
+                <td class="clickable-cell font-bold text-purple-800 text-right pr-4 bg-purple-50/40" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', '4th')">${item.insp4th}</td>
+                <td class="clickable-cell font-bold text-purple-950 text-right pr-4 bg-amber-100" onclick="openPmegpInspectorPhaseUnitsModal('${item.division}', '${item.inspBy}', 'ALL')">${item.totalCount}</td>
             `;
             tbodyInsp.appendChild(tr);
         });
@@ -644,7 +709,11 @@ function renderPmegpViews(){
 // Modal for Pending Units
 function openPmegpPendingUnitsModal(division, phaseKey){
     const inspectedMap={};
-    pmegpUploadedRaw.forEach(t=>{inspectedMap[t.unitId.toUpperCase()]=t});
+    pmegpUploadedRaw.forEach(t=>{
+        inspectedMap[t.unitId.toUpperCase()]=t;
+        inspectedMap[cleanUnitId(t.unitId)]=t;
+    });
+
     const pendingList=[];
 
     Object.values(pmegpMasterMap).forEach(unit=>{
@@ -653,7 +722,7 @@ function openPmegpPendingUnitsModal(division, phaseKey){
         if(phaseKey!=="123" && phaseKey!=="ALL" && unit.phase!==phaseKey) return;
         
         // Check if NOT inspected
-        if(!inspectedMap[unit.appId.toUpperCase()]){
+        if(!inspectedMap[unit.appId.toUpperCase()] && !inspectedMap[cleanUnitId(unit.appId)]){
             pendingList.push({
                 appId: unit.appId,
                 division: unit.division,
@@ -670,7 +739,8 @@ function openPmegpPendingUnitsModal(division, phaseKey){
     
     pmegpModalExportData = pendingList.map((t,e)=>({"S.No":e+1,"Unit ID":t.appId,Division:t.division,Region:t.region,Phase:t.phase,"Inspected By":t.inspBy,"Inspected Date":t.date,Status:t.status}));
     
-    document.getElementById("pmegpModalTitle").textContent=`Pending Units: ${division} (${phaseKey==="123"?"1st+2nd+3rd Phase":phaseKey+" Phase"})`;
+    const labelTitle = phaseKey==="123"?"1st+2nd+3rd Phase":phaseKey==="ALL"?"All Phases Total":phaseKey+" Phase";
+    document.getElementById("pmegpModalTitle").textContent=`Pending Units: ${division} (${labelTitle})`;
     document.getElementById("pmegpModalSubtitle").textContent=`Total ${pendingList.length} units pending for physical verification.`;
     document.querySelector("#tablePmegpModalUnits tbody").innerHTML=pendingList.map((t,e)=>`
         <tr class="hover:bg-slate-50 border-b border-slate-100">
@@ -693,16 +763,20 @@ function openPmegpPendingUnitsModal(division, phaseKey){
 function openPmegpInspectorPhaseUnitsModal(division, inspectorName, phaseFilter){
     const unitsList=[];
     pmegpUploadedRaw.forEach(rawItem=>{
-        const master=pmegpMasterMap[rawItem.unitId.toUpperCase()]||{division:"Unknown",region:"Unknown",phase:"-"};
-        if(master.division===division && rawItem.inspBy===inspectorName){
-            if(phaseFilter==="123" && !(master.phase==="1st"||master.phase==="2nd"||master.phase==="3rd")) return;
-            if(phaseFilter==="4th" && master.phase!=="4th") return;
+        let master=pmegpMasterMap[rawItem.unitId.toUpperCase()] || pmegpMasterNormalizedMap[cleanUnitId(rawItem.unitId)];
+        let divName = master ? master.division : normalizeDivName(rawItem.fileDiv);
+        let phase = master ? master.phase : "1st";
+        let regName = master ? master.region : "INDORE";
+
+        if(divName===division && rawItem.inspBy===inspectorName){
+            if(phaseFilter==="123" && !(phase==="1st"||phase==="2nd"||phase==="3rd")) return;
+            if(phaseFilter==="4th" && phase!=="4th") return;
             
             unitsList.push({
                 appId: rawItem.unitId,
-                division: master.division,
-                region: master.region,
-                phase: master.phase,
+                division: divName,
+                region: regName,
+                phase: phase,
                 inspBy: rawItem.inspBy,
                 date: rawItem.date,
                 status: rawItem.status
@@ -759,6 +833,7 @@ function exportPmegpExcel(){
         "Total Alloted": item.totalAlloted,
         "Pending (1st+2nd+3rd)": item.pending123,
         "Pending in 4th Phase": item.pending4th,
+        "Total Pending": item.totalPending,
         "% Inspected Overall": Number(item.pctOverall.toFixed(2)),
         "% Inspected in 4th Phase": Number(item.pct4th.toFixed(2))
     }));
@@ -801,26 +876,33 @@ document.getElementById("pmegpFileInput").addEventListener("change",function(t){
             let i=0;
             for(let t=0;t<Math.min(10,n.length);t++){
                 const e=n[t].map(t=>String(t).trim().toUpperCase());
-                if(e.includes("UNIT ID")||e.includes("INSP BY")||e.includes("APP_ID")){i=t;break}
+                if(e.includes("UNIT ID")||e.includes("INSP BY")||e.includes("APP_ID")||e.includes("INSPECTOR")){i=t;break}
             }
             const s=n[i].map(t=>String(t).trim().toUpperCase()),
                   l=Math.max(s.indexOf("UNIT ID"),s.indexOf("APP_ID"),0);
             let a=s.indexOf("INSP BY");
-            -1===a&&(a=s.indexOf("INSPECTOR")),-1===a&&(a=5);
-            const d=s.indexOf("INSPECTED DATE")>-1?s.indexOf("INSPECTED DATE"):7,
-                  r=s.indexOf("STATUS")>-1?s.indexOf("STATUS"):8;
+            -1===a&&(a=s.indexOf("INSPECTOR")),-1===a&&(a=s.indexOf("NAME OF INSPECTOR")),-1===a&&(a=5);
+            const d=s.indexOf("INSPECTED DATE")>-1?s.indexOf("INSPECTED DATE"):s.indexOf("DATE")>-1?s.indexOf("DATE"):7,
+                  r=s.indexOf("STATUS")>-1?s.indexOf("STATUS"):8,
+                  divIdx=s.indexOf("DIVISION")>-1?s.indexOf("DIVISION"):s.indexOf("DIV")>-1?s.indexOf("DIV"):-1;
+
             pmegpUploadedRaw=[];
             for(let t=i+1;t<n.length;t++){
                 const e=n[t];
                 if(!e||!e.length)continue;
                 const o=String(e[l]||"").trim();
                 if(!o||o.toUpperCase().includes("TOTAL")||o.toUpperCase().includes("SUMMARY"))continue;
-                const i=String(e[a]||"Unassigned").trim(),s=String(e[d]||"").trim(),c=String(e[r]||"Inspected").trim();
-                pmegpUploadedRaw.push({unitId:o,inspBy:i,date:s,status:c})
+                const inspName=String(e[a]||"Unassigned").trim(),
+                      inspDate=String(e[d]||"").trim(),
+                      inspStatus=String(e[r]||"Inspected").trim(),
+                      rawDivName=divIdx>-1?String(e[divIdx]||"").trim():"";
+
+                pmegpUploadedRaw.push({unitId:o,inspBy:inspName,date:inspDate,status:inspStatus,fileDiv:rawDivName});
             }
-            o.innerHTML=`✅ Uploaded! (${pmegpUploadedRaw.length} Inspections)`,processPmegpData()
+            o.innerHTML=`✅ Uploaded! (${pmegpUploadedRaw.length} Inspections)`;
+            processPmegpData();
         }catch(t){
-            console.error(t),o.innerHTML="❌ Error reading inspection file."
+            console.error(t),o.innerHTML="❌ Error reading inspection file.";
         }
     },n.readAsArrayBuffer(e);
 });
@@ -866,7 +948,7 @@ function renderSummaryTable(t,e){
 
 function getNilRuleConfig(t,e){const o=String(t||"All").toUpperCase(),n=String(e||"All").toUpperCase();return"SO"===o||"HO"===o?"PARCEL"===n?{lowMin:1,lowMax:50,goodMin:51,labelLow:"Low (1-50)*",labelGood:"Good (>50)",labelPct:"% >50 Booking"}:{lowMin:1,lowMax:100,goodMin:101,labelLow:"Low (1-100)*",labelGood:"Good (>100)",labelPct:"% >100 Booking"}:{lowMin:1,lowMax:10,goodMin:11,labelLow:"Low (1-10)*",labelGood:"Good (>10)",labelPct:"% >10 Booking"}}
 function getOfficeActivityData(t,e){const o=getNilRuleConfig(t,e),n={};Object.entries(masterOfficesMap).forEach(([e,o])=>{o.name.toUpperCase().includes("KHUDEL")&&"BO"===o.class||"All"!==t&&o.class!==t||(n[e]={officeId:e,name:o.name,class:o.class,sd:o.sd,division:o.division,cnt:0})}),rawData.forEach(t=>{if(n[t.officeId]){const o=String(t.service).trim().toLowerCase(),i=serviceMapping[o]||(o.includes("parcel")?"PARCEL":"MO");"All"!==e&&i!==e||(n[t.officeId].cnt+=Number(t.articles)||0)}});const i={};return Object.values(n).forEach(t=>{const e=t.division||"OTHER DIVISION",n=t.sd||"OTHER SD",s=e+"||"+n;i[s]||(i[s]={division:e,sd:n,totalOffices:0,totalArticles:0,nilOffices:[],lowBooking:[],goodBooking:[]});const l=t.cnt,a=t.name.toUpperCase().includes("IDC");0!==l||a?l>=o.lowMin&&l<=o.lowMax||0===l&&a?i[s].lowBooking.push(t):l>=o.goodMin&&i[s].goodBooking.push(t):i[s].nilOffices.push(t),i[s].totalOffices++,i[s].totalArticles+=l}),{sdMap:i,config:o,officeSummary:n}}
-function renderNilBookingTable(){const t=document.querySelector("#tableNilBookingSummary tbody"),e=document.querySelector("#tableNilBookingSummary tfoot");t.innerHTML="",e.innerHTML="";const o=document.getElementById("nilFilterClass").value,n=document.getElementById("nilFilterCategory").value,{sdMap:i,config:s}=getOfficeActivityData(o,n);document.getElementById("thNilLow").textContent=s.labelLow,document.getElementById("thNilGood").textContent=s.labelGood,document.getElementById("thNilGoodPct").textContent=s.labelPct;const l={};Object.values(i).forEach(t=>{l[t.division]||(l[t.division]=[]),l[t.division].push(t)});let a=1,d=0,r=0,c=0,p=0,f=0;Object.entries(l).forEach(([e,o])=>{let n=0,i=0,s=0,l=0,g=0,u=divClassMap[e]||"div-bg-indore-city";o.forEach(o=>{n+=o.totalOffices,i+=o.totalArticles,s+=o.nilOffices.length,l+=o.lowBooking.length,g+=o.goodBooking.length;const d=o.totalOffices>0?(o.totalArticles/o.totalOffices).toFixed(2):"0.00",r=o.totalOffices>0?Math.round(o.nilOffices.length/o.totalOffices*100)+"%":"0%",c=o.totalOffices>0?Math.round(o.goodBooking.length/o.totalOffices*100)+"%":"0%",p=document.createElement("tr");p.innerHTML=`<td>${a++}</td><td class="${u}">${e}</td><td style="text-align: left; font-weight: 600;">${o.sd}</td><td>${o.totalOffices}</td><td class="font-bold text-purple-950">${o.totalArticles}</td><td class="font-bold text-blue-900 bg-blue-50/50">${d}</td><td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'NIL')">${o.nilOffices.length}</td><td class="clickable-cell font-bold text-amber-700 bg-amber-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'LOW')">${o.lowBooking.length}</td><td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'GOOD')">${o.goodBooking.length}</td><td class="font-bold text-rose-800 bg-rose-100/60">${r}</td><td class="font-bold text-emerald-800 bg-emerald-100/60">${c}</td>`,t.appendChild(p)}),d+=n,r+=i,c+=s,p+=l,f+=g;const m=n>0?(i/n).toFixed(2):"0.00",h=n>0?Math.round(s/n*100)+"%":"0%",x=n>0?Math.round(g/n*100)+"%":"0%",b=document.createElement("tr");b.className="row-div-total",b.innerHTML=`<td colspan="3">${e} Total</td><td>${n}</td><td>${i}</td><td>${m}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'NIL')">${s}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'LOW')">${l}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'GOOD')">${g}</td><td>${h}</td><td>${x}</td>`,t.appendChild(b)});const g=d>0?(r/d).toFixed(2):"0.00",u=d>0?Math.round(c/d*100)+"%":"0%",m=d>0?Math.round(f/d*100)+"%":"0%";e.innerHTML=`<tr class="row-grand-total"><td colspan="3">Grand Total</td><td>${d}</td><td>${r}</td><td>${g}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'NIL')">${c}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'LOW')">${p}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'GOOD')">${f}</td><td>${u}</td><td>${m}</td></tr>`}
+function renderNilBookingTable(){const t=document.querySelector("#tableNilBookingSummary tbody"),e=document.querySelector("#tableNilBookingSummary tfoot");t.innerHTML="",e.innerHTML="";const o=document.getElementById("nilFilterClass").value,n=document.getElementById("nilFilterCategory").value,{sdMap:i,config:s}=getOfficeActivityData(o,n);document.getElementById("thNilLow").textContent=s.labelLow,document.getElementById("thNilGood").textContent=s.labelGood,document.getElementById("thNilGoodPct").textContent=s.labelPct;const l={};Object.values(i).forEach(t=>{l[t.division]||(l[t.division]=[]),l[t.division].push(t)});let a=1,d=0,r=0,c=0,p=0,f=0;Object.entries(l).forEach(([e,o])=>{let n=0,i=0,s=0,l=0,g=0,u=divClassMap[e]||"div-bg-indore-city";o.forEach(o=>{n+=o.totalOffices,i+=o.totalArticles,s+=o.nilOffices.length,l+=o.lowBooking.length,g+=o.goodBooking.length;const d=o.totalOffices>0?(o.totalArticles/o.totalOffices).toFixed(2):"0.00",r=o.totalOffices>0?Math.round(o.nilOffices.length/o.totalOffices*100)+"%":"0%",c=o.totalOffices>0?Math.round(o.goodBooking.length/o.totalOffices*100)+"%":"0%",p=document.createElement("tr");p.innerHTML=`<td>${a++}</td><td class="${u}">${e}</td><td style="text-align: left; font-weight: 600;">${o.sd}</td><td>${o.totalOffices}</td><td class="font-bold text-purple-950">${o.totalArticles}</td><td class="font-bold text-blue-900 bg-blue-50/50">${d}</td><td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'NIL')">${o.nilOffices.length}</td><td class="clickable-cell font-bold text-amber-700 bg-amber-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'LOW')">${o.lowBooking.length}</td><td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'GOOD')">${o.goodBooking.length}</td><td class="font-bold text-rose-800 bg-rose-100/60">${r}</td><td class="font-bold text-emerald-800 bg-emerald-100/60">${c}</td>`,t.appendChild(p)}),d+=n,r+=i,c+=s,p+=l,f+=g;const m=n>0?(i/n).toFixed(2):"0.00",h=n>0?Math.round(s/n*100)+"%":"0%",x=n>0?Math.round(g/n*100)+"%":"0%",b=document.createElement("tr");b.className="row-div-total",b.innerHTML=`<td colspan="3">${e} Total</td><td>${n}</td><td>${i}</td><td>${m}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'NIL')">${s}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'LOW')">${f}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'GOOD')">${g}</td><td>${h}</td><td>${x}</td>`,t.appendChild(b)});const g=d>0?(r/d).toFixed(2):"0.00",u=d>0?Math.round(c/d*100)+"%":"0%",m=d>0?Math.round(f/d*100)+"%":"0%";e.innerHTML=`<tr class="row-grand-total"><td colspan="3">Grand Total</td><td>${d}</td><td>${r}</td><td>${g}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'NIL')">${c}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'LOW')">${p}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'GOOD')">${f}</td><td>${u}</td><td>${m}</td></tr>`}
 function openOfficeCategoryListModal(t,e,o){const n=document.getElementById("nilFilterClass").value,i=document.getElementById("nilFilterCategory").value,{officeSummary:s,config:l}=getOfficeActivityData(n,i),a=[];if(Object.values(s).forEach(n=>{if("ALL"!==t&&n.division!==t)return;if("ALL"!==e&&n.sd!==e)return;const i=n.cnt,s=n.name.toUpperCase().includes("IDC");let d=!1;"NIL"!==o||0!==i||s||(d=!0),"LOW"===o&&(i>=l.lowMin&&i<=l.lowMax||0===i&&s)&&(d=!0),"GOOD"===o&&i>=l.goodMin&&(d=!0),d&&a.push({officeId:n.officeId,officeName:n.name,class:n.class,subDivision:n.sd,division:n.division,articles:i})}),0===a.length)return void alert(`No offices found for ${t} / ${e} under ${o} category.`);modalExportData=a.map(t=>({"Office ID":t.officeId,"Office Name":t.officeName,Class:t.class,"Sub-Division":t.subDivision,Division:t.division,"Category Evaluated":i,"Articles Booked":t.articles})),document.getElementById("modalTitle").textContent=`Office List: ${o} Booking (${"ALL"===e?t:e})`,document.getElementById("modalSubtitle").textContent=`Category: ${i} | Total ${a.length} offices found.`;document.querySelector("#tableModalOffices tbody").innerHTML=a.map(t=>`<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="py-3 px-4 font-semibold">${t.officeName} <span class="text-xs text-slate-400">(${t.officeId})</span></td><td class="py-3 px-4"><span class="bg-purple-100 text-purple-950 text-xs px-2 py-1 rounded font-bold">${t.class}</span></td><td class="py-3 px-4 text-xs text-slate-600">${t.division} / ${t.subDivision}</td><td class="py-3 px-4 text-center text-xs">-</td><td class="py-3 px-4 text-center text-xs">-</td><td class="py-3 px-4 text-center text-xs">-</td><td class="py-3 px-4 text-right font-extrabold text-purple-950">${t.articles}</td><td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td></tr>`).join(""),openModal("drilldownModal"),logGeneratedReport(`Office List (${o} - ${e})`,()=>exportModalToExcel())}
 function exportMultiSheetNilExcel(){if(!rawData||0===rawData.length)return void alert("Please upload Booking Raw File first.");const t=XLSX.utils.book_new(),e=(t,e)=>{const{sdMap:o,config:n}=getOfficeActivityData(t,e),i=[];let s=1,l=0,a=0,d=0,r=0,c=0;const p={};return Object.values(o).forEach(t=>{p[t.division]||(p[t.division]=[]),p[t.division].push(t)}),Object.entries(p).forEach(([t,e])=>{let o=0,p=0,f=0,g=0,u=0;e.forEach(e=>{o+=e.totalOffices,p+=e.totalArticles,f+=e.nilOffices.length,g+=e.lowBooking.length,u+=e.goodBooking.length,i.push({"S.No":s++,Division:t,"Sub Division":e.sd,"Total Offices":e.totalOffices,"Total Articles":e.totalArticles,"Avg Booking/Office":e.totalOffices>0?Number((e.totalArticles/e.totalOffices).toFixed(2)):0,"Nil (0) Offices":e.nilOffices.length,[`Low Booking (${n.lowMin}-${n.lowMax})`]:e.lowBooking.length,[`Good Booking (>${n.goodMin-1})`]:e.goodBooking.length,"% Nil":e.totalOffices?`${Math.round(e.nilOffices.length/e.totalOffices*100)}%`:"0%","% Good":e.totalOffices?`${Math.round(e.goodBooking.length/e.totalOffices*100)}%`:"0%"})}),l+=o,a+=p,d+=f,r+=g,c+=u,i.push({"S.No":"",Division:`${t} Total`,"Sub Division":"","Total Offices":o,"Total Articles":p,"Avg Booking/Office":o>0?Number((p/o).toFixed(2)):0,"Nil (0) Offices":f,[`Low Booking (${n.lowMin}-${n.lowMax})`]:g,[`Good Booking (>${n.goodMin-1})`]:u,"% Nil":o?`${Math.round(f/o*100)}%`:"0%","% Good":o?`${Math.round(u/o*100)}%`:"0%"})}),i.push({"S.No":"",Division:"Grand Total","Sub Division":"","Total Offices":l,"Total Articles":a,"Avg Booking/Office":l>0?Number((a/l).toFixed(2)):0,"Nil (0) Offices":d,[`Low Booking (${n.lowMin}-${n.lowMax})`]:r,[`Good Booking (>${n.goodMin-1})`]:c,"% Nil":l?`${Math.round(d/l*100)}%`:"0%","% Good":l?`${Math.round(c/l*100)}%`:"0%"}),XLSX.utils.json_to_sheet(i)};XLSX.utils.book_append_sheet(t,e("BO","All"),"BO_Booking_Status"),XLSX.utils.book_append_sheet(t,e("SO","PARCEL"),"SO_Parcel_Category"),XLSX.utils.book_append_sheet(t,e("SO","MO"),"SO_Mail_Operations"),XLSX.writeFile(t,"Nil_and_Office_Activity_Report_3_Sheets.xlsx"),logGeneratedReport("Nil Booking Report (3 Sheets Excel)",()=>exportMultiSheetNilExcel())}
 
@@ -905,7 +987,7 @@ function processDigitalReport(){
         i.innerHTML='<tr><th style="width: 20%;">Division</th><th style="width: 25%;">Sub-Division</th><th style="width: 13%;">Cash (Cnt)</th><th style="width: 14%;">DQR Scan (Cnt)</th><th style="width: 15%;">SBIPOS BHARAT QR</th><th style="width: 13%;">% of Digital Txn</th></tr>';
         const e={};
         digitalRawData.forEach(n=>{const i=masterOfficesMap[n.officeId];if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||t&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION",l=i.sd||"OTHER SD";"All"!==o&&s!==o||(e[s]||(e[s]={division:s,subDivs:{},cash:0,dqr:0,sbiposQr:0}),e[s].subDivs[l]||(e[s].subDivs[l]={name:l,division:s,cash:0,dqr:0,sbiposQr:0}),e[s].cash+=n.cash,e[s].dqr+=n.dqr,e[s].sbiposQr+=n.sbiposQr,e[s].subDivs[l].cash+=n.cash,e[s].subDivs[l].dqr+=n.dqr,e[s].subDivs[l].sbiposQr+=n.sbiposQr)});
-        const n=Object.values(e).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return t.pct=o>0?e/o*100:0,t.subList=Object.values(t.subDivs).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return{...t,pct:o>0?e/o*100:0}}),t.subList.sort((t,e)=>e.pct-t.pct),t});
+        const n=Object.values(e).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return t.pct=o>0?e/o*100:0,t.subList=Object.values(t.subDivs).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return{...t,pct:o>0?e/o*100:0}}).sort((t,e)=>e.pct-t.pct),t});
         n.sort((t,e)=>e.pct-t.pct);
         let a=0,d=0,r=0;
         n.forEach(t=>{
