@@ -700,10 +700,7 @@
         <div class="report-header px-6 py-4 flex justify-between items-center"><div><h3 id="adminReportCount" class="font-extrabold text-lg flex items-center gap-2">🛠️ Admin Audit Log</h3><p class="text-xs text-purple-200">Track generated analytical reports</p></div><button onclick='closeModal("adminDashboardModal")' class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button></div>
         <div class="p-6 overflow-y-auto flex-grow space-y-4">
             <div class="flex justify-between items-center"><p class="text-xs font-bold text-slate-600">Total Logs: <span id="adminReportCountSpan" class="text-purple-950">0</span></p><button onclick="clearAdminLogs()" class="bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition">🗑️ Clear Logs</button></div>
-            <div class="overflow-x-auto border border-slate-200 rounded-xl shadow-sm bg-white"><table class="w-full text-left border-collapse" id="adminReportTable"><thead><tr class="bg-slate-100 text-slate-800 text-xs font-bold uppercase border-b border-slate-200"><th class="py-3 px-4">#</th><th class="py-3 px-4">Action / Report Name</th><th class="py-3 px-4">User</th><th class="py-3 px-4">Timestamp</th><th class="py-3 px-4 text-center">Status</th><th class="py-3 px-4 text-right">Action</th></tr></thead><tbody class="text-xs md:text-sm divide-y divide-slate-100 text-slate-700"><tr><td colspan="6" class="py-8 text-center text-slate-400 font-medium">No activity logged yet.</td></tr></tbody></table></div>
-        </div>
-    </div>
-</div>
+            <div class="overflow-x-auto border border-slate-200 rounded-xl shadow-sm bg-white"><table class="w-full text-left border-collapse" id="adminReportTable"><thead><tr class="bg-slate-100 text-slate-800 text-xs font-bold uppercase border-b border-slate-200"><th class="py-3 px-4">#</th><th class="py-3 px-4">Action / Report Name</th><th class="py-3 px-4">User</th><th class="py-3 px-4 text-slate-600">${t.time}</th><th class="py-3 px-4 text-center"><span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold">Logged</span></th><th class="py-3 px-4 text-right">${t.action?`<button onclick="generatedReportsLog[${e}].action()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">View / Repeat</button>`:"-"}</th></tr>`).join("")}
 
 <footer class="report-header text-purple-200 text-xs py-4 px-6 text-center border-t border-purple-950 mt-12">
     <p class="font-medium">Developed by <span class="text-white font-bold">Kapil Rajput</span>, Regional Office Indore</p>
@@ -772,15 +769,37 @@ async function loadMasterData(){
         for(let t=1;t<n.length;t++){
             const e=n[t],o=String(e[0]||"").trim();
             if(o){
-                let t=String(e[1]||"").trim(),n=String(e[3]||"").trim(),i=String(e[4]||"").trim().toUpperCase(),s=String(e[2]||"BO").trim().toUpperCase();
-                t.toUpperCase().includes("KHUDEL")&&"BO"===s&&(n="INDORE EAST SD",i="INDORE CITY"),masterOfficesMap[o]={name:t,class:s,sd:n,division:i,ro:String(e[5]||e[6]||"").trim().toUpperCase()}
+                let name=String(e[1]||"").trim(),sd=String(e[3]||"").trim(),division=String(e[4]||"").trim().toUpperCase(),cls=String(e[2]||"BO").trim().toUpperCase();
+                
+                if(o==="23660715" || name.toUpperCase().includes("NODEL DELIVERY CENTER INDORE") || name.toUpperCase().includes("NODAL DELIVERY CENTER INDORE")){
+                    name="NODAL DELIVERY CENTER INDORE";
+                    cls="NODAL DELIVERY CENTER";
+                    sd="INDORE CITY SD";
+                    division="INDORE CITY";
+                } else if(name.toUpperCase().includes("KHUDEL")&&"BO"===cls){
+                    sd="INDORE EAST SD";
+                    division="INDORE CITY";
+                }
+                masterOfficesMap[o]={name:name,class:cls,sd:sd,division:division,ro:String(e[5]||e[6]||"").trim().toUpperCase()};
             }
         }
+        
+        masterOfficesMap["23660715"] = {
+            name: "NODAL DELIVERY CENTER INDORE",
+            class: "NODAL DELIVERY CENTER",
+            sd: "INDORE CITY SD",
+            division: "INDORE CITY",
+            ro: "INDORE REGION"
+        };
+
         const i=XLSX.read(await e.text(),{type:"string"}),s=XLSX.utils.sheet_to_json(i.Sheets[i.SheetNames[0]],{header:1});
         serviceMapping=Object.fromEntries(s.slice(1).map(t=>[String(t[0]||"").trim().toLowerCase(),String(t[1]||"").trim().toUpperCase()]).filter(([t,e])=>t&&e)),
         document.getElementById("masterStatus").innerHTML=`<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Live Synced (${Object.keys(masterOfficesMap).length} Offices)`
     }catch(t){
-        masterOfficesMap={23108926:{name:"AGARCANTT B.O",class:"BO",sd:"AGAR SD",division:"UJJAIN",ro:"INDORE REGION"}},
+        masterOfficesMap={
+            23108926:{name:"AGARCANTT B.O",class:"BO",sd:"AGAR SD",division:"UJJAIN",ro:"INDORE REGION"},
+            23660715:{name:"NODAL DELIVERY CENTER INDORE",class:"NODAL DELIVERY CENTER",sd:"INDORE CITY SD",division:"INDORE CITY",ro:"INDORE REGION"}
+        };
         serviceMapping={"inland speed post document":"MO","indiapost parcel retail":"PARCEL"},
         document.getElementById("masterStatus").textContent="Loaded Offline Data"
     }
@@ -898,7 +917,6 @@ async function processD0Synthesis(){
         const parcelFiles = [speedPar, par, ddd, fReg, fSpeed].filter(Boolean);
         d0CombinedParcelMap = {};
 
-        // Combine 5 parcel files
         parcelFiles.forEach(fileMap => {
             Object.values(fileMap).forEach(row => {
                 const id = row.officeId;
@@ -925,7 +943,6 @@ async function processD0Synthesis(){
         d0AllProductMap = allProd || {};
         d0MailOperationsMap = {};
 
-        // Mail Operations = All Offices All Product - Combined Parcel
         Object.keys(d0AllProductMap).forEach(id => {
             const allRow = d0AllProductMap[id];
             const parRow = d0CombinedParcelMap[id] || {received:0, invoiced:0, d0Deliver:0, d0Redirect:0, d0Return:0};
@@ -958,6 +975,23 @@ function getD0ReportActiveDataset(){
     return domain === "parcel" ? d0CombinedParcelMap : d0MailOperationsMap;
 }
 
+function getEffectiveOfficeMaster(officeId, fallbackName, fallbackType){
+    if(officeId === "23660715" || String(fallbackName).toUpperCase().includes("NODEL DELIVERY CENTER INDORE") || String(fallbackName).toUpperCase().includes("NODAL DELIVERY CENTER INDORE")){
+        return {
+            name: "NODAL DELIVERY CENTER INDORE",
+            class: "NODAL DELIVERY CENTER",
+            sd: "INDORE CITY SD",
+            division: "INDORE CITY"
+        };
+    }
+    return masterOfficesMap[officeId] || {
+        name: fallbackName || "Unknown",
+        class: fallbackType || "SO",
+        sd: "OTHER SD",
+        division: "OTHER DIVISION"
+    };
+}
+
 function renderD0Table(){
     const dataset = getD0ReportActiveDataset();
     if(!Object.keys(dataset).length) return;
@@ -983,16 +1017,10 @@ function renderD0Table(){
     const grouped = {};
 
     Object.values(dataset).forEach(row => {
-        const master = masterOfficesMap[row.officeId] || {
-            name: row.name || "Unknown",
-            class: row.type || "SO",
-            sd: "OTHER SD",
-            division: "OTHER DIVISION"
-        };
+        const master = getEffectiveOfficeMaster(row.officeId, row.name, row.type);
 
         if(master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return;
         
-        // BO Mode Filter
         if(mode === "excluding_bo" && master.class === "BO") return;
         if(mode === "only_bo" && master.class !== "BO") return;
 
@@ -1116,7 +1144,6 @@ function renderD0Table(){
                 tbody.appendChild(tr);
             });
 
-            // Division Total Row
             const divTotalAct = divDel + divRedir + divRet;
             const divPctDel = divInv > 0 ? ((divDel / divInv)*100).toFixed(1)+"%" : "0.0%";
             const divPctRedir = divInv > 0 ? ((divRedir / divInv)*100).toFixed(1)+"%" : "0.0%";
@@ -1142,7 +1169,6 @@ function renderD0Table(){
         });
     }
 
-    // Grand Total Row
     const grandTotalAct = grandDel + grandRedir + grandRet;
     const grandPctDel = grandInv > 0 ? ((grandDel / grandInv)*100).toFixed(1)+"%" : "0.0%";
     const grandPctRedir = grandInv > 0 ? ((grandRedir / grandInv)*100).toFixed(1)+"%" : "0.0%";
@@ -1177,12 +1203,7 @@ function renderOfficeD0Table(){
 
     const list = [];
     Object.values(dataset).forEach(row => {
-        const master = masterOfficesMap[row.officeId] || {
-            name: row.name || "Unknown",
-            class: row.type || "SO",
-            sd: "OTHER SD",
-            division: "OTHER DIVISION"
-        };
+        const master = getEffectiveOfficeMaster(row.officeId, row.name, row.type);
         if(master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return;
         if(selDiv !== "All" && master.division !== selDiv) return;
         if(selClass !== "All" && master.class !== selClass) return;
@@ -1257,12 +1278,7 @@ function renderTopBottom20Table(){
 
     const list = [];
     Object.values(dataset).forEach(row => {
-        const master = masterOfficesMap[row.officeId] || {
-            name: row.name || "Unknown",
-            class: row.type || "SO",
-            sd: "OTHER SD",
-            division: "OTHER DIVISION"
-        };
+        const master = getEffectiveOfficeMaster(row.officeId, row.name, row.type);
         if(master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return;
         if(selDiv !== "All" && master.division !== selDiv) return;
         if(selClass !== "All" && master.class !== selClass) return;
@@ -1334,12 +1350,7 @@ function openD0OfficeModal(division, sd){
 
     const list = [];
     Object.values(dataset).forEach(row => {
-        const master = masterOfficesMap[row.officeId] || {
-            name: row.name || "Unknown",
-            class: row.type || "SO",
-            sd: "OTHER SD",
-            division: "OTHER DIVISION"
-        };
+        const master = getEffectiveOfficeMaster(row.officeId, row.name, row.type);
         if(master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return;
         if(mode === "excluding_bo" && master.class === "BO") return;
         if(mode === "only_bo" && master.class !== "BO") return;
@@ -1436,12 +1447,7 @@ function exportOfficeD0Excel(){
 
     const list = [];
     Object.values(dataset).forEach((row) => {
-        const master = masterOfficesMap[row.officeId] || {
-            name: row.name || "Unknown",
-            class: row.type || "SO",
-            sd: "OTHER SD",
-            division: "OTHER DIVISION"
-        };
+        const master = getEffectiveOfficeMaster(row.officeId, row.name, row.type);
         if(master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return;
         if(selDiv !== "All" && master.division !== selDiv) return;
         if(selClass !== "All" && master.class !== selClass) return;
@@ -1504,7 +1510,7 @@ function exportTopBottom20Excel(){
 function buildD0SheetData(dataset, mode){
     const divMap = {};
     Object.values(dataset).forEach(row => {
-        const master = masterOfficesMap[row.officeId] || {name:row.name, class:row.type||"SO", sd:"OTHER SD", division:"OTHER DIVISION"};
+        const master = getEffectiveOfficeMaster(row.officeId, row.name, row.type);
         if(master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return;
         
         if(mode === "excluding_bo" && master.class === "BO") return;
@@ -1607,9 +1613,8 @@ function exportD0AllSheetsExcel(){
     XLSX.utils.book_append_sheet(wb, buildD0SheetData(d0MailOperationsMap, "including_bo"), "MailOps_Incl_BO");
     XLSX.utils.book_append_sheet(wb, buildD0SheetData(d0MailOperationsMap, "only_bo"), "MailOps_Only_BO");
 
-    // 7th Detailed Sheet
     const officeRows = Object.values(d0AllProductMap).map((row, idx)=>{
-        const master = masterOfficesMap[row.officeId] || {name:row.name, class:row.type||"SO", sd:"OTHER SD", division:"OTHER DIVISION"};
+        const master = getEffectiveOfficeMaster(row.officeId, row.name, row.type);
         if(master.name.toUpperCase().includes("KHUDEL") && master.class === "BO") return null;
 
         const pRow = d0CombinedParcelMap[row.officeId] || {received:0, invoiced:0, d0Deliver:0, d0Redirect:0, d0Return:0};
@@ -1898,7 +1903,6 @@ function renderPmegpViews(){
         e.innerHTML='<tr><td colspan="17" class="py-8 text-center text-slate-400 font-medium">No matching PMEGP records found.</td></tr>';
     }
 
-    // Inspector Table Rendering
     const tbodyInsp=document.querySelector("#tablePmegpInspector tbody"),
           tfootInsp=document.querySelector("#tablePmegpInspector tfoot");
     tbodyInsp.innerHTML=""; tfootInsp.innerHTML="";
@@ -2210,7 +2214,7 @@ document.getElementById("pmegpFileInput").addEventListener("change",function(t){
 // ----------------- BOOKING & DIGITAL & PLI ROUTINES -----------------
 function updateDashboard(){
     const t=document.getElementById("filterDivision").value,e=document.getElementById("filterClass").value,o=document.getElementById("filterCategory").value,n=document.getElementById("summaryViewType").value,
-          i=rawData.map(t=>{let e=t.officeId;const o=masterOfficesMap[e]||{name:"Unknown",class:"BO",sd:"Unknown SD",division:"Unknown Division"};if(o.name.toUpperCase().includes("KHUDEL")&&"BO"===o.class)return null;const n=String(t.service).trim().toLowerCase();let i=serviceMapping[n]||(n.includes("parcel")?"PARCEL":"MO");return{officeId:e,service:t.service,articles:Number(t.articles)||0,postage:Number(t.postage)||0,officeName:o.name,officeClass:o.class,subDivision:o.sd,division:o.division,category:i}}).filter(Boolean),
+          i=rawData.map(t=>{let officeId=t.officeId;const master=getEffectiveOfficeMaster(officeId, "Unknown", "SO");if(master.name.toUpperCase().includes("KHUDEL")&&"BO"===master.class)return null;const sName=String(t.service).trim().toLowerCase();let cat=serviceMapping[sName]||(sName.includes("parcel")?"PARCEL":"MO");return{officeId:officeId,service:t.service,articles:Number(t.articles)||0,postage:Number(t.postage)||0,officeName:master.name,officeClass:master.class,subDivision:master.sd,division:master.division,category:cat}}).filter(Boolean),
           s=i.filter(n=>("All"===t||n.division===t)&&(("All"===e||n.officeClass===e)&&("All"===o||n.category===o)));
     currentFilteredRows=s;
     const l={};
@@ -2246,7 +2250,7 @@ function renderSummaryTable(t,e){
     i.innerHTML=`<tr class="report-grand text-[11px]"><td colspan="${s?1:2}" class="py-3 px-3">GRAND TOTAL</td><td class="py-3 px-2 text-center">${a.size}</td><td class="py-3 px-2 text-right">${d}</td><td class="py-3 px-2 text-right">${r.toLocaleString("en-IN")}</td><td class="py-3 px-2 text-right">${c}</td><td class="py-3 px-2 text-right">${p.toLocaleString("en-IN")}</td><td class="py-3 px-2 text-right">${f}</td><td class="py-3 px-2 text-right">${g.toLocaleString("en-IN")}</td><td class="py-3 px-3 text-right">${u}</td><td class="py-3 px-3 text-right">${m.toLocaleString("en-IN")}</td></tr>`;
 }
 
-function getNilRuleConfig(t,e){const o=String(t||"All").toUpperCase(),n=String(e||"All").toUpperCase();return"SO"===o||"HO"===o?"PARCEL"===n?{lowMin:1,lowMax:50,goodMin:51,labelLow:"Low (1-50)*",labelGood:"Good (>50)",labelPct:"% >50 Booking"}:{lowMin:1,lowMax:100,goodMin:101,labelLow:"Low (1-100)*",labelGood:"Good (>100)",labelPct:"% >100 Booking"}:{lowMin:1,lowMax:10,goodMin:11,labelLow:"Low (1-10)*",labelGood:"Good (>10)",labelPct:"% >10 Booking"}}
+function getNilRuleConfig(t,e){const o=String(t||"All").toUpperCase(),n=String(e||"All").toUpperCase();return"SO"===o||"HO"===o||"NODAL DELIVERY CENTER"===o?"PARCEL"===n?{lowMin:1,lowMax:50,goodMin:51,labelLow:"Low (1-50)*",labelGood:"Good (>50)",labelPct:"% >50 Booking"}:{lowMin:1,lowMax:100,goodMin:101,labelLow:"Low (1-100)*",labelGood:"Good (>100)",labelPct:"% >100 Booking"}:{lowMin:1,lowMax:10,goodMin:11,labelLow:"Low (1-10)*",labelGood:"Good (>10)",labelPct:"% >10 Booking"}}
 function getOfficeActivityData(t,e){const o=getNilRuleConfig(t,e),n={};Object.entries(masterOfficesMap).forEach(([e,o])=>{o.name.toUpperCase().includes("KHUDEL")&&"BO"===o.class||"All"!==t&&o.class!==t||(n[e]={officeId:e,name:o.name,class:o.class,sd:o.sd,division:o.division,cnt:0})}),rawData.forEach(t=>{if(n[t.officeId]){const o=String(t.service).trim().toLowerCase(),i=serviceMapping[o]||(o.includes("parcel")?"PARCEL":"MO");"All"!==e&&i!==e||(n[t.officeId].cnt+=Number(t.articles)||0)}});const i={};return Object.values(n).forEach(t=>{const e=t.division||"OTHER DIVISION",n=t.sd||"OTHER SD",s=e+"||"+n;i[s]||(i[s]={division:e,sd:n,totalOffices:0,totalArticles:0,nilOffices:[],lowBooking:[],goodBooking:[]});const l=t.cnt,a=t.name.toUpperCase().includes("IDC");0!==l||a?l>=o.lowMin&&l<=o.lowMax||0===l&&a?i[s].lowBooking.push(t):l>=o.goodMin&&i[s].goodBooking.push(t):i[s].nilOffices.push(t),i[s].totalOffices++,i[s].totalArticles+=l}),{sdMap:i,config:o,officeSummary:n}}
 function renderNilBookingTable(){const t=document.querySelector("#tableNilBookingSummary tbody"),e=document.querySelector("#tableNilBookingSummary tfoot");t.innerHTML="",e.innerHTML="";const o=document.getElementById("nilFilterClass").value,n=document.getElementById("nilFilterCategory").value,{sdMap:i,config:s}=getOfficeActivityData(o,n);document.getElementById("thNilLow").textContent=s.labelLow,document.getElementById("thNilGood").textContent=s.labelGood,document.getElementById("thNilGoodPct").textContent=s.labelPct;const l={};Object.values(i).forEach(t=>{l[t.division]||(l[t.division]=[]),l[t.division].push(t)});let a=1,d=0,r=0,c=0,p=0,f=0;Object.entries(l).forEach(([e,o])=>{let n=0,i=0,s=0,l=0,g=0,u=divClassMap[e]||"div-bg-indore-city";o.forEach(o=>{n+=o.totalOffices,i+=o.totalArticles,s+=o.nilOffices.length,l+=o.lowBooking.length,g+=o.goodBooking.length;const d=o.totalOffices>0?(o.totalArticles/o.totalOffices).toFixed(2):"0.00",r=o.totalOffices>0?Math.round(o.nilOffices.length/o.totalOffices*100)+"%":"0%",c=o.totalOffices>0?Math.round(o.goodBooking.length/o.totalOffices*100)+"%":"0%",p=document.createElement("tr");p.innerHTML=`<td>${a++}</td><td class="${u}">${e}</td><td style="text-align: left; font-weight: 600;">${o.sd}</td><td>${o.totalOffices}</td><td class="font-bold text-purple-950">${o.totalArticles}</td><td class="font-bold text-blue-900 bg-blue-50/50">${d}</td><td class="clickable-cell font-bold text-rose-700 bg-rose-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'NIL')">${o.nilOffices.length}</td><td class="clickable-cell font-bold text-amber-700 bg-amber-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'LOW')">${o.lowBooking.length}</td><td class="clickable-cell font-bold text-emerald-700 bg-emerald-50/50" onclick="openOfficeCategoryListModal('${e}', '${o.sd}', 'GOOD')">${o.goodBooking.length}</td><td class="font-bold text-rose-800 bg-rose-100/60">${r}</td><td class="font-bold text-emerald-800 bg-emerald-100/60">${c}</td>`,t.appendChild(p)}),d+=n,r+=i,c+=s,p+=l,f+=g;const m=n>0?(i/n).toFixed(2):"0.00",h=n>0?Math.round(s/n*100)+"%":"0%",x=n>0?Math.round(g/n*100)+"%":"0%",b=document.createElement("tr");b.className="row-div-total",b.innerHTML=`<td colspan="3">${e} Total</td><td>${n}</td><td>${i}</td><td>${m}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'NIL')">${s}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'LOW')">${f}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('${e}', 'ALL', 'GOOD')">${g}</td><td>${h}</td><td>${x}</td>`,t.appendChild(b)});const g=d>0?(r/d).toFixed(2):"0.00",u=d>0?Math.round(c/d*100)+"%":"0%",m=d>0?Math.round(f/d*100)+"%":"0%";e.innerHTML=`<tr class="row-grand-total"><td colspan="3">Grand Total</td><td>${d}</td><td>${r}</td><td>${g}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'NIL')">${c}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'LOW')">${p}</td><td class="clickable-cell underline" onclick="openOfficeCategoryListModal('ALL', 'ALL', 'GOOD')">${f}</td><td>${u}</td><td>${m}</td></tr>`}
 function openOfficeCategoryListModal(t,e,o){const n=document.getElementById("nilFilterClass").value,i=document.getElementById("nilFilterCategory").value,{officeSummary:s,config:l}=getOfficeActivityData(n,i),a=[];if(Object.values(s).forEach(n=>{if("ALL"!==t&&n.division!==t)return;if("ALL"!==e&&n.sd!==e)return;const i=n.cnt,s=n.name.toUpperCase().includes("IDC");let d=!1;"NIL"!==o||0!==i||s||(d=!0),"LOW"===o&&(i>=l.lowMin&&i<=l.lowMax||0===i&&s)&&(d=!0),"GOOD"===o&&i>=l.goodMin&&(d=!0),d&&a.push({officeId:n.officeId,officeName:n.name,class:n.class,subDivision:n.sd,division:n.division,articles:i})}),0===a.length)return void alert(`No offices found for ${t} / ${e} under ${o} category.`);modalExportData=a.map(t=>({"Office ID":t.officeId,"Office Name":t.officeName,Class:t.class,"Sub-Division":t.subDivision,Division:t.division,"Category Evaluated":i,"Articles Booked":t.articles})),document.getElementById("modalTitle").textContent=`Office List: ${o} Booking (${"ALL"===e?t:e})`,document.getElementById("modalSubtitle").textContent=`Category: ${i} | Total ${a.length} offices found.`;document.querySelector("#tableModalOffices tbody").innerHTML=a.map(t=>`<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="py-3 px-4 font-semibold">${t.officeName} <span class="text-xs text-slate-400">(${t.officeId})</span></td><td class="py-3 px-4"><span class="bg-purple-100 text-purple-950 text-xs px-2 py-1 rounded font-bold">${t.class}</span></td><td class="py-3 px-4 text-xs text-slate-600">${t.division} / ${t.subDivision}</td><td class="py-3 px-4 text-center text-xs">-</td><td class="py-3 px-4 text-center text-xs">-</td><td class="py-3 px-4 text-center text-xs">-</td><td class="py-3 px-4 text-right font-extrabold text-purple-950">${t.articles}</td><td class="py-3 px-4 text-right font-extrabold text-emerald-800">-</td></tr>`).join(""),openModal("drilldownModal"),logGeneratedReport(`Office List (${o} - ${e})`,()=>exportModalToExcel())}
@@ -2276,7 +2280,7 @@ function processDigitalReport(){
     if(s.innerHTML="",l.innerHTML="","division"===e){
         i.innerHTML='<tr><th style="width: 35%;">Division Name</th><th style="width: 15%;">Cash (Cnt)</th><th style="width: 15%;">DQR Scan (Cnt)</th><th style="width: 20%;">SBIPOS BHARAT QR</th><th style="width: 15%;">% of Digital Txn</th></tr>';
         const e={};
-        digitalRawData.forEach(n=>{const i=masterOfficesMap[n.officeId];if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||t&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION";"All"!==o&&s!==o||(e[s]||(e[s]={name:s,cash:0,dqr:0,sbiposQr:0}),e[s].cash+=n.cash,e[s].dqr+=n.dqr,e[s].sbiposQr+=n.sbiposQr)});
+        digitalRawData.forEach(n=>{const i=getEffectiveOfficeMaster(n.officeId, n.officeName, "SO");if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||t&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION";"All"!==o&&s!==o||(e[s]||(e[s]={name:s,cash:0,dqr:0,sbiposQr:0}),e[s].cash+=n.cash,e[s].dqr+=n.dqr,e[s].sbiposQr+=n.sbiposQr)});
         const n=Object.values(e).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return{...t,pct:o>0?e/o*100:0}});
         n.sort((t,e)=>e.pct-t.pct);
         let a=0,d=0,r=0;
@@ -2286,7 +2290,7 @@ function processDigitalReport(){
     }else{
         i.innerHTML='<tr><th style="width: 20%;">Division</th><th style="width: 25%;">Sub-Division</th><th style="width: 13%;">Cash (Cnt)</th><th style="width: 14%;">DQR Scan (Cnt)</th><th style="width: 15%;">SBIPOS BHARAT QR</th><th style="width: 13%;">% of Digital Txn</th></tr>';
         const e={};
-        digitalRawData.forEach(n=>{const i=masterOfficesMap[n.officeId];if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||t&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION",l=i.sd||"OTHER SD";"All"!==o&&s!==o||(e[s]||(e[s]={division:s,subDivs:{},cash:0,dqr:0,sbiposQr:0}),e[s].subDivs[l]||(e[s].subDivs[l]={name:l,division:s,cash:0,dqr:0,sbiposQr:0}),e[s].cash+=n.cash,e[s].dqr+=n.dqr,e[s].sbiposQr+=n.sbiposQr,e[s].subDivs[l].cash+=n.cash,e[s].subDivs[l].dqr+=n.dqr,e[s].subDivs[l].sbiposQr+=n.sbiposQr)});
+        digitalRawData.forEach(n=>{const i=getEffectiveOfficeMaster(n.officeId, n.officeName, "SO");if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||t&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION",l=i.sd||"OTHER SD";"All"!==o&&s!==o||(e[s]||(e[s]={division:s,subDivs:{},cash:0,dqr:0,sbiposQr:0}),e[s].subDivs[l]||(e[s].subDivs[l]={name:l,division:s,cash:0,dqr:0,sbiposQr:0}),e[s].cash+=n.cash,e[s].dqr+=n.dqr,e[s].sbiposQr+=n.sbiposQr,e[s].subDivs[l].cash+=n.cash,e[s].subDivs[l].dqr+=n.dqr,e[s].subDivs[l].sbiposQr+=n.sbiposQr)});
         const n=Object.values(e).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return t.pct=o>0?e/o*100:0,t.subList=Object.values(t.subDivs).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return{...t,pct:o>0?e/o*100:0}}).sort((t,e)=>e.pct-t.pct),t});
         n.sort((t,e)=>e.pct-t.pct);
         let a=0,d=0,r=0;
@@ -2307,25 +2311,25 @@ function processDigitalReport(){
     }
 }
 
-function openDigitalOfficeModal(t,e){const o="excluding_bo"===document.getElementById("digitalModeSelect").value,n=[];if(digitalRawData.forEach(i=>{const s=masterOfficesMap[i.officeId];if(!s||s.name.toUpperCase().includes("KHUDEL")&&"BO"===s.class||o&&"BO"===s.class)return;if("ALL"!==t&&s.division!==t)return;if("ALL"!==e&&s.sd!==e)return;const l=i.dqr+i.sbiposQr,a=i.cash+l,d=a>0?l/a*100:0;n.push({officeId:i.officeId,officeName:s.name,class:s.class,sd:s.sd,division:s.division,cash:i.cash,dqr:i.dqr,sbiposQr:i.sbiposQr,pct:d})}),!n.length)return alert(`No post offices found for ${t} / ${e}.`);n.sort((t,e)=>e.pct-t.pct),digitalModalExportData=n.map((t,e)=>({"S.No":e+1,"Office ID":t.officeId,"Office Name":t.officeName,Class:t.class,"Sub-Division":t.sd,Division:t.division,Cash:t.cash,"DQR Scan":t.dqr,"SBIPOS Bharat QR":t.sbiposQr,"% Digital Txn":`${t.pct.toFixed(2)}%`})),document.getElementById("digitalModalTitle").textContent=`Office List: ${"ALL"===e?t:`${e} (${t})`}`,document.getElementById("digitalModalSubtitle").textContent=`Total ${n.length} offices found.`,document.querySelector("#tableDigitalModalOffices tbody").innerHTML=n.map((t,e)=>`<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="font-bold">${e+1}</td><td>${t.officeId}</td><td class="text-left font-semibold">${t.officeName}</td><td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${t.class}</span></td><td class="text-right">${t.cash}</td><td class="text-right">${t.dqr}</td><td class="text-right">${t.sbiposQr}</td><td class="text-right font-bold" style="${getDigitalColorStyle(t.pct)}">${t.pct.toFixed(2)}%</td></tr>`).join(""),openModal("digitalDrilldownModal"),logGeneratedReport(`Digital Offices Modal (${"ALL"===e?t:e})`,()=>exportDigitalModalToExcel())}
+function openDigitalOfficeModal(t,e){const o="excluding_bo"===document.getElementById("digitalModeSelect").value,n=[];if(digitalRawData.forEach(i=>{const s=getEffectiveOfficeMaster(i.officeId, i.officeName, "SO");if(!s||s.name.toUpperCase().includes("KHUDEL")&&"BO"===s.class||o&&"BO"===s.class)return;if("ALL"!==t&&s.division!==t)return;if("ALL"!==e&&s.sd!==e)return;const l=i.dqr+i.sbiposQr,a=i.cash+l,d=a>0?l/a*100:0;n.push({officeId:i.officeId,officeName:s.name,class:s.class,sd:s.sd,division:s.division,cash:i.cash,dqr:i.dqr,sbiposQr:i.sbiposQr,pct:d})}),!n.length)return alert(`No post offices found for ${t} / ${e}.`);n.sort((t,e)=>e.pct-t.pct),digitalModalExportData=n.map((t,e)=>({"S.No":e+1,"Office ID":t.officeId,"Office Name":t.officeName,Class:t.class,"Sub-Division":t.sd,Division:t.division,Cash:t.cash,"DQR Scan":t.dqr,"SBIPOS Bharat QR":t.sbiposQr,"% Digital Txn":`${t.pct.toFixed(2)}%`})),document.getElementById("digitalModalTitle").textContent=`Office List: ${"ALL"===e?t:`${e} (${t})`}`,document.getElementById("digitalModalSubtitle").textContent=`Total ${n.length} offices found.`,document.querySelector("#tableDigitalModalOffices tbody").innerHTML=n.map((t,e)=>`<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="font-bold">${e+1}</td><td>${t.officeId}</td><td class="text-left font-semibold">${t.officeName}</td><td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${t.class}</span></td><td class="text-right">${t.cash}</td><td class="text-right">${t.dqr}</td><td class="text-right">${t.sbiposQr}</td><td class="text-right font-bold" style="${getDigitalColorStyle(t.pct)}">${t.pct.toFixed(2)}%</td></tr>`).join(""),openModal("digitalDrilldownModal"),logGeneratedReport(`Digital Offices Modal (${"ALL"===e?t:e})`,()=>exportDigitalModalToExcel())}
 function exportDigitalModalToExcel(){if(!digitalModalExportData||!digitalModalExportData.length)return alert("No office data available to export.");const t=XLSX.utils.book_new();XLSX.utils.book_append_sheet(t,XLSX.utils.json_to_sheet(digitalModalExportData),"Digital_Offices"),XLSX.writeFile(t,"Digital_Office_Details.xlsx")}
 function exportDigitalCurrentViewExcel(){const t=document.getElementById("tableDigitalSummary");if(!t)return alert("Table not found.");const e=XLSX.utils.book_new();XLSX.utils.book_append_sheet(e,XLSX.utils.table_to_sheet(t),"Digital_Summary"),XLSX.writeFile(e,"Digital_Booking_Txn_Status_Current_View.xlsx"),logGeneratedReport("Digital Current View Excel",()=>exportDigitalCurrentViewExcel())}
-function renderOfficeDigitalTable(){if(!digitalRawData||!digitalRawData.length)return;const t=document.getElementById("officeFilterDiv").value,e=document.getElementById("officeFilterClass").value,o=[];digitalRawData.forEach(n=>{const i=masterOfficesMap[n.officeId];if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class)return;if("All"!==t&&i.division!==t)return;if("All"!==e&&i.class!==e)return;const s=n.dqr+n.sbiposQr,l=n.cash+s,a=l>0?s/l*100:0;o.push({officeId:n.officeId,officeName:i.name,class:i.class,sd:i.sd,division:i.division,cash:n.cash,dqr:n.dqr,sbiposQr:n.sbiposQr,pct:a})}),o.sort((t,e)=>e.pct-t.pct);document.querySelector("#tableOfficeDigital tbody").innerHTML=0===o.length?'<tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">No matching offices found.</td></tr>':o.map((t,e)=>`<tr class="hover:bg-slate-50 border-b border-slate-100"><td>${e+1}</td><td class="font-mono text-purple-950 font-bold">${t.officeId}</td><td class="text-left font-semibold">${t.officeName}</td><td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${t.class}</span></td><td>${t.sd}</td><td>${t.division}</td><td class="text-right">${t.cash.toLocaleString("en-IN")}</td><td class="text-right">${t.dqr.toLocaleString("en-IN")}</td><td class="text-right">${t.sbiposQr.toLocaleString("en-IN")}</td><td class="text-right font-bold" style="${getDigitalColorStyle(t.pct)}">${t.pct.toFixed(2)}%</td></tr>`).join("")}
-function exportOfficeDigitalExcel(){const t=document.getElementById("officeFilterDiv").value,e=document.getElementById("officeFilterClass").value,o=[];if(digitalRawData.forEach(n=>{const i=masterOfficesMap[n.officeId];if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class)return;if("All"!==t&&i.division!==t)return;if("All"!==e&&i.class!==e)return;const s=n.dqr+n.sbiposQr,l=n.cash+s,a=l>0?s/l*100:0;o.push({"Office ID":n.officeId,"Office Name":i.name,Class:i.class,"Sub-Division":i.sd,Division:i.division,Cash:n.cash,"DQR Scan":n.dqr,"SBIPOS Bharat QR":n.sbiposQr,"% Digital Txn":`${a.toFixed(2)}%`})}),!o.length)return alert("No office records available to export. Please upload file first.");const n=XLSX.utils.book_new();XLSX.utils.book_append_sheet(n,XLSX.utils.json_to_sheet(o),"Filtered_Offices"),XLSX.writeFile(n,"Office_Digital_Transactions.xlsx"),logGeneratedReport("Filtered Office Digital Excel",()=>exportOfficeDigitalExcel())}
+function renderOfficeDigitalTable(){if(!digitalRawData||!digitalRawData.length)return;const t=document.getElementById("officeFilterDiv").value,e=document.getElementById("officeFilterClass").value,o=[];digitalRawData.forEach(n=>{const i=getEffectiveOfficeMaster(n.officeId, n.officeName, "SO");if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class)return;if("All"!==t&&i.division!==t)return;if("All"!==e&&i.class!==e)return;const s=n.dqr+n.sbiposQr,l=n.cash+s,a=l>0?s/l*100:0;o.push({officeId:n.officeId,officeName:i.name,class:i.class,sd:i.sd,division:i.division,cash:n.cash,dqr:n.dqr,sbiposQr:n.sbiposQr,pct:a})}),o.sort((t,e)=>e.pct-t.pct);document.querySelector("#tableOfficeDigital tbody").innerHTML=0===o.length?'<tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">No matching offices found.</td></tr>':o.map((t,e)=>`<tr class="hover:bg-slate-50 border-b border-slate-100"><td>${e+1}</td><td class="font-mono text-purple-950 font-bold">${t.officeId}</td><td class="text-left font-semibold">${t.officeName}</td><td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${t.class}</span></td><td>${t.sd}</td><td>${t.division}</td><td class="text-right">${t.cash.toLocaleString("en-IN")}</td><td class="text-right">${t.dqr.toLocaleString("en-IN")}</td><td class="text-right">${t.sbiposQr.toLocaleString("en-IN")}</td><td class="text-right font-bold" style="${getDigitalColorStyle(t.pct)}">${t.pct.toFixed(2)}%</td></tr>`).join("")}
+function exportOfficeDigitalExcel(){const t=document.getElementById("officeFilterDiv").value,e=document.getElementById("officeFilterClass").value,o=[];if(digitalRawData.forEach(n=>{const i=getEffectiveOfficeMaster(n.officeId, n.officeName, "SO");if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class)return;if("All"!==t&&i.division!==t)return;if("All"!==e&&i.class!==e)return;const s=n.dqr+n.sbiposQr,l=n.cash+s,a=l>0?s/l*100:0;o.push({"Office ID":n.officeId,"Office Name":i.name,Class:i.class,"Sub-Division":i.sd,Division:i.division,Cash:n.cash,"DQR Scan":n.dqr,"SBIPOS Bharat QR":n.sbiposQr,"% Digital Txn":`${a.toFixed(2)}%`})}),!o.length)return alert("No office records available to export. Please upload file first.");const n=XLSX.utils.book_new();XLSX.utils.book_append_sheet(n,XLSX.utils.json_to_sheet(o),"Filtered_Offices"),XLSX.writeFile(n,"Office_Digital_Transactions.xlsx"),logGeneratedReport("Filtered Office Digital Excel",()=>exportOfficeDigitalExcel())}
 function exportSelectedDivisionFiveSheets(){exportDigitalFiveSheetExcel(document.getElementById("digitalFilterDivision").value)}
 function exportDigitalFiveSheetExcel(t="All"){
     if(!digitalRawData.length)return alert("Please upload Booking Paymentwise Report file first.");
     const e=XLSX.utils.book_new(),
           o=e=>{
               const o={};
-              digitalRawData.forEach(n=>{const i=masterOfficesMap[n.officeId];if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||e&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION";"All"!==t&&s!==t||(o[s]||(o[s]={Division:s,"Cash (Cnt)":0,"DQR Scan (Cnt)":0,"SBIPOS BHARAT QR (Cnt)":0}),o[s]["Cash (Cnt)"]+=n.cash,o[s]["DQR Scan (Cnt)"]+=n.dqr,o[s]["SBIPOS BHARAT QR (Cnt)"]+=n.sbiposQr)});
+              digitalRawData.forEach(n=>{const i=getEffectiveOfficeMaster(n.officeId, n.officeName, "SO");if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||e&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION";"All"!==t&&s!==t||(o[s]||(o[s]={Division:s,"Cash (Cnt)":0,"DQR Scan (Cnt)":0,"SBIPOS BHARAT QR (Cnt)":0}),o[s]["Cash (Cnt)"]+=n.cash,o[s]["DQR Scan (Cnt)"]+=n.dqr,o[s]["SBIPOS BHARAT QR (Cnt)"]+=n.sbiposQr)});
               let n=0,i=0,s=0;
               const l=Object.values(o).map(t=>{n+=t["Cash (Cnt)"],i+=t["DQR Scan (Cnt)"],s+=t["SBIPOS BHARAT QR (Cnt)"];const e=t["DQR Scan (Cnt)"]+t["SBIPOS BHARAT QR (Cnt)"],o=t["Cash (Cnt)"]+e;return{...t,"% Digital Txn":o>0?Number((e/o*100).toFixed(2)):0}}).sort((t,e)=>e["% Digital Txn"]-t["% Digital Txn"]),a=i+s,d=n+a;
               return l.push({Division:"All"!==t?`${t} Total`:"Grand Total","Cash (Cnt)":n,"DQR Scan (Cnt)":i,"SBIPOS BHARAT QR (Cnt)":s,"% Digital Txn":d>0?Number((a/d*100).toFixed(2)):0}),XLSX.utils.json_to_sheet(l)
           },
           n=e=>{
               const o={};
-              digitalRawData.forEach(n=>{const i=masterOfficesMap[n.officeId];if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||e&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION",l=i.sd||"OTHER SD";"All"!==t&&s!==t||(o[s]||(o[s]={div:s,sds:{},cash:0,dqr:0,sbiposQr:0}),o[s].sds[l]||(o[s].sds[l]={division:s,sd:l,cash:0,dqr:0,sbiposQr:0}),o[s].cash+=n.cash,o[s].dqr+=n.dqr,o[s].sbiposQr+=n.sbiposQr,o[s].sds[l].cash+=n.cash,o[s].sds[l].dqr+=n.dqr,o[s].sds[l].sbiposQr+=n.sbiposQr)});
+              digitalRawData.forEach(n=>{const i=getEffectiveOfficeMaster(n.officeId, n.officeName, "SO");if(!i||i.name.toUpperCase().includes("KHUDEL")&&"BO"===i.class||e&&"BO"===i.class)return;const s=i.division||"OTHER DIVISION",l=i.sd||"OTHER SD";"All"!==t&&s!==t||(o[s]||(o[s]={div:s,sds:{},cash:0,dqr:0,sbiposQr:0}),o[s].sds[l]||(o[s].sds[l]={division:s,sd:l,cash:0,dqr:0,sbiposQr:0}),o[s].cash+=n.cash,o[s].dqr+=n.dqr,o[s].sbiposQr+=n.sbiposQr,o[s].sds[l].cash+=n.cash,o[s].sds[l].dqr+=n.dqr,o[s].sds[l].sbiposQr+=n.sbiposQr)});
               const n=[];
               let i=0,s=0,l=0;
               Object.values(o).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return t.pct=o>0?e/o*100:0,t.subList=Object.values(t.sds).map(t=>{const e=t.dqr+t.sbiposQr,o=t.cash+e;return{...t,pct:o>0?e/o*100:0}}).sort((t,e)=>e.pct-t.pct),t}).sort((t,e)=>e.pct-t.pct).forEach(t=>{i+=t.cash,s+=t.dqr,l+=t.sbiposQr,t.subList.forEach(t=>{n.push({Division:t.division,"Sub-Division":t.sd,"Cash (Cnt)":t.cash,"DQR Scan (Cnt)":t.dqr,"SBIPOS BHARAT QR (Cnt)":t.sbiposQr,"% Digital Txn":Number(t.pct.toFixed(2))})}),n.push({Division:`${t.div} Total`,"Sub-Division":"","Cash (Cnt)":t.cash,"DQR Scan (Cnt)":t.dqr,"SBIPOS BHARAT QR (Cnt)":t.sbiposQr,"% Digital Txn":Number(t.pct.toFixed(2))})});
@@ -2333,7 +2337,7 @@ function exportDigitalFiveSheetExcel(t="All"){
               return n.push({Division:"All"!==t?`${t} Total`:"Grand Total","Sub-Division":"","Cash (Cnt)":i,"DQR Scan (Cnt)":s,"SBIPOS BHARAT QR (Cnt)":l,"% Digital Txn":d>0?Number((a/d*100).toFixed(2)):0}),XLSX.utils.json_to_sheet(n)
           };
     XLSX.utils.book_append_sheet(e,o(!0),"Div_Excluding_BO"),XLSX.utils.book_append_sheet(e,o(!1),"Div_Including_BO"),XLSX.utils.book_append_sheet(e,n(!0),"SubDiv_Excluding_BO"),XLSX.utils.book_append_sheet(e,n(!1),"SubDiv_Including_BO");
-    const i=digitalRawData.map((e,o)=>{const n=masterOfficesMap[e.officeId];if(!n||n.name.toUpperCase().includes("KHUDEL")&&"BO"===n.class)return null;if("All"!==t&&n.division!==t)return null;const i=e.dqr+e.sbiposQr,s=e.cash+i;return{"S.No":o+1,"Office ID":e.officeId,"Office Name":n.name,Class:n.class,"Sub-Division":n.sd,Division:n.division,"Cash (Cnt)":e.cash,"DQR Scan (Cnt)":e.dqr,"SBIPOS BHARAT QR (Cnt)":e.sbiposQr,"% Digital Txn":s>0?Number((i/s*100).toFixed(2)):0}}).filter(Boolean);
+    const i=digitalRawData.map((e,o)=>{const n=getEffectiveOfficeMaster(e.officeId, e.officeName, "SO");if(!n||n.name.toUpperCase().includes("KHUDEL")&&"BO"===n.class)return null;if("All"!==t&&n.division!==t)return null;const i=e.dqr+e.sbiposQr,s=e.cash+i;return{"S.No":o+1,"Office ID":e.officeId,"Office Name":n.name,Class:n.class,"Sub-Division":n.sd,Division:n.division,"Cash (Cnt)":e.cash,"DQR Scan (Cnt)":e.dqr,"SBIPOS BHARAT QR (Cnt)":e.sbiposQr,"% Digital Txn":s>0?Number((i/s*100).toFixed(2)):0}}).filter(Boolean);
     XLSX.utils.book_append_sheet(e,XLSX.utils.json_to_sheet(i),"All_Offices_Detailed");
     const s="All"!==t?`Digital_Booking_Txn_${t.replace(/\s+/g,"_")}_5_Sheets.xlsx`:"Digital_Booking_Txn_Complete_Region_5_Sheets.xlsx";
     XLSX.writeFile(e,s),logGeneratedReport(`Digital 5-Sheet Excel (${t})`,()=>exportDigitalFiveSheetExcel(t))
