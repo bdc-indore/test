@@ -987,7 +987,7 @@
 
                 records.push({
                     divName: row[0].trim(), vertical: currentVert, 
-                    target: totalTgt, monthly: spT || agT, tillMonth: totalTgt, 
+                    target: totalTgt, monthly: (spT !== undefined && spT !== null && !isNaN(spT)) ? spT : agT, tillMonth: totalTgt, 
                     apr: apA, aprTgt: apT,
                     may: mayA, mayTgt: myT,
                     jun: jnA, junTgt: jnT,
@@ -1099,8 +1099,8 @@
 
             filtered.forEach(r => {
                 if (currentDataType === 'count') { 
-                    sumTarget += (Number(r.sepTgt || r.augTgt) || 0); 
-                    sumAch += (Number(r.sep || r.aug) || 0);       
+                    sumTarget += (r.sepTgt !== undefined && r.sepTgt !== null) ? Number(r.sepTgt) : (Number(r.augTgt) || 0); 
+                    sumAch += (r.sep !== undefined && r.sep !== null) ? Number(r.sep) : (Number(r.aug) || 0);       
                 } else {
                     sumTarget += (Number(r.target) || 0); 
                     sumAch += (Number(r.totalAch) || 0);
@@ -2212,7 +2212,7 @@
                             alignment: { horizontal: "center", vertical: "center" }
                         };
                     } else {
-                        ws[cellAddress].s = {
+                        ws[address].s = {
                             border: {
                                 top: { style: "thin", color: { rgb: "CBD5E1" } },
                                 bottom: { style: "thin", color: { rgb: "CBD5E1" } },
