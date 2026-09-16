@@ -14,7 +14,7 @@
         .report-header{background:linear-gradient(135deg,#2c0c38 0,#3f1251 100%);color:#fff}
         .report-grand{background-color:#31103f;color:#fff;font-weight:700}
         .nil-table{border-collapse:collapse;width:100%;font-size:11px;text-align:center}
-        .nil-table td,.nil-table th{border:1px solid #707070;padding:5px 6px}
+        .nil-table td,.nil-table th{border:1px solid #707070;padding:4px 5px}
         .nil-table th{background-color:#b8cce4;color:#000;font-weight:700;vertical-align:middle}
         .div-bg-indore-city,.div-bg-khandwa{background-color:#f2dcdb;font-weight:700;color:maroon}
         .div-bg-indore-mfl{background-color:#dce6f1;font-weight:700;color:#1f497d}
@@ -25,116 +25,127 @@
         .div-bg-id-division{background-color:#fff2cc;font-weight:700;color:#7f6000}
         .div-bg-not-in-qc{background-color:#fee2e2;font-weight:700;color:#991b1b}
         .row-div-total{background-color:#fce4d6;font-weight:700;color:#000}
-        .row-grand-total{background-color:#bdd7ee;font-weight:700;color:#000;font-size:12px}
+        .row-grand-total{background-color:#bdd7ee;font-weight:700;color:#000;font-size:11.5px}
         .clickable-cell{cursor:pointer;text-decoration:underline}
-        .clickable-cell:hover{opacity:.7}
+        .clickable-cell:hover{opacity:.75}
+        .ctrl-select{border:1px solid #cbd5e1;border-radius:0.5rem;padding:0.35rem 0.5rem;font-size:0.75rem;background-color:#f8fafc;font-weight:600;outline:none;width:100%}
+        .ctrl-select:focus{border-color:#581c87}
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between text-xs">
+
+<!-- Fullscreen Initial Loader -->
+<div id="initialLoader" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white transition-opacity duration-300">
+    <div class="w-12 h-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+    <p class="text-sm font-bold tracking-wide">Fetching & Syncing Postal Data...</p>
+    <p class="text-[11px] text-purple-200 mt-1">Please wait a moment while sheets are being processed</p>
+</div>
 
 <!-- Header -->
-<header class="report-header shadow-xl py-5 px-4 md:px-8 border-b-4 border-purple-950">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<header class="report-header shadow-md py-3.5 px-4 md:px-8 border-b-2 border-purple-950">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div class="flex items-center gap-3">
-            <div class="bg-white p-2 rounded-xl shadow-md border border-purple-300 flex items-center justify-center text-2xl">
+            <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center text-xl">
                 🚚
             </div>
             <div>
-                <span class="text-[11px] font-bold tracking-widest text-purple-200 uppercase bg-purple-950/60 px-2.5 py-0.5 rounded-md border border-purple-800">DEPARTMENT OF POSTS</span>
-                <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-white mt-1">D+0 MONITORING PORTAL INDORE POSTAL REGION</h1>
-                <p class="text-xs md:text-sm text-purple-200 mt-0.5 font-medium">Parcel & Mail Operations Comprehensive Delivery & Action Tracking</p>
+                <span class="text-[10px] font-bold tracking-widest text-purple-200 uppercase bg-purple-950/70 px-2 py-0.5 rounded border border-purple-800">DEPARTMENT OF POSTS</span>
+                <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-white mt-0.5">D+0 MONITORING PORTAL INDORE POSTAL REGION</h1>
+                <p class="text-[11px] text-purple-200 mt-0.5 font-medium flex items-center gap-2">
+                    <span>BASED ON D+9 TRANSIT ANALYSIS REPORT</span>
+                </p>
             </div>
         </div>
-        <div class="flex items-center flex-wrap gap-3">
-            <span id="liveStatus" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Connecting Sheets...
+        <div class="flex items-center flex-wrap gap-2.5">
+            <span id="liveStatus" class="bg-emerald-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Connecting Sheets...
             </span>
-            <button onclick="exportCompleteSevenSheetExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition cursor-pointer border border-emerald-500 flex items-center gap-1.5">
-                <span>📑</span> Download Complete 7-Sheet Excel
+            <button onclick="exportCompleteSevenSheetExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition cursor-pointer border border-emerald-500 flex items-center gap-1">
+                <span>📑</span> 7-Sheet Excel
             </button>
         </div>
     </div>
 </header>
 
 <!-- Navigation Tabs -->
-<nav class="bg-white border-b border-slate-200 shadow-sm py-3 px-4 md:px-8">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
-        <button onclick="switchTab('summary')" id="tabBtnSummary" class="bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 border-b-2 border-purple-600 cursor-pointer">
-            <span>📊</span> D+0 Summary Report
+<nav class="bg-white border-b border-slate-200 shadow-sm py-2 px-4 md:px-8 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-1.5">
+        <button onclick="switchTab('summary')" id="tabBtnSummary" class="bg-purple-900 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 border-b-2 border-purple-500 cursor-pointer">
+            <span>📊</span> Summary Report
         </button>
-        <button onclick="switchTab('offices')" id="tabBtnOffices" class="bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 border border-slate-200 cursor-pointer">
-            <span>🔍</span> Post Office Detailed View
+        <button onclick="switchTab('offices')" id="tabBtnOffices" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
+            <span>🔍</span> Detailed Office View
         </button>
-        <button onclick="switchTab('rankings')" id="tabBtnRankings" class="bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 border border-slate-200 cursor-pointer">
+        <button onclick="switchTab('rankings')" id="tabBtnRankings" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
             <span>⭐</span> Top & Bottom Rankings
         </button>
-        <button onclick="switchTab('compare')" id="tabBtnCompare" class="bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 border border-slate-200 cursor-pointer">
+        <button onclick="switchTab('compare')" id="tabBtnCompare" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
             <span>📈</span> Multi-Month Comparison
         </button>
     </div>
 </nav>
 
-<!-- Main Area -->
-<main class="max-w-7xl mx-auto px-3 md:px-8 py-6 space-y-6 w-full flex-grow">
+<!-- Main Workspace -->
+<main class="max-w-7xl mx-auto px-3 md:px-6 py-4 space-y-4 w-full flex-grow">
 
-    <!-- 1. SUMMARY SECTION -->
-    <div id="viewSummary" class="space-y-4">
-        <!-- Dedicated Filters for Summary -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+    <!-- 1. SUMMARY VIEW -->
+    <div id="viewSummary" class="space-y-3">
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 items-end">
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📅 Select Month</label>
-                <select id="sumMonth" onchange="renderSummaryTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Month</label>
+                <select id="sumMonth" onchange="renderSummaryTable()" class="ctrl-select text-purple-950 font-bold">
                     <option value="APR">April</option>
                     <option value="MAY">May</option>
                     <option value="JUN">June</option>
                     <option value="JUL">July</option>
-                    <option value="AUG" selected>August</option>
+                    <option value="AUG">August</option>
+                    <option value="SEP" selected>September</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📦 Domain</label>
-                <select id="sumDomain" onchange="renderSummaryTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
-                    <option value="both">📦+✉️ Both (Combined Total)</option>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📦 Domain</label>
+                <select id="sumDomain" onchange="renderSummaryTable()" class="ctrl-select text-purple-950 font-bold">
+                    <option value="both">📦+✉️ Both (Total)</option>
                     <option value="parcel">📦 Parcel Operations</option>
                     <option value="mail">✉️ Mail Operations</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">🏢 BO Inclusion Mode</label>
-                <select id="sumBoMode" onchange="renderSummaryTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
-                    <option value="excluding_bo" selected>Excluding BO (HO + SO + NDC + IDC)</option>
-                    <option value="including_bo">Including BO (All Offices)</option>
-                    <option value="only_bo">Only BO (Branch Offices)</option>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏢 BO Inclusion Mode</label>
+                <select id="sumBoMode" onchange="renderSummaryTable()" class="ctrl-select">
+                    <option value="excluding_bo" selected>Excluding BO (HO+SO+NDC)</option>
+                    <option value="including_bo">Including BO (All)</option>
+                    <option value="only_bo">Only BO</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">🏛️ Filter Division</label>
-                <select id="sumDivision" onchange="renderSummaryTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Filter Division</label>
+                <select id="sumDivision" onchange="renderSummaryTable()" class="ctrl-select">
                     <option value="All">All Divisions</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📋 View Aggregation</label>
-                <select id="sumViewType" onchange="renderSummaryTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📋 Aggregation</label>
+                <select id="sumViewType" onchange="renderSummaryTable()" class="ctrl-select">
                     <option value="subdivision">Sub-Division Wise</option>
                     <option value="division">Division Wise</option>
                 </select>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="cardSummary">
-            <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardSummary">
+            <div class="report-header px-4 py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
-                    <h2 id="sumTableTitle" class="font-extrabold text-base flex items-center gap-2">📊 D+0 Summary Performance Report</h2>
-                    <p class="text-xs text-purple-200">Delivered, Redirected, Returned and Total Actioned % on Total Received.</p>
+                    <h2 id="sumTableTitle" class="font-bold text-sm">📊 D+0 Performance Summary</h2>
+                    <p class="text-[10px] text-purple-200">Percentages evaluated against Total Received articles.</p>
                 </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <button onclick='exportTableToExcel("tableSummary","D0_Summary_Report.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
-                    <button onclick='exportSingleTablePDF("tableSummary","D0 Summary Report")' class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF</button>
-                    <button onclick='exportContainerJPEG("cardSummary","D0_Summary_Report")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <button onclick='exportTableToExcel("tableSummary","D0_Summary_Report.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2 py-1 rounded shadow">📥 Excel</button>
+                    <button onclick='exportSingleTablePDF("tableSummary","D0 Summary Report")' class="bg-rose-800 hover:bg-rose-900 text-white text-[11px] font-semibold px-2 py-1 rounded shadow">📄 PDF</button>
+                    <button onclick='exportContainerJPEG("cardSummary","D0_Summary_Report")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-[11px] font-semibold px-2 py-1 rounded shadow">📸 JPEG</button>
                 </div>
             </div>
-            <div class="overflow-x-auto p-3">
+            <div class="overflow-x-auto p-2">
                 <table class="nil-table" id="tableSummary">
                     <thead>
                         <tr>
@@ -166,73 +177,73 @@
         </div>
     </div>
 
-    <!-- 2. DETAILED POST OFFICE VIEW -->
-    <div id="viewOffices" class="space-y-4 hidden">
-        <!-- Dedicated Filters for Detailed Offices -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+    <!-- 2. DETAILED OFFICE VIEW -->
+    <div id="viewOffices" class="space-y-3 hidden">
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 items-end">
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📅 Select Month</label>
-                <select id="offMonth" onchange="renderOfficeTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Month</label>
+                <select id="offMonth" onchange="renderOfficeTable()" class="ctrl-select font-bold text-purple-950">
                     <option value="APR">April</option>
                     <option value="MAY">May</option>
                     <option value="JUN">June</option>
                     <option value="JUL">July</option>
-                    <option value="AUG" selected>August</option>
+                    <option value="AUG">August</option>
+                    <option value="SEP" selected>September</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📦 Domain</label>
-                <select id="offDomain" onchange="renderOfficeTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
-                    <option value="both">📦+✉️ Both (Combined Total)</option>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📦 Domain</label>
+                <select id="offDomain" onchange="renderOfficeTable()" class="ctrl-select font-bold text-purple-950">
+                    <option value="both">📦+✉️ Both (Total)</option>
                     <option value="parcel">📦 Parcel Operations</option>
                     <option value="mail">✉️ Mail Operations</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">🏛️ Filter Division</label>
-                <select id="offDivision" onchange="renderOfficeTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Division</label>
+                <select id="offDivision" onchange="renderOfficeTable()" class="ctrl-select">
                     <option value="All">All Divisions</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">🏢 Office Class</label>
-                <select id="offClass" onchange="renderOfficeTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏢 Office Class</label>
+                <select id="offClass" onchange="renderOfficeTable()" class="ctrl-select">
                     <option value="All">All Classes</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Sort Metric</label>
-                <select id="offSortMetric" onchange="renderOfficeTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Sort Metric</label>
+                <select id="offSortMetric" onchange="renderOfficeTable()" class="ctrl-select">
                     <option value="pctTotal">Total Actioned %</option>
                     <option value="pctRtsRedir">% of D+0 (RTS + Redirect)</option>
-                    <option value="pctDel">D+0 Delivered %</option>
                     <option value="pctRedir">D+0 Redirected %</option>
                     <option value="pctRet">D+0 Returned %</option>
+                    <option value="pctDel">D+0 Delivered %</option>
                     <option value="received">Total Received</option>
                     <option value="invoiced">Total Invoiced</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Sort Order</label>
-                <select id="offSortDir" onchange="renderOfficeTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
-                    <option value="desc">Highest to Lowest (Descending)</option>
-                    <option value="asc">Lowest to Highest (Ascending)</option>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Sort Direction</label>
+                <select id="offSortDir" onchange="renderOfficeTable()" class="ctrl-select">
+                    <option value="desc">Highest to Lowest (Desc)</option>
+                    <option value="asc">Lowest to Highest (Asc)</option>
                 </select>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="cardOffices">
-            <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                    <h2 class="font-extrabold text-base flex items-center gap-2">🔍 Post Office Detailed Performance</h2>
-                    <p class="text-xs text-purple-200">View individual office metrics with sorting.</p>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardOffices">
+            <div class="report-header px-4 py-2.5 flex justify-between items-center gap-2">
+                <div class="flex items-center gap-2">
+                    <h2 class="font-bold text-sm">🔍 Post Office Detailed Performance</h2>
+                    <span id="officeRecordCountBadge" class="bg-purple-950 text-purple-200 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-800"></span>
                 </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <button onclick="exportOfficeTableExcel()" class="bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Download Filtered Offices Excel</button>
-                    <button onclick='exportSingleTablePDF("tableOffice","Detailed Office Performance")' class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF</button>
+                <div class="flex gap-1.5">
+                    <button onclick="exportOfficeTableExcel()" class="bg-blue-700 hover:bg-blue-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Download Excel</button>
+                    <button onclick='exportSingleTablePDF("tableOffice","Detailed Office Performance")' class="bg-rose-800 hover:bg-rose-900 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📄 PDF</button>
                 </div>
             </div>
-            <div class="overflow-x-auto p-3">
+            <div class="overflow-x-auto p-2">
                 <table class="nil-table" id="tableOffice">
                     <thead>
                         <tr>
@@ -242,8 +253,8 @@
                             <th rowspan="2" style="width:5%">Class</th>
                             <th rowspan="2" style="width:10%">Sub-Division</th>
                             <th rowspan="2" style="width:8%">Division</th>
-                            <th rowspan="2" style="width:6%;background-color:#d9edf7">Total Received</th>
-                            <th rowspan="2" style="width:6%;background-color:#d9edf7">Total Invoiced</th>
+                            <th rowspan="2" style="width:6%;background-color:#d9edf7">Received</th>
+                            <th rowspan="2" style="width:6%;background-color:#d9edf7">Invoiced</th>
                             <th colspan="2" style="background-color:#c6efce">D+0 Delivered</th>
                             <th colspan="2" style="background-color:#fff2cc">D+0 Redirected</th>
                             <th colspan="2" style="background-color:#fce4d6">D+0 Returned</th>
@@ -261,70 +272,81 @@
                             <th style="background-color:#e1d5e7">%</th>
                         </tr>
                     </thead>
-                    <tbody></tbody>
+                    <tbody id="officeTableTbody"></tbody>
                 </table>
+            </div>
+            <div id="officeLoadMoreWrap" class="p-2.5 text-center bg-slate-50 border-t border-slate-200 hidden">
+                <button onclick="loadMoreOffices()" class="bg-purple-900 hover:bg-purple-950 text-white font-bold px-4 py-1.5 rounded-lg text-xs shadow cursor-pointer">
+                    Load More Offices ⬇️
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 3. TOP & BOTTOM RANKINGS VIEW -->
-    <div id="viewRankings" class="space-y-4 hidden">
-        <!-- Dedicated Filters for Rankings -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+    <!-- 3. RANKINGS VIEW -->
+    <div id="viewRankings" class="space-y-3 hidden">
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 items-end">
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📅 Select Month</label>
-                <select id="rnkMonth" onchange="renderRankingsTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Month</label>
+                <select id="rnkMonth" onchange="renderRankingsTable()" class="ctrl-select font-bold text-purple-950">
                     <option value="APR">April</option>
                     <option value="MAY">May</option>
                     <option value="JUN">June</option>
                     <option value="JUL">July</option>
-                    <option value="AUG" selected>August</option>
+                    <option value="AUG">August</option>
+                    <option value="SEP" selected>September</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">📦 Domain</label>
-                <select id="rnkDomain" onchange="renderRankingsTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
-                    <option value="both">📦+✉️ Both (Combined Total)</option>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📦 Domain</label>
+                <select id="rnkDomain" onchange="renderRankingsTable()" class="ctrl-select font-bold text-purple-950">
+                    <option value="both">📦+✉️ Both (Total)</option>
                     <option value="parcel">📦 Parcel Operations</option>
                     <option value="mail">✉️ Mail Operations</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Ranking View</label>
-                <select id="rnkType" onchange="renderRankingsTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-white font-bold text-purple-950 outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Ranking Type</label>
+                <select id="rnkType" onchange="renderRankingsTable()" class="ctrl-select font-bold text-purple-950">
                     <option value="top">🏆 Top 20 Offices</option>
                     <option value="bottom">⚠️ Bottom 20 Offices</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Rank Metric</label>
-                <select id="rnkMetric" onchange="renderRankingsTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Rank Metric</label>
+                <select id="rnkMetric" onchange="renderRankingsTable()" class="ctrl-select">
                     <option value="pctTotal">Total Actioned %</option>
                     <option value="pctRtsRedir">% of D+0 (RTS + Redirect)</option>
+                    <option value="pctRedir">D+0 Redirected %</option>
+                    <option value="pctRet">D+0 Returned %</option>
                     <option value="pctDel">D+0 Delivered %</option>
                     <option value="received">Total Received</option>
+                    <option value="invoiced">Total Invoiced</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1">🏛️ Filter Division</label>
-                <select id="rnkDivision" onchange="renderRankingsTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Division</label>
+                <select id="rnkDivision" onchange="renderRankingsTable()" class="ctrl-select">
                     <option value="All">All Divisions</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏢 Class</label>
+                <select id="rnkClass" onchange="renderRankingsTable()" class="ctrl-select">
+                    <option value="All">All Classes</option>
                 </select>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="cardRankings">
-            <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                    <h2 class="font-extrabold text-base flex items-center gap-2">⭐ Performance Rankings (Top & Bottom 20)</h2>
-                    <p class="text-xs text-purple-200">Compare highest and lowest performing post offices.</p>
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <button onclick='exportTableToExcel("tableRankings","D0_Rankings.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
-                    <button onclick='exportContainerJPEG("cardRankings","D0_Rankings")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardRankings">
+            <div class="report-header px-4 py-2.5 flex justify-between items-center gap-2">
+                <h2 class="font-bold text-sm">⭐ Performance Rankings (Top & Bottom 20)</h2>
+                <div class="flex gap-1.5">
+                    <button onclick='exportTableToExcel("tableRankings","D0_Rankings.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
+                    <button onclick='exportContainerJPEG("cardRankings","D0_Rankings")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📸 JPEG</button>
                 </div>
             </div>
-            <div class="overflow-x-auto p-3">
+            <div class="overflow-x-auto p-2">
                 <table class="nil-table" id="tableRankings">
                     <thead>
                         <tr>
@@ -334,8 +356,8 @@
                             <th rowspan="2" style="width:5%">Class</th>
                             <th rowspan="2" style="width:10%">Sub-Division</th>
                             <th rowspan="2" style="width:8%">Division</th>
-                            <th rowspan="2" style="width:6%;background-color:#d9edf7">Total Received</th>
-                            <th rowspan="2" style="width:6%;background-color:#d9edf7">Total Invoiced</th>
+                            <th rowspan="2" style="width:6%;background-color:#d9edf7">Received</th>
+                            <th rowspan="2" style="width:6%;background-color:#d9edf7">Invoiced</th>
                             <th colspan="2" style="background-color:#c6efce">D+0 Delivered</th>
                             <th colspan="2" style="background-color:#fff2cc">D+0 Redirected</th>
                             <th colspan="2" style="background-color:#fce4d6">D+0 Returned</th>
@@ -360,89 +382,97 @@
     </div>
 
     <!-- 4. MULTI-MONTH COMPARISON VIEW -->
-    <div id="viewCompare" class="space-y-4 hidden">
-        <!-- Unified Comparison Control Panel -->
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
+    <div id="viewCompare" class="space-y-3 hidden">
+        <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 items-end">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-purple-950 mb-1">1. Compare View Level</label>
-                    <select id="cmpLevel" onchange="renderCompareTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
-                        <option value="division">Division Wise Comparison</option>
-                        <option value="subdivision">Sub-Division Wise Comparison</option>
-                        <option value="office">Post Office Wise Comparison</option>
+                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">1. Comparison Level</label>
+                    <select id="cmpLevel" onchange="onCmpLevelChange()" class="ctrl-select font-bold text-purple-950">
+                        <option value="division">Division Wise</option>
+                        <option value="subdivision">Sub-Division Wise</option>
+                        <option value="office">Post Office Wise</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-purple-950 mb-1">2. Domain</label>
-                    <select id="cmpDomain" onchange="renderCompareTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
-                        <option value="both">📦+✉️ Both (Combined Total)</option>
+                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">2. Domain</label>
+                    <select id="cmpDomain" onchange="renderCompareTable()" class="ctrl-select font-bold text-purple-950">
+                        <option value="both">📦+✉️ Both (Total)</option>
                         <option value="parcel">📦 Parcel Operations</option>
                         <option value="mail">✉️ Mail Operations</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-purple-950 mb-1">3. BO Inclusion Mode</label>
-                    <select id="cmpBoMode" onchange="renderCompareTable()" class="w-full border border-purple-300 rounded-xl p-2 text-xs bg-slate-50 font-bold text-purple-950 outline-none">
-                        <option value="excluding_bo" selected>Excluding BO (HO + SO + NDC + IDC)</option>
-                        <option value="including_bo">Including BO (All Offices)</option>
-                        <option value="only_bo">Only BO (Branch Offices)</option>
+                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">3. BO Inclusion Mode</label>
+                    <select id="cmpBoMode" onchange="renderCompareTable()" class="ctrl-select">
+                        <option value="excluding_bo" selected>Excluding BO (HO+SO+NDC)</option>
+                        <option value="including_bo">Including BO (All)</option>
+                        <option value="only_bo">Only BO</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-purple-950 mb-1">4. Filter Division</label>
-                    <select id="cmpDivision" onchange="renderCompareTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none">
+                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">4. Division</label>
+                    <select id="cmpDivision" onchange="renderCompareTable()" class="ctrl-select">
                         <option value="All">All Divisions</option>
+                    </select>
+                </div>
+                <div id="cmpClassWrapper" class="hidden">
+                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">5. Office Class</label>
+                    <select id="cmpClass" onchange="renderCompareTable()" class="ctrl-select font-bold text-purple-950">
+                        <option value="All">All Classes</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Month Selection Checkboxes -->
-            <div class="pt-3 border-t border-slate-100">
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1.5">5. Select Months to Compare:</label>
-                <div class="flex flex-wrap gap-2 text-xs font-bold">
-                    <label class="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg border border-purple-200 cursor-pointer">
-                        <input type="checkbox" name="cmpMonths" value="APR" checked onchange="renderCompareTable()" class="accent-purple-900"> April
+            <!-- Months Checkboxes -->
+            <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3">
+                <span class="text-[10px] font-bold uppercase text-purple-950">Select Months:</span>
+                <div class="flex flex-wrap gap-1.5 text-[11px] font-bold">
+                    <label class="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded border border-purple-200 cursor-pointer">
+                        <input type="checkbox" name="cmpMonths" value="APR" checked onchange="renderCompareTable()" class="accent-purple-900"> Apr
                     </label>
-                    <label class="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg border border-purple-200 cursor-pointer">
+                    <label class="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded border border-purple-200 cursor-pointer">
                         <input type="checkbox" name="cmpMonths" value="MAY" checked onchange="renderCompareTable()" class="accent-purple-900"> May
                     </label>
-                    <label class="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg border border-purple-200 cursor-pointer">
-                        <input type="checkbox" name="cmpMonths" value="JUN" checked onchange="renderCompareTable()" class="accent-purple-900"> June
+                    <label class="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded border border-purple-200 cursor-pointer">
+                        <input type="checkbox" name="cmpMonths" value="JUN" checked onchange="renderCompareTable()" class="accent-purple-900"> Jun
                     </label>
-                    <label class="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg border border-purple-200 cursor-pointer">
-                        <input type="checkbox" name="cmpMonths" value="JUL" checked onchange="renderCompareTable()" class="accent-purple-900"> July
+                    <label class="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded border border-purple-200 cursor-pointer">
+                        <input type="checkbox" name="cmpMonths" value="JUL" checked onchange="renderCompareTable()" class="accent-purple-900"> Jul
                     </label>
-                    <label class="flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg border border-purple-200 cursor-pointer">
-                        <input type="checkbox" name="cmpMonths" value="AUG" checked onchange="renderCompareTable()" class="accent-purple-900"> August
+                    <label class="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded border border-purple-200 cursor-pointer">
+                        <input type="checkbox" name="cmpMonths" value="AUG" checked onchange="renderCompareTable()" class="accent-purple-900"> Aug
+                    </label>
+                    <label class="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded border border-purple-200 cursor-pointer">
+                        <input type="checkbox" name="cmpMonths" value="SEP" checked onchange="renderCompareTable()" class="accent-purple-900"> <span id="cmpSepLabel">Sep</span>
                     </label>
                 </div>
             </div>
 
-            <!-- Metric Selection Checkboxes -->
-            <div class="pt-3 border-t border-slate-100">
-                <label class="block text-xs font-bold uppercase text-purple-950 mb-1.5">6. Select Comparison Metrics (Tick One or More):</label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs font-semibold">
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+            <!-- Metrics Checkboxes -->
+            <div class="pt-2 border-t border-slate-100">
+                <span class="text-[10px] font-bold uppercase text-purple-950 block mb-1">Select Comparison Metrics:</span>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 text-[11px] font-semibold">
+                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
                         <input type="checkbox" name="cmpMetric" value="pctTotal" checked onchange="renderCompareTable()" class="accent-purple-900">
                         <span>Total Actioned %</span>
                     </label>
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
                         <input type="checkbox" name="cmpMetric" value="pctRtsRedir" checked onchange="renderCompareTable()" class="accent-purple-900">
                         <span>% (RTS + Redirect)</span>
                     </label>
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
-                        <input type="checkbox" name="cmpMetric" value="pctDel" onchange="renderCompareTable()" class="accent-purple-900">
-                        <span>D+0 Delivered %</span>
-                    </label>
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
                         <input type="checkbox" name="cmpMetric" value="pctRedir" onchange="renderCompareTable()" class="accent-purple-900">
                         <span>D+0 Redirect %</span>
                     </label>
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
                         <input type="checkbox" name="cmpMetric" value="pctRet" onchange="renderCompareTable()" class="accent-purple-900">
                         <span>D+0 Return %</span>
                     </label>
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
+                        <input type="checkbox" name="cmpMetric" value="pctDel" onchange="renderCompareTable()" class="accent-purple-900">
+                        <span>D+0 Delivered %</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
                         <input type="checkbox" name="cmpMetric" value="received" onchange="renderCompareTable()" class="accent-purple-900">
                         <span>Total Received</span>
                     </label>
@@ -450,19 +480,16 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="cardCompare">
-            <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div>
-                    <h2 class="font-extrabold text-base flex items-center gap-2">📈 Multi-Month Performance Comparison Report</h2>
-                    <p class="text-xs text-purple-200">Side-by-side metric tracking across selected months.</p>
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <button onclick='exportTableToExcel("tableCompare","D0_MultiMonth_Comparison.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
-                    <button onclick='exportSingleTablePDF("tableCompare","Multi Month Comparison")' class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📄 PDF</button>
-                    <button onclick='exportContainerJPEG("cardCompare","D0_MultiMonth_Comparison")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardCompare">
+            <div class="report-header px-4 py-2.5 flex justify-between items-center gap-2">
+                <h2 class="font-bold text-sm">📈 Multi-Month Performance Comparison</h2>
+                <div class="flex gap-1.5">
+                    <button onclick='exportTableToExcel("tableCompare","D0_MultiMonth_Comparison.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
+                    <button onclick='exportSingleTablePDF("tableCompare","Multi Month Comparison")' class="bg-rose-800 hover:bg-rose-900 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📄 PDF</button>
+                    <button onclick='exportContainerJPEG("cardCompare","D0_MultiMonth_Comparison")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📸 JPEG</button>
                 </div>
             </div>
-            <div class="overflow-x-auto p-3">
+            <div class="overflow-x-auto p-2">
                 <table class="nil-table" id="tableCompare">
                     <thead></thead>
                     <tbody></tbody>
@@ -474,19 +501,19 @@
 </main>
 
 <!-- Drilldown Modal -->
-<div id="drillModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div id="drillModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
-        <div class="report-header px-6 py-4 flex justify-between items-center">
+        <div class="report-header px-4 py-3 flex justify-between items-center">
             <div>
-                <h3 id="modalTitle" class="font-bold text-lg">Office Performance Breakdown</h3>
-                <p id="modalSubtitle" class="text-xs text-purple-200">Offices list under selected node</p>
+                <h3 id="modalTitle" class="font-bold text-base">Office Performance Breakdown</h3>
+                <p id="modalSubtitle" class="text-[11px] text-purple-200">List of offices</p>
             </div>
-            <div class="flex items-center gap-3">
-                <button onclick="exportModalExcel()" class="bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
-                <button onclick="closeDrillModal()" class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold cursor-pointer">✕</button>
+            <div class="flex items-center gap-2">
+                <button onclick="exportModalExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer">📥 Excel</button>
+                <button onclick="closeDrillModal()" class="bg-purple-950 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold cursor-pointer">✕</button>
             </div>
         </div>
-        <div class="p-4 overflow-y-auto flex-grow overflow-x-auto">
+        <div class="p-3 overflow-y-auto flex-grow overflow-x-auto">
             <table class="nil-table" id="tableModalOffices">
                 <thead>
                     <tr>
@@ -520,8 +547,8 @@
 </div>
 
 <!-- Footer -->
-<footer class="report-header text-purple-200 text-xs py-4 px-6 text-center border-t border-purple-950 mt-12">
-    <p class="font-medium">Developed by <span class="text-white font-bold">Kapil Rajput, PA(RO), Regional Office Indore</span></p>
+<footer class="report-header text-purple-200 text-[11px] py-3 px-4 text-center border-t border-purple-950 mt-8">
+    <p>Developed by <span class="text-white font-bold">Kapil Rajput, PA(RO), Regional Office Indore</span></p>
 </footer>
 
 <script>
@@ -530,7 +557,8 @@ const MONTH_SHEET_URLS = {
     MAY: "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=1940610450&single=true&output=csv",
     JUN: "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=97263548&single=true&output=csv",
     JUL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=64552426&single=true&output=csv",
-    AUG: "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=1714320452&single=true&output=csv"
+    AUG: "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=1714320452&single=true&output=csv",
+    SEP: "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=2001829717&single=true&output=csv"
 };
 
 const divClassMap = {
@@ -545,18 +573,23 @@ const divClassMap = {
     "NOT IN QC LIST": "div-bg-not-in-qc"
 };
 
-const MONTH_NAMES = { APR:"April", MAY:"May", JUN:"June", JUL:"July", AUG:"August" };
+let MONTH_NAMES = { APR:"April", MAY:"May", JUN:"June", JUL:"July", AUG:"August", SEP:"September" };
 const METRIC_LABELS = {
     pctTotal: "Total Actioned %",
     pctRtsRedir: "% (RTS + Redirect)",
-    pctDel: "D+0 Delivered %",
     pctRedir: "D+0 Redirect %",
     pctRet: "D+0 Return %",
+    pctDel: "D+0 Delivered %",
     received: "Total Received"
 };
 
 let rawMonthData = {};
 let currentModalData = [];
+
+// Performance optimizations for detailed offices
+let currentOfficeDataList = [];
+let currentOfficeRenderIndex = 0;
+const OFFICE_CHUNK_SIZE = 100;
 
 async function initApp(){
     try {
@@ -564,20 +597,39 @@ async function initApp(){
             const res = await fetch(url);
             const csvText = await res.text();
             const wb = XLSX.read(csvText, {type:"string"});
-            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:""});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+
+            // Check A1 cell for September period dynamically
+            if(mKey === "SEP" && ws["A1"] && ws["A1"].v){
+                const a1Val = String(ws["A1"].v).trim();
+                if(a1Val && !a1Val.toUpperCase().includes("OFFICE") && !a1Val.toUpperCase().includes("S.NO")){
+                    const numMatch = a1Val.match(/\d+/);
+                    const dayNum = numMatch ? numMatch[0] : a1Val;
+                    const paddedDay = dayNum.length === 1 ? `0${dayNum}` : dayNum;
+                    MONTH_NAMES.SEP = `September (01 to ${paddedDay} Sep)`;
+                }
+            }
+
+            const json = XLSX.utils.sheet_to_json(ws, {defval:""});
             rawMonthData[mKey] = json.map(parseRowItem).filter(Boolean);
         });
 
         await Promise.all(fetchPromises);
 
-        document.getElementById("liveStatus").innerHTML = `<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Live Connected (5 Months)`;
+        document.getElementById("liveStatus").innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Live Connected`;
+
         initDropdownOptions();
         renderSummaryTable();
     } catch(err){
         console.error("Error fetching D+0 sheets:", err);
-        document.getElementById("liveStatus").className = "bg-rose-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow";
+        document.getElementById("liveStatus").className = "bg-rose-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow";
         document.getElementById("liveStatus").textContent = "⚠️ Sync Error";
-        alert("Unable to fetch online sheets. Please check connection.");
+    } finally {
+        const loader = document.getElementById("initialLoader");
+        if(loader){
+            loader.style.opacity = "0";
+            setTimeout(() => loader.classList.add("hidden"), 300);
+        }
     }
 }
 
@@ -585,14 +637,23 @@ function parseRowItem(r){
     const offId = String(r["Office ID"] || r["office_id"] || "").trim().replace(/\.0$/, "");
     if(!offId || offId.toUpperCase().includes("TOTAL") || offId.toUpperCase().includes("SUMMARY")) return null;
 
+    const offName = String(r["Office Name"] || r["office_name"] || "").trim();
+    let subDiv = String(r["Name of Sub Division"] || r["Sub-Division"] || r["sub_division"] || "OTHER SD").trim();
+
+    // Map Nodal Delivery Center to INDORE EAST SD instead of INDORE CITY SD
+    const nameUpper = offName.toUpperCase();
+    const sdUpper = subDiv.toUpperCase();
+    if(nameUpper.includes("NODAL DELIVERY") || nameUpper.includes("NDC") || sdUpper.includes("NODAL DELIVERY") || sdUpper.includes("NDC")){
+        subDiv = "INDORE EAST SD";
+    }
+
     return {
         officeId: offId,
-        officeName: String(r["Office Name"] || r["office_name"] || "").trim(),
+        officeName: offName,
         officeClass: String(r["Class"] || r["class"] || "SO").trim().toUpperCase(),
-        subDivision: String(r["Name of Sub Division"] || r["Sub-Division"] || r["sub_division"] || "OTHER SD").trim(),
+        subDivision: subDiv,
         division: String(r["Name of Division"] || r["Division"] || r["division"] || "OTHER DIVISION").trim().toUpperCase(),
 
-        // Parcel
         pReceived: Number(r["Parcel Received"]) || 0,
         pInvoiced: Number(r["Parcel Invoiced"]) || 0,
         pDelivered: Number(r["Parcel D+0 Delivered"]) || 0,
@@ -600,7 +661,6 @@ function parseRowItem(r){
         pReturned: Number(r["Parcel D+0 Returned"]) || 0,
         pActioned: Number(r["Parcel Total D+0 Actioned"]) || 0,
 
-        // Mail Operations
         mReceived: Number(r["Mail Ops Received"]) || 0,
         mInvoiced: Number(r["Mail Ops Invoiced"]) || 0,
         mDelivered: Number(r["Mail Ops D+0 Delivered"]) || 0,
@@ -621,6 +681,19 @@ function initDropdownOptions(){
         });
     });
 
+    const monthSelects = ["sumMonth", "offMonth", "rnkMonth"];
+    monthSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        const augOpt = el.querySelector('option[value="AUG"]');
+        if(augOpt) augOpt.textContent = MONTH_NAMES.AUG;
+        const sepOpt = el.querySelector('option[value="SEP"]');
+        if(sepOpt) sepOpt.textContent = MONTH_NAMES.SEP;
+    });
+
+    const cmpSepLabel = document.getElementById("cmpSepLabel");
+    if(cmpSepLabel) cmpSepLabel.textContent = MONTH_NAMES.SEP;
+
     const divSelects = ["sumDivision", "offDivision", "rnkDivision", "cmpDivision"];
     divSelects.forEach(id => {
         const el = document.getElementById(id);
@@ -633,15 +706,17 @@ function initDropdownOptions(){
         });
     });
 
-    const offClassEl = document.getElementById("offClass");
-    if(offClassEl){
-        offClassEl.innerHTML = '<option value="All">All Classes</option>';
+    const classSelects = ["offClass", "rnkClass", "cmpClass"];
+    classSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.innerHTML = '<option value="All">All Classes</option>';
         [...allClasses].sort().forEach(c => {
             const opt = document.createElement("option");
             opt.value = opt.textContent = c;
-            offClassEl.appendChild(opt);
+            el.appendChild(opt);
         });
-    }
+    });
 }
 
 function switchTab(tabKey){
@@ -652,35 +727,50 @@ function switchTab(tabKey){
         const view = document.getElementById("view" + k.charAt(0).toUpperCase() + k.slice(1));
         if(btn){
             btn.className = isTarget 
-                ? "bg-purple-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 border-b-2 border-purple-600 cursor-pointer"
-                : "bg-white hover:bg-slate-100 text-slate-700 text-xs md:text-sm font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-2 border border-slate-200 cursor-pointer";
+                ? "bg-purple-900 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 border-b-2 border-purple-500 cursor-pointer"
+                : "bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer";
         }
         if(view) view.classList.toggle("hidden", !isTarget);
     });
 
-    if(tabKey === "summary") renderSummaryTable();
-    if(tabKey === "offices") renderOfficeTable();
-    if(tabKey === "rankings") renderRankingsTable();
-    if(tabKey === "compare") renderCompareTable();
+    requestAnimationFrame(() => {
+        if(tabKey === "summary") renderSummaryTable();
+        else if(tabKey === "offices") renderOfficeTable();
+        else if(tabKey === "rankings") renderRankingsTable();
+        else if(tabKey === "compare") renderCompareTable();
+    });
+}
+
+function onCmpLevelChange(){
+    const level = document.getElementById("cmpLevel").value;
+    const classWrap = document.getElementById("cmpClassWrapper");
+    if(level === "office"){
+        classWrap.classList.remove("hidden");
+    } else {
+        classWrap.classList.add("hidden");
+    }
+    renderCompareTable();
 }
 
 function filterDataset(records, domain, boMode, selDiv, selClass = "All"){
-    return records.filter(item => {
-        if(item.officeName.toUpperCase().includes("KHUDEL") && item.officeClass === "BO") return false;
-        if(boMode === "excluding_bo" && item.officeClass === "BO") return false;
-        if(boMode === "only_bo" && item.officeClass !== "BO") return false;
+    const result = [];
+    const len = records.length;
 
-        if(selDiv !== "All" && item.division !== selDiv) return false;
-        if(selClass !== "All" && item.officeClass !== selClass) return false;
+    for(let i = 0; i < len; i++){
+        const item = records[i];
+        if(item.officeName.toUpperCase().includes("KHUDEL") && item.officeClass === "BO") continue;
+        if(boMode === "excluding_bo" && item.officeClass === "BO") continue;
+        if(boMode === "only_bo" && item.officeClass !== "BO") continue;
 
-        return true;
-    }).map(item => {
+        if(selDiv !== "All" && item.division !== selDiv) continue;
+        if(selClass !== "All" && item.officeClass !== selClass) continue;
+
         let rec = 0, inv = 0, del = 0, redir = 0, ret = 0;
         if(domain === "parcel"){
             rec = item.pReceived; inv = item.pInvoiced; del = item.pDelivered; redir = item.pRedirected; ret = item.pReturned;
         } else if(domain === "mail"){
             rec = item.mReceived; inv = item.mInvoiced; del = item.mDelivered; redir = item.mRedirected; ret = item.mReturned;
-        } else { // both
+        } else {
             rec = item.pReceived + item.mReceived;
             inv = item.pInvoiced + item.mInvoiced;
             del = item.pDelivered + item.mDelivered;
@@ -691,28 +781,23 @@ function filterDataset(records, domain, boMode, selDiv, selClass = "All"){
         const act = del + redir + ret;
         const rtsRedir = redir + ret;
 
-        const pctDel = rec > 0 ? (del / rec * 100) : 0;
-        const pctRedir = rec > 0 ? (redir / rec * 100) : 0;
-        const pctRet = rec > 0 ? (ret / rec * 100) : 0;
-        const pctRtsRedir = rec > 0 ? (rtsRedir / rec * 100) : 0;
-        const pctTotal = rec > 0 ? (act / rec * 100) : 0;
-
-        return {
+        result.push({
             ...item,
             received: rec,
             invoiced: inv,
             d0Deliver: del,
-            pctDel: pctDel,
+            pctDel: rec > 0 ? (del / rec * 100) : 0,
             d0Redirect: redir,
-            pctRedir: pctRedir,
+            pctRedir: rec > 0 ? (redir / rec * 100) : 0,
             d0Return: ret,
-            pctRet: pctRet,
+            pctRet: rec > 0 ? (ret / rec * 100) : 0,
             rtsRedir: rtsRedir,
-            pctRtsRedir: pctRtsRedir,
+            pctRtsRedir: rec > 0 ? (rtsRedir / rec * 100) : 0,
             totalAct: act,
-            pctTotal: pctTotal
-        };
-    });
+            pctTotal: rec > 0 ? (act / rec * 100) : 0
+        });
+    }
+    return result;
 }
 
 // ----------------- 1. SUMMARY VIEW -----------------
@@ -737,25 +822,18 @@ function renderSummaryTable(){
     else thSubDiv.classList.remove("hidden");
 
     const grouped = {};
-    filtered.forEach(row => {
+    for(let i=0; i<filtered.length; i++){
+        const row = filtered[i];
         const groupKey = isDivisionView ? row.division : `${row.division}||${row.subDivision}`;
         if(!grouped[groupKey]){
-            grouped[groupKey] = {
-                division: row.division,
-                subDivision: row.subDivision,
-                received: 0,
-                invoiced: 0,
-                d0Deliver: 0,
-                d0Redirect: 0,
-                d0Return: 0
-            };
+            grouped[groupKey] = { division: row.division, subDivision: row.subDivision, received: 0, invoiced: 0, d0Deliver: 0, d0Redirect: 0, d0Return: 0 };
         }
         grouped[groupKey].received += row.received;
         grouped[groupKey].invoiced += row.invoiced;
         grouped[groupKey].d0Deliver += row.d0Deliver;
         grouped[groupKey].d0Redirect += row.d0Redirect;
         grouped[groupKey].d0Return += row.d0Return;
-    });
+    }
 
     const tbody = document.querySelector("#tableSummary tbody");
     const tfoot = document.querySelector("#tableSummary tfoot");
@@ -769,15 +847,11 @@ function renderSummaryTable(){
     }
 
     let grandRec=0, grandInv=0, grandDel=0, grandRedir=0, grandRet=0;
+    let htmlBuffer = "";
 
     if(isDivisionView){
         groupList.sort((a,b)=>a.division.localeCompare(b.division)).forEach(item => {
-            grandRec += item.received;
-            grandInv += item.invoiced;
-            grandDel += item.d0Deliver;
-            grandRedir += item.d0Redirect;
-            grandRet += item.d0Return;
-
+            grandRec += item.received; grandInv += item.invoiced; grandDel += item.d0Deliver; grandRedir += item.d0Redirect; grandRet += item.d0Return;
             const act = item.d0Deliver + item.d0Redirect + item.d0Return;
             const rtsRedir = item.d0Redirect + item.d0Return;
 
@@ -788,22 +862,22 @@ function renderSummaryTable(){
             const pctTot = item.received > 0 ? ((act/item.received)*100).toFixed(1)+"%" : "0.0%";
 
             const divStyle = divClassMap[item.division] || "";
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td class="${divStyle} text-left font-bold clickable-cell" onclick="openDrillModal('${selM}','${domain}','${boMode}','${item.division}', 'ALL')">${item.division}</td>
-                <td class="font-bold text-slate-800">${item.received.toLocaleString("en-IN")}</td>
-                <td class="font-bold text-blue-900 bg-blue-50/50">${item.invoiced.toLocaleString("en-IN")}</td>
-                <td class="font-semibold text-emerald-800">${item.d0Deliver.toLocaleString("en-IN")}</td>
-                <td class="font-bold text-emerald-900 bg-emerald-50">${pctDel}</td>
-                <td class="font-semibold text-amber-800">${item.d0Redirect.toLocaleString("en-IN")}</td>
-                <td class="font-bold text-amber-900 bg-amber-50">${pctRedir}</td>
-                <td class="font-semibold text-rose-800">${item.d0Return.toLocaleString("en-IN")}</td>
-                <td class="font-bold text-rose-900 bg-rose-50">${pctRet}</td>
-                <td class="font-black text-orange-950 bg-orange-100">${pctRtsRedir}</td>
-                <td class="font-black text-purple-950 bg-purple-100/70">${act.toLocaleString("en-IN")}</td>
-                <td class="font-black text-purple-950 bg-purple-200">${pctTot}</td>
+            htmlBuffer += `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="${divStyle} text-left font-bold clickable-cell" onclick="openDrillModal('${selM}','${domain}','${boMode}','${item.division}', 'ALL')">${item.division}</td>
+                    <td class="font-bold text-slate-800">${item.received.toLocaleString("en-IN")}</td>
+                    <td class="font-bold text-blue-900 bg-blue-50/50">${item.invoiced.toLocaleString("en-IN")}</td>
+                    <td class="font-semibold text-emerald-800">${item.d0Deliver.toLocaleString("en-IN")}</td>
+                    <td class="font-bold text-emerald-900 bg-emerald-50">${pctDel}</td>
+                    <td class="font-semibold text-amber-800">${item.d0Redirect.toLocaleString("en-IN")}</td>
+                    <td class="font-bold text-amber-900 bg-amber-50">${pctRedir}</td>
+                    <td class="font-semibold text-rose-800">${item.d0Return.toLocaleString("en-IN")}</td>
+                    <td class="font-bold text-rose-900 bg-rose-50">${pctRet}</td>
+                    <td class="font-black text-orange-950 bg-orange-100">${pctRtsRedir}</td>
+                    <td class="font-black text-purple-950 bg-purple-100/70">${act.toLocaleString("en-IN")}</td>
+                    <td class="font-black text-purple-950 bg-purple-200">${pctTot}</td>
+                </tr>
             `;
-            tbody.appendChild(tr);
         });
     } else {
         const divTree = {};
@@ -817,17 +891,8 @@ function renderSummaryTable(){
             const divStyle = divClassMap[divName] || "div-bg-indore-city";
 
             subList.forEach((sub, sIdx) => {
-                divRec += sub.received;
-                divInv += sub.invoiced;
-                divDel += sub.d0Deliver;
-                divRedir += sub.d0Redirect;
-                divRet += sub.d0Return;
-
-                grandRec += sub.received;
-                grandInv += sub.invoiced;
-                grandDel += sub.d0Deliver;
-                grandRedir += sub.d0Redirect;
-                grandRet += sub.d0Return;
+                divRec += sub.received; divInv += sub.invoiced; divDel += sub.d0Deliver; divRedir += sub.d0Redirect; divRet += sub.d0Return;
+                grandRec += sub.received; grandInv += sub.invoiced; grandDel += sub.d0Deliver; grandRedir += sub.d0Redirect; grandRet += sub.d0Return;
 
                 const act = sub.d0Deliver + sub.d0Redirect + sub.d0Return;
                 const rtsRedir = sub.d0Redirect + sub.d0Return;
@@ -838,25 +903,25 @@ function renderSummaryTable(){
                 const pctRtsRedir = sub.received > 0 ? ((rtsRedir/sub.received)*100).toFixed(1)+"%" : "0.0%";
                 const pctTot = sub.received > 0 ? ((act/sub.received)*100).toFixed(1)+"%" : "0.0%";
 
-                const tr = document.createElement("tr");
                 const rowSpanCell = sIdx === 0 ? `<td rowspan="${subList.length}" class="${divStyle} text-left font-bold clickable-cell align-middle" onclick="openDrillModal('${selM}','${domain}','${boMode}','${divName}', 'ALL')">${divName}</td>` : "";
 
-                tr.innerHTML = `
-                    ${rowSpanCell}
-                    <td class="text-left font-semibold clickable-cell" onclick="openDrillModal('${selM}','${domain}','${boMode}','${divName}', '${sub.subDivision}')">${sub.subDivision}</td>
-                    <td class="font-bold text-slate-800">${sub.received.toLocaleString("en-IN")}</td>
-                    <td class="font-bold text-blue-900 bg-blue-50/50">${sub.invoiced.toLocaleString("en-IN")}</td>
-                    <td class="font-semibold text-emerald-800">${sub.d0Deliver.toLocaleString("en-IN")}</td>
-                    <td class="font-bold text-emerald-900 bg-emerald-50">${pctDel}</td>
-                    <td class="font-semibold text-amber-800">${sub.d0Redirect.toLocaleString("en-IN")}</td>
-                    <td class="font-bold text-amber-900 bg-amber-50">${pctRedir}</td>
-                    <td class="font-semibold text-rose-800">${sub.d0Return.toLocaleString("en-IN")}</td>
-                    <td class="font-bold text-rose-900 bg-rose-50">${pctRet}</td>
-                    <td class="font-black text-orange-950 bg-orange-100">${pctRtsRedir}</td>
-                    <td class="font-black text-purple-950 bg-purple-100/70">${act.toLocaleString("en-IN")}</td>
-                    <td class="font-black text-purple-950 bg-purple-200">${pctTot}</td>
+                htmlBuffer += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        ${rowSpanCell}
+                        <td class="text-left font-semibold clickable-cell" onclick="openDrillModal('${selM}','${domain}','${boMode}','${divName}', '${sub.subDivision}')">${sub.subDivision}</td>
+                        <td class="font-bold text-slate-800">${sub.received.toLocaleString("en-IN")}</td>
+                        <td class="font-bold text-blue-900 bg-blue-50/50">${sub.invoiced.toLocaleString("en-IN")}</td>
+                        <td class="font-semibold text-emerald-800">${sub.d0Deliver.toLocaleString("en-IN")}</td>
+                        <td class="font-bold text-emerald-900 bg-emerald-50">${pctDel}</td>
+                        <td class="font-semibold text-amber-800">${sub.d0Redirect.toLocaleString("en-IN")}</td>
+                        <td class="font-bold text-amber-900 bg-amber-50">${pctRedir}</td>
+                        <td class="font-semibold text-rose-800">${sub.d0Return.toLocaleString("en-IN")}</td>
+                        <td class="font-bold text-rose-900 bg-rose-50">${pctRet}</td>
+                        <td class="font-black text-orange-950 bg-orange-100">${pctRtsRedir}</td>
+                        <td class="font-black text-purple-950 bg-purple-100/70">${act.toLocaleString("en-IN")}</td>
+                        <td class="font-black text-purple-950 bg-purple-200">${pctTot}</td>
+                    </tr>
                 `;
-                tbody.appendChild(tr);
             });
 
             const divAct = divDel + divRedir + divRet;
@@ -867,25 +932,26 @@ function renderSummaryTable(){
             const divPctRtsRedir = divRec > 0 ? ((divRtsRedir/divRec)*100).toFixed(1)+"%" : "0.0%";
             const divPctTot = divRec > 0 ? ((divAct/divRec)*100).toFixed(1)+"%" : "0.0%";
 
-            const trTotal = document.createElement("tr");
-            trTotal.className = "row-div-total";
-            trTotal.innerHTML = `
-                <td colspan="2" class="text-left font-bold">${divName} Total</td>
-                <td>${divRec.toLocaleString("en-IN")}</td>
-                <td>${divInv.toLocaleString("en-IN")}</td>
-                <td>${divDel.toLocaleString("en-IN")}</td>
-                <td>${divPctDel}</td>
-                <td>${divRedir.toLocaleString("en-IN")}</td>
-                <td>${divPctRedir}</td>
-                <td>${divRet.toLocaleString("en-IN")}</td>
-                <td>${divPctRet}</td>
-                <td class="font-black text-orange-950">${divPctRtsRedir}</td>
-                <td class="font-black text-purple-950">${divAct.toLocaleString("en-IN")}</td>
-                <td class="font-black text-purple-950">${divPctTot}</td>
+            htmlBuffer += `
+                <tr class="row-div-total">
+                    <td colspan="2" class="text-left font-bold">${divName} Total</td>
+                    <td>${divRec.toLocaleString("en-IN")}</td>
+                    <td>${divInv.toLocaleString("en-IN")}</td>
+                    <td>${divDel.toLocaleString("en-IN")}</td>
+                    <td>${divPctDel}</td>
+                    <td>${divRedir.toLocaleString("en-IN")}</td>
+                    <td>${divPctRedir}</td>
+                    <td>${divRet.toLocaleString("en-IN")}</td>
+                    <td>${divPctRet}</td>
+                    <td class="font-black text-orange-950">${divPctRtsRedir}</td>
+                    <td class="font-black text-purple-950">${divAct.toLocaleString("en-IN")}</td>
+                    <td class="font-black text-purple-950">${divPctTot}</td>
+                </tr>
             `;
-            tbody.appendChild(trTotal);
         });
     }
+
+    tbody.innerHTML = htmlBuffer;
 
     const grandAct = grandDel + grandRedir + grandRet;
     const grandRtsRedir = grandRedir + grandRet;
@@ -913,7 +979,7 @@ function renderSummaryTable(){
     `;
 }
 
-// ----------------- 2. DETAILED OFFICE VIEW -----------------
+// ----------------- 2. DETAILED OFFICE VIEW (OPTIMIZED ZERO-LAG) -----------------
 function renderOfficeTable(){
     const selM = document.getElementById("offMonth").value;
     const domain = document.getElementById("offDomain").value;
@@ -931,33 +997,68 @@ function renderOfficeTable(){
         return sortDir === "desc" ? valB - valA : valA - valB;
     });
 
-    const tbody = document.querySelector("#tableOffice tbody");
+    currentOfficeDataList = filtered;
+    currentOfficeRenderIndex = 0;
+
+    const badge = document.getElementById("officeRecordCountBadge");
+    if(badge) badge.textContent = `Total Offices: ${filtered.length.toLocaleString("en-IN")}`;
+
+    const tbody = document.getElementById("officeTableTbody");
+    tbody.innerHTML = "";
+
     if(!filtered.length){
         tbody.innerHTML = '<tr><td colspan="17" class="py-8 text-center text-slate-400 font-medium">No matching post offices found.</td></tr>';
+        document.getElementById("officeLoadMoreWrap").classList.add("hidden");
         return;
     }
 
-    tbody.innerHTML = filtered.map((item, idx) => `
-        <tr class="hover:bg-slate-50 border-b border-slate-100">
-            <td>${idx+1}</td>
-            <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
-            <td class="text-left font-semibold">${item.officeName}</td>
-            <td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold text-[10px]">${item.officeClass}</span></td>
-            <td>${item.subDivision}</td>
-            <td>${item.division}</td>
-            <td>${item.received.toLocaleString("en-IN")}</td>
-            <td class="font-bold text-blue-900 bg-blue-50/40">${item.invoiced.toLocaleString("en-IN")}</td>
-            <td class="font-semibold text-emerald-800">${item.d0Deliver.toLocaleString("en-IN")}</td>
-            <td class="font-bold text-emerald-900 bg-emerald-50">${item.pctDel.toFixed(1)}%</td>
-            <td class="font-semibold text-amber-800">${item.d0Redirect.toLocaleString("en-IN")}</td>
-            <td class="font-bold text-amber-900 bg-amber-50">${item.pctRedir.toFixed(1)}%</td>
-            <td class="font-semibold text-rose-800">${item.d0Return.toLocaleString("en-IN")}</td>
-            <td class="font-bold text-rose-900 bg-rose-50">${item.pctRet.toFixed(1)}%</td>
-            <td class="font-black text-orange-950 bg-orange-100">${item.pctRtsRedir.toFixed(1)}%</td>
-            <td class="font-black text-purple-950 bg-purple-100/70">${item.totalAct.toLocaleString("en-IN")}</td>
-            <td class="font-black text-purple-950 bg-purple-200">${item.pctTotal.toFixed(1)}%</td>
-        </tr>
-    `).join("");
+    appendOfficeChunk();
+}
+
+function appendOfficeChunk(){
+    const tbody = document.getElementById("officeTableTbody");
+    const nextChunk = currentOfficeDataList.slice(currentOfficeRenderIndex, currentOfficeRenderIndex + OFFICE_CHUNK_SIZE);
+    
+    let chunkHtml = "";
+    for(let i = 0; i < nextChunk.length; i++){
+        const item = nextChunk[i];
+        const idx = currentOfficeRenderIndex + i + 1;
+        chunkHtml += `
+            <tr class="hover:bg-slate-50 border-b border-slate-100">
+                <td>${idx}</td>
+                <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
+                <td class="text-left font-semibold">${item.officeName}</td>
+                <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold text-[10px]">${item.officeClass}</span></td>
+                <td>${item.subDivision}</td>
+                <td>${item.division}</td>
+                <td>${item.received.toLocaleString("en-IN")}</td>
+                <td class="font-bold text-blue-900 bg-blue-50/40">${item.invoiced.toLocaleString("en-IN")}</td>
+                <td class="font-semibold text-emerald-800">${item.d0Deliver.toLocaleString("en-IN")}</td>
+                <td class="font-bold text-emerald-900 bg-emerald-50">${item.pctDel.toFixed(1)}%</td>
+                <td class="font-semibold text-amber-800">${item.d0Redirect.toLocaleString("en-IN")}</td>
+                <td class="font-bold text-amber-900 bg-amber-50">${item.pctRedir.toFixed(1)}%</td>
+                <td class="font-semibold text-rose-800">${item.d0Return.toLocaleString("en-IN")}</td>
+                <td class="font-bold text-rose-900 bg-rose-50">${item.pctRet.toFixed(1)}%</td>
+                <td class="font-black text-orange-950 bg-orange-100">${item.pctRtsRedir.toFixed(1)}%</td>
+                <td class="font-black text-purple-950 bg-purple-100/70">${item.totalAct.toLocaleString("en-IN")}</td>
+                <td class="font-black text-purple-950 bg-purple-200">${item.pctTotal.toFixed(1)}%</td>
+            </tr>
+        `;
+    }
+
+    tbody.insertAdjacentHTML("beforeend", chunkHtml);
+    currentOfficeRenderIndex += nextChunk.length;
+
+    const loadMoreBtnWrap = document.getElementById("officeLoadMoreWrap");
+    if(currentOfficeRenderIndex < currentOfficeDataList.length){
+        loadMoreBtnWrap.classList.remove("hidden");
+    } else {
+        loadMoreBtnWrap.classList.add("hidden");
+    }
+}
+
+function loadMoreOffices(){
+    appendOfficeChunk();
 }
 
 // ----------------- 3. RANKINGS VIEW -----------------
@@ -967,9 +1068,10 @@ function renderRankingsTable(){
     const rnkType = document.getElementById("rnkType").value;
     const rnkMetric = document.getElementById("rnkMetric").value;
     const selDiv = document.getElementById("rnkDivision").value;
+    const selClass = document.getElementById("rnkClass").value;
 
     const data = rawMonthData[selM] || [];
-    const filtered = filterDataset(data, domain, "including_bo", selDiv);
+    const filtered = filterDataset(data, domain, "including_bo", selDiv, selClass);
 
     if(rnkType === "top"){
         filtered.sort((a,b) => (b[rnkMetric]||0) - (a[rnkMetric]||0));
@@ -990,7 +1092,7 @@ function renderRankingsTable(){
             <td class="font-extrabold ${rnkType==='top'?'text-emerald-800':'text-rose-800'}">#${idx+1}</td>
             <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
             <td class="text-left font-semibold">${item.officeName}</td>
-            <td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold text-[10px]">${item.officeClass}</span></td>
+            <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold text-[10px]">${item.officeClass}</span></td>
             <td>${item.subDivision}</td>
             <td>${item.division}</td>
             <td>${item.received.toLocaleString("en-IN")}</td>
@@ -1014,6 +1116,7 @@ function renderCompareTable(){
     const domain = document.getElementById("cmpDomain").value;
     const boMode = document.getElementById("cmpBoMode").value;
     const selDiv = document.getElementById("cmpDivision").value;
+    const selClass = level === "office" ? document.getElementById("cmpClass").value : "All";
 
     const checkedMonths = Array.from(document.querySelectorAll("input[name='cmpMonths']:checked")).map(cb => cb.value);
     const checkedMetrics = Array.from(document.querySelectorAll("input[name='cmpMetric']:checked")).map(cb => cb.value);
@@ -1032,9 +1135,8 @@ function renderCompareTable(){
         return;
     }
 
-    // Build Table Header
     let tr1 = '<tr><th rowspan="2" style="width:15%">Entity Name</th>';
-    if(level === "office") tr1 = '<tr><th rowspan="2" style="width:8%">Office ID</th><th rowspan="2" style="width:14%;text-align:left">Office Name</th><th rowspan="2" style="width:8%">Division</th>';
+    if(level === "office") tr1 = '<tr><th rowspan="2" style="width:7%">Office ID</th><th rowspan="2" style="width:14%;text-align:left">Office Name</th><th rowspan="2" style="width:5%">Class</th><th rowspan="2" style="width:8%">Division</th>';
     else if(level === "subdivision") tr1 = '<tr><th rowspan="2" style="width:10%">Division</th><th rowspan="2" style="width:12%;text-align:left">Sub-Division</th>';
 
     checkedMetrics.forEach(mKey => {
@@ -1045,45 +1147,37 @@ function renderCompareTable(){
     let tr2 = '<tr>';
     checkedMetrics.forEach(() => {
         checkedMonths.forEach(m => {
-            tr2 += `<th style="background-color:#fce4d6">${m}</th>`;
+            const shortName = m === "AUG" ? "Aug" : m === "SEP" ? "Sep" : m;
+            tr2 += `<th style="background-color:#fce4d6">${shortName}</th>`;
         });
     });
     tr2 += '</tr>';
 
     thead.innerHTML = tr1 + tr2;
 
-    // Monthly Data Aggregations
     const monthlyAggregates = {};
     checkedMonths.forEach(mKey => {
         const raw = rawMonthData[mKey] || [];
-        const filtered = filterDataset(raw, domain, boMode, selDiv);
+        const filtered = filterDataset(raw, domain, boMode, selDiv, selClass);
         const map = {};
 
-        filtered.forEach(row => {
-            let entityKey = "";
-            if(level === "division") entityKey = row.division;
-            else if(level === "subdivision") entityKey = `${row.division}||${row.subDivision}`;
-            else entityKey = row.officeId;
+        for(let i=0; i<filtered.length; i++){
+            const row = filtered[i];
+            let entityKey = level === "division" ? row.division : level === "subdivision" ? `${row.division}||${row.subDivision}` : row.officeId;
 
             if(!map[entityKey]){
                 map[entityKey] = {
-                    officeId: row.officeId,
-                    officeName: row.officeName,
-                    division: row.division,
-                    subDivision: row.subDivision,
-                    received: 0,
-                    d0Deliver: 0,
-                    d0Redirect: 0,
-                    d0Return: 0
+                    officeId: row.officeId, officeName: row.officeName, officeClass: row.officeClass,
+                    division: row.division, subDivision: row.subDivision,
+                    received: 0, d0Deliver: 0, d0Redirect: 0, d0Return: 0
                 };
             }
             map[entityKey].received += row.received;
             map[entityKey].d0Deliver += row.d0Deliver;
             map[entityKey].d0Redirect += row.d0Redirect;
             map[entityKey].d0Return += row.d0Return;
-        });
+        }
 
-        // Calculate final percentages
         Object.values(map).forEach(e => {
             const act = e.d0Deliver + e.d0Redirect + e.d0Return;
             const rtsRedir = e.d0Redirect + e.d0Return;
@@ -1119,7 +1213,7 @@ function renderCompareTable(){
         }
 
         if(level === "office"){
-            nameCells = `<td class="font-mono font-bold text-purple-950">${sample.officeId||key}</td><td class="text-left font-semibold">${sample.officeName||"-"}</td><td>${sample.division||"-"}</td>`;
+            nameCells = `<td class="font-mono font-bold text-purple-950">${sample.officeId||key}</td><td class="text-left font-semibold">${sample.officeName||"-"}</td><td><span class="bg-purple-100 text-purple-950 px-1 py-0.5 rounded font-bold text-[10px]">${sample.officeClass||"SO"}</span></td><td>${sample.division||"-"}</td>`;
         } else if(level === "subdivision"){
             nameCells = `<td class="font-bold">${sample.division||"-"}</td><td class="text-left font-semibold">${sample.subDivision||"-"}</td>`;
         } else {
@@ -1170,7 +1264,7 @@ function openDrillModal(monthKey, domain, boMode, division, sd){
             <td>${idx+1}</td>
             <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
             <td class="text-left font-semibold">${item.officeName}</td>
-            <td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${item.officeClass}</span></td>
+            <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold">${item.officeClass}</span></td>
             <td>${item.received.toLocaleString("en-IN")}</td>
             <td class="font-bold text-blue-900 bg-blue-50/40">${item.invoiced.toLocaleString("en-IN")}</td>
             <td class="text-emerald-800 font-semibold">${item.d0Deliver.toLocaleString("en-IN")}</td>
@@ -1320,11 +1414,7 @@ function buildD0SummarySheet(records, domain, boMode){
             "% Total Actioned": divItem.rec > 0 ? Number(((divTotAct/divItem.rec)*100).toFixed(2)) : 0
         });
 
-        grandRec += divItem.rec;
-        grandInv += divItem.inv;
-        grandDel += divItem.del;
-        grandRedir += divItem.redir;
-        grandRet += divItem.ret;
+        grandRec += divItem.rec; grandInv += divItem.inv; grandDel += divItem.del; grandRedir += divItem.redir; grandRet += divItem.ret;
     });
 
     const grandTotAct = grandDel + grandRedir + grandRet;
@@ -1351,21 +1441,18 @@ function buildD0SummarySheet(records, domain, boMode){
 function exportCompleteSevenSheetExcel(){
     const selM = document.getElementById("sumMonth").value;
     const data = rawMonthData[selM];
-    if(!data || !data.length) return alert("Please select a valid month with loaded data.");
+    if(!data || !data.length) return alert("Please select a month with loaded data.");
 
     const wb = XLSX.utils.book_new();
 
-    // 1-3 Parcel Sheets
     XLSX.utils.book_append_sheet(wb, buildD0SummarySheet(data, "parcel", "excluding_bo"), "Parcel_Excl_BO");
     XLSX.utils.book_append_sheet(wb, buildD0SummarySheet(data, "parcel", "including_bo"), "Parcel_Incl_BO");
     XLSX.utils.book_append_sheet(wb, buildD0SummarySheet(data, "parcel", "only_bo"), "Parcel_Only_BO");
 
-    // 4-6 Mail Ops Sheets
     XLSX.utils.book_append_sheet(wb, buildD0SummarySheet(data, "mail", "excluding_bo"), "MailOps_Excl_BO");
     XLSX.utils.book_append_sheet(wb, buildD0SummarySheet(data, "mail", "including_bo"), "MailOps_Incl_BO");
     XLSX.utils.book_append_sheet(wb, buildD0SummarySheet(data, "mail", "only_bo"), "MailOps_Only_BO");
 
-    // 7th All Offices Detailed Sheet
     const officeRows = data.map((r, idx) => {
         const pTot = r.pDelivered + r.pRedirected + r.pReturned;
         const pRtsRedir = r.pRedirected + r.pReturned;
@@ -1418,15 +1505,15 @@ function exportCompleteSevenSheetExcel(){
     });
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(officeRows), "All_Offices_Detailed");
-    XLSX.writeFile(wb, `D0_Complete_Report_${selM}_7_Sheets.xlsx`);
+    XLSX.writeFile(wb, `D0_Delivery_Complete_Report_${selM}_7_Sheets.xlsx`);
 }
 
-// ----------------- GENERIC EXPORT HELPERS -----------------
+// ----------------- GENERIC EXPORTS -----------------
 function exportTableToExcel(tableId, fileName){
     const tbl = document.getElementById(tableId);
     if(!tbl) return alert("Table not found.");
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(tbl), "Report");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(tbl), "D0_Report");
     XLSX.writeFile(wb, fileName);
 }
 
@@ -1434,20 +1521,20 @@ function exportSingleTablePDF(tableId, title){
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF("l", "mm", "a4");
     doc.setFillColor(44, 12, 56);
-    doc.rect(0, 0, 297, 18, "F");
+    doc.rect(0, 0, 297, 16, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text("D+0 MONITORING PORTAL INDORE POSTAL REGION", 12, 11);
-    doc.setFontSize(9);
-    doc.text(title.toUpperCase(), 12, 16);
+    doc.text("D+0 MONITORING PORTAL INDORE POSTAL REGION", 12, 10);
+    doc.setFontSize(8.5);
+    doc.text(title.toUpperCase(), 12, 14);
 
     doc.autoTable({
         html: "#" + tableId,
-        startY: 22,
-        margin: { top: 22, right: 10, bottom: 14, left: 10 },
+        startY: 19,
+        margin: { top: 19, right: 8, bottom: 10, left: 8 },
         theme: "grid",
-        styles: { fontSize: 7, cellPadding: 2, valign: "middle", lineColor: [180,180,180], lineWidth: 0.2 },
+        styles: { fontSize: 7, cellPadding: 1.5, valign: "middle", lineColor: [180,180,180], lineWidth: 0.15 },
         headStyles: { fillColor: [247, 202, 172], textColor: [0,0,0], fontStyle: "bold", halign: "center" },
         footStyles: { fillColor: [247, 202, 172], textColor: [0,0,0], fontStyle: "bold" }
     });
