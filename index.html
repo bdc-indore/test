@@ -2926,25 +2926,7 @@ function updateSbSlotStatuses(){
             if(nm){ nm.textContent="📄 "+slot.fileName; nm.title=slot.fileName; }
             if(clr) clr.classList.remove("hidden");
             if(slot.error){ el.className=base+"text-rose-700 font-bold"; el.textContent="❌ "+slot.error; return; }
-            // Why rows > matched: (1) BO ID not in master list, (2) same BO ID written in more than one row (counted once)
-            let badTxt="";
-            if(Object.keys(sbOfficesByOfficeId).length){
-                const label=id=>{
-                    const arr=(slot.entries&&slot.entries[id])||[], names=arr.map(e=>e.name).filter(Boolean).join(" / ");
-                    return `${id}${names?" – "+names:""}${arr.length>1?` (${arr.length} rows)`:""}`;
-                };
-                const notInMaster=[], repeated=[];
-                Object.keys(slot.map).forEach(id=>{
-                    const n=(slot.entries&&slot.entries[id])?slot.entries[id].length:1;
-                    if(!sbMasterMap[id]) notInMaster.push(label(id));
-                    else if(n>1) repeated.push(label(id));
-                });
-                const cls='class="text-[11px] text-rose-700 font-bold"';
-                if(notInMaster.length) badTxt+=`<br><span ${cls}>❌ Not matched (BO ID not in master): ${notInMaster.join(", ")}</span>`;
-                if(repeated.length) badTxt+=`<br><span ${cls}>❌ Not matched (same BO ID in more than one row): ${repeated.join(", ")}</span>`;
-                if(!badTxt && slot.totalRows>info[i].matched) badTxt=`<br><span ${cls}>❌ ${slot.totalRows-info[i].matched} row(s) not matched</span>`;
-            }
-            const x=info[i], rowsTxt=`${slot.totalRows} rows · ${x.matched} matched`, cols=`<br><span class="text-[10px] text-slate-400 font-normal">${slot.colsInfo}</span>${badTxt}`;
+            const x=info[i], rowsTxt=`${slot.totalRows} rows · ${x.matched} matched`, cols=`<br><span class="text-[10px] text-slate-400 font-normal">${slot.colsInfo}</span>`;
             if(!x.division){
                 el.className=base+"text-rose-700 font-bold";
                 el.innerHTML=`⚠️ Division not detected<br><span class="font-medium">${rowsTxt}</span>${cols}`;
