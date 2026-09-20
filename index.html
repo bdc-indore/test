@@ -624,7 +624,7 @@
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h3 class="font-extrabold text-lg flex items-center gap-2">🏦 SB Account Open / Close Calculator</h3>
-                    <p class="text-xs text-purple-200">Upload 7 Account Open + 7 Account Close Excels (any order) — Office matched by BO ID / SOL ID</p>
+                    <p class="text-xs text-purple-200">Select / drag &amp; drop all 7 Open + 7 Close Excels at once (any order) — Division auto-detected from BO ID / SOL ID — then press Calculate</p>
                 </div>
                 <div class="flex items-center flex-wrap gap-2">
                     <span id="sbMasterStatus" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Loading SB Master...</span>
@@ -636,12 +636,30 @@
             <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
                     <h4 class="font-bold text-emerald-900 text-sm mb-3 flex items-center gap-2">📥 Account OPEN Excels (any 7 files, any order)</h4>
+                    <label id="sbBulkZone_open" class="block cursor-pointer text-center border-2 border-dashed border-emerald-400 bg-white/70 hover:bg-white rounded-xl px-3 py-4 mb-3 transition"
+                           ondragover="handleSbBulkDragOver(event,'open')" ondragleave="handleSbBulkDragLeave(event,'open')" ondrop="handleSbBulkDrop(event,'open')">
+                        <div class="text-sm font-extrabold text-emerald-900">📂 Drag &amp; drop all Account OPEN files here</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">or click to select up to 7 files at once — they load together</div>
+                        <input type="file" multiple accept=".xlsx,.xls,.csv" class="hidden" onchange="handleSbBulkSelect('open', this)">
+                    </label>
                     <div id="sbOpenUploadsContainer" class="space-y-2"></div>
                 </div>
                 <div class="bg-rose-50 border border-rose-200 rounded-xl p-4">
                     <h4 class="font-bold text-rose-900 text-sm mb-3 flex items-center gap-2">📤 Account CLOSE Excels (any 7 files, any order)</h4>
+                    <label id="sbBulkZone_close" class="block cursor-pointer text-center border-2 border-dashed border-rose-400 bg-white/70 hover:bg-white rounded-xl px-3 py-4 mb-3 transition"
+                           ondragover="handleSbBulkDragOver(event,'close')" ondragleave="handleSbBulkDragLeave(event,'close')" ondrop="handleSbBulkDrop(event,'close')">
+                        <div class="text-sm font-extrabold text-rose-900">📂 Drag &amp; drop all Account CLOSE files here</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">or click to select up to 7 files at once — they load together</div>
+                        <input type="file" multiple accept=".xlsx,.xls,.csv" class="hidden" onchange="handleSbBulkSelect('close', this)">
+                    </label>
                     <div id="sbCloseUploadsContainer" class="space-y-2"></div>
                 </div>
+            </div>
+
+
+            <div class="px-4 md:px-6 pb-4 flex flex-col sm:flex-row items-center gap-3">
+                <button id="sbBtnCalculate" onclick="calculateSbReport()" class="w-full sm:w-auto bg-[#31103f] hover:bg-purple-950 text-white font-extrabold text-sm px-8 py-3 rounded-xl shadow-lg transition cursor-pointer border border-purple-500">🧮 Calculate Report</button>
+                <span id="sbCalcHint" class="text-xs font-semibold text-slate-500">Upload files, then press Calculate.</span>
             </div>
 
             <div class="px-4 md:px-6 pb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -678,14 +696,14 @@
             <div id="sbSubDivisionViewContainer" class="overflow-x-auto p-3">
                 <table class="nil-table" id="tableSbSubDivision">
                     <thead><tr><th style="width:4%">S.No.</th><th style="width:13%">Name of Division</th><th style="width:15%">Name of Sub Division</th><th style="width:8%">Total Offices</th><th style="width:8%">Account Open</th><th style="width:8%">Account Close</th><th style="width:8%">Net Addition</th><th style="width:9%">Offices Open&gt;10</th><th style="width:8%">% Open&gt;10</th><th style="width:9%">Offices NetAdd&gt;10</th><th style="width:8%">% NetAdd&gt;10</th></tr></thead>
-                    <tbody><tr><td colspan="11" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr></tbody>
+                    <tbody><tr><td colspan="11" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr></tbody>
                     <tfoot></tfoot>
                 </table>
             </div>
             <div id="sbDivisionViewContainer" class="overflow-x-auto p-3 hidden">
                 <table class="nil-table" id="tableSbDivision">
                     <thead><tr><th style="width:5%">S.No.</th><th style="width:17%">Name of Division</th><th style="width:9%">Total Offices</th><th style="width:10%">Account Open</th><th style="width:10%">Account Close</th><th style="width:10%">Net Addition</th><th style="width:10%">Offices Open&gt;10</th><th style="width:9%">% Open&gt;10</th><th style="width:10%">Offices NetAdd&gt;10</th><th style="width:9%">% NetAdd&gt;10</th></tr></thead>
-                    <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr></tbody>
+                    <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr></tbody>
                     <tfoot></tfoot>
                 </table>
             </div>
@@ -714,7 +732,7 @@
             <div class="overflow-x-auto p-3">
                 <table class="nil-table" id="tableSbOffice">
                     <thead><tr><th style="width:5%">#</th><th style="width:12%">Office ID</th><th style="width:10%">BO ID/SOL ID</th><th style="width:20%;text-align:left">Office Name</th><th style="width:7%">Class</th><th style="width:14%">Sub-Division</th><th style="width:12%">Division</th><th style="width:10%">Account Open</th><th style="width:10%">Account Close</th><th style="width:10%">Net Addition</th></tr></thead>
-                    <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr></tbody>
+                    <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -2766,52 +2784,178 @@ function isExcludedSbHeader(h){
     return SB_EXCLUDE_COLS.some(x=>x.replace(/[\s._-]/g,"")===c);
 }
 
-// The uploaded sheet sometimes has a title row ("Product Wise A/c Report") above the real
-// header row. Scan the first few rows to find the row that actually looks like headers
-// (contains SOL ID / BOCODE / BO ID / NAME) instead of blindly trusting row 0.
-function findSbHeaderRowIndex(rows){
-    for(let r=0;r<Math.min(6,rows.length);r++){
-        const row=rows[r]||[];
-        const joined=row.map(c=>String(c||"").trim().toUpperCase()).join("|");
-        if(!joined.replace(/\|/g,"").length) continue;
-        if(joined.includes("SOL ID")||joined.includes("BOCODE")||joined.includes("BO ID")||joined.includes("BO CODE")){
-            return r;
-        }
+// ---- helpers ----
+function sbNorm(h){ return String(h==null?"":h).trim().toUpperCase().replace(/[\s._\/\-]/g,""); }
+
+function sbIsIdHeader(n){ return n.includes("SOLID")||n.includes("BOID")||n.includes("BOCODE"); }
+
+// The sheet may have a title row ("Product Wise A/C Report") above the real header row.
+// Returns the index of the row that looks like the header, or -1 if none in the first 15 rows.
+function findSbHeaderRowStrict(rows){
+    for(let r=0;r<Math.min(15,rows.length);r++){
+        const norm=(rows[r]||[]).map(sbNorm);
+        if(norm.some(sbIsIdHeader)) return r;
+        if(norm.includes("MIS") && (norm.includes("PRFTS")||norm.includes("SSA")||norm.includes("RD"))) return r;
     }
-    return 0;
+    return -1;
+}
+// Pick the sheet that actually contains the header (first sheet is used as fallback)
+function pickSbSheetRows(wb){
+    let fallback=null;
+    for(const name of wb.SheetNames){
+        const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:""});
+        if(!rows||rows.length<2) continue;
+        if(!fallback) fallback=rows;
+        if(findSbHeaderRowStrict(rows)>=0) return rows;
+    }
+    return fallback;
 }
 
+// Parses one workbook. side "close": sums ONLY the columns from NSS87 to PRFTS (KVN/KVP/NSC8/NSC9/MSSC never counted).
+// side "open": original logic (all numeric columns except KVN/NSC8/MSSC/last-3/name columns).
+function parseSbWorkbook(buf, fileName, side){
+    const wb=XLSX.read(buf,{type:"array"});
+    const rows=pickSbSheetRows(wb);
+    if(!rows) return {error:"Empty file", fileName};
+    let headerRowIdx=findSbHeaderRowStrict(rows); if(headerRowIdx<0) headerRowIdx=0;
+    const headers=rows[headerRowIdx]||[];
+    const hn=headers.map(sbNorm);
+
+    let idColIndex=hn.findIndex(sbIsIdHeader); if(idColIndex===-1) idColIndex=0;
+    const nameCols=new Set();
+    headers.forEach((h,idx)=>{
+        const hu=String(h||"").trim().toUpperCase();
+        if(idx!==idColIndex && (hu==="NAME"||hu==="SO NAME"||hu.includes("OFFICE NAME"))) nameCols.add(idx);
+    });
+
+    let sumCols=null, colsInfo="";
+    if(side==="close"){
+        // Close format: NSS87, NSS92, MIS ... PRFTS  (KVN, KVP, NSC8, NSC9, MSSC are NOT counted)
+        let iStart=hn.indexOf("NSS87");
+        if(iStart<0) iStart=hn.indexOf("MIS");
+        let iEnd=hn.indexOf("PRFTS");
+        if(iEnd<0){ const iKvn=hn.indexOf("KVN"); if(iKvn>0) iEnd=iKvn-1; }   // fallback: everything before KVN
+        if(iStart>=0 && iEnd>=iStart){
+            sumCols=new Set();
+            for(let c=iStart;c<=iEnd;c++) if(c!==idColIndex && !nameCols.has(c)) sumCols.add(c);
+            colsInfo=`Σ ${String(headers[iStart]).trim()} → ${String(headers[iEnd]).trim()} (${sumCols.size} cols)`;
+        }
+    }
+    const excludedIdx=new Set(nameCols);
+    if(!sumCols){
+        headers.forEach((h,idx)=>{ if(isExcludedSbHeader(h)) excludedIdx.add(idx); });
+        if(headers.length>=4){ for(let c=headers.length-3;c<headers.length;c++) excludedIdx.add(c); }
+        colsInfo="Σ all cols except KVN / NSC8 / MSSC";
+    }
+
+    const slotMap={}; let totalRows=0;
+    const nameIdx=[...nameCols][0];
+    for(let r=headerRowIdx+1;r<rows.length;r++){
+        const row=rows[r];
+        if(!row||!row.length) continue;
+        let id=cleanSbId(row[idColIndex]);
+        if(!id){
+            for(let c=0;c<Math.min(3,row.length);c++){
+                const cand=cleanSbId(row[c]);
+                if(cand && sbMasterMap[cand]){ id=cand; break; }
+            }
+        }
+        if(!id) continue;
+        if(id.includes("TOTAL")||id.includes("GRAND")) continue;
+        if(nameIdx!==undefined && /^(GRAND\s*)?TOTAL\b/i.test(String(row[nameIdx]||"").trim())) continue;
+        totalRows++;
+        let sum=0;
+        for(let c=0;c<row.length;c++){
+            if(sumCols ? !sumCols.has(c) : (c===idColIndex||excludedIdx.has(c))) continue;
+            const num=parseFloat(String(row[c]).replace(/,/g,""));
+            if(!isNaN(num)) sum+=num;
+        }
+        slotMap[id]=(slotMap[id]||0)+sum;
+    }
+    return {map:slotMap, totalRows, fileName, colsInfo};
+}
+
+// ---- upload slots UI ----
 function renderSbUploadSlots(){
     const openC=document.getElementById("sbOpenUploadsContainer"),
           closeC=document.getElementById("sbCloseUploadsContainer");
     if(!openC||!closeC) return;
-    const makeSlot=(side,i,borderClr,btnClr,btnHover)=>`
+    const makeSlot=(side,i,borderClr,btnClr,btnHover)=>{
+        const S=side==="open"?"Open":"Close";
+        return `
         <div id="sbDropZone_${side}_${i}" class="sb-drop-zone flex items-center gap-2 bg-white border ${borderClr} border-dashed rounded-lg px-3 py-2 transition"
              ondragover="handleSbDragOver(event,'${side}',${i})" ondragleave="handleSbDragLeave(event,'${side}',${i})" ondrop="handleSbDrop(event,'${side}',${i})">
-            <label class="flex-1 text-xs font-bold text-slate-600">📁 File ${i+1} <span class="font-normal text-slate-400">(drag &amp; drop or click)</span></label>
-            <label class="cursor-pointer ${btnClr} ${btnHover} text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg shadow">📤 Upload<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleSbFileUpload('${side}', ${i}, this)"></label>
-            <span id="sb${side==='open'?'Open':'Close'}Status${i}" class="text-[11px] text-slate-500 font-medium min-w-[110px] text-right">Pending</span>
+            <div class="flex-1 min-w-0"><div id="sb${S}Name${i}" class="text-xs font-bold text-slate-600 truncate">📁 File ${i+1}</div></div>
+            <label class="cursor-pointer ${btnClr} ${btnHover} text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg shadow shrink-0">📤 Upload<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleSbFileUpload('${side}', ${i}, this)"></label>
+            <span id="sb${S}Status${i}" class="text-[11px] text-slate-500 font-medium min-w-[130px] text-right leading-tight">Pending</span>
+            <button id="sb${S}Clear${i}" onclick="clearSbSlot('${side}',${i})" title="Remove this file" class="hidden text-slate-400 hover:text-rose-700 font-bold text-sm leading-none px-1 cursor-pointer">✕</button>
         </div>`;
+    };
     openC.innerHTML=Array.from({length:SB_SLOT_COUNT},(_,i)=>makeSlot("open",i,"border-emerald-200","bg-emerald-700","hover:bg-emerald-800")).join("");
     closeC.innerHTML=Array.from({length:SB_SLOT_COUNT},(_,i)=>makeSlot("close",i,"border-rose-200","bg-rose-700","hover:bg-rose-800")).join("");
+    updateSbSlotStatuses();
 }
 
-function handleSbDragOver(e,side,slotIndex){
-    e.preventDefault(); e.stopPropagation();
-    const zone=document.getElementById(`sbDropZone_${side}_${slotIndex}`);
-    if(zone) zone.classList.add(side==="open"?"ring-2":"ring-2","ring-offset-1",side==="open"?"ring-emerald-500":"ring-rose-500","bg-slate-50");
+// Which division does an uploaded file belong to? (from BO ID / SOL ID -> master)
+function detectSbSlotDivision(slot){
+    const counts={}; let matched=0;
+    Object.keys(slot.map).forEach(id=>{
+        const o=sbMasterMap[id];
+        if(o){ counts[o.division]=(counts[o.division]||0)+1; matched++; }
+    });
+    if(!matched) return {division:null, matched:0, mixed:false};
+    const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    if(sorted[0][1]/matched>=0.8) return {division:sorted[0][0], matched, mixed:false};
+    return {division:sorted.slice(0,3).map(x=>x[0]).join(" + "), matched, mixed:true};
 }
-function handleSbDragLeave(e,side,slotIndex){
-    e.preventDefault(); e.stopPropagation();
-    const zone=document.getElementById(`sbDropZone_${side}_${slotIndex}`);
-    if(zone) zone.classList.remove("ring-2","ring-offset-1","ring-emerald-500","ring-rose-500","bg-slate-50");
+
+function updateSbSlotStatuses(){
+    ["open","close"].forEach(side=>{
+        const S=side==="open"?"Open":"Close", arr=side==="open"?sbOpenSlotData:sbCloseSlotData;
+        const info=arr.map(sl=>(sl&&sl.map)?detectSbSlotDivision(sl):null);
+        const divCount={};
+        info.forEach(x=>{ if(x&&x.division&&!x.mixed) divCount[x.division]=(divCount[x.division]||0)+1; });
+        arr.forEach((slot,i)=>{
+            const el=document.getElementById(`sb${S}Status${i}`), nm=document.getElementById(`sb${S}Name${i}`), clr=document.getElementById(`sb${S}Clear${i}`);
+            if(!el) return;
+            const base="text-[11px] font-medium min-w-[130px] text-right leading-tight ";
+            if(!slot){ el.className=base+"text-slate-500"; el.textContent="Pending"; if(nm){nm.textContent=`📁 File ${i+1}`; nm.title="";} if(clr) clr.classList.add("hidden"); return; }
+            if(nm){ nm.textContent="📄 "+slot.fileName; nm.title=slot.fileName; }
+            if(clr) clr.classList.remove("hidden");
+            if(slot.error){ el.className=base+"text-rose-700 font-bold"; el.textContent="❌ "+slot.error; return; }
+            const x=info[i], rowsTxt=`${slot.totalRows} rows · ${x.matched} matched`, cols=`<br><span class="text-[10px] text-slate-400 font-normal">${slot.colsInfo}</span>`;
+            if(!x.division){
+                el.className=base+"text-rose-700 font-bold";
+                el.innerHTML=`⚠️ Division not detected<br><span class="font-medium">${rowsTxt}</span>${cols}`;
+            }else if(!x.mixed && divCount[x.division]>1){
+                el.className=base+"text-amber-700 font-bold";
+                el.innerHTML=`⚠️ ${x.division} — duplicate?<br><span class="font-medium">${rowsTxt}</span>${cols}`;
+            }else{
+                el.className=base+"text-emerald-800 font-bold";
+                el.innerHTML=`✅ ${x.division}${x.mixed?" (mixed)":""}<br><span class="font-medium text-slate-500">${rowsTxt}</span>${cols}`;
+            }
+        });
+    });
 }
-function handleSbDrop(e,side,slotIndex){
-    e.preventDefault(); e.stopPropagation();
-    handleSbDragLeave(e,side,slotIndex);
-    const file=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if(!file) return;
-    processSbFile(file, side, slotIndex);
+
+// ---- drag & drop / multi-select ----
+const SB_RING={open:["ring-2","ring-offset-1","ring-emerald-500","bg-slate-50"], close:["ring-2","ring-offset-1","ring-rose-500","bg-slate-50"]};
+function handleSbDragOver(e,side,i){ e.preventDefault(); e.stopPropagation(); const z=document.getElementById(`sbDropZone_${side}_${i}`); if(z) z.classList.add(...SB_RING[side]); }
+function handleSbDragLeave(e,side,i){ e.preventDefault(); e.stopPropagation(); const z=document.getElementById(`sbDropZone_${side}_${i}`); if(z) z.classList.remove(...SB_RING.open,...SB_RING.close); }
+function handleSbDrop(e,side,i){
+    e.preventDefault(); e.stopPropagation(); handleSbDragLeave(e,side,i);
+    const files=e.dataTransfer&&e.dataTransfer.files; if(!files||!files.length) return;
+    addSbFiles(side, files, files.length===1?i:null);   // 1 file -> this slot, many files -> free slots
+}
+function handleSbBulkDragOver(e,side){ e.preventDefault(); e.stopPropagation(); const z=document.getElementById(`sbBulkZone_${side}`); if(z) z.classList.add(...SB_RING[side]); }
+function handleSbBulkDragLeave(e,side){ e.preventDefault(); e.stopPropagation(); const z=document.getElementById(`sbBulkZone_${side}`); if(z) z.classList.remove(...SB_RING.open,...SB_RING.close); }
+function handleSbBulkDrop(e,side){
+    e.preventDefault(); e.stopPropagation(); handleSbBulkDragLeave(e,side);
+    const files=e.dataTransfer&&e.dataTransfer.files; if(files&&files.length) addSbFiles(side, files, null);
+}
+function handleSbBulkSelect(side, inputEl){
+    const files=Array.from(inputEl.files||[]); inputEl.value="";
+    if(files.length) addSbFiles(side, files, null);
 }
 
 async function loadSbMasterData(){
@@ -2845,7 +2989,8 @@ async function loadSbMasterData(){
         if(st) st.textContent="⚠️ SB Master Load Failed";
     }
     initSbDropdowns();
-    recomputeSbTotals();
+    updateSbSlotStatuses();
+    updateSbCalcHint();
 }
 
 function initSbDropdowns(){
@@ -2874,79 +3019,80 @@ function toggleSbViewType(){
 }
 
 function handleSbFileUpload(side, slotIndex, inputEl){
-    const file=inputEl.files[0];
-    if(!file) return;
-    processSbFile(file, side, slotIndex);
+    const file=inputEl.files[0]; inputEl.value="";
+    if(file) addSbFiles(side, [file], slotIndex);
 }
 
-function processSbFile(file, side, slotIndex){
-    const statusEl=document.getElementById(side==="open"?`sbOpenStatus${slotIndex}`:`sbCloseStatus${slotIndex}`);
-    if(statusEl) statusEl.textContent="🔄 Reading...";
-    const reader=new FileReader();
-    reader.onload=function(e){
+let sbQueue=Promise.resolve(), sbCalculated=false, sbStale=false;
+const sbTick=()=>new Promise(r=>setTimeout(r,10));
+
+// Adds one or many files. Files are read together; nothing is calculated until "Calculate" is pressed.
+function addSbFiles(side, fileList, startSlot){
+    const files=Array.from(fileList).filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));
+    if(!files.length) return alert("Please select Excel / CSV files (.xlsx, .xls, .csv).");
+    sbQueue=sbQueue.then(()=>doAddSbFiles(side, files, startSlot)).catch(err=>console.error(err));
+}
+
+async function doAddSbFiles(side, files, startSlot){
+    const S=side==="open"?"Open":"Close", arr=side==="open"?sbOpenSlotData:sbCloseSlotData;
+    let targets=[];
+    if(startSlot!==null && startSlot!==undefined && files.length===1) targets=[startSlot];
+    else for(let i=0;i<SB_SLOT_COUNT && targets.length<files.length;i++) if(!arr[i]) targets.push(i);
+    const skipped=files.length-targets.length;
+    const use=files.slice(0,targets.length);
+    const setMsg=(slot,txt)=>{ const el=document.getElementById(`sb${S}Status${slot}`); if(el){ el.className="text-[11px] font-medium min-w-[130px] text-right leading-tight text-slate-500"; el.textContent=txt; } };
+    use.forEach((f,k)=>{ setMsg(targets[k],"⏳ Queued"); const nm=document.getElementById(`sb${S}Name${targets[k]}`); if(nm) nm.textContent="📄 "+f.name; });
+    const buffers=await Promise.all(use.map(f=>f.arrayBuffer().catch(()=>null)));   // all files are read in parallel
+    for(let k=0;k<use.length;k++){
+        const slot=targets[k];
+        setMsg(slot,"🔄 Reading..."); await sbTick();
         try{
-            const wb=XLSX.read(e.target.result,{type:"array"});
-            const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});
-            if(!rows||rows.length<2){ if(statusEl) statusEl.textContent="⚠️ Empty file"; return; }
-            const headerRowIdx=findSbHeaderRowIndex(rows);
-            const headers=rows[headerRowIdx];
-            const excludedIdx=new Set();
-            headers.forEach((h,idx)=>{ if(isExcludedSbHeader(h)) excludedIdx.add(idx); });
-            if(headers.length>=4){
-                for(let c=headers.length-3;c<headers.length;c++) excludedIdx.add(c);
-            }
-            let idColIndex=-1;
-            for(let c=0;c<headers.length;c++){
-                const h=String(headers[c]||"").trim().toUpperCase();
-                if(h.includes("SOL ID")||h.includes("BO ID")||h.includes("BOCODE")||h.includes("BO CODE")||h==="BOID"||h==="SOLID"){ idColIndex=c; break; }
-            }
-            if(idColIndex===-1) idColIndex=0;
-            // Any text-like column (Name / SO Name) besides the ID column should never be summed —
-            // treat every non-numeric-header column that isn't the ID column as excluded too, as a safety net.
-            headers.forEach((h,idx)=>{
-                const hu=String(h||"").trim().toUpperCase();
-                if(idx!==idColIndex && (hu==="NAME"||hu==="SO NAME"||hu.includes("OFFICE NAME"))) excludedIdx.add(idx);
-            });
-            const slotMap={};
-            let matched=0, totalRows=0;
-            for(let r=headerRowIdx+1;r<rows.length;r++){
-                const row=rows[r];
-                if(!row||!row.length) continue;
-                let id=cleanSbId(row[idColIndex]);
-                if(!id){
-                    for(let c=0;c<Math.min(3,row.length);c++){
-                        const cand=cleanSbId(row[c]);
-                        if(cand && sbMasterMap[cand]){ id=cand; break; }
-                    }
-                }
-                if(!id) continue;
-                const upId=id.toUpperCase();
-                if(upId.includes("TOTAL")||upId.includes("GRAND")) continue;
-                totalRows++;
-                let sum=0;
-                for(let c=0;c<row.length;c++){
-                    if(c===idColIndex||excludedIdx.has(c)) continue;
-                    const num=parseFloat(String(row[c]).replace(/,/g,""));
-                    if(!isNaN(num)) sum+=num;
-                }
-                slotMap[id]=(slotMap[id]||0)+sum;
-                if(sbMasterMap[id]) matched++;
-            }
-            if(side==="open") sbOpenSlotData[slotIndex]=slotMap; else sbCloseSlotData[slotIndex]=slotMap;
-            if(statusEl) statusEl.innerHTML=`✅ ${totalRows} rows (${matched} matched)`;
-            recomputeSbTotals();
-        }catch(err){
-            console.error(err);
-            if(statusEl) statusEl.textContent="❌ Error reading file";
-        }
-    };
-    reader.readAsArrayBuffer(file);
+            if(!buffers[k]) throw new Error("Could not read file");
+            arr[slot]=parseSbWorkbook(buffers[k], use[k].name, side);
+        }catch(err){ console.error(err); arr[slot]={error:"Error reading file", fileName:use[k].name}; }
+    }
+    updateSbSlotStatuses();
+    markSbStale();
+    if(skipped>0) alert(`Only ${SB_SLOT_COUNT} files per side are allowed — ${skipped} extra file(s) were skipped. Remove a file with ✕ to free a slot.`);
+}
+
+function clearSbSlot(side, i){
+    (side==="open"?sbOpenSlotData:sbCloseSlotData)[i]=null;
+    updateSbSlotStatuses(); markSbStale();
+}
+
+function sbValidCount(arr){ return arr.filter(x=>x&&x.map).length; }
+function markSbStale(){ if(sbCalculated) sbStale=true; updateSbCalcHint(); }
+function updateSbCalcHint(){
+    const el=document.getElementById("sbCalcHint"), btn=document.getElementById("sbBtnCalculate");
+    if(!el) return;
+    const nO=sbValidCount(sbOpenSlotData), nC=sbValidCount(sbCloseSlotData);
+    let txt=`📥 Open: ${nO}/${SB_SLOT_COUNT} files · 📤 Close: ${nC}/${SB_SLOT_COUNT} files`;
+    if(sbStale){ txt+=" — ⚠️ Uploads changed, press Calculate again"; el.className="text-xs font-bold text-amber-700"; }
+    else if(sbCalculated){ txt+=" — ✅ Report is up to date"; el.className="text-xs font-bold text-emerald-700"; }
+    else el.className="text-xs font-semibold text-slate-500";
+    el.textContent=txt;
+    if(btn) btn.innerHTML=sbCalculated?"🧮 Recalculate Report":"🧮 Calculate Report";
+}
+
+async function calculateSbReport(){
+    if(!Object.keys(sbOfficesByOfficeId).length) return alert("SB Master list is not loaded yet. Please wait for 'SB Master Synced' and try again.");
+    if(!sbValidCount(sbOpenSlotData) && !sbValidCount(sbCloseSlotData)) return alert("Please upload Account Open / Close files first.");
+    const btn=document.getElementById("sbBtnCalculate");
+    if(btn){ btn.disabled=true; btn.textContent="🔄 Calculating..."; }
+    await sbTick();
+    try{
+        recomputeSbTotals();
+        sbCalculated=true; sbStale=false;
+    }catch(err){ console.error(err); alert("Calculation failed: "+err.message); }
+    if(btn) btn.disabled=false;
+    updateSbCalcHint();
 }
 
 function recomputeSbTotals(){
     sbOpenTotals={}; sbCloseTotals={};
-    sbOpenSlotData.forEach(slot=>{ if(!slot) return; Object.entries(slot).forEach(([id,val])=>{ sbOpenTotals[id]=(sbOpenTotals[id]||0)+val; }); });
-    sbCloseSlotData.forEach(slot=>{ if(!slot) return; Object.entries(slot).forEach(([id,val])=>{ sbCloseTotals[id]=(sbCloseTotals[id]||0)+val; }); });
+    sbOpenSlotData.forEach(slot=>{ if(!slot||!slot.map) return; Object.entries(slot.map).forEach(([id,val])=>{ sbOpenTotals[id]=(sbOpenTotals[id]||0)+val; }); });
+    sbCloseSlotData.forEach(slot=>{ if(!slot||!slot.map) return; Object.entries(slot.map).forEach(([id,val])=>{ sbCloseTotals[id]=(sbCloseTotals[id]||0)+val; }); });
     buildSbCombinedList();
     renderSbSubDivisionTable();
     renderSbDivisionTable();
@@ -2986,7 +3132,7 @@ function sbPctStr(count,total){
 function renderSbSubDivisionTable(){
     const tbody=document.querySelector("#tableSbSubDivision tbody"), tfoot=document.querySelector("#tableSbSubDivision tfoot");
     if(!tbody) return;
-    if(!sbCombinedList.length){ tbody.innerHTML='<tr><td colspan="11" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr>'; if(tfoot) tfoot.innerHTML=""; return; }
+    if(!sbCombinedList.length){ tbody.innerHTML='<tr><td colspan="11" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr>'; if(tfoot) tfoot.innerHTML=""; return; }
     const bySd={};
     sbCombinedList.forEach(r=>{
         const key=r.division+"||"+r.sd;
@@ -3021,7 +3167,7 @@ function renderSbSubDivisionTable(){
 function renderSbDivisionTable(){
     const tbody=document.querySelector("#tableSbDivision tbody"), tfoot=document.querySelector("#tableSbDivision tfoot");
     if(!tbody) return;
-    if(!sbCombinedList.length){ tbody.innerHTML='<tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr>'; if(tfoot) tfoot.innerHTML=""; return; }
+    if(!sbCombinedList.length){ tbody.innerHTML='<tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr>'; if(tfoot) tfoot.innerHTML=""; return; }
     const byDiv={};
     sbCombinedList.forEach(r=>{
         byDiv[r.division]=byDiv[r.division]||{offices:0,open:0,close:0,openGt10:0,netGt10:0};
@@ -3046,7 +3192,7 @@ function renderSbOfficeTable(){
     const divEl=document.getElementById("sbOfficeFilterDiv"), sdEl=document.getElementById("sbOfficeFilterSd"), clsEl=document.getElementById("sbOfficeFilterClass");
     const div=divEl?divEl.value:"All", sd=sdEl?sdEl.value:"All", cls=clsEl?clsEl.value:"All";
     let list=sbCombinedList.filter(r=>(div==="All"||r.division===div)&&(sd==="All"||r.sd===sd)&&(cls==="All"||r.class===cls));
-    if(!list.length){ tbody.innerHTML='<tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">No matching offices found.</td></tr>'; return; }
+    if(!list.length){ tbody.innerHTML=`<tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">${sbCombinedList.length?"No matching offices found.":"Please upload Account Open / Close Excel files and press Calculate."}</td></tr>`; return; }
     list=list.slice().sort((a,b)=>a.division.localeCompare(b.division)||a.sd.localeCompare(b.sd)||a.name.localeCompare(b.name));
     tbody.innerHTML=list.map((r,i)=>`<tr class="hover:bg-slate-50"><td>${i+1}</td><td class="font-mono text-purple-950 font-bold">${r.officeId}</td><td class="font-mono">${r.boId}</td><td style="text-align:left" class="font-semibold">${r.name}</td><td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${r.class}</span></td><td>${r.sd}</td><td>${r.division}</td><td class="font-bold text-emerald-800">${r.open.toLocaleString("en-IN")}</td><td class="font-bold text-rose-800">${r.close.toLocaleString("en-IN")}</td><td class="font-bold ${r.net>=0?"text-blue-900":"text-rose-700"}">${r.net.toLocaleString("en-IN")}</td></tr>`).join("");
 }
@@ -3075,11 +3221,12 @@ function exportSbModalToExcel(){
 function resetSbData(){
     sbOpenSlotData=new Array(SB_SLOT_COUNT).fill(null);
     sbCloseSlotData=new Array(SB_SLOT_COUNT).fill(null);
-    for(let i=0;i<SB_SLOT_COUNT;i++){
-        const o=document.getElementById("sbOpenStatus"+i), c=document.getElementById("sbCloseStatus"+i);
-        if(o) o.textContent="Pending"; if(c) c.textContent="Pending";
-    }
-    recomputeSbTotals();
+    sbOpenTotals={}; sbCloseTotals={}; sbCombinedList=[];
+    sbCalculated=false; sbStale=false;
+    ["sbKpiOffices","sbKpiOpen","sbKpiClose","sbKpiNet"].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent="0"; });
+    renderSbUploadSlots();
+    renderSbSubDivisionTable(); renderSbDivisionTable(); renderSbOfficeTable();
+    updateSbCalcHint();
 }
 
 function exportSbCombinedExcel(){
