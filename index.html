@@ -2926,7 +2926,10 @@ function updateSbSlotStatuses(){
             if(nm){ nm.textContent="📄 "+slot.fileName; nm.title=slot.fileName; }
             if(clr) clr.classList.remove("hidden");
             if(slot.error){ el.className=base+"text-rose-700 font-bold"; el.textContent="❌ "+slot.error; return; }
-            const x=info[i], rowsTxt=`${slot.totalRows} rows · ${x.matched} matched`, cols=`<br><span class="text-[10px] text-slate-400 font-normal">${slot.colsInfo}</span>`;
+            // BO IDs of this file that are not in the master list (shown as the last line)
+            const badIds=Object.keys(slot.map).filter(id=>!sbMasterMap[id]);
+            const badTxt=(badIds.length&&Object.keys(sbOfficesByOfficeId).length)?`<br><span class="text-[10px] text-rose-700 font-bold">❌ Not matched (BO ID): ${badIds.join(", ")}</span>`:"";
+            const x=info[i], rowsTxt=`${slot.totalRows} rows · ${x.matched} matched`, cols=`<br><span class="text-[10px] text-slate-400 font-normal">${slot.colsInfo}</span>${badTxt}`;
             if(!x.division){
                 el.className=base+"text-rose-700 font-bold";
                 el.innerHTML=`⚠️ Division not detected<br><span class="font-medium">${rowsTxt}</span>${cols}`;
