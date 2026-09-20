@@ -624,7 +624,7 @@
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h3 class="font-extrabold text-lg flex items-center gap-2">🏦 SB Account Open / Close Calculator</h3>
-                    <p class="text-xs text-purple-200">Upload up to 7 Account Open + 7 Account Close Excels in any order — Division is auto-detected from BO ID / SOL ID</p>
+                    <p class="text-xs text-purple-200">Upload 7 Account Open + 7 Account Close Excels (any order) — Office matched by BO ID / SOL ID</p>
                 </div>
                 <div class="flex items-center flex-wrap gap-2">
                     <span id="sbMasterStatus" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Loading SB Master...</span>
@@ -635,11 +635,11 @@
 
             <div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                    <h4 class="font-bold text-emerald-900 text-sm mb-3 flex items-center gap-2">📥 Account OPEN Excels (7 Uploads)</h4>
+                    <h4 class="font-bold text-emerald-900 text-sm mb-3 flex items-center gap-2">📥 Account OPEN Excels (any 7 files, any order)</h4>
                     <div id="sbOpenUploadsContainer" class="space-y-2"></div>
                 </div>
                 <div class="bg-rose-50 border border-rose-200 rounded-xl p-4">
-                    <h4 class="font-bold text-rose-900 text-sm mb-3 flex items-center gap-2">📤 Account CLOSE Excels (7 Uploads)</h4>
+                    <h4 class="font-bold text-rose-900 text-sm mb-3 flex items-center gap-2">📤 Account CLOSE Excels (any 7 files, any order)</h4>
                     <div id="sbCloseUploadsContainer" class="space-y-2"></div>
                 </div>
             </div>
@@ -664,28 +664,32 @@
             </div>
         </div>
 
-        <!-- Division / Sub-Division View (single table with dropdown) -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="sectionSbSummary">
+        <!-- Division / Sub-Division View (toggle) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div><h3 class="font-extrabold text-lg flex items-center gap-2">🗂️ Division / Sub-Division View</h3><p class="text-xs text-purple-200">Account Open / Close / Net + Offices Open&gt;10 &amp; Net Addition&gt;10 analysis</p></div>
                 <div>
-                    <h3 id="sbSummaryTitle" class="font-extrabold text-lg flex items-center gap-2">🏢 Division Wise View</h3>
-                    <p id="sbSummarySub" class="text-xs text-purple-200">Region wide Division level Account Open / Close / Net</p>
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <select id="sbViewType" onchange="renderSbSummaryTable()" class="bg-[#31103f] text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-purple-700 outline-none cursor-pointer">
-                        <option value="division">Division View</option>
-                        <option value="subdivision">Sub-Division View</option>
+                    <select id="sbViewTypeSelect" onchange="toggleSbViewType()" class="bg-purple-950 text-white text-xs font-bold px-3 py-2 rounded-lg border border-purple-700 outline-none cursor-pointer">
+                        <option value="sub">Sub Division View</option>
+                        <option value="div">Division View</option>
                     </select>
-                    <button id="sbBtnTenPlus" onclick="toggleSbTenPlus()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer border border-amber-400">📊 &gt;10 Accounts Analysis: OFF</button>
                 </div>
             </div>
-            <div class="overflow-x-auto p-3">
-                <table class="nil-table" id="tableSbSummary">
-                    <thead></thead>
-                    <tbody><tr><td colspan="6" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr></tbody>
+            <div id="sbSubDivisionViewContainer" class="overflow-x-auto p-3">
+                <table class="nil-table" id="tableSbSubDivision">
+                    <thead><tr><th style="width:4%">S.No.</th><th style="width:13%">Name of Division</th><th style="width:15%">Name of Sub Division</th><th style="width:8%">Total Offices</th><th style="width:8%">Account Open</th><th style="width:8%">Account Close</th><th style="width:8%">Net Addition</th><th style="width:9%">Offices Open&gt;10</th><th style="width:8%">% Open&gt;10</th><th style="width:9%">Offices NetAdd&gt;10</th><th style="width:8%">% NetAdd&gt;10</th></tr></thead>
+                    <tbody><tr><td colspan="11" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr></tbody>
                     <tfoot></tfoot>
                 </table>
             </div>
+            <div id="sbDivisionViewContainer" class="overflow-x-auto p-3 hidden">
+                <table class="nil-table" id="tableSbDivision">
+                    <thead><tr><th style="width:5%">S.No.</th><th style="width:17%">Name of Division</th><th style="width:9%">Total Offices</th><th style="width:10%">Account Open</th><th style="width:10%">Account Close</th><th style="width:10%">Net Addition</th><th style="width:10%">Offices Open&gt;10</th><th style="width:9%">% Open&gt;10</th><th style="width:10%">Offices NetAdd&gt;10</th><th style="width:9%">% NetAdd&gt;10</th></tr></thead>
+                    <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr></tbody>
+                    <tfoot></tfoot>
+                </table>
+            </div>
+            <p class="text-[11px] text-slate-400 px-4 pb-3">Tip: click any blue count in "Offices Open&gt;10" / "Offices NetAdd&gt;10" columns to see the office-wise list.</p>
         </div>
 
         <!-- Office Wise View -->
@@ -715,7 +719,27 @@
             </div>
         </div>
     </div>
+
+    <!-- SB Drilldown Modal -->
+    <div id="sbDrilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
+                <div><h3 id="sbModalTitle" class="font-bold text-lg">SB Office List</h3><p id="sbModalSubtitle" class="text-xs text-purple-200">Office wise details</p></div>
+                <div class="flex items-center gap-3">
+                    <button onclick="exportSbModalToExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📥 Excel</button>
+                    <button onclick='closeModal("sbDrilldownModal")' class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow overflow-x-auto">
+                <table class="nil-table" id="tableSbModalOffices">
+                    <thead><tr><th style="width:5%">#</th><th style="width:12%">Office ID</th><th style="width:10%">BO ID/SOL ID</th><th style="width:22%;text-align:left">Office Name</th><th style="width:8%">Class</th><th style="width:15%">Sub-Division</th><th style="width:12%">Division</th><th style="width:8%">Open</th><th style="width:8%">Close</th><th style="width:8%">Net</th></tr></thead>
+                    <tbody class="text-xs"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </main>
+
 
 <!-- Modals -->
 <div id="drilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -2727,14 +2751,12 @@ loadMasterData();
 // ================= SB ACCOUNT OPEN/CLOSE MODULE (NEW - does not touch other modules) =================
 const SB_MASTER_CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1174909288&single=true&output=csv";
 const SB_SLOT_COUNT=7;
-const SB_TEN_THRESHOLD=10; // "more than 10" => strictly greater than this value
-let sbShowTen=false;
 const SB_EXCLUDE_COLS=["KVN","NSC8","MSSC"];
 
 let sbMasterMap={}, sbOfficesByOfficeId={}, sbCombinedList=[],
     sbOpenSlotData=new Array(SB_SLOT_COUNT).fill(null),
     sbCloseSlotData=new Array(SB_SLOT_COUNT).fill(null),
-    sbOpenTotals={}, sbCloseTotals={};
+    sbOpenTotals={}, sbCloseTotals={}, sbModalExportData=[];
 
 function cleanSbId(val){
     return String(val==null?"":val).trim().toUpperCase().replace(/\.0$/,"");
@@ -2744,59 +2766,52 @@ function isExcludedSbHeader(h){
     return SB_EXCLUDE_COLS.some(x=>x.replace(/[\s._-]/g,"")===c);
 }
 
+// The uploaded sheet sometimes has a title row ("Product Wise A/c Report") above the real
+// header row. Scan the first few rows to find the row that actually looks like headers
+// (contains SOL ID / BOCODE / BO ID / NAME) instead of blindly trusting row 0.
+function findSbHeaderRowIndex(rows){
+    for(let r=0;r<Math.min(6,rows.length);r++){
+        const row=rows[r]||[];
+        const joined=row.map(c=>String(c||"").trim().toUpperCase()).join("|");
+        if(!joined.replace(/\|/g,"").length) continue;
+        if(joined.includes("SOL ID")||joined.includes("BOCODE")||joined.includes("BO ID")||joined.includes("BO CODE")){
+            return r;
+        }
+    }
+    return 0;
+}
+
 function renderSbUploadSlots(){
     const openC=document.getElementById("sbOpenUploadsContainer"),
           closeC=document.getElementById("sbCloseUploadsContainer");
     if(!openC||!closeC) return;
-    const build=(side,i,color)=>`
-        <div class="flex items-center gap-2 bg-white border border-${color}-200 rounded-lg px-3 py-2">
-            <span class="text-xs font-bold text-${color}-950 w-14 shrink-0">File ${i+1}</span>
-            <label class="cursor-pointer bg-${color}-700 hover:bg-${color}-800 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg shadow shrink-0">📤 Upload<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleSbFileUpload('${side}', ${i}, this)"></label>
-            <span id="sb${side==="open"?"Open":"Close"}Status${i}" class="flex-1 text-[11px] text-slate-500 font-medium text-right leading-tight">Pending</span>
+    const makeSlot=(side,i,borderClr,btnClr,btnHover)=>`
+        <div id="sbDropZone_${side}_${i}" class="sb-drop-zone flex items-center gap-2 bg-white border ${borderClr} border-dashed rounded-lg px-3 py-2 transition"
+             ondragover="handleSbDragOver(event,'${side}',${i})" ondragleave="handleSbDragLeave(event,'${side}',${i})" ondrop="handleSbDrop(event,'${side}',${i})">
+            <label class="flex-1 text-xs font-bold text-slate-600">📁 File ${i+1} <span class="font-normal text-slate-400">(drag &amp; drop or click)</span></label>
+            <label class="cursor-pointer ${btnClr} ${btnHover} text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg shadow">📤 Upload<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleSbFileUpload('${side}', ${i}, this)"></label>
+            <span id="sb${side==='open'?'Open':'Close'}Status${i}" class="text-[11px] text-slate-500 font-medium min-w-[110px] text-right">Pending</span>
         </div>`;
-    openC.innerHTML=Array.from({length:SB_SLOT_COUNT},(_,i)=>build("open",i,"emerald")).join("");
-    closeC.innerHTML=Array.from({length:SB_SLOT_COUNT},(_,i)=>build("close",i,"rose")).join("");
-    updateSbSlotStatuses();
+    openC.innerHTML=Array.from({length:SB_SLOT_COUNT},(_,i)=>makeSlot("open",i,"border-emerald-200","bg-emerald-700","hover:bg-emerald-800")).join("");
+    closeC.innerHTML=Array.from({length:SB_SLOT_COUNT},(_,i)=>makeSlot("close",i,"border-rose-200","bg-rose-700","hover:bg-rose-800")).join("");
 }
 
-// Detect which division an uploaded file belongs to, using BO ID / SOL ID -> master
-function detectSbSlotDivision(slot){
-    const counts={}; let matched=0;
-    Object.keys(slot.map).forEach(id=>{
-        const o=sbMasterMap[id];
-        if(o){ counts[o.division]=(counts[o.division]||0)+1; matched++; }
-    });
-    if(!matched) return {division:null, matched:0, mixed:false};
-    const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-    const [topDiv,topCnt]=sorted[0];
-    if(topCnt/matched>=0.8) return {division:topDiv, matched, mixed:false};
-    return {division:sorted.slice(0,3).map(x=>x[0]).join(" + "), matched, mixed:true};
+function handleSbDragOver(e,side,slotIndex){
+    e.preventDefault(); e.stopPropagation();
+    const zone=document.getElementById(`sbDropZone_${side}_${slotIndex}`);
+    if(zone) zone.classList.add(side==="open"?"ring-2":"ring-2","ring-offset-1",side==="open"?"ring-emerald-500":"ring-rose-500","bg-slate-50");
 }
-
-function updateSbSlotStatuses(){
-    ["open","close"].forEach(side=>{
-        const arr=side==="open"?sbOpenSlotData:sbCloseSlotData;
-        const info=arr.map(sl=>sl?detectSbSlotDivision(sl):null);
-        const divCount={};
-        info.forEach(x=>{ if(x&&x.division&&!x.mixed) divCount[x.division]=(divCount[x.division]||0)+1; });
-        arr.forEach((slot,i)=>{
-            const el=document.getElementById(`sb${side==="open"?"Open":"Close"}Status${i}`);
-            if(!el) return;
-            if(!slot){ el.className="flex-1 text-[11px] text-slate-500 font-medium text-right leading-tight"; el.textContent="Pending"; return; }
-            const x=info[i];
-            const rowsTxt=`${slot.totalRows} rows · ${slot.matched} matched`;
-            if(!x.division){
-                el.className="flex-1 text-[11px] text-rose-700 font-bold text-right leading-tight";
-                el.innerHTML=`⚠️ Division not detected<br><span class="font-medium">${rowsTxt}</span>`;
-            }else if(!x.mixed&&divCount[x.division]>1){
-                el.className="flex-1 text-[11px] text-amber-700 font-bold text-right leading-tight";
-                el.innerHTML=`⚠️ ${x.division} — duplicate upload?<br><span class="font-medium">${rowsTxt}</span>`;
-            }else{
-                el.className="flex-1 text-[11px] text-emerald-800 font-bold text-right leading-tight";
-                el.innerHTML=`✅ ${x.division}${x.mixed?" (mixed)":""}<br><span class="font-medium text-slate-500">${rowsTxt}</span>`;
-            }
-        });
-    });
+function handleSbDragLeave(e,side,slotIndex){
+    e.preventDefault(); e.stopPropagation();
+    const zone=document.getElementById(`sbDropZone_${side}_${slotIndex}`);
+    if(zone) zone.classList.remove("ring-2","ring-offset-1","ring-emerald-500","ring-rose-500","bg-slate-50");
+}
+function handleSbDrop(e,side,slotIndex){
+    e.preventDefault(); e.stopPropagation();
+    handleSbDragLeave(e,side,slotIndex);
+    const file=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if(!file) return;
+    processSbFile(file, side, slotIndex);
 }
 
 async function loadSbMasterData(){
@@ -2852,31 +2867,49 @@ function onSbDivisionFilterChange(){
     renderSbOfficeTable();
 }
 
+function toggleSbViewType(){
+    const v=document.getElementById("sbViewTypeSelect").value;
+    document.getElementById("sbSubDivisionViewContainer").classList.toggle("hidden", v!=="sub");
+    document.getElementById("sbDivisionViewContainer").classList.toggle("hidden", v!=="div");
+}
+
 function handleSbFileUpload(side, slotIndex, inputEl){
     const file=inputEl.files[0];
     if(!file) return;
+    processSbFile(file, side, slotIndex);
+}
+
+function processSbFile(file, side, slotIndex){
     const statusEl=document.getElementById(side==="open"?`sbOpenStatus${slotIndex}`:`sbCloseStatus${slotIndex}`);
-    if(statusEl){ statusEl.className="flex-1 text-[11px] text-slate-500 font-medium text-right leading-tight"; statusEl.textContent="🔄 Reading..."; }
+    if(statusEl) statusEl.textContent="🔄 Reading...";
     const reader=new FileReader();
     reader.onload=function(e){
         try{
             const wb=XLSX.read(e.target.result,{type:"array"});
             const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});
             if(!rows||rows.length<2){ if(statusEl) statusEl.textContent="⚠️ Empty file"; return; }
-            const headers=rows[0];
+            const headerRowIdx=findSbHeaderRowIndex(rows);
+            const headers=rows[headerRowIdx];
             const excludedIdx=new Set();
             headers.forEach((h,idx)=>{ if(isExcludedSbHeader(h)) excludedIdx.add(idx); });
             if(headers.length>=4){
                 for(let c=headers.length-3;c<headers.length;c++) excludedIdx.add(c);
             }
-            let idColIndex=0;
+            let idColIndex=-1;
             for(let c=0;c<headers.length;c++){
                 const h=String(headers[c]||"").trim().toUpperCase();
-                if(h.includes("BO ID")||h.includes("SOL ID")||h.includes("SOLID")||h==="BOID"){ idColIndex=c; break; }
+                if(h.includes("SOL ID")||h.includes("BO ID")||h.includes("BOCODE")||h.includes("BO CODE")||h==="BOID"||h==="SOLID"){ idColIndex=c; break; }
             }
+            if(idColIndex===-1) idColIndex=0;
+            // Any text-like column (Name / SO Name) besides the ID column should never be summed —
+            // treat every non-numeric-header column that isn't the ID column as excluded too, as a safety net.
+            headers.forEach((h,idx)=>{
+                const hu=String(h||"").trim().toUpperCase();
+                if(idx!==idColIndex && (hu==="NAME"||hu==="SO NAME"||hu.includes("OFFICE NAME"))) excludedIdx.add(idx);
+            });
             const slotMap={};
             let matched=0, totalRows=0;
-            for(let r=1;r<rows.length;r++){
+            for(let r=headerRowIdx+1;r<rows.length;r++){
                 const row=rows[r];
                 if(!row||!row.length) continue;
                 let id=cleanSbId(row[idColIndex]);
@@ -2899,8 +2932,8 @@ function handleSbFileUpload(side, slotIndex, inputEl){
                 slotMap[id]=(slotMap[id]||0)+sum;
                 if(sbMasterMap[id]) matched++;
             }
-            const slotObj={map:slotMap, totalRows, matched, fileName:file.name};
-            if(side==="open") sbOpenSlotData[slotIndex]=slotObj; else sbCloseSlotData[slotIndex]=slotObj;
+            if(side==="open") sbOpenSlotData[slotIndex]=slotMap; else sbCloseSlotData[slotIndex]=slotMap;
+            if(statusEl) statusEl.innerHTML=`✅ ${totalRows} rows (${matched} matched)`;
             recomputeSbTotals();
         }catch(err){
             console.error(err);
@@ -2908,16 +2941,15 @@ function handleSbFileUpload(side, slotIndex, inputEl){
         }
     };
     reader.readAsArrayBuffer(file);
-    inputEl.value=""; // allow re-selecting the same file again
 }
 
 function recomputeSbTotals(){
     sbOpenTotals={}; sbCloseTotals={};
-    sbOpenSlotData.forEach(slot=>{ if(!slot) return; Object.entries(slot.map).forEach(([id,val])=>{ sbOpenTotals[id]=(sbOpenTotals[id]||0)+val; }); });
-    sbCloseSlotData.forEach(slot=>{ if(!slot) return; Object.entries(slot.map).forEach(([id,val])=>{ sbCloseTotals[id]=(sbCloseTotals[id]||0)+val; }); });
+    sbOpenSlotData.forEach(slot=>{ if(!slot) return; Object.entries(slot).forEach(([id,val])=>{ sbOpenTotals[id]=(sbOpenTotals[id]||0)+val; }); });
+    sbCloseSlotData.forEach(slot=>{ if(!slot) return; Object.entries(slot).forEach(([id,val])=>{ sbCloseTotals[id]=(sbCloseTotals[id]||0)+val; }); });
     buildSbCombinedList();
-    updateSbSlotStatuses();
-    renderSbSummaryTable();
+    renderSbSubDivisionTable();
+    renderSbDivisionTable();
     renderSbOfficeTable();
 }
 
@@ -2946,79 +2978,66 @@ function buildSbCombinedList(){
     }
 }
 
-function toggleSbTenPlus(){
-    sbShowTen=!sbShowTen;
-    const btn=document.getElementById("sbBtnTenPlus");
-    if(btn){
-        btn.innerHTML=`📊 &gt;${SB_TEN_THRESHOLD} Accounts Analysis: ${sbShowTen?"ON":"OFF"}`;
-        btn.className=(sbShowTen?"bg-emerald-700 hover:bg-emerald-800 border-emerald-400":"bg-amber-600 hover:bg-amber-700 border-amber-400")+" text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow cursor-pointer border";
-    }
-    renderSbSummaryTable();
+function sbPctStr(count,total){
+    if(!total) return "0.00%";
+    return (count/total*100).toFixed(2)+"%";
 }
 
-function sbPct(n,d){ return d?((n/d)*100).toFixed(2)+"%":"0.00%"; }
-
-// Aggregates sbCombinedList by Division (or Division+SubDivision) with >10 counters
-function aggregateSbList(mode){
-    const map={};
+function renderSbSubDivisionTable(){
+    const tbody=document.querySelector("#tableSbSubDivision tbody"), tfoot=document.querySelector("#tableSbSubDivision tfoot");
+    if(!tbody) return;
+    if(!sbCombinedList.length){ tbody.innerHTML='<tr><td colspan="11" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr>'; if(tfoot) tfoot.innerHTML=""; return; }
+    const bySd={};
     sbCombinedList.forEach(r=>{
-        const key=mode==="subdivision"?r.division+"||"+r.sd:r.division;
-        if(!map[key]) map[key]={division:r.division, sd:r.sd, offices:0, open:0, close:0, openGt:0, netGt:0};
-        const g=map[key];
-        g.offices++; g.open+=r.open; g.close+=r.close;
-        if(r.open>SB_TEN_THRESHOLD) g.openGt++;
-        if(r.net>SB_TEN_THRESHOLD) g.netGt++;
+        const key=r.division+"||"+r.sd;
+        if(!bySd[key]) bySd[key]={division:r.division, sd:r.sd, offices:0, open:0, close:0, openGt10:0, netGt10:0};
+        bySd[key].offices++; bySd[key].open+=r.open; bySd[key].close+=r.close;
+        if(r.open>10) bySd[key].openGt10++;
+        if(r.net>10) bySd[key].netGt10++;
     });
-    return Object.values(map);
+    const byDiv={};
+    Object.values(bySd).forEach(t=>{ byDiv[t.division]=byDiv[t.division]||[]; byDiv[t.division].push(t); });
+    let sn=1, gOff=0,gOpen=0,gClose=0,gOpenGt10=0,gNetGt10=0;
+    tbody.innerHTML="";
+    Object.entries(byDiv).forEach(([div,rows])=>{
+        let dOff=0,dOpen=0,dClose=0,dOpenGt10=0,dNetGt10=0; const cls=divClassMap[div]||"div-bg-not-in-qc";
+        rows.sort((a,b)=>a.sd.localeCompare(b.sd)).forEach(row=>{
+            dOff+=row.offices; dOpen+=row.open; dClose+=row.close; dOpenGt10+=row.openGt10; dNetGt10+=row.netGt10;
+            const net=row.open-row.close;
+            const tr=document.createElement("tr");
+            tr.innerHTML=`<td>${sn++}</td><td class="${cls}">${div}</td><td style="text-align:left;font-weight:600;">${row.sd}</td><td>${row.offices}</td><td class="font-bold text-emerald-800">${row.open.toLocaleString("en-IN")}</td><td class="font-bold text-rose-800">${row.close.toLocaleString("en-IN")}</td><td class="font-bold ${net>=0?"text-blue-900":"text-rose-700"}">${net.toLocaleString("en-IN")}</td><td><span class="font-bold text-blue-700 underline cursor-pointer" onclick="openSbOfficeListModal('${div.replace(/'/g,"\\'")}','${row.sd.replace(/'/g,"\\'")}','OPEN_GT10')">${row.openGt10}</span></td><td>${sbPctStr(row.openGt10,row.offices)}</td><td><span class="font-bold text-blue-700 underline cursor-pointer" onclick="openSbOfficeListModal('${div.replace(/'/g,"\\'")}','${row.sd.replace(/'/g,"\\'")}','NET_GT10')">${row.netGt10}</span></td><td>${sbPctStr(row.netGt10,row.offices)}</td>`;
+            tbody.appendChild(tr);
+        });
+        gOff+=dOff; gOpen+=dOpen; gClose+=dClose; gOpenGt10+=dOpenGt10; gNetGt10+=dNetGt10;
+        const dNet=dOpen-dClose;
+        const trT=document.createElement("tr"); trT.className="row-div-total";
+        trT.innerHTML=`<td colspan="3">${div} Total</td><td>${dOff}</td><td>${dOpen.toLocaleString("en-IN")}</td><td>${dClose.toLocaleString("en-IN")}</td><td>${dNet.toLocaleString("en-IN")}</td><td><span class="font-bold underline cursor-pointer" onclick="openSbOfficeListModal('${div.replace(/'/g,"\\'")}','ALL','OPEN_GT10')">${dOpenGt10}</span></td><td>${sbPctStr(dOpenGt10,dOff)}</td><td><span class="font-bold underline cursor-pointer" onclick="openSbOfficeListModal('${div.replace(/'/g,"\\'")}','ALL','NET_GT10')">${dNetGt10}</span></td><td>${sbPctStr(dNetGt10,dOff)}</td>`;
+        tbody.appendChild(trT);
+    });
+    const gNet=gOpen-gClose;
+    if(tfoot) tfoot.innerHTML=`<tr class="row-grand-total"><td colspan="3">Grand Total</td><td>${gOff}</td><td>${gOpen.toLocaleString("en-IN")}</td><td>${gClose.toLocaleString("en-IN")}</td><td>${gNet.toLocaleString("en-IN")}</td><td><span class="font-bold underline cursor-pointer" onclick="openSbOfficeListModal('ALL','ALL','OPEN_GT10')">${gOpenGt10}</span></td><td>${sbPctStr(gOpenGt10,gOff)}</td><td><span class="font-bold underline cursor-pointer" onclick="openSbOfficeListModal('ALL','ALL','NET_GT10')">${gNetGt10}</span></td><td>${sbPctStr(gNetGt10,gOff)}</td></tr>`;
 }
 
-function renderSbSummaryTable(){
-    const table=document.getElementById("tableSbSummary"); if(!table) return;
-    const thead=table.querySelector("thead"), tbody=table.querySelector("tbody"), tfoot=table.querySelector("tfoot");
-    const viewEl=document.getElementById("sbViewType"), view=viewEl?viewEl.value:"division", isSd=view==="subdivision";
-    const T=SB_TEN_THRESHOLD, showTen=sbShowTen;
-    const titleEl=document.getElementById("sbSummaryTitle"), subEl=document.getElementById("sbSummarySub");
-    if(titleEl) titleEl.textContent=isSd?"🗂️ Sub-Division Wise View":"🏢 Division Wise View";
-    if(subEl) subEl.textContent=isSd?"Division → Sub Division: Account Open / Close / Net":"Region wide Division level Account Open / Close / Net";
-
-    const tenTh='style="background-color:#ffe699"';
-    thead.innerHTML="<tr><th>S.No.</th><th>Name of Division</th>"+(isSd?"<th>Name of Sub Division</th>":"")+
-        "<th>Total Offices</th><th>Account Open</th><th>Account Close</th><th>Net Addition</th>"+
-        (showTen?`<th ${tenTh}>No. of Offices Opening &gt;${T} Accounts</th><th ${tenTh}>% of Offices Opening &gt;${T} Accounts</th><th ${tenTh}>No. of Offices with Net Addition &gt;${T}</th><th ${tenTh}>% of Offices with Net Addition &gt;${T}</th>`:"")+"</tr>";
-    const totalCols=(isSd?7:6)+(showTen?4:0), labelSpan=isSd?3:2;
-
-    if(!sbCombinedList.length){
-        tbody.innerHTML=`<tr><td colspan="${totalCols}" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr>`;
-        tfoot.innerHTML=""; return;
-    }
-    const fmt=n=>n.toLocaleString("en-IN");
-    const tenCells=g=>showTen?`<td class="font-bold" style="background-color:#fff8e1">${g.openGt}</td><td class="font-bold" style="background-color:#fff8e1">${sbPct(g.openGt,g.offices)}</td><td class="font-bold" style="background-color:#fff8e1">${g.netGt}</td><td class="font-bold" style="background-color:#fff8e1">${sbPct(g.netGt,g.offices)}</td>`:"";
-    const netCls=n=>n>=0?"text-blue-900":"text-rose-700";
-    const sum=(a,b)=>({offices:a.offices+b.offices,open:a.open+b.open,close:a.close+b.close,openGt:a.openGt+b.openGt,netGt:a.netGt+b.netGt});
-    const zero={offices:0,open:0,close:0,openGt:0,netGt:0};
-    const rows=aggregateSbList(view);
-    let html="", sn=1, grand={...zero};
-
-    if(!isSd){
-        rows.sort((a,b)=>a.division.localeCompare(b.division)).forEach(g=>{
-            grand=sum(grand,g); const net=g.open-g.close, cls=divClassMap[g.division]||"div-bg-not-in-qc";
-            html+=`<tr><td>${sn++}</td><td class="${cls}">${g.division}</td><td>${g.offices}</td><td class="font-bold text-emerald-800">${fmt(g.open)}</td><td class="font-bold text-rose-800">${fmt(g.close)}</td><td class="font-bold ${netCls(net)}">${fmt(net)}</td>${tenCells(g)}</tr>`;
-        });
-    }else{
-        const byDiv={};
-        rows.forEach(g=>{ (byDiv[g.division]=byDiv[g.division]||[]).push(g); });
-        Object.keys(byDiv).sort().forEach(div=>{
-            let d={...zero}; const cls=divClassMap[div]||"div-bg-not-in-qc";
-            byDiv[div].sort((a,b)=>a.sd.localeCompare(b.sd)).forEach(g=>{
-                d=sum(d,g); const net=g.open-g.close;
-                html+=`<tr><td>${sn++}</td><td class="${cls}">${div}</td><td style="text-align:left;font-weight:600;">${g.sd}</td><td>${g.offices}</td><td class="font-bold text-emerald-800">${fmt(g.open)}</td><td class="font-bold text-rose-800">${fmt(g.close)}</td><td class="font-bold ${netCls(net)}">${fmt(net)}</td>${tenCells(g)}</tr>`;
-            });
-            grand=sum(grand,d);
-            html+=`<tr class="row-div-total"><td colspan="${labelSpan}">${div} Total</td><td>${d.offices}</td><td>${fmt(d.open)}</td><td>${fmt(d.close)}</td><td>${fmt(d.open-d.close)}</td>${showTen?`<td>${d.openGt}</td><td>${sbPct(d.openGt,d.offices)}</td><td>${d.netGt}</td><td>${sbPct(d.netGt,d.offices)}</td>`:""}</tr>`;
-        });
-    }
-    tbody.innerHTML=html;
-    tfoot.innerHTML=`<tr class="row-grand-total"><td colspan="${labelSpan}">Grand Total</td><td>${grand.offices}</td><td>${fmt(grand.open)}</td><td>${fmt(grand.close)}</td><td>${fmt(grand.open-grand.close)}</td>${showTen?`<td>${grand.openGt}</td><td>${sbPct(grand.openGt,grand.offices)}</td><td>${grand.netGt}</td><td>${sbPct(grand.netGt,grand.offices)}</td>`:""}</tr>`;
+function renderSbDivisionTable(){
+    const tbody=document.querySelector("#tableSbDivision tbody"), tfoot=document.querySelector("#tableSbDivision tfoot");
+    if(!tbody) return;
+    if(!sbCombinedList.length){ tbody.innerHTML='<tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files.</td></tr>'; if(tfoot) tfoot.innerHTML=""; return; }
+    const byDiv={};
+    sbCombinedList.forEach(r=>{
+        byDiv[r.division]=byDiv[r.division]||{offices:0,open:0,close:0,openGt10:0,netGt10:0};
+        byDiv[r.division].offices++; byDiv[r.division].open+=r.open; byDiv[r.division].close+=r.close;
+        if(r.open>10) byDiv[r.division].openGt10++;
+        if(r.net>10) byDiv[r.division].netGt10++;
+    });
+    let sn=1, gOff=0,gOpen=0,gClose=0,gOpenGt10=0,gNetGt10=0;
+    tbody.innerHTML=Object.entries(byDiv).map(([div,d])=>{
+        gOff+=d.offices; gOpen+=d.open; gClose+=d.close; gOpenGt10+=d.openGt10; gNetGt10+=d.netGt10;
+        const net=d.open-d.close; const cls=divClassMap[div]||"div-bg-not-in-qc";
+        const dEsc=div.replace(/'/g,"\\'");
+        return `<tr><td>${sn++}</td><td class="${cls}">${div}</td><td>${d.offices}</td><td class="font-bold text-emerald-800">${d.open.toLocaleString("en-IN")}</td><td class="font-bold text-rose-800">${d.close.toLocaleString("en-IN")}</td><td class="font-bold ${net>=0?"text-blue-900":"text-rose-700"}">${net.toLocaleString("en-IN")}</td><td><span class="font-bold text-blue-700 underline cursor-pointer" onclick="openSbOfficeListModal('${dEsc}','ALL','OPEN_GT10')">${d.openGt10}</span></td><td>${sbPctStr(d.openGt10,d.offices)}</td><td><span class="font-bold text-blue-700 underline cursor-pointer" onclick="openSbOfficeListModal('${dEsc}','ALL','NET_GT10')">${d.netGt10}</span></td><td>${sbPctStr(d.netGt10,d.offices)}</td></tr>`;
+    }).join("");
+    const gNet=gOpen-gClose;
+    if(tfoot) tfoot.innerHTML=`<tr class="row-grand-total"><td colspan="2">Grand Total</td><td>${gOff}</td><td>${gOpen.toLocaleString("en-IN")}</td><td>${gClose.toLocaleString("en-IN")}</td><td>${gNet.toLocaleString("en-IN")}</td><td><span class="font-bold underline cursor-pointer" onclick="openSbOfficeListModal('ALL','ALL','OPEN_GT10')">${gOpenGt10}</span></td><td>${sbPctStr(gOpenGt10,gOff)}</td><td><span class="font-bold underline cursor-pointer" onclick="openSbOfficeListModal('ALL','ALL','NET_GT10')">${gNetGt10}</span></td><td>${sbPctStr(gNetGt10,gOff)}</td></tr>`;
 }
 
 function renderSbOfficeTable(){
@@ -3032,25 +3051,47 @@ function renderSbOfficeTable(){
     tbody.innerHTML=list.map((r,i)=>`<tr class="hover:bg-slate-50"><td>${i+1}</td><td class="font-mono text-purple-950 font-bold">${r.officeId}</td><td class="font-mono">${r.boId}</td><td style="text-align:left" class="font-semibold">${r.name}</td><td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${r.class}</span></td><td>${r.sd}</td><td>${r.division}</td><td class="font-bold text-emerald-800">${r.open.toLocaleString("en-IN")}</td><td class="font-bold text-rose-800">${r.close.toLocaleString("en-IN")}</td><td class="font-bold ${r.net>=0?"text-blue-900":"text-rose-700"}">${r.net.toLocaleString("en-IN")}</td></tr>`).join("");
 }
 
+function openSbOfficeListModal(division, sd, category){
+    let list=sbCombinedList.filter(r=>(division==="ALL"||r.division===division)&&(sd==="ALL"||r.sd===sd));
+    list=list.filter(r=>category==="OPEN_GT10"?r.open>10:r.net>10);
+    if(!list.length) return alert("No offices found for this selection.");
+    list=list.slice().sort((a,b)=>(category==="OPEN_GT10"?b.open-a.open:b.net-a.net));
+    sbModalExportData=list.map((r,i)=>({"S.No":i+1,"Office ID":r.officeId,"BO ID/SOL ID":r.boId,"Office Name":r.name,Class:r.class,"Sub-Division":r.sd,Division:r.division,"Account Open":r.open,"Account Close":r.close,"Net Addition":r.net}));
+    const label=category==="OPEN_GT10"?"Account Open > 10":"Net Addition > 10";
+    document.getElementById("sbModalTitle").textContent=`SB Office List: ${label}`;
+    document.getElementById("sbModalSubtitle").textContent=`${division==="ALL"?"All Divisions":division}${sd==="ALL"?"":" / "+sd} — Total ${list.length} offices found.`;
+    document.querySelector("#tableSbModalOffices tbody").innerHTML=list.map((r,i)=>`<tr class="hover:bg-slate-50"><td>${i+1}</td><td class="font-mono text-purple-950 font-bold">${r.officeId}</td><td class="font-mono">${r.boId}</td><td style="text-align:left" class="font-semibold">${r.name}</td><td><span class="bg-purple-100 text-purple-950 px-2 py-0.5 rounded font-bold">${r.class}</span></td><td>${r.sd}</td><td>${r.division}</td><td class="font-bold text-emerald-800">${r.open.toLocaleString("en-IN")}</td><td class="font-bold text-rose-800">${r.close.toLocaleString("en-IN")}</td><td class="font-bold ${r.net>=0?"text-blue-900":"text-rose-700"}">${r.net.toLocaleString("en-IN")}</td></tr>`).join("");
+    openModal("sbDrilldownModal");
+    logGeneratedReport(`SB Office List (${label} - ${division}${sd==="ALL"?"":"/"+sd})`,()=>exportSbModalToExcel());
+}
+
+function exportSbModalToExcel(){
+    if(!sbModalExportData || !sbModalExportData.length) return alert("No office data available to export.");
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sbModalExportData), "SB_Offices");
+    XLSX.writeFile(wb, "SB_Office_Details_List.xlsx");
+}
+
 function resetSbData(){
     sbOpenSlotData=new Array(SB_SLOT_COUNT).fill(null);
     sbCloseSlotData=new Array(SB_SLOT_COUNT).fill(null);
-    renderSbUploadSlots();
+    for(let i=0;i<SB_SLOT_COUNT;i++){
+        const o=document.getElementById("sbOpenStatus"+i), c=document.getElementById("sbCloseStatus"+i);
+        if(o) o.textContent="Pending"; if(c) c.textContent="Pending";
+    }
     recomputeSbTotals();
 }
 
 function exportSbCombinedExcel(){
     if(!sbCombinedList.length) return alert("Please upload Account Open / Close Excel files first.");
-    const T=SB_TEN_THRESHOLD, wb=XLSX.utils.book_new();
-    const tenCols=g=>({
-        [`Offices Opening >${T} Accounts`]:g.openGt,
-        [`% Offices Opening >${T} Accounts`]:sbPct(g.openGt,g.offices),
-        [`Offices Net Addition >${T}`]:g.netGt,
-        [`% Offices Net Addition >${T}`]:sbPct(g.netGt,g.offices)
-    });
-    const divRows=aggregateSbList("division").sort((a,b)=>a.division.localeCompare(b.division)).map(g=>({Division:g.division,"Total Offices":g.offices,"Account Open":g.open,"Account Close":g.close,"Net Addition":g.open-g.close,...tenCols(g)}));
+    const wb=XLSX.utils.book_new();
+    const byDiv={};
+    sbCombinedList.forEach(r=>{ byDiv[r.division]=byDiv[r.division]||{offices:0,open:0,close:0}; byDiv[r.division].offices++; byDiv[r.division].open+=r.open; byDiv[r.division].close+=r.close; });
+    const divRows=Object.entries(byDiv).map(([div,d])=>({Division:div,"Total Offices":d.offices,"Account Open":d.open,"Account Close":d.close,"Net Addition":d.open-d.close}));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(divRows), "Division_Wise");
-    const sdRows=aggregateSbList("subdivision").sort((a,b)=>a.division.localeCompare(b.division)||a.sd.localeCompare(b.sd)).map(g=>({Division:g.division,"Sub Division":g.sd,"Total Offices":g.offices,"Account Open":g.open,"Account Close":g.close,"Net Addition":g.open-g.close,...tenCols(g)}));
+    const bySd={};
+    sbCombinedList.forEach(r=>{ const key=r.division+"||"+r.sd; bySd[key]=bySd[key]||{division:r.division,sd:r.sd,offices:0,open:0,close:0}; bySd[key].offices++; bySd[key].open+=r.open; bySd[key].close+=r.close; });
+    const sdRows=Object.values(bySd).map(t=>({Division:t.division,"Sub Division":t.sd,"Total Offices":t.offices,"Account Open":t.open,"Account Close":t.close,"Net Addition":t.open-t.close}));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sdRows), "SubDivision_Wise");
     const offRows=sbCombinedList.map((r,i)=>({"S.No":i+1,"Office ID":r.officeId,"BO ID/SOL ID":r.boId,"Office Name":r.name,Class:r.class,"Sub Division":r.sd,Division:r.division,"Account Open":r.open,"Account Close":r.close,"Net Addition":r.net}));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(offRows), "Office_Wise");
