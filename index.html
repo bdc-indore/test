@@ -38,6 +38,11 @@
         .sdm-col1 { position: sticky; left: 0; z-index: 15; min-width: 90px; background-color: #fff; }
         .sdm-col2 { position: sticky; left: 90px; z-index: 15; min-width: 150px; background-color: #fff; }
         .nil-table th.sdm-col1, .nil-table th.sdm-col2 { z-index: 25; background-color: #b8cce4; }
+        /* Sub-Division / Post Office table: keep BOTH header rows (Month row + Parcel/MO/IRGB row) frozen while scrolling */
+        #sdMTable thead th { position: sticky; top: 0; z-index: 20; box-shadow: inset 0 -1px 0 #707070, inset -1px 0 0 #707070; }
+        #sdMTable thead tr:nth-child(2) th { top: var(--sdm-head-h1, 27px); }
+        #sdMTable thead th.sdm-col1, #sdMTable thead th.sdm-col2 { z-index: 30; }
+        #sdMTable tbody td.sdm-col1, #sdMTable tbody td.sdm-col2 { box-shadow: inset -1px 0 0 #707070; }
 
         @media print {
             body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -142,7 +147,8 @@
                 <div class="card p-6">
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
                         <h2 class="text-base font-bold text-slate-800">📋 विस्तृत तालिका विवरण (Detailed Performance Table)</h2>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap justify-center">
+                            <select id="mainViewTypeSelect" onchange="updateDashboard()" class="bg-slate-100 border border-slate-300 text-slate-800 font-bold text-xs rounded-lg px-2.5 py-1.5"><option value="division">🏢 Division View</option><option value="region">🌍 Region View</option></select>
                             <button onclick="downloadTablePDF('dataTable', 'Main_Performance_Table')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📄 PDF</button>
                             <button onclick="downloadTableJPEG('dataTable', 'Main_Performance_Table')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📸 JPEG</button>
                             <button onclick="exportTableByID('dataTable', 'Main_Performance_Table.xlsx')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📊 Excel</button>
@@ -160,10 +166,7 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-3">
                         <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">📅 Detailed Month-Wise Division Target & Achievement</h3>
                         <div class="flex items-center gap-2">
-                            <label class="flex items-center gap-1.5 bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-lg cursor-pointer select-none">
-                                <input type="checkbox" id="revenueRegionViewToggle" onchange="updateDashboard()" class="w-4 h-4 accent-blue-600">
-                                <span class="text-xs font-bold text-slate-700">🌍 Region View</span>
-                            </label>
+                            <select id="revenueViewTypeSelect" onchange="updateDashboard()" class="bg-slate-100 border border-slate-300 text-slate-800 font-bold text-xs rounded-lg px-2.5 py-1.5"><option value="division">🏢 Division View</option><option value="region">🌍 Region View</option></select>
                             <button onclick="downloadTablePDF('revenueMonthWiseTable', 'MonthWise_Division_Revenue_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📄 PDF</button>
                             <button onclick="downloadTableJPEG('revenueMonthWiseTable', 'MonthWise_Division_Revenue_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📸 JPEG</button>
                             <button onclick="exportTableByID('revenueMonthWiseTable', 'MonthWise_Division_Revenue_Report.xlsx')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📊 Excel</button>
@@ -195,10 +198,7 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-3">
                         <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">📅 Detailed Month-Wise Division Target & Achievement (Count)</h3>
                         <div class="flex items-center gap-2">
-                            <label class="flex items-center gap-1.5 bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-lg cursor-pointer select-none">
-                                <input type="checkbox" id="countRegionViewToggle" onchange="updateDashboard()" class="w-4 h-4 accent-blue-600">
-                                <span class="text-xs font-bold text-slate-700">🌍 Region View</span>
-                            </label>
+                            <select id="countViewTypeSelect" onchange="updateDashboard()" class="bg-slate-100 border border-slate-300 text-slate-800 font-bold text-xs rounded-lg px-2.5 py-1.5"><option value="division">🏢 Division View</option><option value="region">🌍 Region View</option></select>
                             <button onclick="downloadTablePDF('countMonthWiseTable', 'MonthWise_Division_Count_Report')" class="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📄 PDF</button>
                             <button onclick="downloadTableJPEG('countMonthWiseTable', 'MonthWise_Division_Count_Report')" class="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📸 JPEG</button>
                             <button onclick="exportTableByID('countMonthWiseTable', 'MonthWise_Division_Count_Report.xlsx')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow">📊 Excel</button>
@@ -1133,18 +1133,20 @@
             document.getElementById('kpiActiveDivText').innerText = selectedDiv === 'ALL' ? "All Divisions" : selectedDiv;
             document.getElementById('kpiActiveVertText').innerText = currentVertical === 'ALL' ? "All Verticals Combined" : `${currentVertical} Vertical`;
 
-            renderTable(filtered, isIRGBOnly);
+            const mainViewSel = document.getElementById('mainViewTypeSelect');
+            const isMainRegionView = mainViewSel ? (mainViewSel.value === 'region') : false;
+            renderTable(isMainRegionView ? aggregateByVertical(filtered) : filtered, isIRGBOnly, isMainRegionView);
             renderCharts(dataset, filtered, selectedDiv, isIRGBOnly);
             
             if (currentDataType === 'revenue') {
-                const revRegionToggle = document.getElementById('revenueRegionViewToggle');
-                const isRevRegionView = revRegionToggle ? revRegionToggle.checked : false;
+                const revViewSel = document.getElementById('revenueViewTypeSelect');
+                const isRevRegionView = revViewSel ? (revViewSel.value === 'region') : false;
                 const revFirstColHead = document.getElementById('revenueMonthWiseFirstCol');
                 if (revFirstColHead) revFirstColHead.innerText = isRevRegionView ? 'Category (Region Total)' : 'Division Name';
                 renderRevenueMonthWiseDivisionTable(isRevRegionView ? aggregateByVertical(filtered) : filtered, isIRGBOnly);
             } else if (currentDataType === 'count') {
-                const cntRegionToggle = document.getElementById('countRegionViewToggle');
-                const isCntRegionView = cntRegionToggle ? cntRegionToggle.checked : false;
+                const cntViewSel = document.getElementById('countViewTypeSelect');
+                const isCntRegionView = cntViewSel ? (cntViewSel.value === 'region') : false;
                 const cntFirstColHead = document.getElementById('countMonthWiseFirstCol');
                 if (cntFirstColHead) cntFirstColHead.innerText = isCntRegionView ? 'Category (Region Total)' : 'Division Name';
                 renderCountMonthWiseDivisionTable(isCntRegionView ? aggregateByVertical(filtered) : filtered);
@@ -1184,14 +1186,15 @@
             return Object.values(groups);
         }
 
-        function renderTable(filteredData, isIRGBOnly) {
+        function renderTable(filteredData, isIRGBOnly, isRegionView = false) {
             let isCount = (currentDataType === 'count');
+            const firstColLabel = isRegionView ? 'Category (Region Total)' : 'Division Name';
             let headerTitleCol = isCount ? 'Total Target' : (isIRGBOnly ? 'Total Target (Lakhs)' : 'Total Target (Cr)');
             
             if (isCount) {
-                document.getElementById('tableHead').innerHTML = `<tr class="bg-slate-900 text-white font-bold uppercase text-xs"><th class="p-3.5 border-b">Division Name</th><th class="p-3.5 border-b">Vertical</th><th class="p-3.5 border-b">Apr Count</th><th class="p-3.5 border-b">May Count</th><th class="p-3.5 border-b">Jun Count</th><th class="p-3.5 border-b">Jul Count</th><th class="p-3.5 border-b">Aug Count</th><th class="p-3.5 border-b">Sep Count</th><th class="p-3.5 border-b font-extrabold text-emerald-300">Total Count</th></tr>`;
+                document.getElementById('tableHead').innerHTML = `<tr class="bg-slate-900 text-white font-bold uppercase text-xs"><th class="p-3.5 border-b">${firstColLabel}</th><th class="p-3.5 border-b">Vertical</th><th class="p-3.5 border-b">Apr Count</th><th class="p-3.5 border-b">May Count</th><th class="p-3.5 border-b">Jun Count</th><th class="p-3.5 border-b">Jul Count</th><th class="p-3.5 border-b">Aug Count</th><th class="p-3.5 border-b">Sep Count</th><th class="p-3.5 border-b font-extrabold text-emerald-300">Total Count</th></tr>`;
             } else {
-                document.getElementById('tableHead').innerHTML = `<tr class="bg-slate-900 text-white font-bold uppercase text-xs"><th class="p-3.5 border-b">Division Name</th><th class="p-3.5 border-b">Vertical</th><th class="p-3.5 border-b">${headerTitleCol}</th><th class="p-3.5 border-b">April 26</th><th class="p-3.5 border-b">May 26</th><th class="p-3.5 border-b">June 26</th><th class="p-3.5 border-b">July 26</th><th class="p-3.5 border-b">August 26</th><th class="p-3.5 border-b">September 26</th><th class="p-3.5 border-b font-extrabold text-emerald-300">Total Achievement</th><th class="p-3.5 border-b">% Achievement</th></tr>`;
+                document.getElementById('tableHead').innerHTML = `<tr class="bg-slate-900 text-white font-bold uppercase text-xs"><th class="p-3.5 border-b">${firstColLabel}</th><th class="p-3.5 border-b">Vertical</th><th class="p-3.5 border-b">${headerTitleCol}</th><th class="p-3.5 border-b">April 26</th><th class="p-3.5 border-b">May 26</th><th class="p-3.5 border-b">June 26</th><th class="p-3.5 border-b">July 26</th><th class="p-3.5 border-b">August 26</th><th class="p-3.5 border-b">September 26</th><th class="p-3.5 border-b font-extrabold text-emerald-300">Total Achievement</th><th class="p-3.5 border-b">% Achievement</th></tr>`;
             }
 
             let rows = [], sumT = 0, sumApA = 0, sumMyA = 0, sumJnA = 0, sumJlA = 0, sumAgA = 0, sumSpA = 0, sumAch = 0;
@@ -1499,6 +1502,16 @@
 
         const SDM_MONTH_LABELS = { apr:'April', may:'May', jun:'June', jul:'July', aug:'August', sep:'September' };
 
+        // Measures the height of the 1st header row so the 2nd header row (Parcel/MO/IRGB) sticks right BELOW it
+        // instead of on top of it (which used to hide the month names while scrolling).
+        function syncSdMStickyHeader() {
+            const tbl = document.getElementById('sdMTable');
+            if (!tbl || !tbl.tHead || !tbl.tHead.rows.length) return;
+            const h = tbl.tHead.rows[0].getBoundingClientRect().height;
+            if (h > 0) tbl.style.setProperty('--sdm-head-h1', (h - 1) + 'px');
+        }
+        window.addEventListener('resize', syncSdMStickyHeader);
+
         function renderSdMonthAnalysis() {
             const viewType = document.getElementById('sdMViewTypeSelect').value;
             const vert = document.getElementById('sdMVertSelect').value;
@@ -1621,6 +1634,7 @@
             rowsData.sort((a, b) => b.rowTot - a.rowTot);
             document.getElementById('sdMTableBody').innerHTML = rowsData.map(r => `<tr>${r.html}</tr>`).join('');
             document.getElementById('sdMTableFoot').innerHTML = '';
+            syncSdMStickyHeader();
         }
 
         function renderPostOfficeLevelAnalysis(vert, divKey, sdKey, clsKey, monthKey) {
@@ -1708,6 +1722,7 @@
             document.getElementById('sdMKpiAvgBooking').innerText = filtered.length > 0 ? (totalPoBookings / filtered.length).toFixed(1) : 0;
             document.getElementById('sdMTableBody').innerHTML = rowsData.map(r => `<tr>${r.html}</tr>`).join('');
             document.getElementById('sdMTableFoot').innerHTML = '';
+            syncSdMStickyHeader();
         }
 
         function getLowBookingThreshold(clsKey, vertKey) {
