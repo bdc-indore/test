@@ -88,6 +88,15 @@
 <!-- Main Workspace -->
 <main class="max-w-7xl mx-auto px-3 md:px-6 py-4 space-y-4 w-full flex-grow">
 
+    <!-- Error banner -->
+    <div id="errorBanner" class="hidden bg-rose-50 border border-rose-300 text-rose-900 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+            <div class="font-bold text-sm">⚠️ Data load nahi ho paya</div>
+            <div id="errorBannerMsg" class="text-[11px] mt-0.5"></div>
+        </div>
+        <button onclick="document.getElementById('initialLoader').classList.remove('hidden');document.getElementById('initialLoader').style.opacity='1';initApp()" class="bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer">🔄 Retry</button>
+    </div>
+
     <!-- 1. SUMMARY VIEW -->
     <div id="viewSummary" class="space-y-3">
         <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
@@ -412,10 +421,12 @@ const URL_MASTER = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9U
 
 let globalData = [];
 let availableMonths = [];
-let MONTH_NAMES = {
-    APR: "April", MAY: "May", JUN: "June", JUL: "July", AUG: "August", SEP: "September",
-    OCT: "October", NOV: "November", DEC: "December", JAN: "January", FEB: "February", MAR: "March"
+let dataUpdatedRange = "";   // e.g. "1-19"  (taken from cell A1 of the data sheet)
+const MONTH_BASE = {
+    JAN: "January", FEB: "February", MAR: "March", APR: "April", MAY: "May", JUN: "June",
+    JUL: "July", AUG: "August", SEP: "September", OCT: "October", NOV: "November", DEC: "December"
 };
+let MONTH_NAMES = Object.assign({}, MONTH_BASE);
 
 const divClassMap = {
     "INDORE CITY": "div-bg-indore-city",
@@ -436,164 +447,249 @@ let currentOfficeDataList = [];
 let currentOfficeRenderIndex = 0;
 const OFFICE_CHUNK_SIZE = 100;
 
+// ---------------- CSV HELPERS ----------------
+// Own CSV parser (no automatic date/number guessing, so "1-19" or IDs never get converted)
+function parseCSV(text){
+    const rows = []; let row = [], cur = "", inQ = false;
+    text = String(text || "").replace(/^\uFEFF/, "");
+    for(let i = 0; i < text.length; i++){
+        const c = text[i];
+        if(inQ){
+            if(c === '"'){ if(text[i+1] === '"'){ cur += '"'; i++; } else inQ = false; }
+            else cur += c;
+        } else {
+            if(c === '"') inQ = true;
+            else if(c === ','){ row.push(cur); cur = ""; }
+            else if(c === '\n'){ row.push(cur); rows.push(row); row = []; cur = ""; }
+            else if(c === '\r'){ /* ignore */ }
+            else cur += c;
+        }
+    }
+    if(cur !== "" || row.length){ row.push(cur); rows.push(row); }
+    return rows;
+}
+
+// "office-id", "Office_ID", "OFFICE ID " -> "OFFICE ID"
+const normH = v => String(v == null ? "" : v).toUpperCase().replace(/[_\-\/\.]+/g, " ").replace(/\s+/g, " ").trim();
+const cleanId = v => String(v == null ? "" : v).trim().replace(/\.0+$/, "").replace(/\s+/g, "");
+const toNum = v => { const n = Number(String(v == null ? "" : v).replace(/,/g, "").trim()); return isFinite(n) ? n : 0; };
+
+function monthCode(v){
+    const m = String(v == null ? "" : v).toUpperCase().match(/\b(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)/);
+    return m ? m[1] : "";
+}
+function metricOf(h){
+    if(h.includes("OPEN")) return "open";
+    if(h.includes("CLOSE")) return "close";
+    if(h.includes("NET") || h.includes("ADD")) return "net";
+    return "";
+}
+// A1 cell -> "1-19".  Accepts "19", "1-19", "19-09-2026", "Till 19" etc.
+function deriveRange(a1){
+    const s = String(a1 == null ? "" : a1).trim();
+    if(!s) return "";
+    let m = s.match(/^\D*(\d{1,2})\s*[-\u2013]\s*(\d{1,2})\D*$/);
+    if(m && Number(m[1]) <= Number(m[2]) && Number(m[2]) <= 31) return `${Number(m[1])}-${Number(m[2])}`;
+    m = s.match(/(\d{1,2})\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{2,4}/);   // dd-mm-yyyy
+    if(m && Number(m[1]) <= 31) return `1-${Number(m[1])}`;
+    m = s.match(/\d+/);
+    if(m && Number(m[0]) >= 1 && Number(m[0]) <= 31) return `1-${Number(m[0])}`;
+    return "";
+}
+
+async function fetchCsv(url, label){
+    const bust = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+    const attempts = [
+        bust,
+        "https://api.allorigins.win/raw?url=" + encodeURIComponent(bust),
+        "https://corsproxy.io/?" + encodeURIComponent(bust)
+    ];
+    let lastErr = null;
+    for(const u of attempts){
+        try{
+            const res = await fetch(u, { cache: "no-store" });
+            if(!res.ok) throw new Error("HTTP " + res.status);
+            const txt = await res.text();
+            if(!txt || /^\s*<(!doctype|html)/i.test(txt)) throw new Error("CSV ki jagah web page mila (sheet 'Publish to web' -> CSV honi chahiye)");
+            return txt;
+        } catch(e){ lastErr = e; }
+    }
+    throw new Error(`${label} sheet load nahi hui: ${lastErr ? lastErr.message : "unknown error"}`);
+}
+
+// ---------------- MASTER (Office ID -> Division / Sub-Division) ----------------
+function parseMaster(csv){
+    const rows = parseCSV(csv);
+    let hIdx = -1;
+    for(let i = 0; i < Math.min(15, rows.length); i++){
+        if(rows[i].some(v => { const h = normH(v); return h.includes("OFFICE ID") || h.includes("FACILITY ID"); })){ hIdx = i; break; }
+    }
+    let c = { id: 0, name: 1, cls: 2, sd: 3, div: 4 };      // default order: office-id, name, class, SD, division
+    let start = 0;
+    if(hIdx >= 0){
+        const H = rows[hIdx].map(normH);
+        const f = fn => H.findIndex(fn);
+        c = {
+            id:   f(h => h.includes("OFFICE ID") || h.includes("FACILITY ID")),
+            name: f(h => h.includes("NAME")),
+            cls:  f(h => h.includes("CLASS") || h === "TYPE"),
+            sd:   f(h => h === "SD" || h.includes("SUB DIV") || h.includes("SUBDIV")),
+            div:  f(h => h.includes("DIV") && !h.includes("SUB") && h !== "SD")
+        };
+        start = hIdx + 1;
+    }
+    const map = new Map();
+    for(let i = start; i < rows.length; i++){
+        const r = rows[i];
+        const id = cleanId(r[c.id]);
+        if(!id) continue;
+        map.set(id, {
+            name: c.name >= 0 ? String(r[c.name] || "").trim() : "",
+            cls:  c.cls  >= 0 ? String(r[c.cls]  || "").trim().toUpperCase() : "",
+            sd:   c.sd   >= 0 ? String(r[c.sd]   || "").trim().toUpperCase() : "",
+            div:  c.div  >= 0 ? String(r[c.div]  || "").trim().toUpperCase() : ""
+        });
+    }
+    return map;
+}
+
+// ---------------- DATA SHEET ----------------
+// Layout:  row 1 -> A1 = date (e.g. 19), H1.. = month names (APRIL APRIL APRIL MAY MAY MAY ...)
+//          row 2 -> S.No | Office ID | ... | Account Open | Account Close | Net Addition | ...
+function parseData(csv, master){
+    const rows = parseCSV(csv);
+    let hIdx = -1;
+    for(let i = 0; i < Math.min(20, rows.length); i++){
+        if(rows[i].some(v => normH(v).includes("OFFICE ID"))){ hIdx = i; break; }
+    }
+    if(hIdx < 0) throw new Error("Data sheet mein 'Office ID' column nahi mila");
+
+    const H = rows[hIdx].map(normH);
+    const monthRow = hIdx > 0 ? rows[hIdx - 1] : [];
+
+    // ---- map every metric column to (month, metric) ----
+    const colMap = [], rangeByMonth = {};
+    let lastMonth = "";
+    for(let j = 0; j < H.length; j++){
+        const topCell = String(monthRow[j] == null ? "" : monthRow[j]).trim();
+        let mc = monthCode(topCell);
+        if(!mc) mc = monthCode(H[j]);                    // old style: month inside the header itself
+        if(!mc && topCell === "" && lastMonth) mc = lastMonth;   // merged month cell -> carry forward
+        if(mc) lastMonth = mc;
+        const metric = metricOf(H[j]);
+        if(!metric || !mc) continue;
+        colMap.push({ col: j, month: mc, metric });
+        const br = topCell.match(/\(\s*(\d{1,2})\s*[-\u2013]\s*(\d{1,2})\s*\)/);
+        if(br) rangeByMonth[mc] = `${Number(br[1])}-${Number(br[2])}`;
+    }
+    const months = [];
+    colMap.forEach(x => { if(!months.includes(x.month)) months.push(x.month); });
+    if(!months.length) throw new Error("Month ke naam nahi mile (headers ke upar wali row mein APRIL, MAY, JUNE... hone chahiye)");
+
+    const lastM = months[months.length - 1];
+    const range = rangeByMonth[lastM] || deriveRange(rows[0] && rows[0][0]);
+
+    // ---- fixed columns ----
+    const idCol   = H.findIndex(h => h.includes("OFFICE ID"));
+    const nameCol = H.findIndex(h => h.includes("OFFICE NAME"));
+    const clsCol  = H.findIndex(h => h === "CLASS");
+    const sdCol   = H.findIndex(h => h.includes("SUB DIV"));
+    const divCol  = H.findIndex(h => h.includes("DIVISION") && !h.includes("SUB"));
+
+    const records = []; let unmapped = 0;
+    for(let i = hIdx + 1; i < rows.length; i++){
+        const r = rows[i];
+        if(!r || !r.length) continue;
+        const id = cleanId(r[idCol]);
+        if(!id || !/\d/.test(id)) continue;
+
+        const m = master.get(id);
+        const sheetDiv = divCol >= 0 ? String(r[divCol] || "").trim().toUpperCase() : "";
+        const sheetSd  = sdCol  >= 0 ? String(r[sdCol]  || "").trim().toUpperCase() : "";
+        const sheetCls = clsCol >= 0 ? String(r[clsCol] || "").trim().toUpperCase() : "";
+        const sheetName = nameCol >= 0 ? String(r[nameCol] || "").trim() : "";
+        if(!m) unmapped++;
+
+        const rec = {
+            officeId: id,
+            officeName: (m && m.name) || sheetName || `Office ${id}`,
+            division:   (m && m.div)  || sheetDiv || "OTHER DIVISION",
+            subDivision:(m && m.sd)   || sheetSd  || "OTHER SD",
+            officeClass:(m && m.cls)  || sheetCls || "SO",
+            monthlyData: {}, cumulative: { open: 0, close: 0, net: 0 }
+        };
+        months.forEach(mo => { rec.monthlyData[mo] = { open: 0, close: 0, net: 0, _hasNet: false }; });
+        colMap.forEach(x => {
+            const cell = rec.monthlyData[x.month];
+            cell[x.metric] = toNum(r[x.col]);
+            if(x.metric === "net") cell._hasNet = true;
+        });
+        months.forEach(mo => {
+            const cell = rec.monthlyData[mo];
+            if(!cell._hasNet) cell.net = cell.open - cell.close;
+            delete cell._hasNet;
+            rec.cumulative.open += cell.open; rec.cumulative.close += cell.close; rec.cumulative.net += cell.net;
+        });
+        records.push(rec);
+    }
+    if(!records.length) throw new Error("Data sheet mein koi office row nahi mili");
+    return { records, months, range, lastMonth: lastM, unmapped };
+}
+
+function processDualCSV(masterCsv, dataCsv){
+    const master = parseMaster(masterCsv);
+    if(!master.size) throw new Error("Master sheet (Office ID -> Division) khali hai ya format alag hai");
+    const out = parseData(dataCsv, master);
+
+    globalData = out.records;
+    availableMonths = out.months;
+    dataUpdatedRange = out.range;
+
+    MONTH_NAMES = Object.assign({}, MONTH_BASE);
+    if(out.range) MONTH_NAMES[out.lastMonth] = `${MONTH_BASE[out.lastMonth]} (${out.range})`;
+    return out;
+}
+
+function showError(msg){
+    const b = document.getElementById("errorBanner");
+    if(!b) return;
+    b.classList.remove("hidden");
+    document.getElementById("errorBannerMsg").textContent = msg;
+}
+
 async function initApp(){
+    const banner = document.getElementById("errorBanner");
+    if(banner) banner.classList.add("hidden");
     try {
-        document.getElementById("loadingSubtext").textContent = "Fetching Office Master Mapping...";
-        const resMaster = await fetch(URL_MASTER);
-        const masterCsv = await resMaster.text();
-        
-        document.getElementById("loadingSubtext").textContent = "Fetching POSB Operations Data...";
-        const resData = await fetch(URL_DATA);
-        const dataCsv = await resData.text();
-        
+        document.getElementById("loadingSubtext").textContent = "Fetching Master Mapping + POSB Data...";
+        const [masterCsv, dataCsv] = await Promise.all([
+            fetchCsv(URL_MASTER, "Master (Office ID -> Division)"),
+            fetchCsv(URL_DATA, "POSB Data")
+        ]);
+
         document.getElementById("loadingSubtext").textContent = "Parsing & Merging Records...";
-        processDualCSV(masterCsv, dataCsv);
-        
-        document.getElementById("liveStatus").innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Data Synced`;
-        document.getElementById("liveStatus").classList.replace("bg-emerald-600", "bg-purple-800");
+        const info = processDualCSV(masterCsv, dataCsv);
+
+        const st = document.getElementById("liveStatus");
+        const lastLbl = MONTH_NAMES[info.lastMonth] || info.lastMonth;
+        st.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Data Synced &bull; ${lastLbl}`;
+        st.classList.replace("bg-emerald-600", "bg-purple-800");
+        st.title = `${globalData.length} offices loaded` + (info.unmapped ? ` | ${info.unmapped} offices master sheet mein nahi mile (data sheet ka division use hua)` : "");
 
         initDropdowns();
         renderSummaryTable();
     } catch(err){
         console.error("Initialization Error:", err);
-        document.getElementById("liveStatus").className = "bg-rose-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow";
-        document.getElementById("liveStatus").textContent = "⚠️ Fetch Error";
-        document.getElementById("loadingSubtext").textContent = "Failed to load sheets. Please check the URLs or internet connection.";
+        const st = document.getElementById("liveStatus");
+        st.className = "bg-rose-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow";
+        st.textContent = "⚠️ Fetch Error";
+        showError(err && err.message ? err.message : String(err));
     } finally {
         const loader = document.getElementById("initialLoader");
         if(loader){
             loader.style.opacity = "0";
             setTimeout(() => loader.classList.add("hidden"), 300);
         }
-    }
-}
-
-function processDualCSV(masterCsv, dataCsv){
-    // 1. PROCESS MASTER MAPPING
-    const wbMaster = XLSX.read(masterCsv, {type: "string"});
-    const masterJsonRaw = XLSX.utils.sheet_to_json(wbMaster.Sheets[wbMaster.SheetNames[0]], {header: 1, defval: ""});
-    
-    let mHeadIdx = 0, mHead = [];
-    for(let i=0; i<Math.min(10, masterJsonRaw.length); i++){
-        if(masterJsonRaw[i].some(v => {
-            let str = String(v).toUpperCase().replace(/_/g, " ");
-            return str.includes("OFFICE ID") || str.includes("FACILITY ID");
-        })){
-            mHeadIdx = i;
-            mHead = masterJsonRaw[i].map(v => String(v).trim().toUpperCase());
-            break;
-        }
-    }
-    
-    const masterMap = {};
-    for(let i = mHeadIdx + 1; i < masterJsonRaw.length; i++){
-        const row = masterJsonRaw[i];
-        if(!row || !row.length) continue;
-        const obj = {};
-        mHead.forEach((h, idx) => { obj[h] = row[idx]; });
-        
-        const idKey = mHead.find(k => k.includes("OFFICE ID") || k.includes("FACILITY ID"));
-        if(idKey && obj[idKey]){
-            const id = String(obj[idKey]).trim().replace(/\.0$/, "");
-            masterMap[id] = obj;
-        }
-    }
-
-    // 2. PROCESS POSB DATA
-    const wbData = XLSX.read(dataCsv, {type: "string"});
-    const dataJsonRaw = XLSX.utils.sheet_to_json(wbData.Sheets[wbData.SheetNames[0]], {header: 1, defval: ""});
-    
-    let dHeadIdx = 0, dHead = [];
-    for(let i=0; i<Math.min(15, dataJsonRaw.length); i++){
-        if(dataJsonRaw[i].some(v => {
-            let str = String(v).toUpperCase().replace(/_/g, " ");
-            return str.includes("OFFICE ID") || str.includes("FACILITY ID") || str.includes("OPEN");
-        })){
-            dHeadIdx = i;
-            dHead = dataJsonRaw[i].map(v => String(v).trim());
-            break;
-        }
-    }
-
-    // Capture A1 Date extraction if present
-    const a1Val = String(dataJsonRaw[0][0] || "").trim();
-    const a1Num = a1Val.match(/\d+/) ? a1Val.match(/\d+/)[0] : "";
-    
-    const monthCandidates = ["APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR"];
-    const foundMonths = [];
-    dHead.forEach(h => {
-        const uh = h.toUpperCase();
-        monthCandidates.forEach(m => {
-            if(uh.includes(m) && !foundMonths.includes(m)) {
-                if(uh.includes("OPEN") || uh.includes("CLOSE") || uh.includes("NET") || uh.includes("ADD")) {
-                    foundMonths.push(m);
-                }
-            }
-        });
-    });
-    
-    availableMonths = foundMonths;
-    if(availableMonths.length > 0 && a1Num){
-        const latestMonth = availableMonths[availableMonths.length - 1];
-        MONTH_NAMES[latestMonth] = `${MONTH_NAMES[latestMonth]} (Till ${a1Num} ${MONTH_NAMES[latestMonth].substring(0,3)})`;
-    }
-
-    for(let i = dHeadIdx + 1; i < dataJsonRaw.length; i++){
-        const rowArr = dataJsonRaw[i];
-        if(!rowArr || !rowArr.length) continue;
-        
-        const obj = {};
-        dHead.forEach((h, idx) => { obj[h] = rowArr[idx]; });
-        
-        let offId = "";
-        const idKey = dHead.find(k => String(k).toUpperCase().replace(/_/g, " ").includes("OFFICE ID"));
-        if(idKey) offId = String(obj[idKey]).trim().replace(/\.0$/, "");
-        if(!offId) continue;
-        
-        const mData = masterMap[offId] || {};
-        const mKeys = Object.keys(mData);
-        
-        let div = "OTHER DIVISION";
-        let subDiv = "OTHER SD";
-        let offName = obj["Office Name"] || `Office ${offId}`;
-        let offClass = "SO"; // Default fallback
-        
-        if(mKeys.length > 0){
-            const dKey = mKeys.find(k => k.includes("DIVISION") && !k.includes("SUB"));
-            if(dKey && mData[dKey]) div = String(mData[dKey]).trim().toUpperCase();
-            
-            const sdKey = mKeys.find(k => k.includes("SUB DIVISION") || k.includes("SUB-DIVISION"));
-            if(sdKey && mData[sdKey]) subDiv = String(mData[sdKey]).trim().toUpperCase();
-            
-            const nKey = mKeys.find(k => (k.includes("NAME") || k.includes("OFFICE")) && !k.includes("ID") && !k.includes("CLASS"));
-            if(nKey && mData[nKey]) offName = String(mData[nKey]).trim();
-            
-            const cKey = mKeys.find(k => k.includes("CLASS") || k === "TYPE");
-            if(cKey && mData[cKey]) offClass = String(mData[cKey]).trim().toUpperCase();
-        }
-        
-        const record = {
-            officeId: offId, officeName: offName, division: div, subDivision: subDiv, officeClass: offClass,
-            monthlyData: {}, cumulative: { open: 0, close: 0, net: 0 }
-        };
-        
-        availableMonths.forEach(m => {
-            let op = 0, cl = 0, nt = 0;
-            Object.keys(obj).forEach(k => {
-                const uk = k.toUpperCase();
-                if(uk.includes(m)){
-                    if(uk.includes("OPEN")) op = Number(obj[k]) || 0;
-                    else if(uk.includes("CLOSE")) cl = Number(obj[k]) || 0;
-                    else if(uk.includes("NET") || uk.includes("ADD")) nt = Number(obj[k]) || 0;
-                }
-            });
-            record.monthlyData[m] = { open: op, close: cl, net: nt };
-            record.cumulative.open += op;
-            record.cumulative.close += cl;
-            record.cumulative.net += nt;
-        });
-        
-        globalData.push(record);
     }
 }
 
@@ -623,7 +719,7 @@ function initDropdowns(){
     if(cmpWrap){
         cmpWrap.innerHTML = availableMonths.map(m => `
             <label class="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded border border-purple-200 cursor-pointer">
-                <input type="checkbox" name="cmpMonths" value="${m}" checked onchange="renderCompareTable()" class="accent-purple-900"> ${MONTH_NAMES[m] ? MONTH_NAMES[m].split(' ')[0] : m}
+                <input type="checkbox" name="cmpMonths" value="${m}" checked onchange="renderCompareTable()" class="accent-purple-900"> ${MONTH_NAMES[m] || m}
             </label>
         `).join("");
     }
@@ -937,7 +1033,7 @@ function renderCompareTable(){
 
     let tr2 = '<tr>';
     cMetrics.forEach(() => {
-        cMonths.forEach(m => { tr2 += `<th style="background-color:#fce4d6">${m}</th>`; });
+        cMonths.forEach(m => { tr2 += `<th style="background-color:#fce4d6">${(MONTH_NAMES[m] || m).replace(/^([A-Za-z]{3})[A-Za-z]*/, '$1')}</th>`; });
     });
     tr2 += '</tr>';
     thead.innerHTML = tr1 + tr2;
