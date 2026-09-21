@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>POSB PERFORMANCE DASHBOARD</title>
+    <title>POSB PERFORMANCE DASHBOARD - INDORE REGION</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -17,7 +17,7 @@
         .nil-table td,.nil-table th{border:1px solid #707070;padding:4px 5px}
         .nil-table th{background-color:#b8cce4;color:#000;font-weight:700;vertical-align:middle}
         
-        /* Division styling based on your previous theme */
+        /* Division Color Coding */
         .div-bg-indore-city,.div-bg-khandwa{background-color:#f2dcdb;font-weight:700;color:maroon}
         .div-bg-indore-mfl{background-color:#dce6f1;font-weight:700;color:#1f497d}
         .div-bg-mandsaur{background-color:#e2efda;font-weight:700;color:#375623}
@@ -25,10 +25,10 @@
         .div-bg-sehore{background-color:#d9edf7;font-weight:700;color:#31708f}
         .div-bg-ujjain{background-color:#d9d9d9;font-weight:700;color:#333}
         .div-bg-id-division{background-color:#fff2cc;font-weight:700;color:#7f6000}
-        .div-bg-not-in-qc{background-color:#fee2e2;font-weight:700;color:#991b1b}
+        .div-bg-other{background-color:#f1f5f9;font-weight:700;color:#334155}
+        
         .row-div-total{background-color:#fce4d6;font-weight:700;color:#000}
         .row-grand-total{background-color:#bdd7ee;font-weight:700;color:#000;font-size:11.5px}
-        
         .clickable-cell{cursor:pointer;text-decoration:underline}
         .clickable-cell:hover{opacity:.75}
         .ctrl-select{border:1px solid #cbd5e1;border-radius:0.5rem;padding:0.35rem 0.5rem;font-size:0.75rem;background-color:#f8fafc;font-weight:600;outline:none;width:100%}
@@ -37,14 +37,14 @@
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between text-xs">
 
-<!-- Fullscreen Initial Loader -->
+<!-- Initial Loading Overlay -->
 <div id="initialLoader" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white transition-opacity duration-300">
     <div class="w-12 h-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mb-3"></div>
-    <p class="text-sm font-bold tracking-wide">Fetching & Syncing POSB Data...</p>
-    <p class="text-[11px] text-purple-200 mt-1">Please wait a moment while the spreadsheet is processed</p>
+    <p class="text-sm font-bold tracking-wide">Syncing POSB & Master Mapping...</p>
+    <p class="text-[11px] text-purple-200 mt-1" id="loadingSubtext">Connecting to Live Google Sheets...</p>
 </div>
 
-<!-- Header -->
+<!-- Main Header -->
 <header class="report-header shadow-md py-3.5 px-4 md:px-8 border-b-2 border-purple-950">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div class="flex items-center gap-3">
@@ -55,13 +55,13 @@
                 <span class="text-[10px] font-bold tracking-widest text-purple-200 uppercase bg-purple-950/70 px-2 py-0.5 rounded border border-purple-800">DEPARTMENT OF POSTS</span>
                 <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-white mt-0.5">POSB PERFORMANCE DASHBOARD</h1>
                 <p class="text-[11px] text-purple-200 mt-0.5 font-medium flex items-center gap-2">
-                    <span id="headerDateRange">ACCOUNT OPENING & CLOSURE MONITORING</span>
+                    <span>INDORE REGION - ACCOUNT OPEN / CLOSE / NET ADDITION</span>
                 </p>
             </div>
         </div>
         <div class="flex items-center flex-wrap gap-2.5">
             <span id="liveStatus" class="bg-emerald-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Connecting Sheet...
+                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Connecting...
             </span>
         </div>
     </div>
@@ -71,16 +71,16 @@
 <nav class="bg-white border-b border-slate-200 shadow-sm py-2 px-4 md:px-8 sticky top-0 z-30">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-1.5">
         <button onclick="switchTab('summary')" id="tabBtnSummary" class="bg-purple-900 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 border-b-2 border-purple-500 cursor-pointer">
-            <span>📊</span> Summary Report
+            <span>📊</span> Summary
         </button>
         <button onclick="switchTab('offices')" id="tabBtnOffices" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
             <span>🔍</span> Detailed Office View
         </button>
         <button onclick="switchTab('rankings')" id="tabBtnRankings" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
-            <span>⭐</span> Top & Bottom Rankings
+            <span>⭐</span> Top & Bottom 20
         </button>
         <button onclick="switchTab('compare')" id="tabBtnCompare" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
-            <span>📈</span> Multi-Month Comparison
+            <span>📈</span> Multi-Month Compare
         </button>
     </div>
 </nav>
@@ -90,10 +90,10 @@
 
     <!-- 1. SUMMARY VIEW -->
     <div id="viewSummary" class="space-y-3">
-        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 items-end">
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
             <div>
                 <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Target Month</label>
-                <select id="sumMonth" onchange="renderSummaryTable()" class="ctrl-select text-purple-950 font-bold"></select>
+                <select id="sumMonth" onchange="renderSummaryTable()" class="ctrl-select text-purple-950 font-bold bg-purple-50"></select>
             </div>
             <div>
                 <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Filter Division</label>
@@ -105,7 +105,7 @@
                 <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📋 Aggregation Level</label>
                 <select id="sumViewType" onchange="renderSummaryTable()" class="ctrl-select">
                     <option value="subdivision">Sub-Division Wise</option>
-                    <option value="division">Division Wise</option>
+                    <option value="division">Division Wise Only</option>
                 </select>
             </div>
         </div>
@@ -113,8 +113,8 @@
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardSummary">
             <div class="report-header px-4 py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
-                    <h2 id="sumTableTitle" class="font-bold text-sm">📊 POSB Summary Report</h2>
-                    <p class="text-[10px] text-purple-200">Comparison of Selected Month vs Cumulative (April Till Date)</p>
+                    <h2 id="sumTableTitle" class="font-bold text-sm">📊 POSB Summary</h2>
+                    <p class="text-[10px] text-purple-200">Includes Target Month Data + Cumulative Total (Till Date)</p>
                 </div>
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <button onclick='exportTableToExcel("tableSummary","POSB_Summary_Report.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2 py-1 rounded shadow cursor-pointer">📥 Excel</button>
@@ -126,17 +126,17 @@
                     <thead>
                         <tr>
                             <th rowspan="2" id="thSumDiv" style="width:12%">Division</th>
-                            <th rowspan="2" id="thSumSubDiv" style="width:14%">Sub-Division</th>
-                            <th colspan="3" id="thSumTargetMonth" style="background-color:#d9edf7">Target Month</th>
-                            <th colspan="3" style="background-color:#c6efce">Cumulative (April Till Selected)</th>
+                            <th rowspan="2" id="thSumSubDiv" style="width:16%">Sub-Division</th>
+                            <th colspan="3" id="thSumCurrentMonth" style="background-color:#d9edf7">Selected Month Data</th>
+                            <th colspan="3" style="background-color:#e2efda">Cumulative (All Months Till Date)</th>
                         </tr>
                         <tr>
-                            <th style="background-color:#d9edf7">Acc Open</th>
-                            <th style="background-color:#d9edf7">Acc Close</th>
-                            <th style="background-color:#d9edf7">Net Addition</th>
-                            <th style="background-color:#c6efce">Total Open</th>
-                            <th style="background-color:#c6efce">Total Close</th>
-                            <th style="background-color:#c6efce">Total Net Addition</th>
+                            <th style="background-color:#d9edf7;width:12%">A/C Opened</th>
+                            <th style="background-color:#d9edf7;width:12%">A/C Closed</th>
+                            <th style="background-color:#d9edf7;width:12%">Net Addition</th>
+                            <th style="background-color:#e2efda;width:12%">Cum. Opened</th>
+                            <th style="background-color:#e2efda;width:12%">Cum. Closed</th>
+                            <th style="background-color:#e2efda;width:12%">Cum. Net Addition</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -151,7 +151,7 @@
         <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 items-end">
             <div>
                 <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Target Month</label>
-                <select id="offMonth" onchange="renderOfficeTable()" class="ctrl-select font-bold text-purple-950"></select>
+                <select id="offMonth" onchange="renderOfficeTable()" class="ctrl-select font-bold text-purple-950 bg-purple-50"></select>
             </div>
             <div>
                 <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Division</label>
@@ -166,21 +166,18 @@
                 </select>
             </div>
             <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Sort Metric</label>
-                <select id="offSortMetric" onchange="renderOfficeTable()" class="ctrl-select">
-                    <option value="net">Month Net Addition</option>
-                    <option value="open">Month Acc Open</option>
-                    <option value="close">Month Acc Close</option>
-                    <option value="cumNet">Cumulative Net Addition</option>
-                    <option value="cumOpen">Cumulative Acc Open</option>
-                    <option value="cumClose">Cumulative Acc Close</option>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Sort Metric (Month)</label>
+                <select id="offSortMetric" onchange="renderOfficeTable()" class="ctrl-select bg-blue-50 font-bold">
+                    <option value="net">Net Addition</option>
+                    <option value="open">Account Open</option>
+                    <option value="close">Account Close</option>
                 </select>
             </div>
             <div>
                 <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Sort Direction</label>
-                <select id="offSortDir" onchange="renderOfficeTable()" class="ctrl-select">
-                    <option value="desc">Highest to Lowest (Desc)</option>
-                    <option value="asc">Lowest to Highest (Asc)</option>
+                <select id="offSortDir" onchange="renderOfficeTable()" class="ctrl-select font-bold">
+                    <option value="desc">Highest to Lowest (⬇)</option>
+                    <option value="asc">Lowest to Highest (⬆)</option>
                 </select>
             </div>
         </div>
@@ -200,21 +197,21 @@
                     <thead>
                         <tr>
                             <th rowspan="2" style="width:4%">#</th>
-                            <th rowspan="2" style="width:8%">Office ID</th>
-                            <th rowspan="2" style="width:16%;text-align:left">Office Name</th>
+                            <th rowspan="2" style="width:7%">Office ID</th>
+                            <th rowspan="2" style="width:14%;text-align:left">Office Name</th>
                             <th rowspan="2" style="width:5%">Class</th>
-                            <th rowspan="2" style="width:12%">Sub-Division</th>
-                            <th rowspan="2" style="width:10%">Division</th>
-                            <th colspan="3" id="thOffTargetMonth" style="background-color:#d9edf7">Target Month</th>
-                            <th colspan="3" style="background-color:#c6efce">Cumulative (April Till Selected)</th>
+                            <th rowspan="2" style="width:11%">Sub-Division</th>
+                            <th rowspan="2" style="width:9%">Division</th>
+                            <th colspan="3" id="thOffCurrentMonth" style="background-color:#d9edf7">Selected Month Data</th>
+                            <th colspan="3" style="background-color:#e2efda">Cumulative (Till Date)</th>
                         </tr>
                         <tr>
-                            <th style="background-color:#d9edf7">Acc Open</th>
-                            <th style="background-color:#d9edf7">Acc Close</th>
-                            <th style="background-color:#d9edf7">Net Addition</th>
-                            <th style="background-color:#c6efce">Total Open</th>
-                            <th style="background-color:#c6efce">Total Close</th>
-                            <th style="background-color:#c6efce">Total Net Addition</th>
+                            <th style="background-color:#d9edf7;width:8%">A/C Opened</th>
+                            <th style="background-color:#d9edf7;width:8%">A/C Closed</th>
+                            <th style="background-color:#d9edf7;width:8%">Net Addition</th>
+                            <th style="background-color:#e2efda;width:8%">Cum. Opened</th>
+                            <th style="background-color:#e2efda;width:8%">Cum. Closed</th>
+                            <th style="background-color:#e2efda;width:8%">Cum. Net</th>
                         </tr>
                     </thead>
                     <tbody id="officeTableTbody"></tbody>
@@ -230,13 +227,13 @@
 
     <!-- 3. RANKINGS VIEW -->
     <div id="viewRankings" class="space-y-3 hidden">
-        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 items-end">
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 items-end">
             <div>
                 <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Target Month</label>
-                <select id="rnkMonth" onchange="renderRankingsTable()" class="ctrl-select font-bold text-purple-950"></select>
+                <select id="rnkMonth" onchange="renderRankingsTable()" class="ctrl-select font-bold text-purple-950 bg-purple-50"></select>
             </div>
             <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Ranking Type</label>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Ranking Group</label>
                 <select id="rnkType" onchange="renderRankingsTable()" class="ctrl-select font-bold text-purple-950">
                     <option value="top">🏆 Top 20 Offices</option>
                     <option value="bottom">⚠️ Bottom 20 Offices</option>
@@ -244,23 +241,20 @@
             </div>
             <div>
                 <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Rank Metric</label>
-                <select id="rnkMetric" onchange="renderRankingsTable()" class="ctrl-select">
-                    <option value="net">Month Net Addition</option>
-                    <option value="open">Month Acc Open</option>
-                    <option value="close">Month Acc Close</option>
-                    <option value="cumNet">Cumulative Net Addition</option>
-                    <option value="cumOpen">Cumulative Acc Open</option>
-                    <option value="cumClose">Cumulative Acc Close</option>
+                <select id="rnkMetric" onchange="renderRankingsTable()" class="ctrl-select bg-blue-50 font-bold">
+                    <option value="net">Net Addition</option>
+                    <option value="open">Account Open</option>
+                    <option value="close">Account Close</option>
                 </select>
             </div>
             <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Division</label>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Division Filter</label>
                 <select id="rnkDivision" onchange="renderRankingsTable()" class="ctrl-select">
                     <option value="All">All Divisions</option>
                 </select>
             </div>
             <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏢 Class</label>
+                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏢 Class Filter</label>
                 <select id="rnkClass" onchange="renderRankingsTable()" class="ctrl-select">
                     <option value="All">All Classes</option>
                 </select>
@@ -269,7 +263,7 @@
 
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardRankings">
             <div class="report-header px-4 py-2.5 flex justify-between items-center gap-2">
-                <h2 class="font-bold text-sm">⭐ Performance Rankings (Top & Bottom 20)</h2>
+                <h2 class="font-bold text-sm">⭐ Top & Bottom Rankings</h2>
                 <div class="flex gap-1.5">
                     <button onclick='exportTableToExcel("tableRankings","POSB_Rankings.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
                 </div>
@@ -278,22 +272,22 @@
                 <table class="nil-table" id="tableRankings">
                     <thead>
                         <tr>
-                            <th rowspan="2" style="width:4%">Rank</th>
-                            <th rowspan="2" style="width:8%">Office ID</th>
-                            <th rowspan="2" style="width:16%;text-align:left">Office Name</th>
+                            <th rowspan="2" style="width:5%">Rank</th>
+                            <th rowspan="2" style="width:7%">Office ID</th>
+                            <th rowspan="2" style="width:14%;text-align:left">Office Name</th>
                             <th rowspan="2" style="width:5%">Class</th>
-                            <th rowspan="2" style="width:12%">Sub-Division</th>
+                            <th rowspan="2" style="width:11%">Sub-Division</th>
                             <th rowspan="2" style="width:10%">Division</th>
-                            <th colspan="3" id="thRnkTargetMonth" style="background-color:#d9edf7">Target Month</th>
-                            <th colspan="3" style="background-color:#c6efce">Cumulative (April Till Selected)</th>
+                            <th colspan="3" id="thRnkCurrentMonth" style="background-color:#d9edf7">Selected Month Data</th>
+                            <th colspan="3" style="background-color:#e2efda">Cumulative (Till Date)</th>
                         </tr>
                         <tr>
-                            <th style="background-color:#d9edf7">Acc Open</th>
-                            <th style="background-color:#d9edf7">Acc Close</th>
-                            <th style="background-color:#d9edf7">Net Addition</th>
-                            <th style="background-color:#c6efce">Total Open</th>
-                            <th style="background-color:#c6efce">Total Close</th>
-                            <th style="background-color:#c6efce">Total Net Addition</th>
+                            <th style="background-color:#d9edf7;width:8%">A/C Opened</th>
+                            <th style="background-color:#d9edf7;width:8%">A/C Closed</th>
+                            <th style="background-color:#d9edf7;width:8%">Net Addition</th>
+                            <th style="background-color:#e2efda;width:8%">Cum. Opened</th>
+                            <th style="background-color:#e2efda;width:8%">Cum. Closed</th>
+                            <th style="background-color:#e2efda;width:8%">Cum. Net</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -305,9 +299,9 @@
     <!-- 4. MULTI-MONTH COMPARISON VIEW -->
     <div id="viewCompare" class="space-y-3 hidden">
         <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 items-end">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 items-end">
                 <div>
-                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">1. Comparison Level</label>
+                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">1. Aggregation Level</label>
                     <select id="cmpLevel" onchange="onCmpLevelChange()" class="ctrl-select font-bold text-purple-950">
                         <option value="division">Division Wise</option>
                         <option value="subdivision">Sub-Division Wise</option>
@@ -315,14 +309,14 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">2. Division</label>
+                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">2. Division Filter</label>
                     <select id="cmpDivision" onchange="renderCompareTable()" class="ctrl-select">
                         <option value="All">All Divisions</option>
                     </select>
                 </div>
                 <div id="cmpClassWrapper" class="hidden">
                     <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">3. Office Class</label>
-                    <select id="cmpClass" onchange="renderCompareTable()" class="ctrl-select font-bold text-purple-950">
+                    <select id="cmpClass" onchange="renderCompareTable()" class="ctrl-select">
                         <option value="All">All Classes</option>
                     </select>
                 </div>
@@ -331,14 +325,14 @@
             <!-- Months Checkboxes -->
             <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3">
                 <span class="text-[10px] font-bold uppercase text-purple-950">Select Months:</span>
-                <div class="flex flex-wrap gap-1.5 text-[11px] font-bold" id="cmpMonthsContainer">
-                    <!-- Checkboxes populated via JS -->
+                <div class="flex flex-wrap gap-1.5 text-[11px] font-bold" id="cmpMonthWrap">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
             <!-- Metrics Checkboxes -->
             <div class="pt-2 border-t border-slate-100">
-                <span class="text-[10px] font-bold uppercase text-purple-950 block mb-1">Select Comparison Metrics:</span>
+                <span class="text-[10px] font-bold uppercase text-purple-950 block mb-1">Select Metrics to Compare:</span>
                 <div class="flex flex-wrap gap-2 text-[11px] font-semibold">
                     <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
                         <input type="checkbox" name="cmpMetric" value="open" onchange="renderCompareTable()" class="accent-purple-900">
@@ -360,38 +354,69 @@
             <div class="report-header px-4 py-2.5 flex justify-between items-center gap-2">
                 <h2 class="font-bold text-sm">📈 Multi-Month Performance Comparison</h2>
                 <div class="flex gap-1.5">
-                    <button onclick='exportTableToExcel("tableCompare","POSB_MultiMonth_Comparison.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
-                    <button onclick='exportSingleTablePDF("tableCompare","Multi Month Comparison")' class="bg-rose-800 hover:bg-rose-900 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📄 PDF</button>
+                    <button onclick='exportTableToExcel("tableCompare","POSB_MultiMonth_Compare.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
                 </div>
             </div>
             <div class="overflow-x-auto p-2">
                 <table class="nil-table" id="tableCompare">
                     <thead></thead>
                     <tbody></tbody>
-                    <tfoot></tfoot>
                 </table>
             </div>
         </div>
     </div>
 </main>
 
-<script>
-// The Data URL Provided
-const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=997644037&single=true&output=csv";
+<!-- Drilldown Modal -->
+<div id="drillModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
+        <div class="report-header px-4 py-3 flex justify-between items-center">
+            <div>
+                <h3 id="modalTitle" class="font-bold text-base">Sub-Division Breakdown</h3>
+                <p id="modalSubtitle" class="text-[11px] text-purple-200">List of offices (Sorted by Net Addition)</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="closeDrillModal()" class="bg-purple-950 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold cursor-pointer">✕</button>
+            </div>
+        </div>
+        <div class="p-3 overflow-y-auto flex-grow overflow-x-auto">
+            <table class="nil-table" id="tableModalOffices">
+                <thead>
+                    <tr>
+                        <th style="width:4%">#</th>
+                        <th style="width:8%">Office ID</th>
+                        <th style="width:20%;text-align:left">Office Name</th>
+                        <th style="width:6%">Class</th>
+                        <th style="background-color:#d9edf7">A/C Open</th>
+                        <th style="background-color:#d9edf7">A/C Close</th>
+                        <th style="background-color:#d9edf7">Net Addition</th>
+                        <th style="background-color:#e2efda">Cum. Open</th>
+                        <th style="background-color:#e2efda">Cum. Close</th>
+                        <th style="background-color:#e2efda">Cum. Net</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-// Order of financial year months
-const ALL_MONTHS = ["APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "JAN", "FEB", "MAR"];
-const MONTH_NAMES_MAP = { 
-    APR:"April", MAY:"May", JUN:"June", JUL:"July", AUG:"August", SEP:"September", 
-    OCT:"October", NOV:"November", DEC:"December", JAN:"January", FEB:"February", MAR:"March" 
+<footer class="report-header text-purple-200 text-[11px] py-3 px-4 text-center border-t border-purple-950 mt-8">
+    <p>Developed by <span class="text-white font-bold">Kapil Rajput, PA(RO), Regional Office Indore</span></p>
+</footer>
+
+<script>
+// --- CORE DATA CONFIGURATION ---
+const URL_DATA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=997644037&single=true&output=csv";
+const URL_MASTER = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=0&single=true&output=csv";
+
+let globalData = [];
+let availableMonths = [];
+let MONTH_NAMES = {
+    APR: "April", MAY: "May", JUN: "June", JUL: "July", AUG: "August", SEP: "September",
+    OCT: "October", NOV: "November", DEC: "December", JAN: "January", FEB: "February", MAR: "March"
 };
 
-let rawData = [];
-let availableMonths = [];
-let latestDateA1 = "";
-let latestMonthKey = "";
-
-// Theme mappings for divisions (same as previous)
 const divClassMap = {
     "INDORE CITY": "div-bg-indore-city",
     "INDORE MFL": "div-bg-indore-mfl",
@@ -401,59 +426,39 @@ const divClassMap = {
     "SEHORE": "div-bg-sehore",
     "UJJAIN": "div-bg-ujjain",
     "ID DIVISION": "div-bg-id-division",
-    "NOT IN QC LIST": "div-bg-not-in-qc"
+    "OTHER DIVISION": "div-bg-other"
 };
 
-const METRIC_LABELS = {
-    open: "Acc Open",
-    close: "Acc Close",
-    net: "Net Addition"
-};
+const METRIC_LABELS = { open: "A/C Opened", close: "A/C Closed", net: "Net Addition" };
 
-// Pagination for big data
+// Performance Pagination globals
 let currentOfficeDataList = [];
 let currentOfficeRenderIndex = 0;
-const OFFICE_CHUNK_SIZE = 150;
+const OFFICE_CHUNK_SIZE = 100;
 
 async function initApp(){
     try {
-        const res = await fetch(SPREADSHEET_URL);
-        const csvText = await res.text();
-        const wb = XLSX.read(csvText, {type:"string"});
-        const ws = wb.Sheets[wb.SheetNames[0]];
-
-        // Safely determine header row by searching for "OFFICE ID"
-        let headerRowIndex = 0;
-        for(let R = 0; R < 10; ++R) {
-            const cell = ws[XLSX.utils.encode_cell({c:0, r:R})];
-            if(cell && cell.v && String(cell.v).toUpperCase().includes("OFFICE ID")){
-                headerRowIndex = R;
-                break;
-            }
-        }
-
-        // Get A1 date value (e.g. "19" meaning 19th of the latest month)
-        const a1Cell = ws["A1"];
-        if(a1Cell && a1Cell.v) {
-            const a1Str = String(a1Cell.v).trim();
-            const numMatch = a1Str.match(/\d+/);
-            if(numMatch && !a1Str.toUpperCase().includes("OFFICE")) {
-                latestDateA1 = numMatch[0].padStart(2, '0');
-            }
-        }
-
-        const json = XLSX.utils.sheet_to_json(ws, {range: headerRowIndex, defval: ""});
+        document.getElementById("loadingSubtext").textContent = "Fetching Office Master Mapping...";
+        const resMaster = await fetch(URL_MASTER);
+        const masterCsv = await resMaster.text();
         
-        parseAndBuildDataset(json);
-
-        document.getElementById("liveStatus").innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Live Connected`;
+        document.getElementById("loadingSubtext").textContent = "Fetching POSB Operations Data...";
+        const resData = await fetch(URL_DATA);
+        const dataCsv = await resData.text();
         
-        initDropdownOptions();
+        document.getElementById("loadingSubtext").textContent = "Parsing & Merging Records...";
+        processDualCSV(masterCsv, dataCsv);
+        
+        document.getElementById("liveStatus").innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Data Synced`;
+        document.getElementById("liveStatus").classList.replace("bg-emerald-600", "bg-purple-800");
+
+        initDropdowns();
         renderSummaryTable();
     } catch(err){
-        console.error("Error fetching POSB sheet:", err);
+        console.error("Initialization Error:", err);
         document.getElementById("liveStatus").className = "bg-rose-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow";
-        document.getElementById("liveStatus").textContent = "⚠️ Sync Error";
+        document.getElementById("liveStatus").textContent = "⚠️ Fetch Error";
+        document.getElementById("loadingSubtext").textContent = "Failed to load sheets. Please check the URLs or internet connection.";
     } finally {
         const loader = document.getElementById("initialLoader");
         if(loader){
@@ -463,125 +468,193 @@ async function initApp(){
     }
 }
 
-function parseAndBuildDataset(jsonRows){
-    rawData = [];
-    const detectedMonths = new Set();
+function processDualCSV(masterCsv, dataCsv){
+    // 1. PROCESS MASTER MAPPING
+    const wbMaster = XLSX.read(masterCsv, {type: "string"});
+    const masterJsonRaw = XLSX.utils.sheet_to_json(wbMaster.Sheets[wbMaster.SheetNames[0]], {header: 1, defval: ""});
     
-    // Sample the first row to determine available month columns robustly
-    if(jsonRows.length > 0){
-        const keys = Object.keys(jsonRows[0]);
-        ALL_MONTHS.forEach(m => {
-            // Check if there are keys containing the month string
-            const hasMonth = keys.some(k => k.toUpperCase().includes(m));
-            if(hasMonth) detectedMonths.add(m);
+    let mHeadIdx = 0, mHead = [];
+    for(let i=0; i<Math.min(10, masterJsonRaw.length); i++){
+        if(masterJsonRaw[i].some(v => {
+            let str = String(v).toUpperCase().replace(/_/g, " ");
+            return str.includes("OFFICE ID") || str.includes("FACILITY ID");
+        })){
+            mHeadIdx = i;
+            mHead = masterJsonRaw[i].map(v => String(v).trim().toUpperCase());
+            break;
+        }
+    }
+    
+    const masterMap = {};
+    for(let i = mHeadIdx + 1; i < masterJsonRaw.length; i++){
+        const row = masterJsonRaw[i];
+        if(!row || !row.length) continue;
+        const obj = {};
+        mHead.forEach((h, idx) => { obj[h] = row[idx]; });
+        
+        const idKey = mHead.find(k => k.includes("OFFICE ID") || k.includes("FACILITY ID"));
+        if(idKey && obj[idKey]){
+            const id = String(obj[idKey]).trim().replace(/\.0$/, "");
+            masterMap[id] = obj;
+        }
+    }
+
+    // 2. PROCESS POSB DATA
+    const wbData = XLSX.read(dataCsv, {type: "string"});
+    const dataJsonRaw = XLSX.utils.sheet_to_json(wbData.Sheets[wbData.SheetNames[0]], {header: 1, defval: ""});
+    
+    let dHeadIdx = 0, dHead = [];
+    for(let i=0; i<Math.min(15, dataJsonRaw.length); i++){
+        if(dataJsonRaw[i].some(v => {
+            let str = String(v).toUpperCase().replace(/_/g, " ");
+            return str.includes("OFFICE ID") || str.includes("FACILITY ID") || str.includes("OPEN");
+        })){
+            dHeadIdx = i;
+            dHead = dataJsonRaw[i].map(v => String(v).trim());
+            break;
+        }
+    }
+
+    // Capture A1 Date extraction if present
+    const a1Val = String(dataJsonRaw[0][0] || "").trim();
+    const a1Num = a1Val.match(/\d+/) ? a1Val.match(/\d+/)[0] : "";
+    
+    const monthCandidates = ["APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR"];
+    const foundMonths = [];
+    dHead.forEach(h => {
+        const uh = h.toUpperCase();
+        monthCandidates.forEach(m => {
+            if(uh.includes(m) && !foundMonths.includes(m)) {
+                if(uh.includes("OPEN") || uh.includes("CLOSE") || uh.includes("NET") || uh.includes("ADD")) {
+                    foundMonths.push(m);
+                }
+            }
         });
+    });
+    
+    availableMonths = foundMonths;
+    if(availableMonths.length > 0 && a1Num){
+        const latestMonth = availableMonths[availableMonths.length - 1];
+        MONTH_NAMES[latestMonth] = `${MONTH_NAMES[latestMonth]} (Till ${a1Num} ${MONTH_NAMES[latestMonth].substring(0,3)})`;
     }
 
-    availableMonths = ALL_MONTHS.filter(m => detectedMonths.has(m));
-    if(availableMonths.length > 0) {
-        latestMonthKey = availableMonths[availableMonths.length - 1];
-    }
-
-    jsonRows.forEach(r => {
-        const officeId = String(r["Office ID"] || r["office_id"] || r["OFFICE ID"] || "").trim().replace(/\.0$/, "");
-        if(!officeId || officeId.toUpperCase().includes("TOTAL")) return;
-
+    for(let i = dHeadIdx + 1; i < dataJsonRaw.length; i++){
+        const rowArr = dataJsonRaw[i];
+        if(!rowArr || !rowArr.length) continue;
+        
+        const obj = {};
+        dHead.forEach((h, idx) => { obj[h] = rowArr[idx]; });
+        
+        let offId = "";
+        const idKey = dHead.find(k => String(k).toUpperCase().replace(/_/g, " ").includes("OFFICE ID"));
+        if(idKey) offId = String(obj[idKey]).trim().replace(/\.0$/, "");
+        if(!offId) continue;
+        
+        const mData = masterMap[offId] || {};
+        const mKeys = Object.keys(mData);
+        
+        let div = "OTHER DIVISION";
+        let subDiv = "OTHER SD";
+        let offName = obj["Office Name"] || `Office ${offId}`;
+        let offClass = "SO"; // Default fallback
+        
+        if(mKeys.length > 0){
+            const dKey = mKeys.find(k => k.includes("DIVISION") && !k.includes("SUB"));
+            if(dKey && mData[dKey]) div = String(mData[dKey]).trim().toUpperCase();
+            
+            const sdKey = mKeys.find(k => k.includes("SUB DIVISION") || k.includes("SUB-DIVISION"));
+            if(sdKey && mData[sdKey]) subDiv = String(mData[sdKey]).trim().toUpperCase();
+            
+            const nKey = mKeys.find(k => (k.includes("NAME") || k.includes("OFFICE")) && !k.includes("ID") && !k.includes("CLASS"));
+            if(nKey && mData[nKey]) offName = String(mData[nKey]).trim();
+            
+            const cKey = mKeys.find(k => k.includes("CLASS") || k === "TYPE");
+            if(cKey && mData[cKey]) offClass = String(mData[cKey]).trim().toUpperCase();
+        }
+        
         const record = {
-            officeId: officeId,
-            officeName: String(r["Office Name"] || r["OFFICE NAME"] || r["office_name"] || "").trim(),
-            class: String(r["Class"] || r["CLASS"] || r["class"] || "SO").trim().toUpperCase(),
-            subDivision: String(r["Name of Sub Division"] || r["Sub Division"] || r["Sub-Division"] || r["SUB DIVISION"] || "OTHER SD").trim(),
-            division: String(r["Name of Division"] || r["Division"] || r["DIVISION"] || "OTHER DIVISION").trim().toUpperCase(),
-            monthly: {}
+            officeId: offId, officeName: offName, division: div, subDivision: subDiv, officeClass: offClass,
+            monthlyData: {}, cumulative: { open: 0, close: 0, net: 0 }
         };
-
-        const rKeys = Object.keys(r);
         
         availableMonths.forEach(m => {
-            // Find specific column names ignoring case
-            const openKey = rKeys.find(k => k.toUpperCase().includes(m) && k.toUpperCase().includes("OPEN"));
-            const closeKey = rKeys.find(k => k.toUpperCase().includes(m) && k.toUpperCase().includes("CLOSE"));
-            const netKey = rKeys.find(k => k.toUpperCase().includes(m) && (k.toUpperCase().includes("NET") || k.toUpperCase().includes("ADDITION")));
-            
-            record.monthly[m] = {
-                open: Number(r[openKey]) || 0,
-                close: Number(r[closeKey]) || 0,
-                net: Number(r[netKey]) || 0
-            };
+            let op = 0, cl = 0, nt = 0;
+            Object.keys(obj).forEach(k => {
+                const uk = k.toUpperCase();
+                if(uk.includes(m)){
+                    if(uk.includes("OPEN")) op = Number(obj[k]) || 0;
+                    else if(uk.includes("CLOSE")) cl = Number(obj[k]) || 0;
+                    else if(uk.includes("NET") || uk.includes("ADD")) nt = Number(obj[k]) || 0;
+                }
+            });
+            record.monthlyData[m] = { open: op, close: cl, net: nt };
+            record.cumulative.open += op;
+            record.cumulative.close += cl;
+            record.cumulative.net += nt;
         });
-
-        rawData.push(record);
-    });
-}
-
-function getFormattedMonthName(mKey){
-    const baseName = MONTH_NAMES_MAP[mKey];
-    if(mKey === latestMonthKey && latestDateA1){
-        return `${baseName} (01 to ${latestDateA1} ${baseName.substring(0,3)})`;
+        
+        globalData.push(record);
     }
-    return baseName;
 }
 
-function initDropdownOptions(){
+function initDropdowns(){
     const allDivs = new Set();
     const allClasses = new Set();
-
-    rawData.forEach(item => {
-        if(item.division) allDivs.add(item.division);
-        if(item.class) allClasses.add(item.class);
+    globalData.forEach(r => {
+        if(r.division) allDivs.add(r.division);
+        if(r.officeClass) allClasses.add(r.officeClass);
     });
-
-    // Populate Months
-    const monthSelects = ["sumMonth", "offMonth", "rnkMonth"];
-    monthSelects.forEach(id => {
+    
+    const mSelects = ["sumMonth", "offMonth", "rnkMonth"];
+    mSelects.forEach(id => {
         const el = document.getElementById(id);
         if(!el) return;
         el.innerHTML = "";
         availableMonths.forEach(m => {
             const opt = document.createElement("option");
             opt.value = m;
-            opt.textContent = getFormattedMonthName(m);
-            if(m === latestMonthKey) opt.selected = true;
+            opt.textContent = MONTH_NAMES[m] || m;
             el.appendChild(opt);
         });
+        if(availableMonths.length) el.value = availableMonths[availableMonths.length - 1];
     });
 
-    // Multi-month checkboxes
-    const cmpContainer = document.getElementById("cmpMonthsContainer");
-    if(cmpContainer){
-        cmpContainer.innerHTML = availableMonths.map(m => `
+    const cmpWrap = document.getElementById("cmpMonthWrap");
+    if(cmpWrap){
+        cmpWrap.innerHTML = availableMonths.map(m => `
             <label class="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded border border-purple-200 cursor-pointer">
-                <input type="checkbox" name="cmpMonths" value="${m}" checked onchange="renderCompareTable()" class="accent-purple-900"> 
-                <span>${m === latestMonthKey && latestDateA1 ? `${m} (Till ${latestDateA1})` : m}</span>
+                <input type="checkbox" name="cmpMonths" value="${m}" checked onchange="renderCompareTable()" class="accent-purple-900"> ${MONTH_NAMES[m] ? MONTH_NAMES[m].split(' ')[0] : m}
             </label>
         `).join("");
     }
-
-    // Populate Divisions
-    const divSelects = ["sumDivision", "offDivision", "rnkDivision", "cmpDivision"];
-    divSelects.forEach(id => {
+    
+    const dSelects = ["sumDivision", "offDivision", "rnkDivision", "cmpDivision"];
+    dSelects.forEach(id => {
         const el = document.getElementById(id);
         if(!el) return;
         el.innerHTML = '<option value="All">All Divisions</option>';
         [...allDivs].sort().forEach(d => {
             const opt = document.createElement("option");
-            opt.value = opt.textContent = d;
-            el.appendChild(opt);
+            opt.value = d; opt.textContent = d; el.appendChild(opt);
         });
     });
-
-    // Populate Classes
-    const classSelects = ["offClass", "rnkClass", "cmpClass"];
-    classSelects.forEach(id => {
+    
+    const cSelects = ["offClass", "rnkClass", "cmpClass"];
+    cSelects.forEach(id => {
         const el = document.getElementById(id);
         if(!el) return;
         el.innerHTML = '<option value="All">All Classes</option>';
         [...allClasses].sort().forEach(c => {
             const opt = document.createElement("option");
-            opt.value = opt.textContent = c;
-            el.appendChild(opt);
+            opt.value = c; opt.textContent = c; el.appendChild(opt);
         });
     });
+}
+
+function formatNet(val) {
+    if(val > 0) return `<span class="text-emerald-700 font-bold">+${val.toLocaleString("en-IN")}</span>`;
+    if(val < 0) return `<span class="text-rose-700 font-bold">${val.toLocaleString("en-IN")}</span>`;
+    return `<span class="text-slate-500 font-bold">0</span>`;
 }
 
 function switchTab(tabKey){
@@ -597,7 +670,6 @@ function switchTab(tabKey){
         }
         if(view) view.classList.toggle("hidden", !isTarget);
     });
-
     requestAnimationFrame(() => {
         if(tabKey === "summary") renderSummaryTable();
         else if(tabKey === "offices") renderOfficeTable();
@@ -606,446 +678,373 @@ function switchTab(tabKey){
     });
 }
 
-// Compute metrics up to selected month
-function calculateMetricsForEntity(item, targetMonthStr){
-    const stats = { open: 0, close: 0, net: 0, cumOpen: 0, cumClose: 0, cumNet: 0 };
-    
-    // Month stats
-    if(item.monthly[targetMonthStr]){
-        stats.open = item.monthly[targetMonthStr].open;
-        stats.close = item.monthly[targetMonthStr].close;
-        stats.net = item.monthly[targetMonthStr].net;
-    }
-
-    // Cumulative stats
-    for(let i=0; i<availableMonths.length; i++){
-        const m = availableMonths[i];
-        if(item.monthly[m]){
-            stats.cumOpen += item.monthly[m].open;
-            stats.cumClose += item.monthly[m].close;
-            stats.cumNet += item.monthly[m].net;
-        }
-        if(m === targetMonthStr) break;
-    }
-    
-    return { ...item, ...stats };
-}
-
-function filterAndProcessDataset(selDiv, selClass, targetMonthStr){
-    const result = [];
-    for(let i=0; i<rawData.length; i++){
-        const item = rawData[i];
-        if(selDiv !== "All" && item.division !== selDiv) continue;
-        if(selClass !== "All" && item.class !== selClass) continue;
-        
-        result.push(calculateMetricsForEntity(item, targetMonthStr));
-    }
-    return result;
-}
-
-// ----------------- 1. SUMMARY VIEW -----------------
+// ---------------- 1. SUMMARY VIEW ----------------
 function renderSummaryTable(){
     const selM = document.getElementById("sumMonth").value;
     const selDiv = document.getElementById("sumDivision").value;
     const viewType = document.getElementById("sumViewType").value;
-    const isDivisionView = viewType === "division";
+    const isDivOnly = viewType === "division";
+    
+    document.getElementById("thSumCurrentMonth").textContent = `${MONTH_NAMES[selM] || selM} Data`;
+    document.getElementById("thSumSubDiv").classList.toggle("hidden", isDivOnly);
 
-    const filtered = filterAndProcessDataset(selDiv, "All", selM);
-
-    const mLabel = getFormattedMonthName(selM);
-    document.getElementById("sumTableTitle").textContent = `📊 POSB Summary - ${mLabel} ${selDiv !== "All" ? `(${selDiv})` : ""}`;
-    document.getElementById("thSumTargetMonth").textContent = mLabel + " Status";
-
-    const thSubDiv = document.getElementById("thSumSubDiv");
-    if(isDivisionView) thSubDiv.classList.add("hidden");
-    else thSubDiv.classList.remove("hidden");
-
+    let filtered = globalData;
+    if(selDiv !== "All") filtered = filtered.filter(r => r.division === selDiv);
+    
     const grouped = {};
-    filtered.forEach(row => {
-        const groupKey = isDivisionView ? row.division : `${row.division}||${row.subDivision}`;
-        if(!grouped[groupKey]){
-            grouped[groupKey] = { 
-                division: row.division, subDivision: row.subDivision, 
-                open: 0, close: 0, net: 0, cumOpen: 0, cumClose: 0, cumNet: 0 
-            };
+    filtered.forEach(r => {
+        const key = isDivOnly ? r.division : `${r.division}||${r.subDivision}`;
+        if(!grouped[key]){
+            grouped[key] = { div: r.division, sd: r.subDivision, mOpen: 0, mClose: 0, mNet: 0, cOpen: 0, cClose: 0, cNet: 0 };
         }
-        grouped[groupKey].open += row.open;
-        grouped[groupKey].close += row.close;
-        grouped[groupKey].net += row.net;
-        grouped[groupKey].cumOpen += row.cumOpen;
-        grouped[groupKey].cumClose += row.cumClose;
-        grouped[groupKey].cumNet += row.cumNet;
+        grouped[key].mOpen += (r.monthlyData[selM]?.open || 0);
+        grouped[key].mClose += (r.monthlyData[selM]?.close || 0);
+        grouped[key].mNet += (r.monthlyData[selM]?.net || 0);
+        grouped[key].cOpen += r.cumulative.open;
+        grouped[key].cClose += r.cumulative.close;
+        grouped[key].cNet += r.cumulative.net;
     });
 
     const tbody = document.querySelector("#tableSummary tbody");
     const tfoot = document.querySelector("#tableSummary tfoot");
     tbody.innerHTML = ""; tfoot.innerHTML = "";
 
-    const groupList = Object.values(grouped);
-    if(!groupList.length){
-        tbody.innerHTML = `<tr><td colspan="${isDivisionView?7:8}" class="py-8 text-center text-slate-400 font-medium">No records found.</td></tr>`;
+    const list = Object.values(grouped);
+    if(!list.length){
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-slate-400">No records found.</td></tr>`;
         return;
     }
 
-    let gOpen=0, gClose=0, gNet=0, gCumOpen=0, gCumClose=0, gCumNet=0;
-    let htmlBuffer = "";
+    let gMOpen=0, gMClose=0, gMNet=0, gCOpen=0, gCClose=0, gCNet=0;
+    let html = "";
 
-    function formatNumber(num) {
-        return num.toLocaleString("en-IN");
-    }
-    function colorClass(val) {
-        if(val > 0) return "text-emerald-700";
-        if(val < 0) return "text-rose-700";
-        return "text-slate-600";
-    }
-
-    if(isDivisionView){
-        groupList.sort((a,b)=>a.division.localeCompare(b.division)).forEach(item => {
-            gOpen += item.open; gClose += item.close; gNet += item.net;
-            gCumOpen += item.cumOpen; gCumClose += item.cumClose; gCumNet += item.cumNet;
-
-            const divStyle = divClassMap[item.division] || "";
-            htmlBuffer += `
+    if(isDivOnly){
+        list.sort((a,b)=>a.div.localeCompare(b.div)).forEach(item => {
+            gMOpen+=item.mOpen; gMClose+=item.mClose; gMNet+=item.mNet; gCOpen+=item.cOpen; gCClose+=item.cClose; gCNet+=item.cNet;
+            const style = divClassMap[item.div] || divClassMap["OTHER DIVISION"];
+            html += `
                 <tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="${divStyle} text-left font-bold">${item.division}</td>
-                    <td class="font-semibold text-emerald-800">${formatNumber(item.open)}</td>
-                    <td class="font-semibold text-rose-800">${formatNumber(item.close)}</td>
-                    <td class="font-black bg-blue-50 ${colorClass(item.net)}">${formatNumber(item.net)}</td>
-                    <td class="font-bold text-emerald-900 bg-emerald-50">${formatNumber(item.cumOpen)}</td>
-                    <td class="font-bold text-rose-900 bg-rose-50">${formatNumber(item.cumClose)}</td>
-                    <td class="font-black bg-purple-100/70 ${colorClass(item.cumNet)}">${formatNumber(item.cumNet)}</td>
+                    <td class="${style} text-left font-bold clickable-cell" onclick="openDrillModal('${selM}','${item.div}','ALL')">${item.div}</td>
+                    <td class="font-bold">${item.mOpen.toLocaleString("en-IN")}</td>
+                    <td class="font-semibold text-slate-600">${item.mClose.toLocaleString("en-IN")}</td>
+                    <td class="bg-blue-50/40">${formatNet(item.mNet)}</td>
+                    <td class="font-bold bg-slate-50">${item.cOpen.toLocaleString("en-IN")}</td>
+                    <td class="font-semibold text-slate-600 bg-slate-50">${item.cClose.toLocaleString("en-IN")}</td>
+                    <td class="bg-emerald-50/40">${formatNet(item.cNet)}</td>
                 </tr>
             `;
         });
     } else {
-        const divTree = {};
-        groupList.forEach(item => {
-            divTree[item.division] = divTree[item.division] || [];
-            divTree[item.division].push(item);
+        const tree = {};
+        list.forEach(item => {
+            tree[item.div] = tree[item.div] || [];
+            tree[item.div].push(item);
         });
 
-        Object.entries(divTree).forEach(([divName, subList]) => {
-            let divOpen=0, divClose=0, divNet=0, divCumOpen=0, divCumClose=0, divCumNet=0;
-            const divStyle = divClassMap[divName] || "div-bg-indore-city";
+        Object.entries(tree).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([dName, sdList]) => {
+            let dMOpen=0, dMClose=0, dMNet=0, dCOpen=0, dCClose=0, dCNet=0;
+            const style = divClassMap[dName] || divClassMap["OTHER DIVISION"];
+            
+            sdList.sort((a,b)=>a.sd.localeCompare(b.sd)).forEach((sub, idx) => {
+                dMOpen+=sub.mOpen; dMClose+=sub.mClose; dMNet+=sub.mNet; dCOpen+=sub.cOpen; dCClose+=sub.cClose; dCNet+=sub.cNet;
+                gMOpen+=sub.mOpen; gMClose+=sub.mClose; gMNet+=sub.mNet; gCOpen+=sub.cOpen; gCClose+=sub.cClose; gCNet+=sub.cNet;
 
-            subList.forEach((sub, sIdx) => {
-                divOpen += sub.open; divClose += sub.close; divNet += sub.net;
-                divCumOpen += sub.cumOpen; divCumClose += sub.cumClose; divCumNet += sub.cumNet;
-
-                gOpen += sub.open; gClose += sub.close; gNet += sub.net;
-                gCumOpen += sub.cumOpen; gCumClose += sub.cumClose; gCumNet += sub.cumNet;
-
-                const rowSpanCell = sIdx === 0 ? `<td rowspan="${subList.length}" class="${divStyle} text-left font-bold align-middle">${divName}</td>` : "";
-
-                htmlBuffer += `
+                const rs = idx === 0 ? `<td rowspan="${sdList.length}" class="${style} text-left font-bold clickable-cell align-middle" onclick="openDrillModal('${selM}','${dName}','ALL')">${dName}</td>` : "";
+                html += `
                     <tr class="hover:bg-slate-50 border-b border-slate-100">
-                        ${rowSpanCell}
-                        <td class="text-left font-semibold">${sub.subDivision}</td>
-                        <td class="font-semibold text-emerald-800">${formatNumber(sub.open)}</td>
-                        <td class="font-semibold text-rose-800">${formatNumber(sub.close)}</td>
-                        <td class="font-black bg-blue-50 ${colorClass(sub.net)}">${formatNumber(sub.net)}</td>
-                        <td class="font-bold text-emerald-900 bg-emerald-50">${formatNumber(sub.cumOpen)}</td>
-                        <td class="font-bold text-rose-900 bg-rose-50">${formatNumber(sub.cumClose)}</td>
-                        <td class="font-black bg-purple-100/70 ${colorClass(sub.cumNet)}">${formatNumber(sub.cumNet)}</td>
+                        ${rs}
+                        <td class="text-left font-semibold clickable-cell" onclick="openDrillModal('${selM}','${dName}','${sub.sd}')">${sub.sd}</td>
+                        <td class="font-bold">${sub.mOpen.toLocaleString("en-IN")}</td>
+                        <td class="font-semibold text-slate-600">${sub.mClose.toLocaleString("en-IN")}</td>
+                        <td class="bg-blue-50/40">${formatNet(sub.mNet)}</td>
+                        <td class="font-bold bg-slate-50">${sub.cOpen.toLocaleString("en-IN")}</td>
+                        <td class="font-semibold text-slate-600 bg-slate-50">${sub.cClose.toLocaleString("en-IN")}</td>
+                        <td class="bg-emerald-50/40">${formatNet(sub.cNet)}</td>
                     </tr>
                 `;
             });
-
-            htmlBuffer += `
+            html += `
                 <tr class="row-div-total">
-                    <td colspan="2" class="text-left font-bold">${divName} Total</td>
-                    <td>${formatNumber(divOpen)}</td>
-                    <td>${formatNumber(divClose)}</td>
-                    <td class="font-black ${colorClass(divNet)}">${formatNumber(divNet)}</td>
-                    <td>${formatNumber(divCumOpen)}</td>
-                    <td>${formatNumber(divCumClose)}</td>
-                    <td class="font-black ${colorClass(divCumNet)}">${formatNumber(divCumNet)}</td>
+                    <td colspan="2" class="text-left font-bold pl-3">${dName} Total</td>
+                    <td>${dMOpen.toLocaleString("en-IN")}</td>
+                    <td>${dMClose.toLocaleString("en-IN")}</td>
+                    <td>${formatNet(dMNet)}</td>
+                    <td>${dCOpen.toLocaleString("en-IN")}</td>
+                    <td>${dCClose.toLocaleString("en-IN")}</td>
+                    <td>${formatNet(dCNet)}</td>
                 </tr>
             `;
         });
     }
 
-    tbody.innerHTML = htmlBuffer;
-
+    tbody.innerHTML = html;
     tfoot.innerHTML = `
         <tr class="row-grand-total">
-            <td colspan="${isDivisionView?1:2}" class="text-left pl-4">Grand Total</td>
-            <td>${formatNumber(gOpen)}</td>
-            <td>${formatNumber(gClose)}</td>
-            <td class="font-black ${colorClass(gNet)}">${formatNumber(gNet)}</td>
-            <td>${formatNumber(gCumOpen)}</td>
-            <td>${formatNumber(gCumClose)}</td>
-            <td class="font-black ${colorClass(gCumNet)}">${formatNumber(gCumNet)}</td>
+            <td colspan="${isDivOnly?1:2}" class="text-left pl-3 uppercase">Grand Total</td>
+            <td>${gMOpen.toLocaleString("en-IN")}</td>
+            <td>${gMClose.toLocaleString("en-IN")}</td>
+            <td>${formatNet(gMNet)}</td>
+            <td>${gCOpen.toLocaleString("en-IN")}</td>
+            <td>${gCClose.toLocaleString("en-IN")}</td>
+            <td>${formatNet(gCNet)}</td>
         </tr>
     `;
 }
 
-// ----------------- 2. DETAILED OFFICE VIEW -----------------
+// ---------------- 2. DETAILED OFFICE VIEW ----------------
 function renderOfficeTable(){
     const selM = document.getElementById("offMonth").value;
     const selDiv = document.getElementById("offDivision").value;
     const selClass = document.getElementById("offClass").value;
-    const sortMetric = document.getElementById("offSortMetric").value;
-    const sortDir = document.getElementById("offSortDir").value;
+    const metric = document.getElementById("offSortMetric").value; // open, close, net
+    const dir = document.getElementById("offSortDir").value; // desc, asc
+    
+    document.getElementById("thOffCurrentMonth").textContent = `${MONTH_NAMES[selM] || selM} Data`;
 
-    const filtered = filterAndProcessDataset(selDiv, selClass, selM);
+    let filtered = globalData;
+    if(selDiv !== "All") filtered = filtered.filter(r => r.division === selDiv);
+    if(selClass !== "All") filtered = filtered.filter(r => r.officeClass === selClass);
 
     filtered.sort((a,b) => {
-        const valA = a[sortMetric] || 0;
-        const valB = b[sortMetric] || 0;
-        return sortDir === "desc" ? valB - valA : valA - valB;
+        let vA = a.monthlyData[selM] ? a.monthlyData[selM][metric] : 0;
+        let vB = b.monthlyData[selM] ? b.monthlyData[selM][metric] : 0;
+        return dir === "desc" ? vB - vA : vA - vB;
     });
 
     currentOfficeDataList = filtered;
     currentOfficeRenderIndex = 0;
-
-    const badge = document.getElementById("officeRecordCountBadge");
-    if(badge) badge.textContent = `Total Offices: ${filtered.length.toLocaleString("en-IN")}`;
+    document.getElementById("officeRecordCountBadge").textContent = `Total Offices: ${filtered.length}`;
+    document.getElementById("officeTableTbody").innerHTML = "";
     
-    document.getElementById("thOffTargetMonth").textContent = getFormattedMonthName(selM) + " Status";
-
-    const tbody = document.getElementById("officeTableTbody");
-    tbody.innerHTML = "";
-
     if(!filtered.length){
-        tbody.innerHTML = '<tr><td colspan="12" class="py-8 text-center text-slate-400 font-medium">No matching post offices found.</td></tr>';
+        document.getElementById("officeTableTbody").innerHTML = '<tr><td colspan="12" class="py-8 text-slate-400">No matching post offices found.</td></tr>';
         document.getElementById("officeLoadMoreWrap").classList.add("hidden");
         return;
     }
-
-    appendOfficeChunk();
+    appendOfficeChunk(selM);
 }
 
-function appendOfficeChunk(){
+function appendOfficeChunk(selM){
     const tbody = document.getElementById("officeTableTbody");
-    const nextChunk = currentOfficeDataList.slice(currentOfficeRenderIndex, currentOfficeRenderIndex + OFFICE_CHUNK_SIZE);
+    const chunk = currentOfficeDataList.slice(currentOfficeRenderIndex, currentOfficeRenderIndex + OFFICE_CHUNK_SIZE);
     
-    function formatNumber(num) { return num.toLocaleString("en-IN"); }
-    function colorClass(val) { return val > 0 ? "text-emerald-700" : val < 0 ? "text-rose-700" : "text-slate-600"; }
-
-    let chunkHtml = "";
-    for(let i = 0; i < nextChunk.length; i++){
-        const item = nextChunk[i];
-        const idx = currentOfficeRenderIndex + i + 1;
-        chunkHtml += `
+    let html = "";
+    chunk.forEach((item, i) => {
+        const md = item.monthlyData[selM] || {open:0, close:0, net:0};
+        html += `
             <tr class="hover:bg-slate-50 border-b border-slate-100">
-                <td>${idx}</td>
+                <td>${currentOfficeRenderIndex + i + 1}</td>
                 <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
                 <td class="text-left font-semibold">${item.officeName}</td>
-                <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold text-[10px]">${item.class}</span></td>
+                <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold text-[10px]">${item.officeClass}</span></td>
                 <td>${item.subDivision}</td>
                 <td>${item.division}</td>
-                <td class="font-semibold text-emerald-800">${formatNumber(item.open)}</td>
-                <td class="font-semibold text-rose-800">${formatNumber(item.close)}</td>
-                <td class="font-black bg-blue-50/50 ${colorClass(item.net)}">${formatNumber(item.net)}</td>
-                <td class="font-bold text-emerald-900 bg-emerald-50">${formatNumber(item.cumOpen)}</td>
-                <td class="font-bold text-rose-900 bg-rose-50">${formatNumber(item.cumClose)}</td>
-                <td class="font-black bg-purple-100/70 ${colorClass(item.cumNet)}">${formatNumber(item.cumNet)}</td>
+                <td class="font-bold text-slate-800 bg-blue-50/20">${md.open.toLocaleString("en-IN")}</td>
+                <td class="font-semibold text-slate-500 bg-blue-50/20">${md.close.toLocaleString("en-IN")}</td>
+                <td class="bg-blue-50/40">${formatNet(md.net)}</td>
+                <td class="font-bold text-slate-800 bg-emerald-50/20">${item.cumulative.open.toLocaleString("en-IN")}</td>
+                <td class="font-semibold text-slate-500 bg-emerald-50/20">${item.cumulative.close.toLocaleString("en-IN")}</td>
+                <td class="bg-emerald-50/40">${formatNet(item.cumulative.net)}</td>
             </tr>
         `;
-    }
-
-    tbody.insertAdjacentHTML("beforeend", chunkHtml);
-    currentOfficeRenderIndex += nextChunk.length;
-
-    const loadMoreBtnWrap = document.getElementById("officeLoadMoreWrap");
-    if(currentOfficeRenderIndex < currentOfficeDataList.length){
-        loadMoreBtnWrap.classList.remove("hidden");
-    } else {
-        loadMoreBtnWrap.classList.add("hidden");
-    }
+    });
+    tbody.insertAdjacentHTML("beforeend", html);
+    currentOfficeRenderIndex += chunk.length;
+    document.getElementById("officeLoadMoreWrap").classList.toggle("hidden", currentOfficeRenderIndex >= currentOfficeDataList.length);
 }
+function loadMoreOffices(){ appendOfficeChunk(document.getElementById("offMonth").value); }
 
-function loadMoreOffices(){ appendOfficeChunk(); }
-
-// ----------------- 3. RANKINGS VIEW -----------------
+// ---------------- 3. RANKINGS VIEW ----------------
 function renderRankingsTable(){
     const selM = document.getElementById("rnkMonth").value;
-    const rnkType = document.getElementById("rnkType").value;
-    const rnkMetric = document.getElementById("rnkMetric").value;
+    const rType = document.getElementById("rnkType").value;
+    const metric = document.getElementById("rnkMetric").value;
     const selDiv = document.getElementById("rnkDivision").value;
     const selClass = document.getElementById("rnkClass").value;
 
-    const filtered = filterAndProcessDataset(selDiv, selClass, selM);
+    document.getElementById("thRnkCurrentMonth").textContent = `${MONTH_NAMES[selM] || selM} Data`;
 
-    if(rnkType === "top"){
-        filtered.sort((a,b) => (b[rnkMetric]||0) - (a[rnkMetric]||0));
-    } else {
-        filtered.sort((a,b) => (a[rnkMetric]||0) - (b[rnkMetric]||0));
-    }
+    let filtered = globalData;
+    if(selDiv !== "All") filtered = filtered.filter(r => r.division === selDiv);
+    if(selClass !== "All") filtered = filtered.filter(r => r.officeClass === selClass);
 
-    document.getElementById("thRnkTargetMonth").textContent = getFormattedMonthName(selM) + " Status";
+    filtered.sort((a,b) => {
+        let vA = a.monthlyData[selM] ? a.monthlyData[selM][metric] : 0;
+        let vB = b.monthlyData[selM] ? b.monthlyData[selM][metric] : 0;
+        return rType === "top" ? vB - vA : vA - vB;
+    });
 
     const sliced = filtered.slice(0, 20);
     const tbody = document.querySelector("#tableRankings tbody");
-
     if(!sliced.length){
-        tbody.innerHTML = '<tr><td colspan="12" class="py-8 text-center text-slate-400 font-medium">No ranking records available.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="py-8 text-slate-400">No ranking records.</td></tr>';
         return;
     }
 
-    function formatNumber(num) { return num.toLocaleString("en-IN"); }
-    function colorClass(val) { return val > 0 ? "text-emerald-700" : val < 0 ? "text-rose-700" : "text-slate-600"; }
-
-    tbody.innerHTML = sliced.map((item, idx) => `
-        <tr class="hover:bg-slate-50 border-b border-slate-100">
-            <td class="font-extrabold ${rnkType==='top'?'text-emerald-800':'text-rose-800'}">#${idx+1}</td>
-            <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
-            <td class="text-left font-semibold">${item.officeName}</td>
-            <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold text-[10px]">${item.class}</span></td>
-            <td>${item.subDivision}</td>
-            <td>${item.division}</td>
-            <td class="font-semibold text-emerald-800">${formatNumber(item.open)}</td>
-            <td class="font-semibold text-rose-800">${formatNumber(item.close)}</td>
-            <td class="font-black bg-blue-50/50 ${colorClass(item.net)}">${formatNumber(item.net)}</td>
-            <td class="font-bold text-emerald-900 bg-emerald-50">${formatNumber(item.cumOpen)}</td>
-            <td class="font-bold text-rose-900 bg-rose-50">${formatNumber(item.cumClose)}</td>
-            <td class="font-black bg-purple-100/70 ${colorClass(item.cumNet)}">${formatNumber(item.cumNet)}</td>
-        </tr>
-    `).join("");
+    tbody.innerHTML = sliced.map((item, i) => {
+        const md = item.monthlyData[selM] || {open:0, close:0, net:0};
+        return `
+            <tr class="hover:bg-slate-50 border-b border-slate-100">
+                <td class="font-extrabold ${rType==='top'?'text-emerald-800':'text-rose-800'}">#${i+1}</td>
+                <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
+                <td class="text-left font-semibold">${item.officeName}</td>
+                <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold text-[10px]">${item.officeClass}</span></td>
+                <td>${item.subDivision}</td>
+                <td>${item.division}</td>
+                <td class="font-bold bg-blue-50/20">${md.open.toLocaleString("en-IN")}</td>
+                <td class="font-semibold bg-blue-50/20 text-slate-500">${md.close.toLocaleString("en-IN")}</td>
+                <td class="bg-blue-50/40">${formatNet(md.net)}</td>
+                <td class="font-bold bg-emerald-50/20">${item.cumulative.open.toLocaleString("en-IN")}</td>
+                <td class="font-semibold bg-emerald-50/20 text-slate-500">${item.cumulative.close.toLocaleString("en-IN")}</td>
+                <td class="bg-emerald-50/40">${formatNet(item.cumulative.net)}</td>
+            </tr>
+        `;
+    }).join("");
 }
 
-// ----------------- 4. MULTI-MONTH COMPARISON -----------------
+// ---------------- 4. COMPARE VIEW ----------------
 function onCmpLevelChange(){
-    const level = document.getElementById("cmpLevel").value;
-    const classWrap = document.getElementById("cmpClassWrapper");
-    if(level === "office") classWrap.classList.remove("hidden");
-    else classWrap.classList.add("hidden");
+    const lvl = document.getElementById("cmpLevel").value;
+    document.getElementById("cmpClassWrapper").classList.toggle("hidden", lvl !== "office");
     renderCompareTable();
 }
 
 function renderCompareTable(){
-    const level = document.getElementById("cmpLevel").value;
+    const lvl = document.getElementById("cmpLevel").value;
     const selDiv = document.getElementById("cmpDivision").value;
-    const selClass = level === "office" ? document.getElementById("cmpClass").value : "All";
-
-    const checkedMonths = Array.from(document.querySelectorAll("input[name='cmpMonths']:checked")).map(cb => cb.value);
-    const checkedMetrics = Array.from(document.querySelectorAll("input[name='cmpMetric']:checked")).map(cb => cb.value);
-
+    const selClass = lvl === "office" ? document.getElementById("cmpClass").value : "All";
+    
+    const cMonths = Array.from(document.querySelectorAll("input[name='cmpMonths']:checked")).map(cb => cb.value);
+    const cMetrics = Array.from(document.querySelectorAll("input[name='cmpMetric']:checked")).map(cb => cb.value);
+    
     const thead = document.querySelector("#tableCompare thead");
     const tbody = document.querySelector("#tableCompare tbody");
-    const tfoot = document.querySelector("#tableCompare tfoot");
-    thead.innerHTML = ""; tbody.innerHTML = ""; tfoot.innerHTML = "";
-
-    if(!checkedMonths.length || !checkedMetrics.length){
-        tbody.innerHTML = '<tr><td class="py-8 text-center text-rose-600 font-bold">Please select at least one month and one metric.</td></tr>';
+    thead.innerHTML = ""; tbody.innerHTML = "";
+    
+    if(!cMonths.length || !cMetrics.length){
+        tbody.innerHTML = '<tr><td class="py-8 text-rose-600 font-bold">Select at least one month and one metric.</td></tr>';
         return;
     }
 
     let tr1 = '<tr><th rowspan="2" style="width:15%">Entity Name</th>';
-    if(level === "office") tr1 = '<tr><th rowspan="2" style="width:7%">Office ID</th><th rowspan="2" style="width:14%;text-align:left">Office Name</th><th rowspan="2" style="width:5%">Class</th><th rowspan="2" style="width:8%">Division</th>';
-    else if(level === "subdivision") tr1 = '<tr><th rowspan="2" style="width:10%">Division</th><th rowspan="2" style="width:12%;text-align:left">Sub-Division</th>';
+    if(lvl === "office") tr1 = '<tr><th rowspan="2" style="width:7%">Office ID</th><th rowspan="2" style="width:14%;text-align:left">Office Name</th><th rowspan="2" style="width:5%">Class</th><th rowspan="2" style="width:10%">Division</th>';
+    else if(lvl === "subdivision") tr1 = '<tr><th rowspan="2" style="width:10%">Division</th><th rowspan="2" style="width:14%;text-align:left">Sub-Division</th>';
 
-    checkedMetrics.forEach(mKey => {
-        tr1 += `<th colspan="${checkedMonths.length}" style="background-color:#e1d5e7;border-left:2px solid #707070">${METRIC_LABELS[mKey]}</th>`;
+    cMetrics.forEach(mKey => {
+        tr1 += `<th colspan="${cMonths.length}" style="background-color:#e1d5e7;border-left:2px solid #707070">${METRIC_LABELS[mKey]}</th>`;
     });
     tr1 += '</tr>';
 
     let tr2 = '<tr>';
-    checkedMetrics.forEach(() => {
-        checkedMonths.forEach(m => {
-            tr2 += `<th style="background-color:#fce4d6">${m}</th>`;
-        });
+    cMetrics.forEach(() => {
+        cMonths.forEach(m => { tr2 += `<th style="background-color:#fce4d6">${m}</th>`; });
     });
     tr2 += '</tr>';
-
     thead.innerHTML = tr1 + tr2;
 
-    const filtered = rawData.filter(item => {
-        if(selDiv !== "All" && item.division !== selDiv) return false;
-        if(selClass !== "All" && item.class !== selClass) return false;
-        return true;
-    });
+    let filtered = globalData;
+    if(selDiv !== "All") filtered = filtered.filter(r => r.division === selDiv);
+    if(lvl === "office" && selClass !== "All") filtered = filtered.filter(r => r.officeClass === selClass);
 
-    const aggregated = {};
-    filtered.forEach(row => {
-        let entityKey = level === "division" ? row.division : level === "subdivision" ? `${row.division}||${row.subDivision}` : row.officeId;
-        
-        if(!aggregated[entityKey]){
-            aggregated[entityKey] = {
-                officeId: row.officeId, officeName: row.officeName, class: row.class,
-                division: row.division, subDivision: row.subDivision,
-                months: {}
-            };
-            checkedMonths.forEach(m => {
-                aggregated[entityKey].months[m] = { open: 0, close: 0, net: 0 };
-            });
+    const map = {};
+    filtered.forEach(r => {
+        const k = lvl === "division" ? r.division : lvl === "subdivision" ? `${r.division}||${r.subDivision}` : r.officeId;
+        if(!map[k]){
+            map[k] = { officeId: r.officeId, officeName: r.officeName, officeClass: r.officeClass, div: r.division, sd: r.subDivision, data: {} };
+            cMonths.forEach(m => map[k].data[m] = {open:0, close:0, net:0});
         }
-
-        checkedMonths.forEach(m => {
-            if(row.monthly[m]){
-                aggregated[entityKey].months[m].open += row.monthly[m].open;
-                aggregated[entityKey].months[m].close += row.monthly[m].close;
-                aggregated[entityKey].months[m].net += row.monthly[m].net;
+        cMonths.forEach(m => {
+            const md = r.monthlyData[m];
+            if(md){
+                map[k].data[m].open += md.open;
+                map[k].data[m].close += md.close;
+                map[k].data[m].net += md.net;
             }
         });
     });
 
-    const keysList = Object.keys(aggregated).sort();
-
-    if(!keysList.length){
-        tbody.innerHTML = '<tr><td colspan="30" class="py-8 text-center text-slate-400 font-medium">No matching records found.</td></tr>';
+    const keys = Object.keys(map).sort();
+    if(!keys.length){
+        tbody.innerHTML = '<tr><td colspan="20" class="py-8 text-slate-400">No records found.</td></tr>';
         return;
     }
 
-    function colorClass(val, mKey) {
-        if(mKey !== "net") return "font-semibold";
-        return val > 0 ? "font-bold text-emerald-700" : val < 0 ? "font-bold text-rose-700" : "font-bold text-slate-600";
-    }
-
-    tbody.innerHTML = keysList.map(key => {
-        const item = aggregated[key];
+    tbody.innerHTML = keys.map(k => {
+        const item = map[k];
         let nameCells = "";
-
-        if(level === "office"){
-            nameCells = `<td class="font-mono font-bold text-purple-950">${item.officeId}</td><td class="text-left font-semibold">${item.officeName}</td><td><span class="bg-purple-100 text-purple-950 px-1 py-0.5 rounded font-bold text-[10px]">${item.class}</span></td><td>${item.division}</td>`;
-        } else if(level === "subdivision"){
-            nameCells = `<td class="font-bold">${item.division}</td><td class="text-left font-semibold">${item.subDivision}</td>`;
+        if(lvl === "office"){
+            nameCells = `<td class="font-mono font-bold text-purple-950">${item.officeId}</td><td class="text-left font-semibold">${item.officeName}</td><td><span class="bg-purple-100 text-purple-950 px-1 py-0.5 rounded text-[10px] font-bold">${item.officeClass}</span></td><td>${item.div}</td>`;
+        } else if(lvl === "subdivision"){
+            nameCells = `<td class="font-bold">${item.div}</td><td class="text-left font-semibold">${item.sd}</td>`;
         } else {
-            nameCells = `<td class="font-bold text-left px-3">${item.division}</td>`;
+            nameCells = `<td class="font-bold text-left px-3">${item.div}</td>`;
         }
 
         let metricCells = "";
-        checkedMetrics.forEach(mKey => {
-            checkedMonths.forEach(m => {
-                const val = item.months[m][mKey];
-                metricCells += `<td class="${colorClass(val, mKey)}">${val.toLocaleString("en-IN")}</td>`;
+        cMetrics.forEach(metric => {
+            cMonths.forEach(m => {
+                const val = item.data[m][metric] || 0;
+                if(metric === "net") metricCells += `<td>${formatNet(val)}</td>`;
+                else metricCells += `<td class="font-bold">${val.toLocaleString("en-IN")}</td>`;
             });
         });
-
         return `<tr class="hover:bg-slate-50 border-b border-slate-100">${nameCells}${metricCells}</tr>`;
     }).join("");
 }
 
-// ----------------- GENERIC EXPORTS -----------------
+// ---------------- DRILLDOWN MODAL ----------------
+function openDrillModal(month, division, sd){
+    let filtered = globalData.filter(r => {
+        if(division !== "ALL" && r.division !== division) return false;
+        if(sd !== "ALL" && r.subDivision !== sd) return false;
+        return true;
+    });
+    filtered.sort((a,b) => (b.monthlyData[month]?.net || 0) - (a.monthlyData[month]?.net || 0));
+
+    document.getElementById("modalTitle").textContent = `Sub-Division: ${sd==="ALL" ? division : `${sd} (${division})`}`;
+    document.getElementById("modalSubtitle").textContent = `Month: ${MONTH_NAMES[month]} | Total ${filtered.length} offices.`;
+
+    document.querySelector("#tableModalOffices tbody").innerHTML = filtered.map((item, i) => {
+        const md = item.monthlyData[month] || {open:0, close:0, net:0};
+        return `
+        <tr class="hover:bg-slate-50 border-b border-slate-100">
+            <td>${i+1}</td>
+            <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
+            <td class="text-left font-semibold">${item.officeName}</td>
+            <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold">${item.officeClass}</span></td>
+            <td class="font-bold bg-blue-50/20">${md.open.toLocaleString("en-IN")}</td>
+            <td class="font-semibold bg-blue-50/20 text-slate-500">${md.close.toLocaleString("en-IN")}</td>
+            <td class="bg-blue-50/40">${formatNet(md.net)}</td>
+            <td class="font-bold bg-emerald-50/20">${item.cumulative.open.toLocaleString("en-IN")}</td>
+            <td class="font-semibold bg-emerald-50/20 text-slate-500">${item.cumulative.close.toLocaleString("en-IN")}</td>
+            <td class="bg-emerald-50/40">${formatNet(item.cumulative.net)}</td>
+        </tr>
+    `}).join("");
+    document.getElementById("drillModal").classList.remove("hidden");
+}
+function closeDrillModal(){ document.getElementById("drillModal").classList.add("hidden"); }
+
+// ---------------- EXPORTS ----------------
 function exportTableToExcel(tableId, fileName){
     const tbl = document.getElementById(tableId);
     if(!tbl) return alert("Table not found.");
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(tbl), "Report");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(tbl), "Dashboard_Data");
     XLSX.writeFile(wb, fileName);
 }
-
 function exportSingleTablePDF(tableId, title){
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF("l", "mm", "a4");
     doc.setFillColor(44, 12, 56);
     doc.rect(0, 0, 297, 16, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11); doc.setFont("helvetica", "bold");
     doc.text("POSB PERFORMANCE DASHBOARD", 12, 10);
-    doc.setFontSize(8.5);
-    doc.text(title.toUpperCase(), 12, 14);
-
+    doc.setFontSize(8.5); doc.text(title.toUpperCase(), 12, 14);
     doc.autoTable({
-        html: "#" + tableId,
-        startY: 19,
-        margin: { top: 19, right: 8, bottom: 10, left: 8 },
-        theme: "grid",
-        styles: { fontSize: 7, cellPadding: 1.5, valign: "middle", lineColor: [180,180,180], lineWidth: 0.15 },
-        headStyles: { fillColor: [247, 202, 172], textColor: [0,0,0], fontStyle: "bold", halign: "center" },
-        footStyles: { fillColor: [247, 202, 172], textColor: [0,0,0], fontStyle: "bold" }
+        html: "#" + tableId, startY: 19, margin: { top: 19, right: 8, bottom: 10, left: 8 },
+        theme: "grid", styles: { fontSize: 7, cellPadding: 1.5, valign: "middle", lineColor: [180,180,180], lineWidth: 0.15 },
+        headStyles: { fillColor: [247, 202, 172], textColor: [0,0,0], fontStyle: "bold", halign: "center" }
     });
     doc.save(title.replace(/\s+/g, "_") + ".pdf");
 }
