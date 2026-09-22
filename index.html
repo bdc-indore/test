@@ -3413,6 +3413,69 @@ function buildPosbDivNameIndex(){
         if(key) posbDivNameIndex[d][key]=o;
     });
 }
+
+// ---- Known old-name / renamed-office corrections for POSB matching ----
+// Left side: posbNormName() of the name as it appears in the uploaded "Product Wise
+// A/C Report" (old / colloquial name). Right side tells the matcher which current
+// master office that data actually belongs to. Add new rows here whenever another
+// renamed office shows up as UNMATCHED.
+//   exact: try this normalized name first (fast path)
+//   contains: if "exact" isn't found, pick the one master office (in the same
+//             division) whose normalized name contains ALL of these fragments
+const POSB_NAME_ALIASES={
+    "BIAORA":               {exact:"BIAORAMDG",            contains:["BIAORA","MDG"]},              // Biaora S.O -> Biaora MDG
+    "MHOW":                 {exact:"MHOWMDG",               contains:["MHOW","MDG"]},                 // Mhow S.O -> Mhow MDG
+    "RATLAMRLYCOLONY":      {exact:"RATLAMNEWCOLLECTORATE", contains:["RATLAM","COLLECTORATE"]},      // Ratlam Rly Colony S.O -> Ratlam New Collectorate (merged)
+    "SHRIRAMTEKRIMANDSAUR": {exact:"MANDSAURCOLLECTORATE",  contains:["MANDSAUR","COLLECTORATE"]},    // Shri Ramtekri Mandsaur S.O -> Mandsaur Collectorate S.O
+    "RADIOCOLONYINDORE":    {exact:"PALDA",                 contains:["PALDA"]},                      // Radio Colony Indore S.O -> Indore Palda S.O
+    "INDOREKHAJRANA":       {exact:"INDOREKANADIAROAD",     contains:["KANADIA"]},                    // Indore Khajrana S.O -> Indore Kanadia Road S.O (merged)
+    "KHAJRANA":             {exact:"INDOREKANADIAROAD",     contains:["KANADIA"]}                     // (in case "Indore" prefix is missing in the file)
+};
+// Explicit Office-ID overrides — used when the name alone is too ambiguous/different
+// to rely on text matching at all.
+const POSB_ID_OVERRIDES={
+    "AUDYOGIKKSHETRAJAORA": "23660865"   // Audyogik Kshetra Jaora -> Office ID 23660865
+};
+// Rows whose name matches these fragments are not real S.O data for this report —
+// drop them silently (not matched, not shown as UNMATCHED either).
+const POSB_EXCLUDE_CONTAINS=["NODELDELIVERYCENTER","NODALDELIVERYCENTER"];
+
+function posbIsExcludedName(key){
+    return POSB_EXCLUDE_CONTAINS.some(frag=>key.includes(frag));
+}
+// Resolves a raw uploaded row name to a master office, using (in order):
+// 1) explicit Office-ID override, 2) exact name match in the file's own division,
+// 3) the known-alias table (exact guess, then "contains" fuzzy match) — first within
+// the file's own division, then (so a wrong/blank division pick doesn't cause a miss)
+// across every division in the master list.
+function posbResolveOffice(key, division){
+    const idOverride=POSB_ID_OVERRIDES[key];
+    if(idOverride && sbOfficesByOfficeId[idOverride]) return sbOfficesByOfficeId[idOverride];
+
+    const divIdx=(posbDivNameIndex&&posbDivNameIndex[division])||{};
+    if(divIdx[key]) return divIdx[key];
+
+    const alias=POSB_NAME_ALIASES[key];
+    const tryIndex=idx=>{
+        if(!idx) return null;
+        if(alias){
+            if(idx[alias.exact]) return idx[alias.exact];
+            const hitKey=Object.keys(idx).find(k=>alias.contains.every(frag=>k.includes(frag)));
+            if(hitKey) return idx[hitKey];
+        }
+        return null;
+    };
+    let hit=tryIndex(divIdx);
+    if(hit) return hit;
+    if(posbDivNameIndex){
+        for(const d in posbDivNameIndex){
+            if(d===division) continue;
+            hit=tryIndex(posbDivNameIndex[d]);
+            if(hit) return hit;
+        }
+    }
+    return null;
+}
 function posbDivisionOptions(){
     return [...new Set(Object.values(sbOfficesByOfficeId).map(o=>o.division))].filter(Boolean).sort();
 }
@@ -3464,7 +3527,8 @@ function parsePosbWorkbook(buf, fileName, division){
               certIssued=num(row[idx.certIssued]), certDischarged=num(row[idx.certDischarged]),
               rdOpen=num(row[idx.rdOpen]), rdClose=num(row[idx.rdClose]);
         const key=posbNormName(nameRaw);
-        const off=divIdx[key];
+        if(posbIsExcludedName(key)) continue;
+        const off=divIdx[key] || posbResolveOffice(key, division);
         const rec={rawName:nameRaw, sbOpen, sbClose, certIssued, certDischarged, rdOpen, rdClose};
         if(off) matched.push({office:off, ...rec}); else unmatched.push(rec);
     }
