@@ -3404,6 +3404,10 @@ function posbNormName(s){
         .replace(/\bB\.?\s*O\.?\b/g,"")
         .replace(/[^A-Z0-9]/g,"");
 }
+// Class values in the master sheet are sometimes typed as "H.O"/"S.O"/"B.O" (with
+// dots/spaces) instead of "HO"/"SO"/"BO" — normalize before comparing so a stray dot
+// never silently drops an office (this was why some H.O rows were going missing).
+function posbClassNorm(c){ return String(c||"").toUpperCase().replace(/[^A-Z]/g,""); }
 function buildPosbDivNameIndex(){
     posbDivNameIndex={};
     Object.values(sbOfficesByOfficeId).forEach(o=>{
@@ -3464,8 +3468,16 @@ function posbResolveOffice(key, division){
     }
 
     // 2) known-alias table (renamed / reordered office names) — exact guess first,
-    //    then fuzzy "contains" — searched across every division.
-    const alias=POSB_NAME_ALIASES[key];
+    //    then fuzzy "contains" — searched across every division. The report-side key
+    //    doesn't always carry the same city prefix as the alias table (e.g. a file
+    //    may just say "Radio Colony S.O" instead of "Radio Colony Indore S.O"), so if
+    //    there's no exact alias-table entry for this key, look for an alias entry
+    //    whose key is a substring match either way before giving up.
+    let alias=POSB_NAME_ALIASES[key];
+    if(!alias){
+        const aliasKey=Object.keys(POSB_NAME_ALIASES).find(ak=>ak.length>=4 && key.length>=4 && (key.includes(ak)||ak.includes(key)));
+        if(aliasKey) alias=POSB_NAME_ALIASES[aliasKey];
+    }
     if(alias && posbDivNameIndex){
         for(const d in posbDivNameIndex){
             const idx=posbDivNameIndex[d];
@@ -3635,7 +3647,7 @@ async function calculatePosbReport(){
         // which includes H.O rows like "Dewas H.O" / "Dhar H.O"). Every SO/HO in the
         // master list gets a row — if a file had no data for it, it is taken as 0 (not
         // dropped). BO offices are never expected here, so they are not added.
-        posbCombinedList=Object.values(sbOfficesByOfficeId).filter(o=>o.class==="SO"||o.class==="HO").map(o=>{
+        posbCombinedList=Object.values(sbOfficesByOfficeId).filter(o=>{ const c=posbClassNorm(o.class); return c==="SO"||c==="HO"; }).map(o=>{
             const r=byOffice[o.officeId];
             const sbOpen=r?r.sbOpen:0, sbClose=r?r.sbClose:0,
                   certIssued=r?r.certIssued:0, certDischarged=r?r.certDischarged:0,
