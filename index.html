@@ -789,6 +789,35 @@
                     <p id="posbKpiRdNet" class="text-xl font-extrabold text-blue-900">0</p>
                 </div>
             </div>
+
+            <!-- Reconciliation strip: proves nothing was silently dropped -->
+            <div id="posbReconBar" class="hidden mx-4 md:mx-6 mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 font-semibold text-slate-700">
+                    <span>📄 Rows read: <b id="posbReconRows">0</b></span>
+                    <span>✅ Matched to master: <b id="posbReconMatched" class="text-emerald-800">0</b></span>
+                    <span id="posbReconUnmatchedWrap">⚠️ Unmatched: <b id="posbReconUnmatched" class="text-rose-700">0</b></span>
+                    <span>Σ A/c Opened in file: <b id="posbReconOpenFile">0</b></span>
+                    <span>Σ A/c Opened on portal: <b id="posbReconOpenPortal">0</b></span>
+                    <span id="posbReconMismatchTag" class="hidden bg-rose-600 text-white px-2 py-0.5 rounded-full font-bold">⚠️ Mismatch — see Unmatched Offices below</span>
+                    <span id="posbReconOkTag" class="hidden bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">✅ File total = Portal total</span>
+                </div>
+            </div>
+
+            <!-- Unmatched Offices — every row from the uploaded file whose name could not be
+                 mapped to a master SO/HO office. These names ARE included in the Grand Total
+                 (under "NOT IN QC LIST") but not in their real Division's total — fix by
+                 checking the exact spelling here and telling me the correct master office name. -->
+            <div id="posbUnmatchedPanel" class="hidden mx-4 md:mx-6 mb-4 rounded-xl border-2 border-rose-300 bg-rose-50 overflow-hidden">
+                <div class="px-4 py-2 bg-rose-100 border-b border-rose-200">
+                    <p class="text-xs font-extrabold text-rose-900">⚠️ Unmatched Offices — these file rows could not be matched to any master SO/HO office by name, so they are NOT counted in their real Division's total (only in the Grand Total, under "NOT IN QC LIST"). Check the spelling below.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="nil-table" id="tablePosbUnmatched">
+                        <thead><tr><th>#</th><th>File</th><th style="text-align:left">Raw Name in File</th><th>SB Open</th><th>SB Close</th><th>Cert Issued</th><th>Cert Discharged</th><th>RD Open</th><th>RD Close</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Division / Sub-Division View (toggle) -->
@@ -3628,21 +3657,26 @@ async function calculatePosbReport(){
     await posbTick();
     try{
         if(!posbDivNameIndex) buildPosbDivNameIndex();
-        const byOffice={}, unmatchedList=[];
+        const byOffice={}; const unmatchedArr=[];
+        let totalFileRows=0, totalFileOpen=0;
         filled.forEach(({s})=>{
-            // No division is asked for — every S.O name is matched against the FULL
-            // master list (all divisions); the correct division comes from the
-            // matched master office itself.
-            const parsed=parsePosbWorkbook(s.buffer, s.fileName, null);
+            // Match within the file's own (filename-guessed) Division first — this avoids
+            // two same-named offices in different Divisions stealing each other's data —
+            // then fall back to the full master list so a wrong/blank guess still works.
+            const hintDiv=guessPosbDivision(s.fileName);
+            const parsed=parsePosbWorkbook(s.buffer, s.fileName, hintDiv);
             if(parsed.error){ alert(`${s.fileName}: ${parsed.error}`); return; }
+            totalFileRows+=parsed.totalRows;
             parsed.matched.forEach(m=>{
+                totalFileOpen+=m.sbOpen;
                 const oid=m.office.officeId;
                 if(!byOffice[oid]) byOffice[oid]={office:m.office, sbOpen:0, sbClose:0, certIssued:0, certDischarged:0, rdOpen:0, rdClose:0};
                 const b=byOffice[oid];
                 b.sbOpen+=m.sbOpen; b.sbClose+=m.sbClose; b.certIssued+=m.certIssued; b.certDischarged+=m.certDischarged; b.rdOpen+=m.rdOpen; b.rdClose+=m.rdClose;
             });
-            parsed.unmatched.forEach(u=>unmatchedList.push({...u, fileName:s.fileName}));
+            parsed.unmatched.forEach(u=>{ totalFileOpen+=u.sbOpen; unmatchedArr.push({...u, fileName:s.fileName}); });
         });
+        const unmatchedList=unmatchedArr;
         // Only SO and HO offices belong in this report (matches the full Excel total,
         // which includes H.O rows like "Dewas H.O" / "Dhar H.O"). Every SO/HO in the
         // master list gets a row — if a file had no data for it, it is taken as 0 (not
@@ -3659,6 +3693,20 @@ async function calculatePosbReport(){
                 rdOpen, rdClose, rdNet:rdOpen-rdClose
             };
         });
+        // Safety net: a report row can match a real master office whose Class field
+        // isn't (or isn't spelt) SO/HO — that data must still reach the total instead
+        // of silently vanishing, so any matched office missed by the SO/HO filter above
+        // is still added here (labelled with its actual class, so it's visible, not hidden).
+        const includedIds=new Set(posbCombinedList.map(r=>r.officeId));
+        Object.values(byOffice).forEach(r=>{
+            if(includedIds.has(r.office.officeId)) return;
+            posbCombinedList.push({
+                officeId:r.office.officeId, boId:(r.office.ids&&r.office.ids[0])||"", name:r.office.name+" (class: "+(r.office.class||"?")+")", class:r.office.class||"?", sd:r.office.sd, division:r.office.division,
+                sbOpen:r.sbOpen, sbClose:r.sbClose, sbNet:r.sbOpen-r.sbClose,
+                certIssued:r.certIssued, certDischarged:r.certDischarged, certNet:r.certIssued-r.certDischarged,
+                rdOpen:r.rdOpen, rdClose:r.rdClose, rdNet:r.rdOpen-r.rdClose
+            });
+        });
         unmatchedList.forEach((u,i)=>{
             posbCombinedList.push({officeId:"UNMATCHED-"+i, boId:"", name:u.rawName+" (UNMATCHED)", class:"BO", sd:"UNKNOWN SD", division:"NOT IN QC LIST",
                 sbOpen:u.sbOpen, sbClose:u.sbClose, sbNet:u.sbOpen-u.sbClose,
@@ -3670,10 +3718,36 @@ async function calculatePosbReport(){
         initPosbDropdowns();
         renderPosbSubDivisionTable(); renderPosbDivisionTable(); renderPosbOfficeTable();
         updatePosbKpis();
-        if(unmatchedList.length) alert(`${unmatchedList.length} office name(s) could not be matched to the master list (name spelling mismatch). They are shown as UNMATCHED rows in the Office Wise table below.`);
+        renderPosbReconciliation(totalFileRows, totalFileOpen, Object.keys(byOffice).length, unmatchedList);
     }catch(err){ console.error(err); alert("Calculation failed: "+err.message); }
     if(btn) btn.disabled=false;
     updatePosbCalcHint();
+}
+
+function renderPosbReconciliation(totalFileRows, totalFileOpen, matchedOfficeCount, unmatchedList){
+    const bar=document.getElementById("posbReconBar");
+    if(bar) bar.classList.remove("hidden");
+    const portalOpen=posbCombinedList.reduce((s,r)=>s+r.sbOpen,0);
+    const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=(typeof v==="number"?v.toLocaleString("en-IN"):v); };
+    set("posbReconRows",totalFileRows);
+    set("posbReconMatched",matchedOfficeCount);
+    set("posbReconUnmatched",unmatchedList.length);
+    set("posbReconOpenFile",totalFileOpen);
+    set("posbReconOpenPortal",portalOpen);
+    const mismatchTag=document.getElementById("posbReconMismatchTag"), okTag=document.getElementById("posbReconOkTag");
+    const matches=totalFileOpen===portalOpen;
+    if(mismatchTag) mismatchTag.classList.toggle("hidden", matches);
+    if(okTag) okTag.classList.toggle("hidden", !matches);
+
+    const panel=document.getElementById("posbUnmatchedPanel"), tbody=document.querySelector("#tablePosbUnmatched tbody");
+    if(panel && tbody){
+        if(!unmatchedList.length){ panel.classList.add("hidden"); tbody.innerHTML=""; }
+        else{
+            panel.classList.remove("hidden");
+            tbody.innerHTML=unmatchedList.map((u,i)=>`<tr class="hover:bg-rose-100/50"><td>${i+1}</td><td class="text-[11px]">${u.fileName}</td><td style="text-align:left" class="font-semibold text-rose-900">${u.rawName}</td><td>${u.sbOpen.toLocaleString("en-IN")}</td><td>${u.sbClose.toLocaleString("en-IN")}</td><td>${u.certIssued.toLocaleString("en-IN")}</td><td>${u.certDischarged.toLocaleString("en-IN")}</td><td>${u.rdOpen.toLocaleString("en-IN")}</td><td>${u.rdClose.toLocaleString("en-IN")}</td></tr>`).join("");
+        }
+    }
+    if(unmatchedList.length) alert(`${unmatchedList.length} office name(s) could not be matched to the master list (name spelling mismatch). See the "Unmatched Offices" panel above the Division view — their data is still in the Grand Total, but NOT in their real Division's total until the spelling is fixed.`);
 }
 
 function updatePosbKpis(){
@@ -3710,6 +3784,8 @@ function resetPosbData(){
     renderPosbUploadSlots();
     renderPosbSubDivisionTable(); renderPosbDivisionTable(); renderPosbOfficeTable();
     updatePosbKpis(); updatePosbCalcHint();
+    const bar=document.getElementById("posbReconBar"); if(bar) bar.classList.add("hidden");
+    const panel=document.getElementById("posbUnmatchedPanel"); if(panel) panel.classList.add("hidden");
 }
 
 function renderPosbSubDivisionTable(){
