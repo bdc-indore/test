@@ -747,7 +747,7 @@
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h3 class="font-extrabold text-lg flex items-center gap-2">📮 POSB Product Wise A/c Calculator</h3>
-                    <p class="text-xs text-purple-200">Upload SO-wise "Product Wise A/C Report" Excel (one file per Division) — select the Division for each file, then press Calculate. Office ID / BO ID / Sub-Division mapping uses the same SB Master list.</p>
+                    <p class="text-xs text-purple-200">Upload SO-wise "Product Wise A/C Report" Excel files, then press Calculate — Office ID / Division / Sub-Division are matched automatically against the SB Master list, no need to pick a Division.</p>
                 </div>
                 <div class="flex items-center flex-wrap gap-2">
                     <span id="posbMasterStatus" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Using SB Master</span>
@@ -3429,7 +3429,9 @@ const POSB_NAME_ALIASES={
     "SHRIRAMTEKRIMANDSAUR": {exact:"MANDSAURCOLLECTORATE",  contains:["MANDSAUR","COLLECTORATE"]},    // Shri Ramtekri Mandsaur S.O -> Mandsaur Collectorate S.O
     "RADIOCOLONYINDORE":    {exact:"PALDA",                 contains:["PALDA"]},                      // Radio Colony Indore S.O -> Indore Palda S.O
     "INDOREKHAJRANA":       {exact:"INDOREKANADIAROAD",     contains:["KANADIA"]},                    // Indore Khajrana S.O -> Indore Kanadia Road S.O (merged)
-    "KHAJRANA":             {exact:"INDOREKANADIAROAD",     contains:["KANADIA"]}                     // (in case "Indore" prefix is missing in the file)
+    "KHAJRANA":             {exact:"INDOREKANADIAROAD",     contains:["KANADIA"]},                    // (in case "Indore" prefix is missing in the file)
+    "BAGHANANEEMUCH":       {exact:"NEEMUCHBAGHANA",        contains:["BAGHANA","NEEMUCH"]},          // Baghana Neemuch S.O <-> Neemuch Baghana S.O — same office, name order differs
+    "NEEMUCHBAGHANA":       {exact:"BAGHANANEEMUCH",        contains:["BAGHANA","NEEMUCH"]}
 };
 // Explicit Office-ID overrides — used when the name alone is too ambiguous/different
 // to rely on text matching at all.
@@ -3452,26 +3454,27 @@ function posbResolveOffice(key, division){
     const idOverride=POSB_ID_OVERRIDES[key];
     if(idOverride && sbOfficesByOfficeId[idOverride]) return sbOfficesByOfficeId[idOverride];
 
-    const divIdx=(posbDivNameIndex&&posbDivNameIndex[division])||{};
-    if(divIdx[key]) return divIdx[key];
-
-    const alias=POSB_NAME_ALIASES[key];
-    const tryIndex=idx=>{
-        if(!idx) return null;
-        if(alias){
-            if(idx[alias.exact]) return idx[alias.exact];
-            const hitKey=Object.keys(idx).find(k=>alias.contains.every(frag=>k.includes(frag)));
-            if(hitKey) return idx[hitKey];
-        }
-        return null;
-    };
-    let hit=tryIndex(divIdx);
-    if(hit) return hit;
+    // 1) exact normalized-name match — check the given division first (if any),
+    //    then every division in the master list (no division needs to be picked).
+    if(division && posbDivNameIndex && posbDivNameIndex[division] && posbDivNameIndex[division][key]) return posbDivNameIndex[division][key];
     if(posbDivNameIndex){
         for(const d in posbDivNameIndex){
-            if(d===division) continue;
-            hit=tryIndex(posbDivNameIndex[d]);
-            if(hit) return hit;
+            if(posbDivNameIndex[d][key]) return posbDivNameIndex[d][key];
+        }
+    }
+
+    // 2) known-alias table (renamed / reordered office names) — exact guess first,
+    //    then fuzzy "contains" — searched across every division.
+    const alias=POSB_NAME_ALIASES[key];
+    if(alias && posbDivNameIndex){
+        for(const d in posbDivNameIndex){
+            const idx=posbDivNameIndex[d];
+            if(idx[alias.exact]) return idx[alias.exact];
+        }
+        for(const d in posbDivNameIndex){
+            const idx=posbDivNameIndex[d];
+            const hitKey=Object.keys(idx).find(k=>alias.contains.every(frag=>k.includes(frag)));
+            if(hitKey) return idx[hitKey];
         }
     }
     return null;
@@ -3513,7 +3516,6 @@ function parsePosbWorkbook(buf, fileName, division){
     if(!hdr) return {error:'"NAME" column not found in this file', fileName};
     const {headerRowIdx, nameIdx, numCols}=hdr;
     const idx={sbOpen:numCols[0], sbClose:numCols[1], certIssued:numCols[3], certDischarged:numCols[4], rdOpen:numCols[6], rdClose:numCols[7]};
-    const divIdx=(posbDivNameIndex&&posbDivNameIndex[division])||{};
     const matched=[], unmatched=[];
     const num=v=>{ const n=parseFloat(String(v).replace(/,/g,"")); return isNaN(n)?0:n; };
     let totalRows=0;
@@ -3528,7 +3530,7 @@ function parsePosbWorkbook(buf, fileName, division){
               rdOpen=num(row[idx.rdOpen]), rdClose=num(row[idx.rdClose]);
         const key=posbNormName(nameRaw);
         if(posbIsExcludedName(key)) continue;
-        const off=divIdx[key] || posbResolveOffice(key, division);
+        const off=posbResolveOffice(key, division);
         const rec={rawName:nameRaw, sbOpen, sbClose, certIssued, certDischarged, rdOpen, rdClose};
         if(off) matched.push({office:off, ...rec}); else unmatched.push(rec);
     }
@@ -3538,23 +3540,14 @@ function parsePosbWorkbook(buf, fileName, division){
 function renderPosbUploadSlots(){
     const c=document.getElementById("posbUploadsContainer");
     if(!c) return;
-    const divOpts=posbDivisionOptions();
     c.innerHTML=Array.from({length:POSB_SLOT_COUNT},(_,i)=>`
         <div id="posbDropZone_${i}" class="flex items-center gap-2 bg-white border border-purple-200 border-dashed rounded-lg px-3 py-2 transition">
             <div class="flex-1 min-w-0"><div id="posbName${i}" class="text-xs font-bold text-slate-600 truncate">📁 File ${i+1}</div></div>
-            <select id="posbDivSel${i}" onchange="onPosbSlotDivChange(${i})" class="border border-slate-300 rounded-lg text-[11px] px-1.5 py-1 bg-slate-50 font-semibold outline-none">
-                <option value="">-- Division --</option>${divOpts.map(d=>`<option value="${d}">${d}</option>`).join("")}
-            </select>
             <label class="cursor-pointer bg-purple-700 hover:bg-purple-800 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg shadow shrink-0">📤 Upload<input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handlePosbFileUpload(${i}, this)"></label>
             <span id="posbStatus${i}" class="text-[11px] text-slate-500 font-medium min-w-[130px] text-right leading-tight">Pending</span>
             <button id="posbClear${i}" onclick="clearPosbSlot(${i})" title="Remove this file" class="hidden text-slate-400 hover:text-rose-700 font-bold text-sm leading-none px-1 cursor-pointer">✕</button>
         </div>`).join("");
     updatePosbSlotStatuses();
-}
-function onPosbSlotDivChange(i){
-    const sel=document.getElementById(`posbDivSel${i}`), slot=posbSlotData[i];
-    if(slot) slot.division=sel.value;
-    markPosbStale();
 }
 function handlePosbFileUpload(i, inputEl){ const file=inputEl.files[0]; inputEl.value=""; if(file) addPosbFiles([file], i); }
 function handlePosbBulkSelect(inputEl){ const files=Array.from(inputEl.files||[]); inputEl.value=""; if(files.length) addPosbFiles(files, null); }
@@ -3580,9 +3573,7 @@ async function doAddPosbFiles(files, startSlot){
     for(let k=0;k<use.length;k++){
         const slot=targets[k];
         setMsg(slot,"🔄 Reading..."); await posbTick();
-        const guessedDiv=guessPosbDivision(use[k].name);
-        posbSlotData[slot]={fileName:use[k].name, buffer:buffers[k], division:guessedDiv};
-        const selEl=document.getElementById(`posbDivSel${slot}`); if(selEl) selEl.value=guessedDiv;
+        posbSlotData[slot]={fileName:use[k].name, buffer:buffers[k]};
     }
     updatePosbSlotStatuses();
     markPosbStale();
@@ -3590,18 +3581,16 @@ async function doAddPosbFiles(files, startSlot){
 }
 function clearPosbSlot(i){
     posbSlotData[i]=null;
-    const selEl=document.getElementById(`posbDivSel${i}`); if(selEl) selEl.value="";
     updatePosbSlotStatuses(); markPosbStale();
 }
 function updatePosbSlotStatuses(){
     posbSlotData.forEach((slot,i)=>{
-        const el=document.getElementById(`posbStatus${i}`), nm=document.getElementById(`posbName${i}`), clr=document.getElementById(`posbClear${i}`), selEl=document.getElementById(`posbDivSel${i}`);
+        const el=document.getElementById(`posbStatus${i}`), nm=document.getElementById(`posbName${i}`), clr=document.getElementById(`posbClear${i}`);
         if(!el) return;
         const base="text-[11px] font-medium min-w-[130px] text-right leading-tight ";
         if(!slot){ el.className=base+"text-slate-500"; el.textContent="Pending"; if(nm){nm.textContent=`📁 File ${i+1}`; nm.title="";} if(clr) clr.classList.add("hidden"); return; }
         if(nm){ nm.textContent="📄 "+slot.fileName; nm.title=slot.fileName; }
         if(clr) clr.classList.remove("hidden");
-        if(selEl && slot.division && !selEl.value) selEl.value=slot.division;
         el.className=base+"text-emerald-800 font-bold"; el.textContent="✅ Ready";
     });
 }
@@ -3622,11 +3611,6 @@ async function calculatePosbReport(){
     if(!Object.keys(sbOfficesByOfficeId).length) return alert("Master list is not loaded yet. Please wait for 'SB Master Synced' and try again.");
     const filled=posbSlotData.map((s,i)=>({s,i})).filter(x=>x.s);
     if(!filled.length) return alert("Please upload Product Wise A/C Report files first.");
-    for(const {s,i} of filled){
-        const selEl=document.getElementById(`posbDivSel${i}`);
-        s.division=(selEl&&selEl.value)||s.division;
-        if(!s.division) return alert(`Please select a Division for file "${s.fileName}".`);
-    }
     const btn=document.getElementById("posbBtnCalculate");
     if(btn){ btn.disabled=true; btn.textContent="🔄 Calculating..."; }
     await posbTick();
@@ -3634,7 +3618,10 @@ async function calculatePosbReport(){
         if(!posbDivNameIndex) buildPosbDivNameIndex();
         const byOffice={}, unmatchedList=[];
         filled.forEach(({s})=>{
-            const parsed=parsePosbWorkbook(s.buffer, s.fileName, s.division);
+            // No division is asked for — every S.O name is matched against the FULL
+            // master list (all divisions); the correct division comes from the
+            // matched master office itself.
+            const parsed=parsePosbWorkbook(s.buffer, s.fileName, null);
             if(parsed.error){ alert(`${s.fileName}: ${parsed.error}`); return; }
             parsed.matched.forEach(m=>{
                 const oid=m.office.officeId;
@@ -3642,7 +3629,7 @@ async function calculatePosbReport(){
                 const b=byOffice[oid];
                 b.sbOpen+=m.sbOpen; b.sbClose+=m.sbClose; b.certIssued+=m.certIssued; b.certDischarged+=m.certDischarged; b.rdOpen+=m.rdOpen; b.rdClose+=m.rdClose;
             });
-            parsed.unmatched.forEach(u=>unmatchedList.push({...u, division:s.division, fileName:s.fileName}));
+            parsed.unmatched.forEach(u=>unmatchedList.push({...u, fileName:s.fileName}));
         });
         // Only SO offices belong in this report. Every SO in the master list gets a row —
         // if a file had no data for it, it is taken as 0 (not dropped). BO offices are
@@ -3660,7 +3647,7 @@ async function calculatePosbReport(){
             };
         });
         unmatchedList.forEach((u,i)=>{
-            posbCombinedList.push({officeId:"UNMATCHED-"+i, boId:"", name:u.rawName+" (UNMATCHED)", class:"BO", sd:"UNKNOWN SD", division:u.division||"NOT IN QC LIST",
+            posbCombinedList.push({officeId:"UNMATCHED-"+i, boId:"", name:u.rawName+" (UNMATCHED)", class:"BO", sd:"UNKNOWN SD", division:"NOT IN QC LIST",
                 sbOpen:u.sbOpen, sbClose:u.sbClose, sbNet:u.sbOpen-u.sbClose,
                 certIssued:u.certIssued, certDischarged:u.certDischarged, certNet:u.certIssued-u.certDischarged,
                 rdOpen:u.rdOpen, rdClose:u.rdClose, rdNet:u.rdOpen-u.rdClose});
