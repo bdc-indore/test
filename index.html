@@ -3631,10 +3631,11 @@ async function calculatePosbReport(){
             });
             parsed.unmatched.forEach(u=>unmatchedList.push({...u, fileName:s.fileName}));
         });
-        // Only SO offices belong in this report. Every SO in the master list gets a row —
-        // if a file had no data for it, it is taken as 0 (not dropped). BO offices are
-        // never expected here, so they are not added.
-        posbCombinedList=Object.values(sbOfficesByOfficeId).filter(o=>o.class==="SO").map(o=>{
+        // Only SO and HO offices belong in this report (matches the full Excel total,
+        // which includes H.O rows like "Dewas H.O" / "Dhar H.O"). Every SO/HO in the
+        // master list gets a row — if a file had no data for it, it is taken as 0 (not
+        // dropped). BO offices are never expected here, so they are not added.
+        posbCombinedList=Object.values(sbOfficesByOfficeId).filter(o=>o.class==="SO"||o.class==="HO").map(o=>{
             const r=byOffice[o.officeId];
             const sbOpen=r?r.sbOpen:0, sbClose=r?r.sbClose:0,
                   certIssued=r?r.certIssued:0, certDischarged=r?r.certDischarged:0,
