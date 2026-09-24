@@ -675,6 +675,7 @@
                         <option value="sub">Sub Division View</option>
                         <option value="div">Division View</option>
                     </select>
+                    <button onclick="sbExportViewPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📄 PDF</button>
                     <button onclick="sbExportViewJPEG()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                 </div>
             </div>
@@ -699,7 +700,10 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div><h3 class="font-extrabold text-lg flex items-center gap-2">🏤 Office Wise View</h3><p class="text-xs text-purple-200">Filter by Division / Sub Division / Class — leave blank for full region</p></div>
-                <button onclick='exportTableJPEG("sbOfficeTableContainer","SB_Office_Wise")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                <div class="flex items-center gap-2">
+                    <button onclick='exportTableSinglePagePDF("sbOfficeTableContainer","SB Office Wise Report")' class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📄 PDF</button>
+                    <button onclick='exportTableJPEG("sbOfficeTableContainer","SB_Office_Wise")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                </div>
             </div>
             <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-100">
                 <div>
@@ -831,6 +835,7 @@
                         <option value="sub">Sub Division View</option>
                         <option value="div">Division View</option>
                     </select>
+                    <button onclick="posbExportViewPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📄 PDF</button>
                     <button onclick="posbExportViewJPEG()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                 </div>
             </div>
@@ -855,7 +860,10 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div><h3 class="font-extrabold text-lg flex items-center gap-2">🏤 Office Wise View</h3><p class="text-xs text-purple-200">Filter by Division / Sub Division / Class — leave blank for full region</p></div>
-                <button onclick='exportTableJPEG("posbOfficeTableContainer","POSB_Office_Wise")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                <div class="flex items-center gap-2">
+                    <button onclick='exportTableSinglePagePDF("posbOfficeTableContainer","POSB Office Wise Report")' class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📄 PDF</button>
+                    <button onclick='exportTableJPEG("posbOfficeTableContainer","POSB_Office_Wise")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                </div>
             </div>
             <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-100">
                 <div>
@@ -2899,6 +2907,40 @@ function sbExportViewJPEG(){
 function posbExportViewJPEG(){
     const isSub=(document.getElementById("posbViewTypeSelect")||{}).value!=="div";
     exportTableJPEG(isSub?"posbSubDivisionViewContainer":"posbDivisionViewContainer", isSub?"POSB_SubDivision_Wise_Report":"POSB_Division_Wise_Report");
+}
+// Captures the WHOLE table (any width/height) as one image and drops it onto a single
+// PDF page sized to fit that image exactly — no autoTable pagination, so a wide/tall
+// SB or POSB table never spills onto a 2nd page; it always prints as one clean sheet.
+function exportTableSinglePagePDF(containerId, title){
+    const el=document.getElementById(containerId);
+    if(!el){ alert("Nothing to export yet — please Calculate first."); return; }
+    html2canvas(el,{scale:2, backgroundColor:"#ffffff"}).then(canvas=>{
+        const {jsPDF}=window.jspdf;
+        const pxToMm=px=>px*25.4/(96*2); // canvas was rendered at 2x scale
+        const headerH=16, marginX=6, marginTop=headerH+3, marginBottom=6;
+        const maxContentWmm=1200; // generous ceiling so very wide tables still stay legible
+        let contentWmm=Math.min(maxContentWmm, pxToMm(canvas.width));
+        let contentHmm=contentWmm*(canvas.height/canvas.width);
+        const pageW=contentWmm+marginX*2, pageH=contentHmm+marginTop+marginBottom;
+        const doc=new jsPDF({orientation:pageW>=pageH?"l":"p", unit:"mm", format:[pageW,pageH]});
+        doc.setFillColor(44,12,56); doc.rect(0,0,pageW,headerH,"F");
+        doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(12);
+        doc.text("DEPARTMENT OF POSTS — REGIONAL OFFICE INDORE", marginX, headerH*0.42);
+        doc.setFont("helvetica","normal"); doc.setFontSize(9);
+        doc.text(title.toUpperCase(), marginX, headerH*0.8);
+        doc.text("Report Date: "+getReportPrevDate(), pageW-marginX, headerH*0.6, {align:"right"});
+        doc.addImage(canvas.toDataURL("image/jpeg",0.95),"JPEG", marginX, marginTop, contentWmm, contentHmm);
+        doc.save(title.replace(/\s+/g,"_")+"_Report.pdf");
+        logGeneratedReport(title+" (PDF)", ()=>exportTableSinglePagePDF(containerId,title));
+    });
+}
+function sbExportViewPDF(){
+    const isSub=(document.getElementById("sbViewTypeSelect")||{}).value!=="div";
+    exportTableSinglePagePDF(isSub?"sbSubDivisionViewContainer":"sbDivisionViewContainer", isSub?"SB Sub-Division Wise Report":"SB Division Wise Report");
+}
+function posbExportViewPDF(){
+    const isSub=(document.getElementById("posbViewTypeSelect")||{}).value!=="div";
+    exportTableSinglePagePDF(isSub?"posbSubDivisionViewContainer":"posbDivisionViewContainer", isSub?"POSB Sub-Division Wise Report":"POSB Division Wise Report");
 }
 function exportSingleTableToPDF(t,e){const{jsPDF:o}=window.jspdf,n=new o("l","mm","a4");n.setFillColor(44,12,56),n.rect(0,0,297,18,"F"),n.setTextColor(255,255,255),n.setFontSize(12),n.setFont("helvetica","bold"),n.text("DEPARTMENT OF POSTS — REGIONAL OFFICE INDORE",12,11),n.setFontSize(9),n.setFont("helvetica","normal"),n.text(e.toUpperCase(),12,16),n.text("Report Date: "+getReportPrevDate(),247,12),n.autoTable({html:"#"+t,startY:22,margin:{top:22,right:10,bottom:14,left:10},theme:"grid",styles:{fontSize:8,cellPadding:2.5,valign:"middle",lineColor:[180,180,180],lineWidth:.2},headStyles:{fillColor:[247,202,172],textColor:[0,0,0],fontStyle:"bold",halign:"center"},footStyles:{fillColor:[247,202,172],textColor:[0,0,0],fontStyle:"bold"}}),n.save(e.replace(/\s+/g,"_")+"_Report.pdf"),logGeneratedReport(e+" (PDF)",()=>exportSingleTableToPDF(t,e))}
 const exportAllToPDF=()=>exportSingleTableToPDF("tableDivisionSummary","Summary Report");
