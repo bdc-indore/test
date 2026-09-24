@@ -670,11 +670,12 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div><h3 class="font-extrabold text-lg flex items-center gap-2">🗂️ Division / Sub-Division View</h3><p class="text-xs text-purple-200">Account Open / Close / Net + Offices Open&gt;10 &amp; Net Addition&gt;10 analysis</p></div>
-                <div>
+                <div class="flex items-center gap-2">
                     <select id="sbViewTypeSelect" onchange="toggleSbViewType()" class="bg-purple-950 text-white text-xs font-bold px-3 py-2 rounded-lg border border-purple-700 outline-none cursor-pointer">
                         <option value="sub">Sub Division View</option>
                         <option value="div">Division View</option>
                     </select>
+                    <button onclick="sbExportViewJPEG()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                 </div>
             </div>
             <div id="sbSubDivisionViewContainer" class="overflow-x-auto p-3">
@@ -698,6 +699,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div><h3 class="font-extrabold text-lg flex items-center gap-2">🏤 Office Wise View</h3><p class="text-xs text-purple-200">Filter by Division / Sub Division / Class — leave blank for full region</p></div>
+                <button onclick='exportTableJPEG("sbOfficeTableContainer","SB_Office_Wise")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
             </div>
             <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-100">
                 <div>
@@ -713,7 +715,7 @@
                     <select id="sbOfficeFilterClass" onchange="renderSbOfficeTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none focus:border-purple-800"><option value="All">All Classes</option></select>
                 </div>
             </div>
-            <div class="overflow-x-auto p-3">
+            <div id="sbOfficeTableContainer" class="overflow-x-auto p-3">
                 <table class="nil-table" id="tableSbOffice">
                     <thead><tr><th style="width:5%">#</th><th style="width:12%">Office ID</th><th style="width:10%">BO ID/SOL ID</th><th style="width:20%;text-align:left">Office Name</th><th style="width:7%">Class</th><th style="width:14%">Sub-Division</th><th style="width:12%">Division</th><th style="width:10%">Account Open</th><th style="width:10%">Account Close</th><th style="width:10%">Net Addition</th></tr></thead>
                     <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr></tbody>
@@ -824,11 +826,12 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div><h3 class="font-extrabold text-lg flex items-center gap-2">🗂️ Division / Sub-Division View</h3><p class="text-xs text-purple-200">SB / Certificates / RD — Opened, Closed &amp; Net, Division / Sub-Division wise</p></div>
-                <div>
+                <div class="flex items-center gap-2">
                     <select id="posbViewTypeSelect" onchange="togglePosbViewType()" class="bg-purple-950 text-white text-xs font-bold px-3 py-2 rounded-lg border border-purple-700 outline-none cursor-pointer">
                         <option value="sub">Sub Division View</option>
                         <option value="div">Division View</option>
                     </select>
+                    <button onclick="posbExportViewJPEG()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
                 </div>
             </div>
             <div id="posbSubDivisionViewContainer" class="overflow-x-auto p-3">
@@ -852,6 +855,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div><h3 class="font-extrabold text-lg flex items-center gap-2">🏤 Office Wise View</h3><p class="text-xs text-purple-200">Filter by Division / Sub Division / Class — leave blank for full region</p></div>
+                <button onclick='exportTableJPEG("posbOfficeTableContainer","POSB_Office_Wise")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
             </div>
             <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-100">
                 <div>
@@ -867,7 +871,7 @@
                     <select id="posbOfficeFilterClass" onchange="renderPosbOfficeTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none focus:border-purple-800"><option value="All">All Classes</option></select>
                 </div>
             </div>
-            <div class="overflow-x-auto p-3">
+            <div id="posbOfficeTableContainer" class="overflow-x-auto p-3">
                 <table class="nil-table" id="tablePosbOffice">
                     <thead><tr><th style="width:4%">#</th><th style="width:8%">Office ID</th><th style="width:8%">BO ID/SOL ID</th><th style="width:14%;text-align:left">Office Name</th><th style="width:5%">Class</th><th style="width:9%">Sub-Division</th><th style="width:8%">Division</th><th style="width:6%">SB Open</th><th style="width:6%">SB Close</th><th style="width:6%">SB Net</th><th style="width:6%">Cert Issued</th><th style="width:7%">Cert Discharged</th><th style="width:6%">Cert Net</th><th style="width:6%">RD Open</th><th style="width:6%">RD Close</th><th style="width:6%">RD Net</th></tr></thead>
                     <tbody><tr><td colspan="16" class="py-8 text-center text-slate-400 font-medium">Please upload Product Wise A/C Report files and press Calculate.</td></tr></tbody>
@@ -2887,6 +2891,15 @@ const exportTableToExcel=(t,e)=>{XLSX.writeFile(XLSX.utils.table_to_book(documen
       exportAllToExcel=()=>exportTableToExcel("tableDivisionSummary","Complete_Summary_Report.xlsx");
 
 function exportTableJPEG(t,e){const o=document.getElementById(t);o&&html2canvas(o,{scale:2}).then(t=>{const o=document.createElement("a");o.download=e+".jpg",o.href=t.toDataURL("image/jpeg",.95),o.click()}),logGeneratedReport(e+" (JPEG)",()=>exportTableJPEG(t,e))}
+// Whichever of Sub-Division / Division view is currently on screen gets captured as one JPEG photo.
+function sbExportViewJPEG(){
+    const isSub=(document.getElementById("sbViewTypeSelect")||{}).value!=="div";
+    exportTableJPEG(isSub?"sbSubDivisionViewContainer":"sbDivisionViewContainer", isSub?"SB_SubDivision_Wise_Report":"SB_Division_Wise_Report");
+}
+function posbExportViewJPEG(){
+    const isSub=(document.getElementById("posbViewTypeSelect")||{}).value!=="div";
+    exportTableJPEG(isSub?"posbSubDivisionViewContainer":"posbDivisionViewContainer", isSub?"POSB_SubDivision_Wise_Report":"POSB_Division_Wise_Report");
+}
 function exportSingleTableToPDF(t,e){const{jsPDF:o}=window.jspdf,n=new o("l","mm","a4");n.setFillColor(44,12,56),n.rect(0,0,297,18,"F"),n.setTextColor(255,255,255),n.setFontSize(12),n.setFont("helvetica","bold"),n.text("DEPARTMENT OF POSTS — REGIONAL OFFICE INDORE",12,11),n.setFontSize(9),n.setFont("helvetica","normal"),n.text(e.toUpperCase(),12,16),n.text("Report Date: "+getReportPrevDate(),247,12),n.autoTable({html:"#"+t,startY:22,margin:{top:22,right:10,bottom:14,left:10},theme:"grid",styles:{fontSize:8,cellPadding:2.5,valign:"middle",lineColor:[180,180,180],lineWidth:.2},headStyles:{fillColor:[247,202,172],textColor:[0,0,0],fontStyle:"bold",halign:"center"},footStyles:{fillColor:[247,202,172],textColor:[0,0,0],fontStyle:"bold"}}),n.save(e.replace(/\s+/g,"_")+"_Report.pdf"),logGeneratedReport(e+" (PDF)",()=>exportSingleTableToPDF(t,e))}
 const exportAllToPDF=()=>exportSingleTableToPDF("tableDivisionSummary","Summary Report");
 function getReportPrevDate(){let t=new Date;return t.setDate(t.getDate()-1),0===t.getDay()&&t.setDate(t.getDate()-1),String(t.getDate()).padStart(2,"0")+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+t.getFullYear()}
