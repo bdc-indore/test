@@ -612,7 +612,7 @@
                 </div>
                 <div class="flex items-center flex-wrap gap-2">
                     <span id="sbMasterStatus" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Loading SB Master...</span>
-                    <button onclick="exportSbCombinedExcel()" class="bg-purple-800 hover:bg-purple-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer">📥 Combined Report (3 Sheets)</button>
+                    <button onclick="exportSbCombinedExcel()" class="bg-purple-800 hover:bg-purple-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer">📥 Combined Report (5 Sheets)</button>
                     <button onclick="resetSbData()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer">♻️ Reset Uploads</button>
                 </div>
             </div>
@@ -753,11 +753,184 @@
             <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h3 class="font-extrabold text-lg flex items-center gap-2">📮 POSB Product Wise A/c Calculator</h3>
-                    <p class="text-xs text-purple-200">Upload SO-wise "Product Wise A/C Report" Excel files, then press Calculate — Office ID / Division / Sub-Division are matched automatically against the SB Master list, no need to pick a Division.</p>
+                    <p class="text-xs text-purple-200">Upload SO-wise "Product Wise A/C Report" Excel files, then press Calculate — Portal khud detect karta he ki file kis Division ki he, aur offices sirf usi Division ke SB Master me dhundta he. Jo offices count nahi hote wo neeche alag dikhte hain.</p>
                 </div>
                 <div class="flex items-center flex-wrap gap-2">
                     <span id="posbMasterStatus" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Using SB Master</span>
-                    <button onclick="exportPosbCombinedExcel()" class="bg-purple-800 hover:bg-purple-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer">📥 Combined Report (3 Sheets)</button>
+                    <button onclick="exportPosbCombinedExcel()" class="bg-purple-800 hover:bg-purple-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer">📥 Combined Report (5 Sheets)</button>
+                    <button onclick="resetPosbData()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer">♻️ Reset Uploads</button>
+                </div>
+            </div>
+
+            <div class="p-4 md:p-6">
+                <label id="posbBulkZone" class="block cursor-pointer text-center border-2 border-dashed border-purple-400 bg-white/70 hover:bg-white rounded-xl px-3 py-4 mb-3 transition"
+                       ondragover="handlePosbBulkDragOver(event)" ondragleave="handlePosbBulkDragLeave(event)" ondrop="handlePosbBulkDrop(event)">
+                    <div class="text-sm font-extrabold text-purple-950">📂 Drag &amp; drop all "Product Wise A/C Report" files here</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">or click to select up to 7 files at once (one file per Division) — then confirm each file's Division below</div>
+                    <input type="file" multiple accept=".xlsx,.xls,.csv" class="hidden" onchange="handlePosbBulkSelect(this)">
+                </label>
+                <div id="posbUploadsContainer" class="space-y-2"></div>
+            </div>
+
+            <div class="px-4 md:px-6 pb-4 flex flex-col sm:flex-row items-center gap-3">
+                <button id="posbBtnCalculate" onclick="calculatePosbReport()" class="w-full sm:w-auto bg-[#31103f] hover:bg-purple-950 text-white font-extrabold text-sm px-8 py-3 rounded-xl shadow-lg transition cursor-pointer border border-purple-500">🧮 Calculate Report</button>
+                <span id="posbCalcHint" class="text-xs font-semibold text-slate-500">Upload files, select Division for each, then press Calculate.</span>
+            </div>
+
+            <div class="px-4 md:px-6 pb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-purple-50 border border-purple-200 rounded-xl p-3 text-center">
+                    <p class="text-[11px] font-bold text-purple-900 uppercase">Total Offices</p>
+                    <p id="posbKpiOffices" class="text-xl font-extrabold text-purple-950">0</p>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                    <p class="text-[11px] font-bold text-emerald-900 uppercase">SB Net Addition</p>
+                    <p id="posbKpiSbNet" class="text-xl font-extrabold text-emerald-800">0</p>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+                    <p class="text-[11px] font-bold text-amber-900 uppercase">Cert Net</p>
+                    <p id="posbKpiCertNet" class="text-xl font-extrabold text-amber-800">0</p>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
+                    <p class="text-[11px] font-bold text-blue-900 uppercase">RD Net Addition</p>
+                    <p id="posbKpiRdNet" class="text-xl font-extrabold text-blue-900">0</p>
+                </div>
+            </div>
+
+            <!-- Reconciliation strip: proves nothing was silently dropped -->
+            <div id="posbReconBar" class="hidden mx-4 md:mx-6 mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 font-semibold text-slate-700">
+                    <span>📄 Rows read: <b id="posbReconRows">0</b></span>
+                    <span>✅ Matched to master: <b id="posbReconMatched" class="text-emerald-800">0</b></span>
+                    <span id="posbReconUnmatchedWrap">⚠️ Unmatched: <b id="posbReconUnmatched" class="text-rose-700">0</b></span>
+                    <span>Σ A/c Opened in file: <b id="posbReconOpenFile">0</b></span>
+                    <span>Σ A/c Opened on portal: <b id="posbReconOpenPortal">0</b></span>
+                    <span id="posbReconMismatchTag" class="hidden bg-rose-600 text-white px-2 py-0.5 rounded-full font-bold">⚠️ Mismatch — see Unmatched Offices below</span>
+                    <span id="posbReconOkTag" class="hidden bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">✅ File total = Portal total</span>
+                </div>
+            </div>
+
+            <!-- File-wise reconciliation: Excel total vs Portal total, column by column -->
+            <div id="posbFileReconPanel" class="hidden mx-4 md:mx-6 mb-4 rounded-xl border-2 border-purple-300 bg-white overflow-hidden">
+                <div class="px-4 py-2 bg-purple-100 border-b border-purple-200">
+                    <p class="text-xs font-extrabold text-purple-900">🧾 File-wise Hisaab — Excel me kya likha tha, Excel rows ka asli jod, Portal ne kitna count kiya aur kitna count nahi hua</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="nil-table" id="tablePosbFileRecon">
+                        <thead><tr><th style="text-align:left">Column</th><th>Excel ki "Total:" line</th><th>Excel rows ka jod</th><th>Portal ne count kiya</th><th>Count nahi hua</th><th style="text-align:left">Status</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Count nahi hue Offices — file rows jinke numbers Division / Office tables me jude nahi:
+                 (1) naam us file ki Division ke master SO/HO me nahi mila, (2) Nodal Delivery Center jaisi rows. -->
+            <div id="posbUnmatchedPanel" class="hidden mx-4 md:mx-6 mb-4 rounded-xl border-2 border-rose-300 bg-rose-50 overflow-hidden">
+                <div class="px-4 py-2 bg-rose-100 border-b border-rose-200">
+                    <p class="text-xs font-extrabold text-rose-900">⚠️ Count nahi hue Offices — in file rows ke numbers Division / Sub-Division / Office tables me JODE NAHI gaye. Naam ki spelling check karo ya sahi master office ka naam batao.</p>
+                    <p id="posbNotCountedSummary" class="text-xs font-bold text-rose-800 mt-1"></p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="nil-table" id="tablePosbUnmatched">
+                        <thead><tr><th>#</th><th>File</th><th>Division (jisme dhunda)</th><th style="text-align:left">Raw Name in File</th><th style="text-align:left">Reason</th><th>SB Open</th><th>SB Close</th><th>Cert Issued</th><th>Cert Discharged</th><th>RD Open</th><th>RD Close</th></tr></thead>
+                        <tbody></tbody>
+                        <tfoot></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Division / Sub-Division View (toggle) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div><h3 class="font-extrabold text-lg flex items-center gap-2">🗂️ Division / Sub-Division View</h3><p class="text-xs text-purple-200">Account Open / Close / Net + Offices Open&gt;10 &amp; Net Addition&gt;10 analysis</p></div>
+                <div class="flex items-center gap-2">
+                    <select id="sbViewTypeSelect" onchange="toggleSbViewType()" class="bg-purple-950 text-white text-xs font-bold px-3 py-2 rounded-lg border border-purple-700 outline-none cursor-pointer">
+                        <option value="sub">Sub Division View</option>
+                        <option value="div">Division View</option>
+                    </select>
+                    <button onclick="sbExportViewPDF()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📄 PDF</button>
+                    <button onclick="sbExportViewJPEG()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                </div>
+            </div>
+            <div id="sbSubDivisionViewContainer" class="overflow-x-auto p-3">
+                <table class="nil-table" id="tableSbSubDivision">
+                    <thead><tr><th style="width:4%">S.No.</th><th style="width:13%">Name of Division</th><th style="width:15%">Name of Sub Division</th><th style="width:8%">Total Offices</th><th style="width:8%">Account Open</th><th style="width:8%">Account Close</th><th style="width:8%">Net Addition</th><th style="width:9%">Offices Open&gt;10</th><th style="width:8%">% Open&gt;10</th><th style="width:9%">Offices NetAdd&gt;10</th><th style="width:8%">% NetAdd&gt;10</th></tr></thead>
+                    <tbody><tr><td colspan="11" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr></tbody>
+                    <tfoot></tfoot>
+                </table>
+            </div>
+            <div id="sbDivisionViewContainer" class="overflow-x-auto p-3 hidden">
+                <table class="nil-table" id="tableSbDivision">
+                    <thead><tr><th style="width:5%">S.No.</th><th style="width:17%">Name of Division</th><th style="width:9%">Total Offices</th><th style="width:10%">Account Open</th><th style="width:10%">Account Close</th><th style="width:10%">Net Addition</th><th style="width:10%">Offices Open&gt;10</th><th style="width:9%">% Open&gt;10</th><th style="width:10%">Offices NetAdd&gt;10</th><th style="width:9%">% NetAdd&gt;10</th></tr></thead>
+                    <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr></tbody>
+                    <tfoot></tfoot>
+                </table>
+            </div>
+            <p class="text-[11px] text-slate-400 px-4 pb-3">Tip: click any blue count in "Offices Open&gt;10" / "Offices NetAdd&gt;10" columns to see the office-wise list.</p>
+        </div>
+
+        <!-- Office Wise View -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div><h3 class="font-extrabold text-lg flex items-center gap-2">🏤 Office Wise View</h3><p class="text-xs text-purple-200">Filter by Division / Sub Division / Class — leave blank for full region</p></div>
+                <div class="flex items-center gap-2">
+                    <button onclick='exportTableSinglePagePDF("sbOfficeTableContainer","SB Office Wise Report")' class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📄 PDF</button>
+                    <button onclick='exportTableJPEG("sbOfficeTableContainer","SB_Office_Wise")' class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow cursor-pointer">📸 JPEG</button>
+                </div>
+            </div>
+            <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-100">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Division</label>
+                    <select id="sbOfficeFilterDiv" onchange="onSbDivisionFilterChange()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none focus:border-purple-800"><option value="All">All Divisions</option></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Sub Division</label>
+                    <select id="sbOfficeFilterSd" onchange="renderSbOfficeTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none focus:border-purple-800"><option value="All">All Sub Divisions</option></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-purple-950 mb-1">Class</label>
+                    <select id="sbOfficeFilterClass" onchange="renderSbOfficeTable()" class="w-full border border-slate-300 rounded-xl p-2 text-xs bg-slate-50 font-semibold outline-none focus:border-purple-800"><option value="All">All Classes</option></select>
+                </div>
+            </div>
+            <div id="sbOfficeTableContainer" class="overflow-x-auto p-3">
+                <table class="nil-table" id="tableSbOffice">
+                    <thead><tr><th style="width:5%">#</th><th style="width:12%">Office ID</th><th style="width:10%">BO ID/SOL ID</th><th style="width:20%;text-align:left">Office Name</th><th style="width:7%">Class</th><th style="width:14%">Sub-Division</th><th style="width:12%">Division</th><th style="width:10%">Account Open</th><th style="width:10%">Account Close</th><th style="width:10%">Net Addition</th></tr></thead>
+                    <tbody><tr><td colspan="10" class="py-8 text-center text-slate-400 font-medium">Please upload Account Open / Close Excel files and press Calculate.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SB Drilldown Modal -->
+    <div id="sbDrilldownModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
+            <div class="report-header px-6 py-4 flex justify-between items-center">
+                <div><h3 id="sbModalTitle" class="font-bold text-lg">SB Office List</h3><p id="sbModalSubtitle" class="text-xs text-purple-200">Office wise details</p></div>
+                <div class="flex items-center gap-3">
+                    <button onclick="exportSbModalToExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow">📥 Excel</button>
+                    <button onclick='closeModal("sbDrilldownModal")' class="bg-purple-950 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow overflow-x-auto">
+                <table class="nil-table" id="tableSbModalOffices">
+                    <thead><tr><th style="width:5%">#</th><th style="width:12%">Office ID</th><th style="width:10%">BO ID/SOL ID</th><th style="width:22%;text-align:left">Office Name</th><th style="width:8%">Class</th><th style="width:15%">Sub-Division</th><th style="width:12%">Division</th><th style="width:8%">Open</th><th style="width:8%">Close</th><th style="width:8%">Net</th></tr></thead>
+                    <tbody class="text-xs"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- POSB (Product Wise A/C) Module -->
+    <div id="modulePosb" class="space-y-6 hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="report-header px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                    <h3 class="font-extrabold text-lg flex items-center gap-2">📮 POSB Product Wise A/c Calculator</h3>
+                    <p class="text-xs text-purple-200">Upload SO-wise "Product Wise A/C Report" Excel files, then press Calculate — Portal khud detect karta he ki file kis Division ki he, aur offices sirf usi Division ke SB Master me dhundta he. Jo offices count nahi hote wo neeche alag dikhte hain.</p>
+                </div>
+                <div class="flex items-center flex-wrap gap-2">
+                    <span id="posbMasterStatus" class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> Using SB Master</span>
+                    <button onclick="exportPosbCombinedExcel()" class="bg-purple-800 hover:bg-purple-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer">📥 Combined Report (5 Sheets)</button>
                     <button onclick="resetPosbData()" class="bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow transition cursor-pointer">♻️ Reset Uploads</button>
                 </div>
             </div>
@@ -3473,7 +3646,7 @@ loadSbMasterData();
 // Uses the SAME sbOfficesByOfficeId / sbIdToOffices master mapping loaded above for
 // Office ID, BO ID/SOL ID, Sub-Division & Division — no separate master sheet needed.
 const POSB_SLOT_COUNT=7;
-let posbSlotData=new Array(POSB_SLOT_COUNT).fill(null), posbCombinedList=[], posbUnmatchedList=[],
+let posbSlotData=new Array(POSB_SLOT_COUNT).fill(null), posbCombinedList=[], posbUnmatchedList=[], posbNotCounted=[], posbFileRecon=[],
     posbCalculated=false, posbStale=false, posbDivNameIndex=null, posbQueue=Promise.resolve();
 const posbTick=()=>new Promise(r=>setTimeout(r,10));
 
@@ -3493,8 +3666,13 @@ function posbNormName(s){
 // never silently drops an office (this was why some H.O rows were going missing).
 function posbClassNorm(c){ return String(c||"").toUpperCase().replace(/[^A-Z]/g,""); }
 function buildPosbDivNameIndex(){
+    // Sirf SO / HO offices naam se index hote hain (BO kabhi nahi) — "Jharda S.O" ko
+    // "Jharda B.O" se mix hone se rokta he. Index Division ke andar bana he, taaki search
+    // sirf usi division ke master offices me ho.
     posbDivNameIndex={};
     Object.values(sbOfficesByOfficeId).forEach(o=>{
+        const c=posbClassNorm(o.class);
+        if(c!=="SO" && c!=="HO") return;
         const d=o.division||"";
         posbDivNameIndex[d]=posbDivNameIndex[d]||{};
         const key=posbNormName(o.name);
@@ -3533,45 +3711,29 @@ const POSB_EXCLUDE_CONTAINS=["NODELDELIVERYCENTER","NODALDELIVERYCENTER"];
 function posbIsExcludedName(key){
     return POSB_EXCLUDE_CONTAINS.some(frag=>key.includes(frag));
 }
-// Resolves a raw uploaded row name to a master office, using (in order):
-// 1) explicit Office-ID override, 2) exact name match in the file's own division,
-// 3) the known-alias table (exact guess, then "contains" fuzzy match) — first within
-// the file's own division, then (so a wrong/blank division pick doesn't cause a miss)
-// across every division in the master list.
+// Resolves a raw uploaded row name to a master SO/HO office — ONLY inside the given
+// division (the division the portal detected for that Excel file). No other division is
+// ever searched, so same-named offices of other divisions can never steal the data.
+// Order: 1) explicit Office-ID override (must belong to this division), 2) exact
+// normalized-name match, 3) known-alias table (renamed offices) — all inside the division.
 function posbResolveOffice(key, division){
+    if(!division || !posbDivNameIndex || !posbDivNameIndex[division]) return null;
+    const idx=posbDivNameIndex[division];
+
     const idOverride=POSB_ID_OVERRIDES[key];
-    if(idOverride && sbOfficesByOfficeId[idOverride]) return sbOfficesByOfficeId[idOverride];
+    if(idOverride && sbOfficesByOfficeId[idOverride] && sbOfficesByOfficeId[idOverride].division===division) return sbOfficesByOfficeId[idOverride];
 
-    // 1) exact normalized-name match — check the given division first (if any),
-    //    then every division in the master list (no division needs to be picked).
-    if(division && posbDivNameIndex && posbDivNameIndex[division] && posbDivNameIndex[division][key]) return posbDivNameIndex[division][key];
-    if(posbDivNameIndex){
-        for(const d in posbDivNameIndex){
-            if(posbDivNameIndex[d][key]) return posbDivNameIndex[d][key];
-        }
-    }
+    if(idx[key]) return idx[key];
 
-    // 2) known-alias table (renamed / reordered office names) — exact guess first,
-    //    then fuzzy "contains" — searched across every division. The report-side key
-    //    doesn't always carry the same city prefix as the alias table (e.g. a file
-    //    may just say "Radio Colony S.O" instead of "Radio Colony Indore S.O"), so if
-    //    there's no exact alias-table entry for this key, look for an alias entry
-    //    whose key is a substring match either way before giving up.
     let alias=POSB_NAME_ALIASES[key];
     if(!alias){
         const aliasKey=Object.keys(POSB_NAME_ALIASES).find(ak=>ak.length>=4 && key.length>=4 && (key.includes(ak)||ak.includes(key)));
         if(aliasKey) alias=POSB_NAME_ALIASES[aliasKey];
     }
-    if(alias && posbDivNameIndex){
-        for(const d in posbDivNameIndex){
-            const idx=posbDivNameIndex[d];
-            if(idx[alias.exact]) return idx[alias.exact];
-        }
-        for(const d in posbDivNameIndex){
-            const idx=posbDivNameIndex[d];
-            const hitKey=Object.keys(idx).find(k=>alias.contains.every(frag=>k.includes(frag)));
-            if(hitKey) return idx[hitKey];
-        }
+    if(alias){
+        if(idx[alias.exact]) return idx[alias.exact];
+        const hitKey=Object.keys(idx).find(k=>alias.contains.every(frag=>k.includes(frag)));
+        if(hitKey) return idx[hitKey];
     }
     return null;
 }
@@ -3600,37 +3762,88 @@ function findPosbHeader(rows){
     return null;
 }
 
-function parsePosbWorkbook(buf, fileName, division){
+const POSB_TOTAL_RE=/^(GRAND\s*)?TOTAL\s*:?$/i;
+const POSB_KEYS=["sbOpen","sbClose","certIssued","certDischarged","rdOpen","rdClose"];
+const POSB_KEY_LABELS={sbOpen:"A/c Opened (SB)", sbClose:"A/c Closed (SB)", certIssued:"Cert Issued", certDischarged:"Cert Discharged", rdOpen:"3rd product A/c Opened (RD)", rdClose:"3rd product A/c Closed (RD)"};
+const posbEsc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const posbFmt=n=>Number(n||0).toLocaleString("en-IN");
+
+function posbGetRows(buf){
     const wb=XLSX.read(buf,{type:"array"});
-    let rows=null;
     for(const name of wb.SheetNames){
         const r=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:""});
-        if(r && r.length>1){ rows=r; break; }
+        if(r && r.length>1) return r;
     }
+    return null;
+}
+
+// Which Division does this Excel belong to? — decided from the office names inside the
+// file (each name is looked up in every division's SO/HO master list; the division that
+// matches the most rows wins). If two divisions tie, the division named in the file name
+// is used. Same idea as the SB module's detectSbSlotDivision().
+function posbDetectDivision(rows, fileName){
+    const res={division:"", matched:0, total:0, mixed:false, scores:{}};
+    const hdr=rows?findPosbHeader(rows):null;
+    if(!hdr) return res;
+    if(!posbDivNameIndex || !Object.keys(posbDivNameIndex).length) buildPosbDivNameIndex();
+    const score={};
+    for(let r=hdr.headerRowIdx+1;r<rows.length;r++){
+        const row=rows[r]; if(!row||!row.length) continue;
+        const nameRaw=String(row[hdr.nameIdx]||"").trim();
+        if(!nameRaw || POSB_TOTAL_RE.test(nameRaw)) continue;
+        const key=posbNormName(nameRaw);
+        if(!key || posbIsExcludedName(key)) continue;
+        res.total++;
+        let any=false;
+        for(const d in posbDivNameIndex){ if(posbDivNameIndex[d][key]){ score[d]=(score[d]||0)+1; any=true; } }
+        if(any) res.matched++;
+    }
+    res.scores=score;
+    const sorted=Object.entries(score).sort((a,b)=>b[1]-a[1]);
+    const hint=guessPosbDivision(fileName);
+    if(sorted.length){
+        let pick=sorted[0][0];
+        if(hint && score[hint]===sorted[0][1]) pick=hint;
+        res.division=pick;
+        res.mixed=res.matched>0 && (score[pick]/res.matched)<0.8;
+    }else if(hint){
+        res.division=hint;
+    }
+    return res;
+}
+
+function parsePosbWorkbook(buf, fileName){
+    const rows=posbGetRows(buf);
     if(!rows) return {error:"Empty file", fileName};
     const hdr=findPosbHeader(rows);
     if(!hdr) return {error:'"NAME" column not found in this file', fileName};
+    const detect=posbDetectDivision(rows, fileName), division=detect.division;
     const {headerRowIdx, nameIdx, numCols}=hdr;
     const idx={sbOpen:numCols[0], sbClose:numCols[1], certIssued:numCols[3], certDischarged:numCols[4], rdOpen:numCols[6], rdClose:numCols[7]};
-    const matched=[], unmatched=[];
     const num=v=>{ const n=parseFloat(String(v).replace(/,/g,"")); return isNaN(n)?0:n; };
-    let totalRows=0;
+    const matched=[], unmatched=[], excluded=[];
+    const sum={sbOpen:0,sbClose:0,certIssued:0,certDischarged:0,rdOpen:0,rdClose:0};
+    let totalRows=0, fileTotalRow=null;
     for(let r=headerRowIdx+1;r<rows.length;r++){
         const row=rows[r]; if(!row||!row.length) continue;
         const nameRaw=String(row[nameIdx]||"").trim();
         if(!nameRaw) continue;
-        if(/^(GRAND\s*)?TOTAL\s*:?$/i.test(nameRaw)) continue;
+        const vals={};
+        POSB_KEYS.forEach(k=>{ vals[k]=num(row[idx[k]]); });
+        if(POSB_TOTAL_RE.test(nameRaw)){ if(!fileTotalRow) fileTotalRow=vals; continue; }   // Excel ki apni "Total:" line — sirf compare ke liye
         totalRows++;
-        const sbOpen=num(row[idx.sbOpen]), sbClose=num(row[idx.sbClose]),
-              certIssued=num(row[idx.certIssued]), certDischarged=num(row[idx.certDischarged]),
-              rdOpen=num(row[idx.rdOpen]), rdClose=num(row[idx.rdClose]);
+        POSB_KEYS.forEach(k=>{ sum[k]+=vals[k]; });
         const key=posbNormName(nameRaw);
-        if(posbIsExcludedName(key)) continue;
+        const rec={rawName:nameRaw, ...vals};
+        if(posbIsExcludedName(key)){
+            excluded.push({...rec, reason:"Nodal Delivery Center — is report me count nahi hota"});
+            continue;
+        }
         const off=posbResolveOffice(key, division);
-        const rec={rawName:nameRaw, sbOpen, sbClose, certIssued, certDischarged, rdOpen, rdClose};
-        if(off) matched.push({office:off, ...rec}); else unmatched.push(rec);
+        if(off) matched.push({office:off, ...rec});
+        else unmatched.push({...rec, reason: division ? `Master ke ${division} division me is naam ka SO/HO nahi mila` : "File ki Division detect nahi hui"});
     }
-    return {fileName, division, matched, unmatched, totalRows};
+    return {fileName, division, detect, matched, unmatched, excluded, totalRows, fileTotalRow, sum};
 }
 
 function renderPosbUploadSlots(){
@@ -3665,11 +3878,18 @@ async function doAddPosbFiles(files, startSlot){
     const setMsg=(slot,txt)=>{ const el=document.getElementById(`posbStatus${slot}`); if(el){ el.className="text-[11px] font-medium min-w-[130px] text-right leading-tight text-slate-500"; el.textContent=txt; } };
     use.forEach((f,k)=>{ setMsg(targets[k],"⏳ Queued"); const nm=document.getElementById(`posbName${targets[k]}`); if(nm) nm.textContent="📄 "+f.name; });
     const buffers=await Promise.all(use.map(f=>f.arrayBuffer().catch(()=>null)));
-    if(!posbDivNameIndex) buildPosbDivNameIndex();
+    buildPosbDivNameIndex();
     for(let k=0;k<use.length;k++){
         const slot=targets[k];
         setMsg(slot,"🔄 Reading..."); await posbTick();
-        posbSlotData[slot]={fileName:use[k].name, buffer:buffers[k]};
+        let detect=null;
+        try{
+            if(buffers[k] && Object.keys(sbOfficesByOfficeId).length){
+                const rr=posbGetRows(buffers[k]);
+                detect=rr?posbDetectDivision(rr,use[k].name):null;
+            }
+        }catch(e){ console.error(e); }
+        posbSlotData[slot]={fileName:use[k].name, buffer:buffers[k], detect};
     }
     updatePosbSlotStatuses();
     markPosbStale();
@@ -3687,7 +3907,15 @@ function updatePosbSlotStatuses(){
         if(!slot){ el.className=base+"text-slate-500"; el.textContent="Pending"; if(nm){nm.textContent=`📁 File ${i+1}`; nm.title="";} if(clr) clr.classList.add("hidden"); return; }
         if(nm){ nm.textContent="📄 "+slot.fileName; nm.title=slot.fileName; }
         if(clr) clr.classList.remove("hidden");
-        el.className=base+"text-emerald-800 font-bold"; el.textContent="✅ Ready";
+        const dt=slot.detect;
+        if(dt && dt.division){
+            el.className=base+(dt.mixed?"text-amber-700 font-bold":"text-emerald-800 font-bold");
+            el.innerHTML=`${dt.mixed?"⚠️":"✅"} ${dt.division}${dt.mixed?" (mixed?)":""}<br><span class="font-medium text-slate-500">${dt.matched}/${dt.total} rows master se mile</span>`;
+        }else if(dt){
+            el.className=base+"text-rose-700 font-bold"; el.innerHTML="⚠️ Division detect nahi hui";
+        }else{
+            el.className=base+"text-emerald-800 font-bold"; el.textContent="✅ Ready";
+        }
     });
 }
 function markPosbStale(){ if(posbCalculated) posbStale=true; updatePosbCalcHint(); }
@@ -3711,31 +3939,36 @@ async function calculatePosbReport(){
     if(btn){ btn.disabled=true; btn.textContent="🔄 Calculating..."; }
     await posbTick();
     try{
-        if(!posbDivNameIndex) buildPosbDivNameIndex();
-        const byOffice={}; const unmatchedArr=[];
-        let totalFileRows=0, totalFileOpen=0;
+        buildPosbDivNameIndex();   // hamesha taaza master se
+        const byOffice={}, notCounted=[], fileRecon=[];
+        let totalFileRows=0;
         filled.forEach(({s})=>{
-            // Match within the file's own (filename-guessed) Division first — this avoids
-            // two same-named offices in different Divisions stealing each other's data —
-            // then fall back to the full master list so a wrong/blank guess still works.
-            const hintDiv=guessPosbDivision(s.fileName);
-            const parsed=parsePosbWorkbook(s.buffer, s.fileName, hintDiv);
+            // Portal file ki Division khud detect karta he, aur offices sirf usi Division ke
+            // master me dhundta he.
+            const parsed=parsePosbWorkbook(s.buffer, s.fileName);
             if(parsed.error){ alert(`${s.fileName}: ${parsed.error}`); return; }
             totalFileRows+=parsed.totalRows;
+            const counted={}, notc={};
+            POSB_KEYS.forEach(k=>{ counted[k]=0; notc[k]=0; });
             parsed.matched.forEach(m=>{
-                totalFileOpen+=m.sbOpen;
+                POSB_KEYS.forEach(k=>{ counted[k]+=m[k]; });
                 const oid=m.office.officeId;
                 if(!byOffice[oid]) byOffice[oid]={office:m.office, sbOpen:0, sbClose:0, certIssued:0, certDischarged:0, rdOpen:0, rdClose:0};
-                const b=byOffice[oid];
-                b.sbOpen+=m.sbOpen; b.sbClose+=m.sbClose; b.certIssued+=m.certIssued; b.certDischarged+=m.certDischarged; b.rdOpen+=m.rdOpen; b.rdClose+=m.rdClose;
+                POSB_KEYS.forEach(k=>{ byOffice[oid][k]+=m[k]; });
             });
-            parsed.unmatched.forEach(u=>{ totalFileOpen+=u.sbOpen; unmatchedArr.push({...u, fileName:s.fileName}); });
+            const nc=[
+                ...parsed.unmatched.map(u=>({...u, type:"UNMATCHED"})),
+                ...parsed.excluded.map(u=>({...u, type:"EXCLUDED"}))
+            ];
+            nc.forEach(u=>{
+                POSB_KEYS.forEach(k=>{ notc[k]+=u[k]; });
+                notCounted.push({...u, fileName:s.fileName, division:parsed.division||"— (detect nahi hui)"});
+            });
+            fileRecon.push({fileName:s.fileName, division:parsed.division, mixed:parsed.detect.mixed, rows:parsed.totalRows,
+                matchedRows:parsed.matched.length, notCountedRows:nc.length, fileTotalRow:parsed.fileTotalRow, sum:parsed.sum, counted, notCounted:notc});
         });
-        const unmatchedList=unmatchedArr;
-        // Only SO and HO offices belong in this report (matches the full Excel total,
-        // which includes H.O rows like "Dewas H.O" / "Dhar H.O"). Every SO/HO in the
-        // master list gets a row — if a file had no data for it, it is taken as 0 (not
-        // dropped). BO offices are never expected here, so they are not added.
+        // Only SO and HO offices belong in this report. Every SO/HO in the master list gets a
+        // row — if a file had no data for it, it is taken as 0 (not dropped).
         posbCombinedList=Object.values(sbOfficesByOfficeId).filter(o=>{ const c=posbClassNorm(o.class); return c==="SO"||c==="HO"; }).map(o=>{
             const r=byOffice[o.officeId];
             const sbOpen=r?r.sbOpen:0, sbClose=r?r.sbClose:0,
@@ -3748,10 +3981,8 @@ async function calculatePosbReport(){
                 rdOpen, rdClose, rdNet:rdOpen-rdClose
             };
         });
-        // Safety net: a report row can match a real master office whose Class field
-        // isn't (or isn't spelt) SO/HO — that data must still reach the total instead
-        // of silently vanishing, so any matched office missed by the SO/HO filter above
-        // is still added here (labelled with its actual class, so it's visible, not hidden).
+        // Safety net: a matched office (e.g. via Office-ID override) whose Class isn't SO/HO
+        // must still reach the total — added here, labelled with its actual class.
         const includedIds=new Set(posbCombinedList.map(r=>r.officeId));
         Object.values(byOffice).forEach(r=>{
             if(includedIds.has(r.office.officeId)) return;
@@ -3762,47 +3993,88 @@ async function calculatePosbReport(){
                 rdOpen:r.rdOpen, rdClose:r.rdClose, rdNet:r.rdOpen-r.rdClose
             });
         });
-        unmatchedList.forEach((u,i)=>{
-            posbCombinedList.push({officeId:"UNMATCHED-"+i, boId:"", name:u.rawName+" (UNMATCHED)", class:"BO", sd:"UNKNOWN SD", division:"NOT IN QC LIST",
-                sbOpen:u.sbOpen, sbClose:u.sbClose, sbNet:u.sbOpen-u.sbClose,
-                certIssued:u.certIssued, certDischarged:u.certDischarged, certNet:u.certIssued-u.certDischarged,
-                rdOpen:u.rdOpen, rdClose:u.rdClose, rdNet:u.rdOpen-u.rdClose});
-        });
-        posbUnmatchedList=unmatchedList;
+        // NOTE: jin offices ka naam master me nahi mila (ya jo report me count hi nahi hote) unke
+        // numbers Division / Sub-Division / Office tables me JODE NAHI jate — wo neeche
+        // "Count nahi hue Offices" panel me alag se dikhte hain, Excel total vs Portal total ke saath.
+        posbUnmatchedList=notCounted;
+        posbNotCounted=notCounted;
+        posbFileRecon=fileRecon;
         posbCalculated=true; posbStale=false;
         initPosbDropdowns();
         renderPosbSubDivisionTable(); renderPosbDivisionTable(); renderPosbOfficeTable();
         updatePosbKpis();
-        renderPosbReconciliation(totalFileRows, totalFileOpen, Object.keys(byOffice).length, unmatchedList);
+        renderPosbReconciliation(totalFileRows, Object.keys(byOffice).length);
     }catch(err){ console.error(err); alert("Calculation failed: "+err.message); }
     if(btn) btn.disabled=false;
     updatePosbCalcHint();
 }
 
-function renderPosbReconciliation(totalFileRows, totalFileOpen, matchedOfficeCount, unmatchedList){
+// File-wise + column-wise hisaab: Excel me kya likha tha, Excel ki rows ka asli jod, portal ne kitna
+// count kiya, aur kitna count NAHI hua.
+function posbFileReconRows(){
+    const out=[];
+    posbFileRecon.forEach(f=>{
+        POSB_KEYS.forEach(k=>{
+            const excelTotalLine=f.fileTotalRow?f.fileTotalRow[k]:null;
+            const sumRows=f.sum[k], counted=f.counted[k], notc=f.notCounted[k];
+            let status="OK";
+            if(f.notCountedRows>0 && (notc!==0)) status=`${posbFmt(notc)} ka count nahi hua`;
+            else if(excelTotalLine!==null && excelTotalLine!==sumRows) status="Excel ki Total: line galat (rows ka jod alag)";
+            out.push({file:f.fileName, division:f.division||"—", label:POSB_KEY_LABELS[k], excelTotalLine, sumRows, counted, notc, status});
+        });
+    });
+    return out;
+}
+
+function renderPosbReconciliation(totalFileRows, matchedOfficeCount){
     const bar=document.getElementById("posbReconBar");
     if(bar) bar.classList.remove("hidden");
+    const fileOpen=posbFileRecon.reduce((s,f)=>s+f.sum.sbOpen,0);
     const portalOpen=posbCombinedList.reduce((s,r)=>s+r.sbOpen,0);
+    const notCountedOpen=posbNotCounted.reduce((s,u)=>s+u.sbOpen,0);
     const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=(typeof v==="number"?v.toLocaleString("en-IN"):v); };
     set("posbReconRows",totalFileRows);
     set("posbReconMatched",matchedOfficeCount);
-    set("posbReconUnmatched",unmatchedList.length);
-    set("posbReconOpenFile",totalFileOpen);
+    set("posbReconUnmatched",posbNotCounted.length);
+    set("posbReconOpenFile",fileOpen);
     set("posbReconOpenPortal",portalOpen);
+    const allOk=(posbNotCounted.length===0) && (fileOpen===portalOpen);
     const mismatchTag=document.getElementById("posbReconMismatchTag"), okTag=document.getElementById("posbReconOkTag");
-    const matches=totalFileOpen===portalOpen;
-    if(mismatchTag) mismatchTag.classList.toggle("hidden", matches);
-    if(okTag) okTag.classList.toggle("hidden", !matches);
+    if(mismatchTag){
+        mismatchTag.textContent=`⚠️ ${posbNotCounted.length} office(s) ka count nahi hua — Excel total ${posbFmt(fileOpen)} | Portal total ${posbFmt(portalOpen)} | Count nahi hua ${posbFmt(notCountedOpen)}`;
+        mismatchTag.classList.toggle("hidden", allOk);
+    }
+    if(okTag) okTag.classList.toggle("hidden", !allOk);
 
-    const panel=document.getElementById("posbUnmatchedPanel"), tbody=document.querySelector("#tablePosbUnmatched tbody");
+    // ---- File-wise reconciliation table ----
+    const fpanel=document.getElementById("posbFileReconPanel"), ftb=document.querySelector("#tablePosbFileRecon tbody");
+    if(fpanel && ftb){
+        fpanel.classList.remove("hidden");
+        let html="";
+        posbFileRecon.forEach(f=>{
+            const warn=f.mixed?" ⚠️ (file me ek se zyada division ke offices lag rahe hain)":"";
+            html+=`<tr><td colspan="6" style="text-align:left;font-weight:800;background:#f3e8ff">📄 ${posbEsc(f.fileName)} → Division: ${posbEsc(f.division||"detect nahi hui")} · ${f.rows} rows · ${f.matchedRows} counted · ${f.notCountedRows} count nahi hue${warn}</td></tr>`;
+            posbFileReconRows().filter(x=>x.file===f.fileName).forEach(x=>{
+                const bad=x.status!=="OK";
+                html+=`<tr><td style="text-align:left">${x.label}</td><td>${x.excelTotalLine===null?"—":posbFmt(x.excelTotalLine)}</td><td>${posbFmt(x.sumRows)}</td><td class="font-bold text-emerald-800">${posbFmt(x.counted)}</td><td class="font-bold ${x.notc!==0?"text-rose-700":""}">${posbFmt(x.notc)}</td><td style="text-align:left" class="font-bold ${bad?"text-rose-700":"text-emerald-800"}">${bad?"⚠️ "+posbEsc(x.status):"✅ OK"}</td></tr>`;
+            });
+        });
+        ftb.innerHTML=html;
+    }
+
+    // ---- Count nahi hue offices ----
+    const panel=document.getElementById("posbUnmatchedPanel"), tbody=document.querySelector("#tablePosbUnmatched tbody"), tfoot=document.querySelector("#tablePosbUnmatched tfoot"), sum=document.getElementById("posbNotCountedSummary");
     if(panel && tbody){
-        if(!unmatchedList.length){ panel.classList.add("hidden"); tbody.innerHTML=""; }
+        if(!posbNotCounted.length){ panel.classList.add("hidden"); tbody.innerHTML=""; if(tfoot) tfoot.innerHTML=""; }
         else{
             panel.classList.remove("hidden");
-            tbody.innerHTML=unmatchedList.map((u,i)=>`<tr class="hover:bg-rose-100/50"><td>${i+1}</td><td class="text-[11px]">${u.fileName}</td><td style="text-align:left" class="font-semibold text-rose-900">${u.rawName}</td><td>${u.sbOpen.toLocaleString("en-IN")}</td><td>${u.sbClose.toLocaleString("en-IN")}</td><td>${u.certIssued.toLocaleString("en-IN")}</td><td>${u.certDischarged.toLocaleString("en-IN")}</td><td>${u.rdOpen.toLocaleString("en-IN")}</td><td>${u.rdClose.toLocaleString("en-IN")}</td></tr>`).join("");
+            tbody.innerHTML=posbNotCounted.map((u,i)=>`<tr class="hover:bg-rose-100/50"><td>${i+1}</td><td class="text-[11px]">${posbEsc(u.fileName)}</td><td>${posbEsc(u.division)}</td><td style="text-align:left" class="font-semibold text-rose-900">${posbEsc(u.rawName)}</td><td style="text-align:left" class="text-[11px]">${posbEsc(u.reason)}</td><td>${posbFmt(u.sbOpen)}</td><td>${posbFmt(u.sbClose)}</td><td>${posbFmt(u.certIssued)}</td><td>${posbFmt(u.certDischarged)}</td><td>${posbFmt(u.rdOpen)}</td><td>${posbFmt(u.rdClose)}</td></tr>`).join("");
+            const t={}; POSB_KEYS.forEach(k=>{ t[k]=posbNotCounted.reduce((s,u)=>s+u[k],0); });
+            if(tfoot) tfoot.innerHTML=`<tr class="row-grand-total"><td colspan="5">Count nahi hua — Total</td><td>${posbFmt(t.sbOpen)}</td><td>${posbFmt(t.sbClose)}</td><td>${posbFmt(t.certIssued)}</td><td>${posbFmt(t.certDischarged)}</td><td>${posbFmt(t.rdOpen)}</td><td>${posbFmt(t.rdClose)}</td></tr>`;
+            if(sum) sum.textContent=`Uploaded Excel total (A/c Opened): ${posbFmt(fileOpen)}  |  Hamara (Portal) total: ${posbFmt(portalOpen)}  |  Count nahi hua: ${posbFmt(notCountedOpen)}`;
         }
     }
-    if(unmatchedList.length) alert(`${unmatchedList.length} office name(s) could not be matched to the master list (name spelling mismatch). See the "Unmatched Offices" panel above the Division view — their data is still in the Grand Total, but NOT in their real Division's total until the spelling is fixed.`);
+    if(posbNotCounted.length) alert(`⚠️ ${posbNotCounted.length} office(s) ka count NAHI hua.\n\nUploaded Excel total (A/c Opened): ${posbFmt(fileOpen)}\nHamara (Portal) total: ${posbFmt(portalOpen)}\nCount nahi hua: ${posbFmt(notCountedOpen)}\n\nList "Count nahi hue Offices" panel me dekho — unke numbers Division totals me jude nahi hain.`);
 }
 
 function updatePosbKpis(){
@@ -3835,12 +4107,13 @@ function togglePosbViewType(){
 }
 function resetPosbData(){
     posbSlotData=new Array(POSB_SLOT_COUNT).fill(null);
-    posbCombinedList=[]; posbUnmatchedList=[]; posbCalculated=false; posbStale=false;
+    posbCombinedList=[]; posbUnmatchedList=[]; posbNotCounted=[]; posbFileRecon=[]; posbCalculated=false; posbStale=false;
     renderPosbUploadSlots();
     renderPosbSubDivisionTable(); renderPosbDivisionTable(); renderPosbOfficeTable();
     updatePosbKpis(); updatePosbCalcHint();
     const bar=document.getElementById("posbReconBar"); if(bar) bar.classList.add("hidden");
     const panel=document.getElementById("posbUnmatchedPanel"); if(panel) panel.classList.add("hidden");
+    const fp=document.getElementById("posbFileReconPanel"); if(fp) fp.classList.add("hidden");
 }
 
 function renderPosbSubDivisionTable(){
@@ -3919,6 +4192,10 @@ function exportPosbCombinedExcel(){
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sdRows), "SubDivision_Wise");
     const offRows=posbCombinedList.map((r,i)=>({"S.No":i+1,"Office ID":r.officeId,"BO ID/SOL ID":r.boId,"Office Name":r.name,Class:r.class,"Sub Division":r.sd,Division:r.division,"SB Open":r.sbOpen,"SB Close":r.sbClose,"SB Net":r.sbNet,"Cert Issued":r.certIssued,"Cert Discharged":r.certDischarged,"Cert Net":r.certNet,"RD Open":r.rdOpen,"RD Close":r.rdClose,"RD Net":r.rdNet}));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(offRows), "Office_Wise");
+    const reconRows=posbFileReconRows().map(x=>({File:x.file,"Division (detected)":x.division,Column:x.label,"Excel ki Total: line":x.excelTotalLine===null?"":x.excelTotalLine,"Excel rows ka jod":x.sumRows,"Portal ne count kiya":x.counted,"Count nahi hua":x.notc,Status:x.status}));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(reconRows.length?reconRows:[{Info:"No data"}]), "File_Reconciliation");
+    const ncRows=posbNotCounted.map((u,i)=>({"S.No":i+1,File:u.fileName,"Division searched":u.division,"Raw Name in File":u.rawName,Reason:u.reason,"SB Open":u.sbOpen,"SB Close":u.sbClose,"Cert Issued":u.certIssued,"Cert Discharged":u.certDischarged,"RD Open":u.rdOpen,"RD Close":u.rdClose}));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ncRows.length?ncRows:[{Info:"Sab offices count ho gaye"}]), "Not_Counted");
     XLSX.writeFile(wb, "POSB_Product_Wise_Report_3_Sheets.xlsx");
     logGeneratedReport("POSB Product Wise A/C Report (3 Sheets)",()=>exportPosbCombinedExcel());
 }
