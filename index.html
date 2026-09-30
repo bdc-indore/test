@@ -131,6 +131,7 @@ details.ms>summary::-webkit-details-marker{display:none}
         <div class="p-2 overflow-auto flex-grow">
             <div class="data-wrap" id="wrap-modal" style="max-height:none"></div>
             <div id="more-modal"></div>
+            <div class="px-3 py-2 text-[11px] font-semibold text-slate-600 italic border-t border-slate-200 bg-slate-50">Note: Revenue is for reference purpose. This is MIS portal revenue, e-Lekha revenue is available at main dashboard.</div>
         </div>
     </div>
 </div>
@@ -167,10 +168,11 @@ const MONTHS = [
     {k:"SEP", n:"September", s:"Sep", gid:"980775568"}
 ];
 const urlOf = m => BASE + m.gid + "&single=true&output=csv";
+const NOTE = "Note: Revenue is for reference purpose. This is MIS portal revenue, e-Lekha revenue is available at main dashboard.";
 const VERTS = [
     {k:"P", n:"Parcel", full:"Parcel"},
     {k:"I", n:"IRGB",   full:"IRGB"},
-    {k:"M", n:"MO",     full:"MO (MO + Other)"}
+    {k:"M", n:"MO",     full:"MO (MO + Speed Post + Other)"}
 ];
 const METRICS = [{k:"a", n:"Article"}, {k:"r", n:"Revenue"}];
 const VI = {P:0, I:1, M:2};
@@ -214,12 +216,13 @@ const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), pars
 const newAgg = () => { const a = {}; MONTHS.forEach(m => a[m.k] = [0,0,0,0,0,0]); return a; };
 
 /* ============================ SHEET PARSER ============================ */
-const CAT_RE = /PARCEL|IRGB|\bMO\b|OTHER/i;
+const CAT_RE = /PARCEL|IRGB|\bMO\b|OTHER|SPEED ?-?POST|\bSP\b/i;
 
 function classifyCol(L){
     if (/TOTAL|GRAND/.test(L)) return null;
     let cat = null;
     if (/IRGB/.test(L)) cat = "i";
+    else if (/SPEED ?-?POST|\bSP\b/.test(L)) cat = "s";
     else if (/PARCEL|PARSEL/.test(L)) cat = "p";
     else if (/\bMO\b|MONEY ?ORDER|M\.O/.test(L)) cat = "m";
     else if (/OTHER/.test(L)) cat = "o";
@@ -230,11 +233,12 @@ function classifyCol(L){
 }
 
 function detectFields(labels){
-    const f = {};
+    const f = {}; let sdExact = false;
     labels.forEach((L, c) => {
         if (!L) return;
+        if (/^S\.?\s?D\.?(\s?(NAME|OFFICE|NO))?$/.test(L)) { if (!sdExact){ f.sd = c; sdExact = true; } return; }
         if (f.officeId === undefined && /OFFICE.*(\bID\b|CODE)|FACILITY.*(\bID\b|CODE)|^ID$/.test(L)) { f.officeId = c; return; }
-        if (/SUB ?-?DIV/.test(L)) { if (f.sd === undefined) f.sd = c; return; }
+        if (/SUB ?-?DIV/.test(L)) { if (f.sd === undefined && !sdExact) f.sd = c; return; }
         if (/DIVISION|^DIV$/.test(L)) { if (f.div === undefined) f.div = c; return; }
         if (/OFFICE.*NAME|NAME.*OFFICE|FACILITY.*NAME|^NAME$|^OFFICE$/.test(L)) { if (f.name === undefined) f.name = c; return; }
         if (/CLASS|OFFICE ?TYPE|TYPE OF OFFICE/.test(L)) { if (f.cls === undefined) f.cls = c; return; }
@@ -259,7 +263,7 @@ function buildLabels(aoa, bs, be){
 }
 
 const ID_FIELDS = ["officeId","name","cls","div","sd"];
-const MET_FIELDS = ["pa","pr","ia","ir","ma","mr","oa","or"];
+const MET_FIELDS = ["pa","pr","ia","ir","ma","mr","oa","or","sa","sr"];
 
 function parseSheet(aoa, ov){
     ov = ov || {};
@@ -333,10 +337,10 @@ function parseSheet(aoa, ov){
         if (format === "wide"){
             rec.vec[0] += S(row, M.pa); rec.vec[1] += S(row, M.pr);
             rec.vec[2] += S(row, M.ia); rec.vec[3] += S(row, M.ir);
-            rec.vec[4] += S(row, M.ma) + S(row, M.oa); rec.vec[5] += S(row, M.mr) + S(row, M.or);
+            rec.vec[4] += S(row, M.ma) + S(row, M.oa) + S(row, M.sa); rec.vec[5] += S(row, M.mr) + S(row, M.or) + S(row, M.sr);
         } else {
             const cv = String(row[f.catCol] == null ? "" : row[f.catCol]).toUpperCase();
-            const ci = /IRGB/.test(cv) ? 1 : /PARCEL/.test(cv) ? 0 : /\bMO\b|MONEY|OTHER/.test(cv) ? 2 : -1;
+            const ci = /IRGB/.test(cv) ? 1 : /SPEED ?-?POST|\bSP\b/.test(cv) ? 2 : /PARCEL/.test(cv) ? 0 : /\bMO\b|MONEY|OTHER/.test(cv) ? 2 : -1;
             if (ci < 0){ unknownCat++; continue; }
             rec.vec[ci*2] += num(row[G.a[0]]); rec.vec[ci*2+1] += num(row[G.r[0]]);
         }
@@ -375,11 +379,21 @@ function buildOffices(){
             const o = OFFICES[rc.id] || (OFFICES[rc.id] = {id:rc.id, name:"", cls:"", div:"", sd:"", m:{}});
             if (rc.name) o.name = rc.name;
             if (rc.cls) o.cls = rc.cls;
-            o.div = rc.div; o.sd = rc.sd;
+            if (!/^UNKNOWN/.test(rc.sd) || !o.sd) o.sd = rc.sd;
+            if (!/^UNKNOWN/.test(rc.div) || !o.div) o.div = rc.div;
             o.m[m.k] = rc.vec;
         });
     });
     OFFICE_LIST = Object.values(OFFICES);
+    // Mapping: Office ID -> SD (from sheet's SD column) -> Division (each SD belongs to exactly one Division)
+    const votes = {};
+    OFFICE_LIST.forEach(o => {
+        if (/^UNKNOWN/.test(o.sd) || /^UNKNOWN/.test(o.div)) return;
+        const v = votes[o.sd] || (votes[o.sd] = {}); v[o.div] = (v[o.div] || 0) + 1;
+    });
+    const sdDiv = {};
+    Object.keys(votes).forEach(sd => { sdDiv[sd] = Object.entries(votes[sd]).sort((a, b) => b[1] - a[1])[0][0]; });
+    OFFICE_LIST.forEach(o => { if (sdDiv[o.sd]) o.div = sdDiv[o.sd]; });
     ALL_DIVS = [...new Set(OFFICE_LIST.map(o => o.div))].sort();
     const sdMap = new Map();
     OFFICE_LIST.forEach(o => { const key = o.div + "||" + o.sd; if (!sdMap.has(key)) sdMap.set(key, {key, div:o.div, sd:o.sd}); });
@@ -748,7 +762,8 @@ function cardHTML(key){
                 <button onclick="expJ('${key}')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-[11px] font-semibold px-2 py-1 rounded shadow">📸 JPEG</button>
             </div>
         </div>
-        <div class="data-wrap" id="wrap-${key}"></div><div id="more-${key}"></div></div>`;
+        <div class="data-wrap" id="wrap-${key}"></div><div id="more-${key}"></div>
+        <div class="px-3 py-2 text-[11px] font-semibold text-slate-600 italic border-t border-slate-200 bg-slate-50">${NOTE}</div></div>`;
 }
 const TAB_IDS = {sum:"Sum", off:"Off", top:"Top", cmp:"Cmp"};
 function switchTab(tab){
@@ -792,10 +807,12 @@ function modelSheet(m){
     }
     m.rows.forEach((u, i) => aoa.push([i + 1, ...m.lc.map(c => c.get(u, i)), ...m.cols.map(c => rawCell(c, colVal(c, u)))]));
     aoa.push(["", ...m.lc.map((c, j) => j === 0 ? "TOTAL" : (c.n ? m.total.offs.length : "")), ...m.cols.map(c => rawCell(c, colVal(c, m.total)))]);
+    const lastData = aoa.length - 1;
+    aoa.push([]); aoa.push([NOTE]);
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!merges"] = merges;
     ws["!cols"] = [{wch:5}, ...m.lc.map(c => ({wch:Math.max(10, Math.round(c.w / 7))})), ...m.cols.map(() => ({wch:14}))];
-    const first = T + 3, last = aoa.length - 1;
+    const first = T + 3, last = lastData;
     for (let r = first; r <= last; r++) m.cols.forEach((c, j) => {
         const cell = ws[XLSX.utils.encode_cell({r, c:nl + j})];
         if (cell && typeof cell.v === "number") cell.z = c.kind === "pct" ? '0.00"%"' : (c.metric === "r" ? "#,##0.00" : "#,##0");
@@ -840,6 +857,11 @@ function expP(key){
         footStyles:{fillColor:hex2rgb("#bdd7ee"), textColor:[0,0,0], fontStyle:"bold"},
         columnStyles, didDrawPage:banner
     });
+    const H = doc.internal.pageSize.getHeight();
+    let ny = doc.lastAutoTable.finalY + 5;
+    if (ny > H - 8){ doc.addPage(); ny = 12; }
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "italic"); doc.setFontSize(8);
+    doc.text(NOTE, 8, ny);
     doc.save(fname(m) + ".pdf");
 }
 function expJ(key){
@@ -849,7 +871,7 @@ function expJ(key){
     host.style.cssText = "position:fixed;left:0;top:0;z-index:-1;background:#fff;width:max-content;padding:0;pointer-events:none";
     host.innerHTML = `<div class="report-header" style="padding:8px 12px"><div style="font-weight:800;font-size:14px">${esc(PORTAL)}</div><div style="font-size:12px;font-weight:700">${esc(m.title)}</div><div style="font-size:10px;opacity:.85">${esc(m.sub)}</div></div>
         <table class="dt" style="min-width:0">${tableHTML(m, {static:true, limit:MAXR})}</table>` +
-        (m.rows.length > MAXR ? `<div style="padding:6px 12px;font-size:11px;font-weight:700">Note: JPEG me pehle ${MAXR} rows hain. Poore data ke liye Excel/PDF use karein.</div>` : "");
+        `<div style="padding:6px 12px;font-size:11px;font-weight:700;font-style:italic">${esc(NOTE)}</div>` + (m.rows.length > MAXR ? `<div style="padding:6px 12px;font-size:11px;font-weight:700">Note: JPEG me pehle ${MAXR} rows hain. Poore data ke liye Excel/PDF use karein.</div>` : "");
     document.body.appendChild(host);
     html2canvas(host, {scale:host.scrollWidth > 3000 ? 1 : 1.5, backgroundColor:"#ffffff", width:host.scrollWidth, height:host.scrollHeight, windowWidth:host.scrollWidth + 50}).then(canvas => {
         const a = document.createElement("a");
@@ -874,7 +896,7 @@ function openCheck(){
     const ref = MONTHS.find(m => RAW[m.k] && STATUS[m.k] && STATUS[m.k].info && STATUS[m.k].info.labels);
     let h = `<div><h4 class="font-bold text-sm text-purple-900 mb-1">Month-wise status</h4><div class="overflow-x-auto"><table class="dt" style="min-width:0"><thead><tr>
         <th>Month</th><th>Status</th><th>Offices</th><th>Header Row</th><th>Data Starts</th><th>Format</th>
-        <th style="background:#c6efce">Parcel<br>Art / Rev</th><th style="background:#fff2cc">IRGB<br>Art / Rev</th><th style="background:#fce4d6">MO (+Other)<br>Art / Rev</th></tr></thead><tbody>`;
+        <th style="background:#c6efce">Parcel<br>Art / Rev</th><th style="background:#fff2cc">IRGB<br>Art / Rev</th><th style="background:#fce4d6">MO (+Speed Post +Other)<br>Art / Rev</th></tr></thead><tbody>`;
     MONTHS.forEach(m => {
         const st = STATUS[m.k] || {ok:false, msg:"Load nahi hua"};
         if (!st.ok){ h += `<tr><td class="left">${m.n}</td><td class="left" colspan="8" style="color:#b91c1c;font-weight:700">❌ ${esc(st.msg)}</td></tr>`; return; }
@@ -888,7 +910,7 @@ function openCheck(){
         const labels = STATUS[ref.k].info.labels, f = STATUS[ref.k].info.f || {}, M = STATUS[ref.k].info.M || {};
         const opts = sel => `<option value="auto">(Auto)</option><option value="-1" ${sel === -1 ? "selected" : ""}>(None / ignore)</option>` + labels.map((L, c) => `<option value="${c}" ${sel === c ? "selected" : ""}>${colLetter(c)}: ${esc(L || "(blank)")}</option>`).join("");
         const fields = [["officeId","Office ID"],["name","Office Name"],["cls","Class"],["div","Division"],["sd","Sub Division"],
-            ["pa","Parcel Article"],["pr","Parcel Revenue"],["ia","IRGB Article"],["ir","IRGB Revenue"],["ma","MO Article"],["mr","MO Revenue"],["oa","Other Article (MO me judega)"],["or","Other Revenue (MO me judega)"]];
+            ["pa","Parcel Article"],["pr","Parcel Revenue"],["ia","IRGB Article"],["ir","IRGB Revenue"],["ma","MO Article"],["mr","MO Revenue"],["oa","Other Article (MO me judega)"],["or","Other Revenue (MO me judega)"],["sa","Speed Post Article (MO me judega)"],["sr","Speed Post Revenue (MO me judega)"]];
         h += `<div><h4 class="font-bold text-sm text-purple-900 mb-1">Column mapping (reference: ${ref.n} sheet) — sabhi months par lagega</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-2">`;
         fields.forEach(([k, nm]) => {
             const cur = OVERRIDE[k] !== undefined ? OVERRIDE[k] : (f[k] !== undefined ? f[k] : (M[k] && M[k].length ? M[k][0] : null));
