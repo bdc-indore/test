@@ -72,6 +72,10 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
 .sws{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.sws i{width:20px;height:20px;border-radius:5px;border:1px solid #bbb;cursor:pointer}.bar .sm{flex:none;width:54px;background:#f2ece6;color:var(--t)}body{padding-bottom:96px}
 .tb button{border:1px solid var(--l);background:#fff;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}.tb button:hover{border-color:var(--r)}
 .tools button[data-a=text],.tools button[data-a=chart]{background:var(--r);color:#fff;border-color:var(--r);font-weight:700}
+.pvx{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}.pimg{width:200px;max-width:100%;max-height:220px;object-fit:contain;border:1px solid var(--l);border-radius:8px;background:#f6f6f6}
+.pvt{flex:1;min-width:240px;overflow-x:auto}.pvtb{border-collapse:collapse;font-size:12px;width:100%}.pvtb th,.pvtb td{border:1px solid #d0d0d0;padding:4px 6px;white-space:nowrap}.pvn{font-size:12px;color:var(--m);margin-top:4px}
+.pvc{border-top:1px solid var(--l);padding-top:10px;margin-top:10px}.pvw{margin:10px 0}
+#res button,#stc{border:1px solid var(--l);background:#fff;border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;color:var(--t)}
 </style>
 </head>
 <body>
@@ -88,6 +92,7 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
     </div>
     <div class="card" id="stat" hidden></div>
     <div class="card" id="msg" hidden></div>
+    <div class="card" id="res" hidden></div>
   </section>
 
   <section id="s2" hidden><div id="tlist"></div></section>
@@ -119,12 +124,12 @@ const toNum=v=>parseFloat(String(v).replace(/[^0-9.\-]/g,''));
 const C={r:['FDE0E0','C00000'],o:['FFE5CC','C25500'],y:['FFF6BF','8A6A00']};
 const RED='B3121B',YEL='FDB913',TX='2B2B2B',PAL=[RED,YEL,'2E9E5B','4A6FA5','E46C0A'];
 const cv=$('cv'),pop=$('pop');
-let tables=[],lib=[],deck=[],files=[],cur=0,step=1,sel=null,cell=null,drag=null,dc=null,K=1,uid=1,base='Presentation',hist=[],redo=[],clip=null,pend={},pd=0,pt=null;
+let tables=[],lib=[],deck=[],files=[],cur=0,step=1,sel=null,cell=null,drag=null,dc=null,K=1,uid=1,base='Presentation',hist=[],redo=[],clip=null,pend={},pd=0,pt=null,busy=false,cancelFn=null;
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const lvl=(th,v)=>{v=String(v);if(!/%/.test(v)||!isNum(v))return '';const n=toNum(v);return n<th.red?'r':n<th.orange?'o':n<th.yellow?'y':''};
 const kc=t=>t.head.map((_,j)=>j).filter(j=>t.keep[j]);
-const can=()=>step===1?tables.length>0||lib.length>0:step===2?tables.some(t=>t.inc&&kc(t).length):true;
+const can=()=>busy?false:step===1?tables.length>0||lib.length>0:step===2?tables.some(t=>t.inc&&kc(t).length):true;
 const mk=o=>({id:uid++,...o});
 const bx=(x,y,w,h,text,o={})=>mk({t:'box',x,y,w,h,text,fs:20,color:TX,bg:null,b:false,al:'left',va:'middle',...o});
 const cellOf=(o,c)=>c.r<0?o.head[c.c]:o.rows[c.r][c.c];
@@ -144,7 +149,7 @@ function go(n){
 document.querySelectorAll('.steps b').forEach(b=>b.onclick=()=>{const n=+b.dataset.s;if(n===3&&!deck.length||n===2&&!tables.length)return;go(n)});
 $('back').onclick=()=>go(step-1);
 $('next').onclick=()=>{
-  if(step===1){if(tables.length)go(2);else{buildDeck();go(3)}}
+  if(step===1){if(tables.length)go(2);else{buildDeck();lib.forEach(m=>{let w=12.8,h=w*m.ar;if(h>7){h=7;w=h/m.ar}deck.push({bg:'FFFFFF',els:[mk({t:'img',src:m.src,x:(13.33-w)/2,y:(7.5-h)/2,w,h,ar:m.ar})]})});go(3)}}
   else if(step===2){if(deck.length&&!confirm('Rebuilding the slides will discard manual edits. Continue?'))return;buildDeck();go(3)}
   else exportPpt();
 };
@@ -153,7 +158,7 @@ $('next').onclick=()=>{
 function info(){
   const m=$('msg');m.hidden=!files.length&&!lib.length;
   m.innerHTML=files.map(f=>`<span class="chip">${esc(f)}</span>`).join('')+(lib.length?`<span class="chip">${lib.length} picture(s)</span>`:'')+' <a data-a="clr">Clear all</a>';
-  $('next').disabled=!can();
+  $('next').disabled=!can();renderRes();
 }
 $('msg').onclick=e=>{if(e.target.dataset.a==='clr'){tables=[];files=[];lib=[];renderTables();renderLib();info()}};
 $('xl').onchange=async e=>{
@@ -224,6 +229,7 @@ function renderTables(){
     <div class="top"><span class="num">Table ${i+1}</span><span class="chip" style="margin:0">${esc(t.src)} / ${esc(t.sheet)} &middot; ${t.body.length} rows &middot; ${t.head.length} columns</span>
       <label class="sw"><input type="checkbox" data-f="inc" ${t.inc?'checked':''}> Include</label></div>
     <div class="body">
+      <div class="pvw">${pv(t)}</div>
       <label style="margin-top:10px">Slide heading<input type="text" data-f="title" value="${esc(t.title)}"></label>
       <div class="sec">Columns<span><a data-a="all">All</a> &middot; <a data-a="none">None</a></span></div>
       <div class="cols">${t.head.map((h,j)=>`<span class="col ${t.keep[j]?'on':''}"><label><input type="checkbox" data-k="${j}" ${t.keep[j]?'checked':''}> ${esc(h)}</label></span>`).join('')}</div>
@@ -234,7 +240,7 @@ function renderTables(){
         <label>Kya karna hai<select data-n="op"><option value="pct">Pehla, dusre ka % hai</option><option value="add">Pehla + Dusra</option><option value="sub">Pehla - Dusra</option><option value="mul">Pehla x Dusra</option><option value="div">Pehla / Dusra</option><option value="empty">Khali column</option></select></label>
         <label>Dusra column<select data-n="b">${t.head.map((h,j)=>`<option value="${j}" ${j===1?'selected':''}>${esc(h)}</option>`).join('')}</select></label>
       </div>
-      <div class="top" style="margin:4px 0 8px"><button data-a="addf">+ Column jodo</button><button data-a="edit">Data edit karo</button></div>
+      <div class="top" style="margin:4px 0 8px"><button data-a="addf">+ Column jodo</button><button data-a="edit">Data edit karo</button><button data-a="xl">Excel download</button></div>
       <div class="sec">Colour rules (cells with %)</div>
       <div class="g4">
         <label>Red below (%)<input type="number" data-f="red" value="${t.red}"></label>
@@ -243,20 +249,20 @@ function renderTables(){
         <label>Rows per slide<select data-f="per">${[6,8,10,12,15].map(n=>`<option ${n===t.per?'selected':''}>${n}</option>`).join('')}</select></label>
       </div>
     </div>
-  </div>`).join('');
+  </div>`).join('');renderRes();
 }
 $('tlist').oninput=e=>{
   const el=e.target,c=el.closest('.tb');if(!c)return;
   const t=tables[+c.dataset.i],f=el.dataset.f;
   if(f)t[f]=el.type==='checkbox'?el.checked:(el.type==='number'||el.tagName==='SELECT')?+el.value:el.value;
   else if(el.dataset.k!==undefined){t.keep[+el.dataset.k]=el.checked;el.closest('.col').classList.toggle('on',el.checked)}
-  c.classList.toggle('off',!t.inc);$('next').disabled=!can();
+  c.classList.toggle('off',!t.inc);$('next').disabled=!can();{const pw=c.querySelector('.pvw');if(pw)pw.innerHTML=pv(t)}
 };
 $('tlist').onclick=e=>{
   const a=e.target.dataset.a,c=e.target.closest('.tb');if(!a||!c)return;
-  const t=tables[+c.dataset.i];if(a==='addf')return addCol(c,t);if(a==='edit')return editData(t);t.keep=t.keep.map(()=>a==='all');
+  const t=tables[+c.dataset.i];if(a==='addf')return addCol(c,t);if(a==='edit')return editData(t);if(a==='xl')return dlXlsx(t);t.keep=t.keep.map(()=>a==='all');
   c.querySelectorAll('[data-k]').forEach(x=>{x.checked=a==='all';x.closest('.col').classList.toggle('on',a==='all')});
-  $('next').disabled=!can();
+  $('next').disabled=!can();{const pw=c.querySelector('.pvw');if(pw)pw.innerHTML=pv(t)}
 };
 
 // ---------- deck ----------
@@ -529,7 +535,9 @@ function formula(){
 }
 
 // ---------- image / PDF to table data ----------
-const stat=m=>{const s=$('stat');s.hidden=!m;s.textContent=m||''};
+$('stat').innerHTML='<div style="display:flex;gap:10px;align-items:center"><div id="stm" style="flex:1"></div><button id="stc">Skip / Cancel</button></div><div style="height:6px;background:#eee;border-radius:3px;margin-top:8px;overflow:hidden"><i id="stp" style="display:block;height:100%;width:0;background:var(--r)"></i></div>';
+const stat=(m,pc)=>{$('stat').hidden=!m;$('stm').textContent=m||'';$('stp').parentNode.style.display=pc==null?'none':'block';$('stp').style.width=(pc||0)+'%'};
+$('stc').onclick=()=>cancelFn&&cancelFn();
 let ocr2=null;const med=a=>{a=[...a].sort((x,y)=>x-y);return a[a.length>>1]||10};
 function grid(ws){
   if(ws.length<4)return null;
@@ -556,24 +564,25 @@ function grid(ws){
   rows=rows.slice(a,z);
   return rows.length>=2?{title,rows}:null;
 }
-function addT(src,sheet,title,rows){
-  const head=rows[0].map((h,i)=>h||('Column '+(i+1))),t={src,sheet,inc:true,title:title||src.replace(/\.[^.]+$/,'')+(sheet!=='Image'?' - '+sheet:''),head,body:rows.slice(1),keep:head.map(()=>true),red:50,orange:75,yellow:90,per:10};
+function addT(src,sheet,title,rows,img){
+  const head=rows[0].map((h,i)=>h||('Column '+(i+1))),t={img,src,sheet,inc:true,title:title||src.replace(/\.[^.]+$/,'')+(sheet!=='Image'?' - '+sheet:''),head,body:rows.slice(1),keep:head.map(()=>true),red:50,orange:75,yellow:90,per:10};
   tables.push(t);return t;
 }
 async function readData(fs){
   let w=null;
+  const cp=new Promise((_,j)=>{cancelFn=()=>{try{w&&w.terminate()}catch(x){}w=null;j(Error('Cancel kiya'))}});cp.catch(()=>{});
   const ocr=async(c,psm)=>{
     if(!w){if(!window.Tesseract)throw Error('OCR library not loaded. Check your internet connection.');
-      const mkw=lp=>Promise.race([Tesseract.createWorker('eng',1,{...(lp?{langPath:lp}:{}),logger:m=>stat('OCR: '+(m.status||'')+' '+Math.round((m.progress||0)*100)+'%')}),new Promise((_,j)=>setTimeout(()=>j(Error('OCR engine load nahi hua (internet check karein)')),45000))]);
+      const mkw=lp=>Promise.race([cp,Tesseract.createWorker('eng',1,{...(lp?{langPath:lp}:{}),logger:m=>stat('Photo padh rahe hain: '+(m.status||''),Math.round((m.progress||0)*100))}),new Promise((_,j)=>setTimeout(()=>j(Error('OCR engine load nahi hua (internet check karein)')),45000))]);
       try{w=await mkw('')}catch(e1){w=await mkw('https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int')}
       await w.setParameters({preserve_interword_spaces:'1',tessedit_pageseg_mode:'6'})}
-    if(psm)await w.setParameters({tessedit_pageseg_mode:psm});const {data}=await w.recognize(c);
+    if(psm)await w.setParameters({tessedit_pageseg_mode:psm});let data;try{({data}=await Promise.race([w.recognize(c),cp,new Promise((_,j)=>setTimeout(()=>j(Error('OCR bahut der laga raha hai')),120000))]))}catch(er){try{w&&w.terminate()}catch(x){}w=null;throw er}
     const W0=data.words||(data.blocks||[]).flatMap(b=>b.paragraphs.flatMap(p=>p.lines.flatMap(l=>l.words)));return W0.filter(x=>x.text.trim()&&x.confidence>25&&!/^[|_~]+$/.test(x.text.trim())).map(x=>({t:x.text,x0:x.bbox.x0,x1:x.bbox.x1,y0:x.bbox.y0,y1:x.bbox.y1}));
   };
   ocr2=ocr;
   for(const f of fs){
     try{
-      const pages=[];
+      const pages=[];let imgSrc=null;
       if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
         const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
         for(let i=1;i<=Math.min(pdf.numPages,40);i++){
@@ -586,8 +595,8 @@ async function readData(fs){
         }
       }else{
         stat(`${f.name}: preparing image`);
-        const src=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});
-        const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src}),k=Math.min(3,Math.max(.4,2400/im.width)),c=document.createElement('canvas');
+        const src=imgSrc=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});
+        const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src}),k=Math.min(2.5,Math.max(.4,2000/im.width)),c=document.createElement('canvas');lib.push({src,ar:im.height/im.width});renderLib();
         c.width=im.width*k;c.height=im.height*k;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
         pages.push(await fromC(c));
       }
@@ -596,7 +605,7 @@ async function readData(fs){
         if(!g)return;
         const hd=g.rows[0],body=g.rows.slice(1);
         if(last&&last.head.length===hd.length&&last.head.join('|').toLowerCase()===hd.join('|').toLowerCase()){last.body.push(...body);return}
-        last=addT(f.name,pages.length>1?'Page '+(pi+1):'Image',g.title,[hd,...body]);got++;
+        last=addT(f.name,pages.length>1?'Page '+(pi+1):'Image',g.title,[hd,...body],imgSrc);got++;
       });
       if(base==='Presentation'&&got)base=f.name.replace(/\.[^.]+$/,'');
       if(got)files.push(`${f.name} - ${got} table(s) read`);
@@ -606,7 +615,9 @@ async function readData(fs){
   if(w)await w.terminate();
   stat('');renderTables();info();
 }
-$('dt').onchange=async e=>{const f=[...e.target.files];e.target.value='';const n0=tables.length;await readData(f);if(tables.length>n0){if(!deck.length){buildDeck();go(3)}else go(2)}};
+$('dt').onchange=async e=>{const f=[...e.target.files];e.target.value='';if(!f.length)return;busy=true;$('next').disabled=true;$('next').textContent='Photo padh rahe hain...';stat('Shuru ho raha hai...',0);
+  try{await readData(f)}catch(x){alert('Error: '+(x.message||x))}finally{busy=false;cancelFn=null;stat('');go(1);renderTables();info()}
+  setTimeout(()=>{const r=$('res');if(!r.hidden)r.scrollIntoView({behavior:'smooth',block:'start'})},60)};
 addEventListener('unhandledrejection',e=>stat('Error: '+((e.reason&&e.reason.message)||e.reason)));
 
 // ---------- new: popup position, robust image table reading ----------
@@ -657,7 +668,7 @@ async function fromC(c){
     g=tidy(g||grid(ws)||loose(ws));
     const sc=g?g.rows.flat().filter(Boolean).length:0;
     if(sc>bs){bs=sc;best=g}
-    if(vl&&g)break;
+    if(g&&(vl||(g.rows.length>=3&&g.rows[0].length>=2)))break;
   }
   return best;
 }
@@ -685,8 +696,31 @@ function manual(f){
     $('mx').onclick=()=>{$('dlg').hidden=true;res()};
     $('mk').onclick=()=>{const rows=$('md').value.split('\n').filter(l=>l.trim()).map(l=>l.split(/\s*\|\s*|\t/).map(x=>x.trim()));
       if(rows.length<2)return toast('Kam se kam 2 rows chahiye');const n=Math.max(...rows.map(r=>r.length));rows.forEach(r=>{while(r.length<n)r.push('')});
-      addT(f.name,'Image','',rows);$('dlg').hidden=true;renderTables();info();stat('');res()};
+      addT(f.name,'Image','',rows,src||null);$('dlg').hidden=true;renderTables();info();stat('');res()};
   });
+}
+// ---------- preview + excel download ----------
+function pv(t,n=8){
+  const k=kc(t);if(!k.length)return '<div class="ph">Koi column select nahi hai</div>';
+  const th={red:t.red,orange:t.orange,yellow:t.yellow};
+  const c=(v,tag)=>{const l=tag==='td'?lvl(th,v):'';const st=tag==='th'?'background:#b3121b;color:#fff':l?`background:#${C[l][0]};color:#${C[l][1]};font-weight:700`:'';return `<${tag} style="${st}">${esc(v)}</${tag}>`};
+  return `<div class="pvx">${t.img?`<img class="pimg" src="${t.img}">`:''}<div class="pvt"><table class="pvtb"><tr>${k.map(j=>c(t.head[j],'th')).join('')}</tr>${t.body.slice(0,n).map(r=>`<tr>${k.map(j=>c(r[j]??'','td')).join('')}</tr>`).join('')}</table><div class="pvn">${t.body.length} rows &middot; ${k.length} columns${t.body.length>n?' (pehli '+n+' rows dikha rahe hain)':''}</div></div></div>`;
+}
+function renderRes(){
+  const r=$('res'),ix=tables.map((t,i)=>i).filter(i=>tables[i].img);
+  if(ix.length){
+    r.hidden=false;
+    r.innerHTML='<h2>Photo se bani table - preview</h2><div class="pvn" style="margin:0 0 8px">Check kar lein. Galti ho to "Data edit karo" se sudhaar lein, phir Continue dabayein.</div>'+
+      ix.map(i=>`<div class="pvc"><div class="top"><span class="num">Table ${i+1}</span><span class="chip" style="margin:0">${esc(tables[i].src)}</span><button data-e="${i}" style="margin-left:auto">Data edit karo</button></div>${pv(tables[i],12)}</div>`).join('');
+  }else if(lib.length&&!tables.length&&files.length){
+    r.hidden=false;
+    r.innerHTML='<h2>Table nahi mili</h2><div class="pvn" style="margin:0 0 8px">Photo se table auto-read nahi hui. Continue dabane par photo seedhe slide me lag jayegi.</div><div class="grid">'+lib.map(m=>`<div><img src="${m.src}"></div>`).join('')+'</div>';
+  }else{r.hidden=true;r.innerHTML=''}
+}
+$('res').onclick=e=>{const i=e.target.dataset.e;if(i!==undefined)editData(tables[+i])};
+function dlXlsx(t){
+  try{const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([t.head,...t.body]),'Sheet1');
+    XLSX.writeFile(wb,((t.title||'table').replace(/[^\w\- ]+/g,'').trim()||'table')+'.xlsx')}catch(x){alert('Excel banane me error: '+x.message)}
 }
 go(1);
 </script>
