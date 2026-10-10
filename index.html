@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <style>
 :root{--r:#b3121b;--rd:#7f0b12;--y:#fdb913;--bg:#f5f3f1;--t:#25282d;--m:#6b7280;--l:#e5e1dc;--b:#2563eb}
 *{box-sizing:border-box}[hidden]{display:none!important}
@@ -55,12 +56,21 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
 .el table{border-collapse:collapse;table-layout:fixed;width:100%;font-family:Arial,sans-serif}
 .el td,.el th{border:1px solid #d0d0d0;padding:0 5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer}.el th{cursor:grab}
 .el .sel{outline:2px solid var(--b);outline-offset:-2px}
-.pop{position:absolute;z-index:9;width:250px;background:#fff;border:1px solid var(--l);border-radius:12px;padding:10px;box-shadow:0 10px 30px #0004}
+.pop{position:fixed;left:50%;transform:translateX(-50%);bottom:72px;max-height:46vh;overflow:auto;z-index:30;width:min(94vw,460px);background:#fff;border:1px solid var(--l);border-radius:12px;padding:10px;box-shadow:0 10px 30px #0004}
 .pop .r{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;align-items:end}.pop .r button{width:100%}.pop label{margin-bottom:4px}
 .pop .dl{width:100%;color:var(--r);margin-top:4px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:10px}
 .grid div{border:1px solid var(--l);border-radius:8px;padding:6px;display:grid;gap:4px}.grid img{width:100%;height:80px;object-fit:contain;background:#f6f6f6}
 .grid button{border:1px solid var(--l);background:#fff;border-radius:6px;padding:4px;font-size:12px;cursor:pointer}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media(max-width:760px){.g3{grid-template-columns:1fr}}
+.nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px}.nav button{border:1px solid var(--l);background:#fff;border-radius:10px;padding:9px 18px;font:inherit;font-weight:600;cursor:pointer}.nav button:disabled{opacity:.4}.nav b{min-width:70px;text-align:center}
+.pop .dn,.dlgb .dn{background:var(--r);color:#fff;border-color:var(--r)}
+#ctx{position:fixed;z-index:50;background:#fff;border:1px solid var(--l);border-radius:10px;box-shadow:0 10px 30px #0004;padding:4px;min-width:190px}
+#ctx button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;border-radius:6px;color:var(--t)}#ctx button:hover{background:#f5f3f1}#ctx hr{border:0;border-top:1px solid var(--l);margin:4px 0}
+#dlg{position:fixed;inset:0;background:#0006;z-index:60;display:flex;align-items:center;justify-content:center;padding:12px}#dlg .card{width:360px;max-width:100%;margin:0}
+.dlgb{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}.dlgb button{border:1px solid var(--l);background:#fff;border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
+.sws{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.sws i{width:20px;height:20px;border-radius:5px;border:1px solid #bbb;cursor:pointer}.bar .sm{flex:none;width:54px;background:#f2ece6;color:var(--t)}body{padding-bottom:96px}
+.tb button{border:1px solid var(--l);background:#fff;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}.tb button:hover{border-color:var(--r)}
 </style>
 </head>
 <body>
@@ -69,12 +79,15 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
   <div class="steps"><b data-s="1">1 &nbsp;Upload</b><b data-s="2">2 &nbsp;Tables</b><b data-s="3">3 &nbsp;Edit &amp; Export</b></div>
 
   <section id="s1">
-    <div class="g2">
+    <div class="g3">
       <div class="card"><h2>Excel workbooks</h2>
         <label class="drop"><b>Select one or more Excel files</b><small>.xlsx, .xls, .csv</small><input type="file" id="xl" accept=".xlsx,.xls,.csv" multiple hidden></label></div>
-      <div class="card"><h2>Pictures and PDF</h2>
-        <label class="drop"><b>Select JPG, PNG or PDF files</b><small>Optional. PDF pages are added as pictures</small><input type="file" class="mi" accept="image/*,.pdf" multiple hidden></label></div>
+      <div class="card"><h2>Tables from image or PDF</h2>
+        <label class="drop"><b>Select JPG, PNG or PDF with a table</b><small>Converted to table data, then used for slides</small><input type="file" id="dt" accept="image/*,.pdf" multiple hidden></label></div>
+      <div class="card"><h2>Pictures for slides</h2>
+        <label class="drop"><b>Select JPG, PNG or PDF files</b><small>Photos, logos, scanned pages. Added to the picture library</small><input type="file" class="mi" accept="image/*,.pdf" multiple hidden></label></div>
     </div>
+    <div class="card" id="stat" hidden></div>
     <div class="card" id="msg" hidden></div>
   </section>
 
@@ -82,8 +95,10 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
 
   <section id="s3" hidden>
     <div class="strip" id="strip"></div>
+    <div class="nav"><button id="prev">&larr; Previous</button><b id="pg"></b><button id="nx">Next &rarr;</button></div>
     <div class="tools" id="tools">
-      <button data-a="text">+ Text box</button><button data-a="pic">+ Picture</button><button data-a="chart">+ Bar chart</button>
+      <button data-a="undo">Undo</button><button data-a="redo">Redo</button><button data-a="text">+ Text box</button><button data-a="pic">+ Picture</button><button data-a="chart">+ Bar chart</button>
+      <button data-a="cil">+Col &larr;</button><button data-a="cir">+Col &rarr;</button><button data-a="cdel">&minus;Col</button><button data-a="rdn">+Row</button><button data-a="rdel">&minus;Row</button><button data-a="frm">&Sigma; Formula</button><button data-a="cpy">Copy style</button><button data-a="pst">Paste style</button>
       <button data-a="slide">+ Blank slide</button><button data-a="dslide">Delete slide</button><button data-a="del">Delete selected</button>
       <label>Slide colour <input type="color" id="sbg"></label>
     </div>
@@ -93,7 +108,8 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
     <div class="stage" id="stage"><div id="vp"><div id="cv"></div></div><div class="pop" id="pop" hidden></div></div>
   </section>
 </div>
-<div class="bar"><button id="back">Back</button><button id="next" disabled>Continue</button></div>
+<div id="ctx" hidden></div><div id="dlg" hidden></div>
+<div class="bar"><button id="bp" class="sm" hidden>&lsaquo;</button><button id="back">Back</button><button id="next" disabled>Continue</button><button id="bn" class="sm" hidden>&rsaquo;</button></div>
 
 <script>
 const LOGO='data:image/png;base64,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';
@@ -104,7 +120,7 @@ const toNum=v=>parseFloat(String(v).replace(/[^0-9.\-]/g,''));
 const C={r:['FDE0E0','C00000'],o:['FFE5CC','C25500'],y:['FFF6BF','8A6A00']};
 const RED='B3121B',YEL='FDB913',TX='2B2B2B',PAL=[RED,YEL,'2E9E5B','4A6FA5','E46C0A'];
 const cv=$('cv'),pop=$('pop');
-let tables=[],lib=[],deck=[],files=[],cur=0,step=1,sel=null,cell=null,drag=null,dc=null,K=1,uid=1,base='Presentation';
+let tables=[],lib=[],deck=[],files=[],cur=0,step=1,sel=null,cell=null,drag=null,dc=null,K=1,uid=1,base='Presentation',hist=[],redo=[],clip=null,pend={},pd=0,pt=null;
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const lvl=(th,v)=>{v=String(v);if(!/%/.test(v)||!isNum(v))return '';const n=toNum(v);return n<th.red?'r':n<th.orange?'o':n<th.yellow?'y':''};
@@ -122,7 +138,7 @@ function go(n){
   [1,2,3].forEach(i=>{$('s'+i).hidden=i!==n;document.querySelector(`.steps b[data-s="${i}"]`).classList.toggle('on',i===n)});
   $('back').style.visibility=n>1?'visible':'hidden';
   $('next').textContent=['Continue','Build slides','Download PPT'][n-1];
-  $('next').disabled=!can();
+  $('next').disabled=!can();$('bp').hidden=$('bn').hidden=n!==3;
   if(n===3){fit();draw()}
   scrollTo(0,0);
 }
@@ -170,7 +186,7 @@ async function addMedia(fs){
 }
 function renderLib(){$('libgrid').innerHTML=lib.map((m,i)=>`<div><img src="${m.src}"><button data-ins="${i}">Insert</button><button data-sl="${i}">As new slide</button></div>`).join('')}
 $('libgrid').onclick=e=>{
-  const d=e.target.dataset,sl=deck[cur];
+  const d=e.target.dataset,sl=deck[cur];if(d.ins!==undefined||d.sl!==undefined)snap();
   if(d.ins!==undefined){const m=lib[+d.ins];let w=4,h=w*m.ar;if(h>5){h=5;w=h/m.ar}const o=mk({t:'img',src:m.src,x:(13.33-w)/2,y:1.4,w,h,ar:m.ar});sl.els.push(o);sel=o;cell=null;draw();showPop()}
   if(d.sl!==undefined){const m=lib[+d.sl];let w=12.8,h=w*m.ar;if(h>7){h=7;w=h/m.ar}deck.splice(cur+1,0,{bg:'FFFFFF',els:[mk({t:'img',src:m.src,x:(13.33-w)/2,y:(7.5-h)/2,w,h,ar:m.ar})]});cur++;sel=cell=null;pop.hidden=true;draw()}
 };
@@ -212,6 +228,14 @@ function renderTables(){
       <label style="margin-top:10px">Slide heading<input type="text" data-f="title" value="${esc(t.title)}"></label>
       <div class="sec">Columns<span><a data-a="all">All</a> &middot; <a data-a="none">None</a></span></div>
       <div class="cols">${t.head.map((h,j)=>`<span class="col ${t.keep[j]?'on':''}"><label><input type="checkbox" data-k="${j}" ${t.keep[j]?'checked':''}> ${esc(h)}</label></span>`).join('')}</div>
+      <div class="sec">Naya column jodein (formula)</div>
+      <div class="g4">
+        <label>Naam<input type="text" data-n="name" value="Result"></label>
+        <label>Pehla column<select data-n="a">${t.head.map((h,j)=>`<option value="${j}">${esc(h)}</option>`).join('')}</select></label>
+        <label>Kya karna hai<select data-n="op"><option value="pct">Pehla, dusre ka % hai</option><option value="add">Pehla + Dusra</option><option value="sub">Pehla - Dusra</option><option value="mul">Pehla x Dusra</option><option value="div">Pehla / Dusra</option><option value="empty">Khali column</option></select></label>
+        <label>Dusra column<select data-n="b">${t.head.map((h,j)=>`<option value="${j}" ${j===1?'selected':''}>${esc(h)}</option>`).join('')}</select></label>
+      </div>
+      <div class="top" style="margin:4px 0 8px"><button data-a="addf">+ Column jodo</button><button data-a="edit">Data edit karo</button></div>
       <div class="sec">Colour rules (cells with %)</div>
       <div class="g4">
         <label>Red below (%)<input type="number" data-f="red" value="${t.red}"></label>
@@ -231,7 +255,7 @@ $('tlist').oninput=e=>{
 };
 $('tlist').onclick=e=>{
   const a=e.target.dataset.a,c=e.target.closest('.tb');if(!a||!c)return;
-  const t=tables[+c.dataset.i];t.keep=t.keep.map(()=>a==='all');
+  const t=tables[+c.dataset.i];if(a==='addf')return addCol(c,t);if(a==='edit')return editData(t);t.keep=t.keep.map(()=>a==='all');
   c.querySelectorAll('[data-k]').forEach(x=>{x.checked=a==='all';x.closest('.col').classList.toggle('on',a==='all')});
   $('next').disabled=!can();
 };
@@ -261,7 +285,7 @@ function cst(e,c,r){
   return{fc:c.fc||(l?C[l][1]:TX),bg:c.bg||(l?C[l][0]:tot?'FFF0C2':r%2?'F6F6F6':'FFFFFF'),b:c.b??(!!l||tot)};
 }
 function cdata(ch){
-  const tb=ch.tb,hi=n=>tb.head.findIndex(h=>h.v===n),lc=Math.max(0,hi(ch.lc)),rows=tb.rows.filter(r=>!/total/i.test(r[0].v)).slice(0,12);
+  recalc(ch.tb);const tb=ch.tb,hi=n=>tb.head.findIndex(h=>h.v===n),lc=Math.max(0,hi(ch.lc)),rows=tb.rows.filter(r=>!/total/i.test(r[0].v)).slice(0,12);
   return ch.vc.map(hi).filter(i=>i>=0).map(i=>({name:tb.head[i].v,labels:rows.map(r=>r[lc].v),values:rows.map(r=>isNum(r[i].v)?toNum(r[i].v):0)}));
 }
 function chartSvg(ch){
@@ -275,6 +299,7 @@ function chartSvg(ch){
 }
 function draw(){
   const sl=deck[cur];if(!sl)return;
+  sl.els.forEach(e=>e.t==='tbl'&&recalc(e));$('pg').textContent=`${cur+1} / ${deck.length}`;$('prev').disabled=cur===0;$('nx').disabled=cur>=deck.length-1;
   cv.style.background='#'+sl.bg;
   cv.innerHTML=sl.els.map((e,i)=>{
     let h='';
@@ -293,7 +318,7 @@ function draw(){
 function fit(){K=$('vp').clientWidth/960;cv.style.transform=`scale(${K})`;$('vp').style.height=540*K+'px'}
 addEventListener('resize',()=>{if(step===3){fit();pos()}});
 $('strip').onclick=e=>{const i=e.target.dataset.i;if(i===undefined)return;cur=+i;sel=cell=null;pop.hidden=true;draw()};
-$('sbg').oninput=e=>{deck[cur].bg=e.target.value.slice(1).toUpperCase();draw()};
+$('sbg').onfocus=snap;$('sbg').oninput=e=>{deck[cur].bg=e.target.value.slice(1).toUpperCase();draw()};
 
 // ---------- selection, drag, resize ----------
 function mark(){
@@ -305,29 +330,39 @@ cv.onpointerdown=e=>{
   const d=e.target.closest('.el');
   if(!d){sel=cell=null;mark();pop.hidden=true;return}
   const o=deck[cur].els[+d.dataset.i],td=e.target.closest('td,th'),rs=e.target.classList.contains('rs'),gr=e.target.classList.contains('gr');
-  sel=o;cell=td?{el:o,r:+td.dataset.r,c:+td.dataset.c}:null;mark();showPop();
+  sel=o;cell=td?{el:o,r:+td.dataset.r,c:+td.dataset.c}:null;mark();showPop();clearTimeout(window.lp);if(td)window.lp=setTimeout(()=>{drag=null;ctx(e.clientX,e.clientY)},650);
   if(rs||gr||o.t!=='tbl'){drag={o,rs,sx:e.clientX,sy:e.clientY,x:o.x,y:o.y,w:o.w,h:o.h};cv.setPointerCapture(e.pointerId);pop.hidden=true}
 };
 cv.onpointermove=e=>{
   if(!drag)return;
+  if(!drag.sn){if(Math.abs(e.clientX-drag.sx)+Math.abs(e.clientY-drag.sy)<3)return;snap();drag.sn=1}
   const o=drag.o,dx=(e.clientX-drag.sx)/K/72,dy=(e.clientY-drag.sy)/K/72;
   if(drag.rs){o.w=Math.max(.4,drag.w+dx);o.h=o.t==='img'?o.w*o.ar:Math.max(.3,drag.h+dy)}else{o.x=drag.x+dx;o.y=drag.y+dy}
   draw();
 };
-cv.onpointerup=cv.onpointercancel=()=>{if(drag){drag=null;pos()}};
+cv.onpointerup=cv.onpointercancel=()=>{clearTimeout(window.lp);if(drag){drag=null;pos()}};
 cv.ondragstart=e=>{const th=e.target.closest&&e.target.closest('th');if(!th){e.preventDefault();return}dc={d:th.closest('.el'),c:+th.dataset.c};e.dataTransfer.setData('text','c')};
 cv.ondragover=e=>{if(dc)e.preventDefault()};
 cv.ondrop=e=>{
   const th=e.target.closest('th');if(!dc||!th||th.closest('.el')!==dc.d){dc=null;return}
-  e.preventDefault();const o=deck[cur].els[+dc.d.dataset.i],n=+th.dataset.c;mv(o,dc.c,n);sel=o;cell={el:o,r:-1,c:n};dc=null;draw();showPop();
+  e.preventDefault();const o=deck[cur].els[+dc.d.dataset.i],n=+th.dataset.c;snap();sibs(o).forEach(t=>mv(t,dc.c,n));sel=o;cell={el:o,r:-1,c:n};dc=null;draw();showPop();
 };
-document.onkeydown=e=>{if(step===3&&e.key==='Delete'&&sel&&!cell&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))del()};
-function del(){deck[cur].els=deck[cur].els.filter(x=>x!==sel);sel=cell=null;pop.hidden=true;draw()}
+document.onkeydown=e=>{
+  if(step!==3)return;const f=document.activeElement,k=e.key.toLowerCase(),m=e.ctrlKey||e.metaKey;
+  if(f&&(f.tagName==='TEXTAREA'||f.tagName==='SELECT'||(f.tagName==='INPUT'&&/text|number|range/.test(f.type))))return;
+  if(m&&k==='z'){e.preventDefault();undo(e.shiftKey)}
+  else if(m&&k==='y'){e.preventDefault();undo(true)}
+  else if(m&&k==='c'&&cell){e.preventDefault();copyStyle();toast('Cell style copied')}
+  else if(m&&k==='v'&&cell&&clip){e.preventDefault();pasteStyle();toast('Style pasted')}
+  else if(k==='delete'&&sel&&!cell)del();
+  else if(k==='arrowright')slide(1);else if(k==='arrowleft')slide(-1);
+};
+function del(){snap();deck[cur].els=deck[cur].els.filter(x=>x!==sel);sel=cell=null;pop.hidden=true;draw()}
 
 // ---------- floating options ----------
 function showPop(){
   const o=sel;if(!o){pop.hidden=true;return}
-  const col=(k,v,l)=>`<label>${l}<input type="color" data-o="${k}" value="#${v}"></label>`;
+  const SW=['000000','FFFFFF','B3121B','FDB913','2E9E5B','2563EB','F6F6F6','FDE0E0','FFF6BF','D9EAD3'],col=(k,v,l)=>`<div><label>${l}<input type="color" data-o="${k}" value="#${v}"></label><div class="sws">${SW.map(c=>`<i data-sw="${k}" data-v="${c}" style="background:#${c}"></i>`).join('')}</div></div>`;
   let h='';
   if(cell){
     const c=cellOf(o,cell),z=cst(o,c,cell.r);
@@ -350,7 +385,8 @@ function showPop(){
     h=`<label>Labels from<select data-ch="lc">${hs.map(x=>`<option ${x===o.lc?'selected':''}>${esc(x)}</option>`).join('')}</select></label><div style="margin-bottom:4px"><b>Columns to plot</b></div>`+
       nums.map(x=>`<label class="tg"><input type="checkbox" data-cv="${esc(x)}" ${o.vc.includes(x)?'checked':''}> ${esc(x)}</label>`).join('');
   }
-  pop.innerHTML=h+(cell?'':'<button class="dl" data-a="del">Delete</button>');
+  pend={};pd=0;pt={o:sel,c:cell?{...cell}:null};
+  pop.innerHTML=h+(cell?'<div class="r"><button data-a="cpy">Copy style</button><button data-a="pst">Paste style</button></div><div class="r"><button data-a="more">Column / row...</button><button class="dn" data-a="done">Done</button></div>':'<div class="r"><button class="dl" data-a="del">Delete</button><button class="dn" data-a="done">Done</button></div>');
   pos();
 }
 function pos(){
@@ -362,28 +398,40 @@ function pos(){
   if(y+ph>s.height){if(r.top-s.top-ph-8>=0)y=r.top-s.top-ph-8;else{y=8;x=s.width-pop.offsetWidth-8}}
   pop.style.left=x+'px';pop.style.top=Math.max(0,y)+'px';
 }
-pop.oninput=e=>{
+function setv(k,v){
+  const o=pt&&pt.o||sel;if(!o)return;const cc=pt?pt.c:cell;
+  const ks=k.split('.'),last=ks.pop();let b=cc?cellOf(o,cc):o;ks.forEach(x=>b=b[x]);b[last]=v;
+  if(o.t==='img')o.h=o.w*o.ar;
+}
+pop.oninput=pop.onchange=e=>{
   const i=e.target,o=sel;if(!o)return;
+  if(!pd){snap();pd=1}
   if(i.dataset.ch){o.lc=i.value;draw();return}
-  if(i.dataset.cv!==undefined){o.vc=i.checked?[...o.vc,i.dataset.cv]:o.vc.filter(x=>x!==i.dataset.cv);draw();return}
+  if(i.dataset.cv!==undefined){o.vc=i.checked?[...new Set([...o.vc,i.dataset.cv])]:o.vc.filter(x=>x!==i.dataset.cv);draw();return}
   const k=i.dataset.o;if(!k)return;
   const v=i.type==='checkbox'?i.checked:i.type==='color'?i.value.slice(1).toUpperCase():(i.type==='number'||i.type==='range')?+i.value:i.value;
-  const ks=k.split('.'),last=ks.pop();let b=cell?cellOf(o,cell):o;ks.forEach(x=>b=b[x]);b[last]=v;
-  if(o.t==='img')o.h=o.w*o.ar;
-  draw();
+  pend[k]=v;setv(k,v);draw();
 };
 pop.onclick=e=>{
+  if(e.target.dataset.sw){if(!pd){snap();pd=1}const k=e.target.dataset.sw,v=e.target.dataset.v;pend[k]=v;setv(k,v);const inp=pop.querySelector(`input[data-o="${k}"]`);if(inp)inp.value='#'+v;draw();return}
   const a=e.target.dataset.a,o=sel;if(!a||!o)return;
+  if(a==='done'){Object.entries(pend).forEach(([k,v])=>setv(k,v));pend={};sel=cell=null;pop.hidden=true;draw();return}
+  if(a==='cpy'){copyStyle();toast('Cell style copied');return}
+  if(a==='pst')return pasteStyle();
+  if(a==='more'){const r=e.target.getBoundingClientRect();return ctx(r.left,r.bottom)}
   if(a==='del')return del();
+  snap();
   if(a==='nobg')o.bg=null;
   if(a==='rst'){const c=cellOf(o,cell);delete c.fc;delete c.bg;delete c.b}
-  if(a==='cl'||a==='cr'){const n=cell.c+(a==='cl'?-1:1);if(n>=0&&n<o.head.length){mv(o,cell.c,n);cell.c=n}}
+  if(a==='cl'||a==='cr'){const n=cell.c+(a==='cl'?-1:1);if(n>=0&&n<o.head.length){sibs(o).forEach(t=>mv(t,cell.c,n));cell.c=n}}
   draw();showPop();
 };
 
 // ---------- toolbar ----------
 $('tools').onclick=e=>{
   const a=e.target.dataset.a;if(!a)return;const sl=deck[cur];
+  if(['cil','cir','cdel','rup','rdn','rdel','frm','cpy','pst'].includes(a)){if(!cell||!sel||sel.t!=='tbl')return toast('Pehle table ka koi cell select karein');return a==='frm'?formula():a==='cpy'?(copyStyle(),toast('Cell style copied')):a==='pst'?pasteStyle():tbop(a)}
+  if(a==='undo')return undo();if(a==='redo')return undo(true);if(a!=='pic'&&a!=='del')snap();
   if(a==='text'){const o=bx(4.5,3,4,1,'Text',{fs:24});sl.els.push(o);sel=o;cell=null;draw();showPop()}
   else if(a==='pic')$('lib').hidden=!$('lib').hidden;
   else if(a==='chart')addChart();
@@ -409,7 +457,7 @@ function exportPpt(){
     deck.forEach((sl,si)=>{
       const s=p.addSlide();s.background={color:sl.bg};
       sl.els.forEach(e=>{
-        const g={x:e.x,y:e.y,w:e.w};
+        const g={x:e.x,y:e.y,w:e.w};if(e.t==='tbl')recalc(e);
         if(e.t==='box')s.addText(e.text,{...g,h:e.h,fontFace:F,fontSize:e.fs,bold:e.b,color:e.color,align:e.al,valign:e.va==='top'?'top':'middle',margin:e.bg?.08:0,...(e.bg?{fill:{color:e.bg}}:{})});
         else if(e.t==='img')s.addImage({data:e.src,...g,h:e.h});
         else if(e.t==='chart'){const S=cdata(e);if(S.length)s.addChart(p.charts.BAR,S,{...g,h:e.h,barDir:'col',chartColors:S.map((_,k)=>PAL[k%5]),showLegend:S.length>1,legendPos:'b',showValue:true,dataLabelFontSize:10,catAxisLabelFontSize:11,valGridLine:{color:'D0D0D0',size:.5}})}
@@ -422,6 +470,192 @@ function exportPpt(){
     });
     p.writeFile({fileName:base+'_PPT.pptx'});
   }catch(err){alert('Export failed: '+err.message)}
+}
+
+// ---------- history, formulas, rows and columns ----------
+const cl=(o,m=new Map)=>{if(!o||typeof o!=='object')return o;if(m.has(o))return m.get(o);const n=Array.isArray(o)?[]:{};m.set(o,n);for(const k in o)n[k]=cl(o[k],m);return n};
+const snap=()=>{hist.push({d:cl(deck),c:cur});if(hist.length>60)hist.shift();redo=[]};
+function undo(fwd){
+  const a=fwd?redo:hist,b=fwd?hist:redo,s=a.pop();if(!s)return;
+  b.push({d:cl(deck),c:cur});deck=s.d;cur=Math.min(s.c,deck.length-1);sel=cell=null;pop.hidden=true;draw();
+}
+function slide(d){const n=cur+d;if(n<0||n>=deck.length)return;cur=n;sel=cell=null;pop.hidden=true;draw()}
+$('prev').onclick=()=>slide(-1);$('nx').onclick=()=>slide(1);
+function toast(m){let d=$('toast');if(!d){d=document.createElement('div');d.id='toast';d.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:70';document.body.appendChild(d)}d.textContent=m;d.hidden=false;clearTimeout(d.t);d.t=setTimeout(()=>d.hidden=true,1600)}
+const sg=t=>t.head.map(h=>h.v).join('\u0001');
+const sibs=t=>deck.flatMap(s=>s.els).filter(e=>e.t==='tbl'&&sg(e)===sg(t));
+const hid=h=>h.id||(h.id=uid++);
+function recalc(t){
+  const ix=id=>t.head.findIndex(h=>h.id===id);
+  t.head.forEach((h,c)=>{if(!h.f)return;const a=ix(h.f.a),b=ix(h.f.b),o=h.f.op,p=o==='pct'?10:100;
+    t.rows.forEach(r=>{const x=a<0?NaN:toNum(r[a].v),y=b<0?NaN:toNum(r[b].v);if(isNaN(x)||isNaN(y)){r[c].v='';return}
+      const v=o==='pct'?(y?x/y*100:0):o==='add'?x+y:o==='sub'?x-y:o==='mul'?x*y:(y?x/y:0);r[c].v=(Math.round(v*p)/p)+(o==='pct'?'%':'')})});
+}
+function copyStyle(){if(!cell)return;const z=cst(sel,cellOf(sel,cell),cell.r);clip={fc:z.fc,bg:z.bg,b:z.b}}
+function pasteStyle(){if(!cell||!clip)return toast('Copy a cell style first');snap();Object.assign(cellOf(sel,cell),clip);draw();showPop();toast('Style pasted')}
+function tbop(a){
+  const o=sel;if(!o||o.t!=='tbl'||!cell)return;snap();
+  const c=cell.c,r=cell.r,i=c+(a==='cir'?1:0);
+  if(a==='cil'||a==='cir'){sibs(o).forEach(t=>{t.head.splice(i,0,{v:'New column'});t.rows.forEach(x=>x.splice(i,0,{v:''}))});cell.c=i}
+  else if(a==='cdel'){if(o.head.length<2)return toast('At least one column is required');sibs(o).forEach(t=>{t.head.splice(c,1);t.rows.forEach(x=>x.splice(c,1))});cell.c=Math.min(c,o.head.length-1)}
+  else if(a==='rup'||a==='rdn'){const k=r<0?0:r+(a==='rdn'?1:0);o.rows.splice(k,0,o.head.map(()=>({v:''})));cell.r=k}
+  else if(a==='rdel'){if(r<0)return toast('Select a row below the header');o.rows.splice(r,1);cell=null}
+  draw();showPop();
+}
+function ctx(x,y){
+  const m=$('ctx');
+  m.innerHTML=[['cil','Insert column left'],['cir','Insert column right'],['cdel','Delete column'],0,['rup','Insert row above'],['rdn','Insert row below'],['rdel','Delete row'],0,['frm','Formula column...'],['cpy','Copy cell style'],['pst','Paste cell style']].map(i=>i?`<button data-m="${i[0]}">${i[1]}</button>`:'<hr>').join('');
+  m.hidden=false;m.style.left=Math.max(0,Math.min(x,innerWidth-210))+'px';m.style.top=Math.max(0,Math.min(y,innerHeight-340))+'px';
+}
+$('ctx').onclick=e=>{const a=e.target.dataset.m;if(!a)return;$('ctx').hidden=true;a==='frm'?formula():a==='cpy'?(copyStyle(),toast('Cell style copied')):a==='pst'?pasteStyle():tbop(a)};
+addEventListener('pointerdown',e=>{if(!e.target.closest('#ctx'))$('ctx').hidden=true});
+cv.oncontextmenu=e=>{if(e.target.closest('td,th')){e.preventDefault();ctx(e.clientX,e.clientY)}};
+function formula(){
+  const o=sel;if(!o||o.t!=='tbl')return;
+  const op=o.head.map((h,i)=>`<option value="${i}">${esc(h.v)}</option>`).join('');
+  $('dlg').innerHTML=`<div class="card"><h2>New formula column</h2>
+    <label>Column name<input type="text" id="fn" value="Result"></label>
+    <label>First column<select id="fa">${op}</select></label>
+    <label>Calculation<select id="fo"><option value="pct">First as % of second</option><option value="add">First + Second</option><option value="sub">First - Second</option><option value="mul">First x Second</option><option value="div">First / Second</option></select></label>
+    <label>Second column<select id="fb">${op}</select></label>
+    <div class="dlgb"><button id="fx">Cancel</button><button class="dn" id="fk">Create column</button></div></div>`;
+  const c0=cell?cell.c:0;$('fa').value=c0;$('fb').value=Math.min(c0+1,o.head.length-1);$('dlg').hidden=false;
+  $('fx').onclick=()=>$('dlg').hidden=true;
+  $('fk').onclick=()=>{
+    const a=+$('fa').value,b=+$('fb').value,p=$('fo').value,nm=$('fn').value||'Result',at=(cell?cell.c:o.head.length-1)+1;
+    snap();
+    sibs(o).forEach(t=>{t.head.splice(at,0,{v:nm,f:{a:hid(t.head[a]),b:hid(t.head[b]),op:p}});t.rows.forEach(r=>r.splice(at,0,{v:''}));recalc(t)});
+    $('dlg').hidden=true;cell=null;draw();showPop();toast('Column added');
+  };
+}
+
+// ---------- image / PDF to table data ----------
+const stat=m=>{const s=$('stat');s.hidden=!m;s.textContent=m||''};
+let ocr2=null;const med=a=>{a=[...a].sort((x,y)=>x-y);return a[a.length>>1]||10};
+function grid(ws){
+  if(ws.length<4)return null;
+  const mh=med(ws.map(w=>w.y1-w.y0)),gm=Math.max(4,mh*.8),L=[];
+  ws.slice().sort((a,b)=>(a.y0+a.y1)-(b.y0+b.y1)).forEach(w=>{
+    const yc=(w.y0+w.y1)/2,l=L[L.length-1];
+    if(l&&Math.abs(yc-l.y)<mh*.6){l.y=(l.y*l.w.length+yc)/(l.w.length+1);l.w.push(w)}else L.push({y:yc,w:[w]});
+  });
+  L.forEach(l=>{l.w.sort((a,b)=>a.x0-b.x0);l.s=1+l.w.filter((w,i)=>i&&w.x0-l.w[i-1].x1>=gm).length});
+  const M=L.filter(l=>l.s>=2);if(M.length<2)return null;
+  const W=Math.ceil(Math.max(...ws.map(w=>w.x1)))+2,D=new Int32Array(W+3);
+  M.forEach(l=>l.w.forEach(w=>{D[Math.max(0,Math.floor(w.x0))]++;D[Math.ceil(w.x1)+1]--}));
+  const tol=Math.floor(M.length*.05),cuts=[];let run=-1,sum=0;
+  for(let x=0;x<=W;x++){sum+=D[x];if(sum<=tol){if(run<0)run=x}else{if(run>0&&x-run>=gm)cuts.push((run+x)/2);run=-1}}
+  const n=cuts.length+1;
+  let rows=L.map(l=>{const r=Array(n).fill('');l.w.forEach(w=>{const c=cuts.filter(x=>x<(w.x0+w.x1)/2).length;r[c]=(r[c]+' '+w.t).trim()});return r});
+  const keep=[...Array(n).keys()].filter(c=>rows.some(r=>r[c]));
+  rows=rows.map(r=>keep.map(c=>r[c].replace(/\s+%/g,'%').replace(/^\|+|\|+$/g,'').trim()));
+  if(keep.length<2)return null;
+  const ne=r=>r.filter(Boolean).length;let a=0,z=rows.length,title='';
+  while(a<z-1&&ne(rows[a])<=1&&keep.length>=3){title=(title+' '+rows[a].join(' ')).trim();a++}
+  while(z>a+1&&ne(rows[z-1])<=1&&keep.length>=3)z--;
+  rows=rows.slice(a,z);
+  return rows.length>=2?{title,rows}:null;
+}
+function addT(src,sheet,title,rows){
+  const head=rows[0].map((h,i)=>h||('Column '+(i+1))),t={src,sheet,inc:true,title:title||src.replace(/\.[^.]+$/,'')+(sheet!=='Image'?' - '+sheet:''),head,body:rows.slice(1),keep:head.map(()=>true),red:50,orange:75,yellow:90,per:10};
+  tables.push(t);return t;
+}
+async function readData(fs){
+  let w=null;
+  const ocr=async(c,psm)=>{
+    if(!w){if(!window.Tesseract)throw Error('OCR library not loaded. Check your internet connection.');
+      w=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text')stat(`Reading text ${Math.round(m.progress*100)}%`)}});
+      await w.setParameters({preserve_interword_spaces:'1',tessedit_pageseg_mode:'6'})}
+    if(psm)await w.setParameters({tessedit_pageseg_mode:psm});const {data}=await w.recognize(c);
+    const W0=data.words||(data.blocks||[]).flatMap(b=>b.paragraphs.flatMap(p=>p.lines.flatMap(l=>l.words)));return W0.filter(x=>x.text.trim()&&x.confidence>25&&!/^[|_~]+$/.test(x.text.trim())).map(x=>({t:x.text,x0:x.bbox.x0,x1:x.bbox.x1,y0:x.bbox.y0,y1:x.bbox.y1}));
+  };
+  ocr2=ocr;
+  for(const f of fs){
+    try{
+      const pages=[];
+      if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
+        const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+        for(let i=1;i<=Math.min(pdf.numPages,40);i++){
+          stat(`${f.name}: page ${i} of ${pdf.numPages}`);
+          const pg=await pdf.getPage(i),vp=pg.getViewport({scale:1}),tc=await pg.getTextContent();
+          let g=grid(tc.items.filter(x=>x.str.trim()).map(x=>{const h=Math.abs(x.transform[3])||x.height||10,y=vp.height-x.transform[5];return{t:x.str.trim(),x0:x.transform[4],x1:x.transform[4]+x.width,y0:y-h,y1:y}}));
+          if(!g){const v2=pg.getViewport({scale:2.2}),c=document.createElement('canvas');c.width=v2.width;c.height=v2.height;
+            await pg.render({canvasContext:c.getContext('2d'),viewport:v2}).promise;g=await fromC(c)}
+          pages.push(g);
+        }
+      }else{
+        stat(`${f.name}: preparing image`);
+        const src=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});
+        const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src}),k=Math.min(3,Math.max(.4,2400/im.width)),c=document.createElement('canvas');
+        c.width=im.width*k;c.height=im.height*k;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+        pages.push(await fromC(c));
+      }
+      let last=null,got=0;
+      pages.forEach((g,pi)=>{
+        if(!g)return;
+        const hd=g.rows[0],body=g.rows.slice(1);
+        if(last&&last.head.length===hd.length&&last.head.join('|').toLowerCase()===hd.join('|').toLowerCase()){last.body.push(...body);return}
+        last=addT(f.name,pages.length>1?'Page '+(pi+1):'Image',g.title,[hd,...body]);got++;
+      });
+      if(base==='Presentation'&&got)base=f.name.replace(/\.[^.]+$/,'');
+      if(got)files.push(`${f.name} - ${got} table(s) read`);
+      else{files.push(`${f.name} - no table found, added to pictures`);await addMedia([f])}
+    }catch(err){files.push(`${f.name} - could not be read (${err.message||err})`)}
+  }
+  if(w)await w.terminate();
+  stat('');renderTables();info();
+}
+$('dt').onchange=async e=>{const f=[...e.target.files];e.target.value='';await readData(f)};
+
+// ---------- new: popup position, robust image table reading ----------
+function pos(){pop.hidden=!sel}
+function glines(c){
+  const W=c.width,H=c.height,d=c.getContext('2d').getImageData(0,0,W,H).data,col=new Int32Array(W),row=new Int32Array(H);
+  for(let y=0,i=0;y<H;y++)for(let x=0;x<W;x++,i+=4)if(d[i]+d[i+1]+d[i+2]<400){col[x]++;row[y]++}
+  const pick=(a,n,len,mx)=>{const o=[];let s=-1;for(let i=0;i<=n;i++){const on=i<n&&a[i]>len*.45;if(on&&s<0)s=i;if(!on&&s>=0){if(i-s<=mx)o.push((s+i-1)/2);s=-1}}return o};
+  return{xs:pick(col,W,H,Math.max(8,W*.012)),ys:pick(row,H,W,Math.max(8,H*.012))};
+}
+function gcells(ws,L){
+  const X=L.xs,Y=L.ys,R=Y.length-1,C=X.length-1,g=Array.from({length:R},()=>Array(C).fill(''));
+  ws.slice().sort((a,b)=>Math.abs(a.y0-b.y0)<8?a.x0-b.x0:a.y0-b.y0).forEach(w=>{
+    const cx=(w.x0+w.x1)/2,cy=(w.y0+w.y1)/2,c=X.findIndex((x,i)=>i<C&&cx>x&&cx<X[i+1]),r=Y.findIndex((y,i)=>i<R&&cy>y&&cy<Y[i+1]);
+    if(r>=0&&c>=0)g[r][c]=(g[r][c]+' '+w.t).trim()});
+  const rows=g.filter(r=>r.some(Boolean)),keep=[...Array(C).keys()].filter(c=>rows.some(r=>r[c]));
+  return rows.length>=2&&keep.length>=2?{title:'',rows:rows.map(r=>keep.map(c=>r[c]))}:null;
+}
+function loose(ws){
+  if(!ws.length)return null;
+  const mh=med(ws.map(w=>w.y1-w.y0)),L=[];
+  ws.slice().sort((a,b)=>(a.y0+a.y1)-(b.y0+b.y1)).forEach(w=>{const y=(w.y0+w.y1)/2,l=L[L.length-1];if(l&&Math.abs(y-l.y)<mh*.6)l.w.push(w);else L.push({y,w:[w]})});
+  const rows=L.map(l=>{l.w.sort((a,b)=>a.x0-b.x0);const r=[];l.w.forEach((w,i)=>{if(i&&w.x0-l.w[i-1].x1<mh*.7)r[r.length-1]+=' '+w.t;else r.push(w.t)});return r}),n=Math.max(...rows.map(r=>r.length));
+  return rows.length>=2?{title:'',rows:rows.map(r=>[...r,...Array(n-r.length).fill('')])}:null;
+}
+async function fromC(c){
+  let L=null;try{L=glines(c)}catch(x){}
+  const hasL=L&&L.xs.length>2&&L.ys.length>2;let best=null,bs=0;
+  for(const p of ['6','4','11']){
+    stat('Reading text (mode '+p+')...');
+    const ws=await ocr2(c,p);let g=hasL?gcells(ws,L):null;const vl=!!g;
+    g=g||grid(ws)||loose(ws);
+    const sc=g?g.rows.flat().filter(Boolean).length:0;
+    if(sc>bs){bs=sc;best=g}
+    if(vl&&g)break;
+  }
+  return best;
+}
+function addCol(c,t){
+  const g=n=>c.querySelector(`[data-n="${n}"]`).value,nm=g('name')||'New',a=+g('a'),b=+g('b'),op=g('op'),n0=t.head.length;
+  t.head.push(nm);
+  t.body.forEach(r=>{let v='';if(op!=='empty'){const x=toNum(r[a]),y=toNum(r[b]);if(!isNaN(x)&&!isNaN(y)){const q=op==='pct'?(y?x/y*100:0):op==='add'?x+y:op==='sub'?x-y:op==='mul'?x*y:(y?x/y:0);v=(Math.round(q*100)/100)+(op==='pct'?'%':'')}}r[n0]=v});
+  t.keep.push(true);renderTables();toast('Column joda gaya');
+}
+function editData(t){
+  const tx=[t.head,...t.body].map(r=>r.join(' | ')).join('\n');
+  $('dlg').innerHTML=`<div class="card" style="width:680px"><h2>Data edit karein</h2><label>Har row alag line mein, cells ko | se alag karein. Excel se copy-paste bhi chalega.<textarea id="ed" rows="14" style="white-space:pre;font-family:monospace;font-size:12px">${esc(tx)}</textarea></label><div class="dlgb"><button id="ex">Cancel</button><button class="dn" id="ek">Save</button></div></div>`;
+  $('dlg').hidden=false;$('ex').onclick=()=>$('dlg').hidden=true;
+  $('ek').onclick=()=>{const rows=$('ed').value.split('\n').filter(l=>l.trim()).map(l=>l.split(/\s*\|\s*|\t/).map(x=>x.trim()));
+    if(rows.length<2)return toast('Kam se kam 2 rows chahiye');const n=Math.max(...rows.map(r=>r.length));rows.forEach(r=>{while(r.length<n)r.push('')});
+    t.head=rows[0].map((h,i)=>h||'Column '+(i+1));t.body=rows.slice(1);t.keep=t.head.map(()=>true);$('dlg').hidden=true;renderTables();$('next').disabled=!can()};
 }
 go(1);
 </script>
