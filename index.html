@@ -1,1224 +1,138 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>POSB PERFORMANCE DASHBOARD - INDORE REGION</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <meta name="theme-color" content="#31103f">
-    <style>
-        .report-header{background:linear-gradient(135deg,#2c0c38 0,#3f1251 100%);color:#fff}
-        .report-grand{background-color:#31103f;color:#fff;font-weight:700}
-        .nil-table{border-collapse:collapse;width:100%;font-size:11px;text-align:center}
-        .nil-table td,.nil-table th{border:1px solid #707070;padding:4px 5px}
-        .nil-table th{background-color:#b8cce4;color:#000;font-weight:700;vertical-align:middle}
-        
-        /* Division Color Coding */
-        .div-bg-indore-city,.div-bg-khandwa{background-color:#f2dcdb;font-weight:700;color:maroon}
-        .div-bg-indore-mfl{background-color:#dce6f1;font-weight:700;color:#1f497d}
-        .div-bg-mandsaur{background-color:#e2efda;font-weight:700;color:#375623}
-        .div-bg-ratlam{background-color:#e1d5e7;font-weight:700;color:#595959}
-        .div-bg-sehore{background-color:#d9edf7;font-weight:700;color:#31708f}
-        .div-bg-ujjain{background-color:#d9d9d9;font-weight:700;color:#333}
-        .div-bg-id-division{background-color:#fff2cc;font-weight:700;color:#7f6000}
-        .div-bg-other{background-color:#f1f5f9;font-weight:700;color:#334155}
-        
-        .row-div-total{background-color:#fce4d6;font-weight:700;color:#000}
-        .row-grand-total{background-color:#bdd7ee;font-weight:700;color:#000;font-size:11.5px}
-        .clickable-cell{cursor:pointer;text-decoration:underline}
-        .clickable-cell:hover{opacity:.75}
-        .ctrl-select{border:1px solid #cbd5e1;border-radius:0.5rem;padding:0.35rem 0.5rem;font-size:0.75rem;background-color:#f8fafc;font-weight:600;outline:none;width:100%}
-        .ctrl-select:focus{border-color:#581c87}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel to PPT - India Post theme</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f6f6f6;color:#2b2b2b;padding:16px}
+.wrap{max-width:620px;margin:0 auto}
+h1{font-size:24px;margin:6px 0 4px;color:#b3121b}
+p.sub{margin:0 0 14px;color:#666;font-size:14px}
+.card{background:#fff;border:1px solid #d0d0d0;border-radius:10px;padding:14px;margin-bottom:12px}
+h2{font-size:15px;margin:0 0 10px;color:#b3121b}
+label{font-size:13px;display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+input[type=text]{height:38px;border:1px solid #d0d0d0;border-radius:6px;padding:0 8px;font-size:14px}
+.drop{display:block;border:2px dashed #b3121b;border-radius:10px;padding:24px 10px;text-align:center;cursor:pointer;background:#fff7f7;margin:0}
+.row{display:flex;gap:8px;align-items:center;font-size:13px;flex-direction:row}
+button{width:100%;height:48px;border:0;border-radius:8px;font-size:16px;font-weight:700;color:#fff;background:#b3121b;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+#msg{margin-top:10px;font-size:14px;min-height:20px}
+</style>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between text-xs">
+<body>
+<div class="wrap">
+  <h1>Excel se PPT (India Post theme)</h1>
+  <p class="sub">Excel upload karo, aapki di hui PPT jaisi design me slides ban jayengi.</p>
 
-<!-- Initial Loading Overlay -->
-<div id="initialLoader" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white transition-opacity duration-300">
-    <div class="w-12 h-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mb-3"></div>
-    <p class="text-sm font-bold tracking-wide">Syncing POSB & Master Mapping...</p>
-    <p class="text-[11px] text-purple-200 mt-1" id="loadingSubtext">Connecting to Live Google Sheets...</p>
+  <div class="card">
+    <h2>1. Excel upload karo</h2>
+    <label class="drop"><b>Excel file chuno</b><br>.xlsx, .xls ya .csv
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+    </label>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Cover slide ki details</h2>
+    <label>Chhota heading<input type="text" id="kicker" value="INDIA POST"></label>
+    <label>Main title<input type="text" id="ptitle" value="Vertical-wise & Division-wise Performance Review"></label>
+    <label>Subtitle<input type="text" id="sub" value="Revenue, Article Count, Aadhaar | PLI & RPLI And POSB"></label>
+    <label>Peela badge<input type="text" id="badge" value="Indore Region | Q1 & Q2, FY 2026-27"></label>
+    <label class="row"><input type="checkbox" id="chart"> Numbers wale columns ka chart bhi banao</label>
+  </div>
+
+  <button id="go" disabled>PPT banao aur download karo</button>
 </div>
-
-<!-- Main Header -->
-<header class="report-header shadow-md py-3.5 px-4 md:px-8 border-b-2 border-purple-950">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        <div class="flex items-center gap-3">
-            <div class="bg-white p-1.5 rounded-xl shadow-sm flex items-center justify-center text-xl">
-                🏦
-            </div>
-            <div>
-                <span class="text-[10px] font-bold tracking-widest text-purple-200 uppercase bg-purple-950/70 px-2 py-0.5 rounded border border-purple-800">DEPARTMENT OF POSTS</span>
-                <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-white mt-0.5">POSB PERFORMANCE DASHBOARD</h1>
-                <p class="text-[11px] text-purple-200 mt-0.5 font-medium flex items-center gap-2">
-                    <span>INDORE REGION - ACCOUNT OPEN / CLOSE / NET ADDITION</span>
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center flex-wrap gap-2.5">
-            <span id="liveStatus" class="bg-emerald-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Connecting...
-            </span>
-        </div>
-    </div>
-</header>
-
-<!-- Navigation Tabs -->
-<nav class="bg-white border-b border-slate-200 shadow-sm py-2 px-4 md:px-8 sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-1.5">
-        <button onclick="switchTab('summary')" id="tabBtnSummary" class="bg-purple-900 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 border-b-2 border-purple-500 cursor-pointer">
-            <span>📊</span> Summary
-        </button>
-        <button onclick="switchTab('offices')" id="tabBtnOffices" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
-            <span>🔍</span> Detailed Office View
-        </button>
-        <button onclick="switchTab('rankings')" id="tabBtnRankings" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
-            <span>⭐</span> Top & Bottom 20
-        </button>
-        <button onclick="switchTab('compare')" id="tabBtnCompare" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer">
-            <span>📈</span> Multi-Month Compare
-        </button>
-    </div>
-</nav>
-
-<!-- Main Workspace -->
-<main class="max-w-7xl mx-auto px-3 md:px-6 py-4 space-y-4 w-full flex-grow">
-
-    <!-- Error banner -->
-    <div id="errorBanner" class="hidden bg-rose-50 border border-rose-300 text-rose-900 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-            <div class="font-bold text-sm">⚠️ Data load nahi ho paya</div>
-            <div id="errorBannerMsg" class="text-[11px] mt-0.5"></div>
-        </div>
-        <button onclick="document.getElementById('initialLoader').classList.remove('hidden');document.getElementById('initialLoader').style.opacity='1';initApp()" class="bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer">🔄 Retry</button>
-    </div>
-
-    <!-- 1. SUMMARY VIEW -->
-    <div id="viewSummary" class="space-y-3">
-        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Target Month / Period</label>
-                <select id="sumMonth" onchange="renderSummaryTable()" class="ctrl-select text-purple-950 font-bold bg-purple-50"></select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Filter Division</label>
-                <select id="sumDivision" onchange="renderSummaryTable()" class="ctrl-select">
-                    <option value="All">All Divisions</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📋 Aggregation Level</label>
-                <select id="sumViewType" onchange="renderSummaryTable()" class="ctrl-select">
-                    <option value="subdivision">Sub-Division Wise</option>
-                    <option value="division">Division Wise Only</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardSummary">
-            <div class="report-header px-4 py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                    <h2 id="sumTableTitle" class="font-bold text-sm">📊 POSB Summary</h2>
-                    <p class="text-[10px] text-purple-200">Includes Target Month Data + Cumulative Total (Till Date)</p>
-                </div>
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <button onclick='exportTableToExcel("tableSummary","POSB_Summary_Report.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2 py-1 rounded shadow cursor-pointer">📥 Excel</button>
-                    <button onclick='exportSingleTablePDF("tableSummary","POSB Summary Report")' class="bg-rose-800 hover:bg-rose-900 text-white text-[11px] font-semibold px-2 py-1 rounded shadow cursor-pointer">📄 PDF</button>
-                </div>
-            </div>
-            <div class="overflow-x-auto p-2">
-                <table class="nil-table" id="tableSummary">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" id="thSumDiv" style="width:12%">Division</th>
-                            <th rowspan="2" id="thSumSubDiv" style="width:16%">Sub-Division</th>
-                            <th colspan="3" id="thSumCurrentMonth" style="background-color:#d9edf7">Selected Month Data</th>
-                            <th colspan="3" style="background-color:#e2efda">Cumulative (All Months Till Date)</th>
-                        </tr>
-                        <tr>
-                            <th style="background-color:#d9edf7;width:12%">A/C Opened</th>
-                            <th style="background-color:#d9edf7;width:12%">A/C Closed</th>
-                            <th style="background-color:#d9edf7;width:12%">Net Addition</th>
-                            <th style="background-color:#e2efda;width:12%">Cum. Opened</th>
-                            <th style="background-color:#e2efda;width:12%">Cum. Closed</th>
-                            <th style="background-color:#e2efda;width:12%">Cum. Net Addition</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                    <tfoot></tfoot>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. DETAILED OFFICE VIEW -->
-    <div id="viewOffices" class="space-y-3 hidden">
-        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 items-end">
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Target Month / Period</label>
-                <select id="offMonth" onchange="renderOfficeTable()" class="ctrl-select font-bold text-purple-950 bg-purple-50"></select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Division</label>
-                <select id="offDivision" onchange="renderOfficeTable()" class="ctrl-select">
-                    <option value="All">All Divisions</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏢 Office Class</label>
-                <select id="offClass" onchange="renderOfficeTable()" class="ctrl-select">
-                    <option value="All">All Classes</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Sort Metric (Month)</label>
-                <select id="offSortMetric" onchange="renderOfficeTable()" class="ctrl-select bg-blue-50 font-bold">
-                    <option value="net">Net Addition</option>
-                    <option value="open">Account Open</option>
-                    <option value="close">Account Close</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Sort Direction</label>
-                <select id="offSortDir" onchange="renderOfficeTable()" class="ctrl-select font-bold">
-                    <option value="desc">Highest to Lowest (⬇)</option>
-                    <option value="asc">Lowest to Highest (⬆)</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardOffices">
-            <div class="report-header px-4 py-2.5 flex justify-between items-center gap-2">
-                <div class="flex items-center gap-2">
-                    <h2 class="font-bold text-sm">🔍 Post Office Detailed View</h2>
-                    <span id="officeRecordCountBadge" class="bg-purple-950 text-purple-200 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-800"></span>
-                </div>
-                <div class="flex gap-1.5">
-                    <button onclick='exportTableToExcel("tableOffice","POSB_Detailed_Offices.xlsx")' class="bg-blue-700 hover:bg-blue-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Download Excel</button>
-                </div>
-            </div>
-            <div class="overflow-x-auto p-2">
-                <table class="nil-table" id="tableOffice">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="width:4%">#</th>
-                            <th rowspan="2" style="width:7%">Office ID</th>
-                            <th rowspan="2" style="width:14%;text-align:left">Office Name</th>
-                            <th rowspan="2" style="width:5%">Class</th>
-                            <th rowspan="2" style="width:11%">Sub-Division</th>
-                            <th rowspan="2" style="width:9%">Division</th>
-                            <th colspan="3" id="thOffCurrentMonth" style="background-color:#d9edf7">Selected Month Data</th>
-                            <th colspan="3" style="background-color:#e2efda">Cumulative (Till Date)</th>
-                        </tr>
-                        <tr>
-                            <th style="background-color:#d9edf7;width:8%">A/C Opened</th>
-                            <th style="background-color:#d9edf7;width:8%">A/C Closed</th>
-                            <th style="background-color:#d9edf7;width:8%">Net Addition</th>
-                            <th style="background-color:#e2efda;width:8%">Cum. Opened</th>
-                            <th style="background-color:#e2efda;width:8%">Cum. Closed</th>
-                            <th style="background-color:#e2efda;width:8%">Cum. Net</th>
-                        </tr>
-                    </thead>
-                    <tbody id="officeTableTbody"></tbody>
-                </table>
-            </div>
-            <div id="officeLoadMoreWrap" class="p-2.5 text-center bg-slate-50 border-t border-slate-200 hidden">
-                <button onclick="loadMoreOffices()" class="bg-purple-900 hover:bg-purple-950 text-white font-bold px-4 py-1.5 rounded-lg text-xs shadow cursor-pointer">
-                    Load More Offices ⬇️
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. RANKINGS VIEW -->
-    <div id="viewRankings" class="space-y-3 hidden">
-        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 items-end">
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">📅 Target Month / Period</label>
-                <select id="rnkMonth" onchange="renderRankingsTable()" class="ctrl-select font-bold text-purple-950 bg-purple-50"></select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Ranking Group</label>
-                <select id="rnkType" onchange="renderRankingsTable()" class="ctrl-select font-bold text-purple-950">
-                    <option value="top">🏆 Top 20 Offices</option>
-                    <option value="bottom">⚠️ Bottom 20 Offices</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">Rank Metric</label>
-                <select id="rnkMetric" onchange="renderRankingsTable()" class="ctrl-select bg-blue-50 font-bold">
-                    <option value="net">Net Addition</option>
-                    <option value="open">Account Open</option>
-                    <option value="close">Account Close</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏛️ Division Filter</label>
-                <select id="rnkDivision" onchange="renderRankingsTable()" class="ctrl-select">
-                    <option value="All">All Divisions</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">🏢 Class Filter</label>
-                <select id="rnkClass" onchange="renderRankingsTable()" class="ctrl-select">
-                    <option value="All">All Classes</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardRankings">
-            <div class="report-header px-4 py-2.5 flex justify-between items-center gap-2">
-                <h2 class="font-bold text-sm">⭐ Top & Bottom Rankings</h2>
-                <div class="flex gap-1.5">
-                    <button onclick='exportTableToExcel("tableRankings","POSB_Rankings.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
-                </div>
-            </div>
-            <div class="overflow-x-auto p-2">
-                <table class="nil-table" id="tableRankings">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="width:5%">Rank</th>
-                            <th rowspan="2" style="width:7%">Office ID</th>
-                            <th rowspan="2" style="width:14%;text-align:left">Office Name</th>
-                            <th rowspan="2" style="width:5%">Class</th>
-                            <th rowspan="2" style="width:11%">Sub-Division</th>
-                            <th rowspan="2" style="width:10%">Division</th>
-                            <th colspan="3" id="thRnkCurrentMonth" style="background-color:#d9edf7">Selected Month Data</th>
-                            <th colspan="3" style="background-color:#e2efda">Cumulative (Till Date)</th>
-                        </tr>
-                        <tr>
-                            <th style="background-color:#d9edf7;width:8%">A/C Opened</th>
-                            <th style="background-color:#d9edf7;width:8%">A/C Closed</th>
-                            <th style="background-color:#d9edf7;width:8%">Net Addition</th>
-                            <th style="background-color:#e2efda;width:8%">Cum. Opened</th>
-                            <th style="background-color:#e2efda;width:8%">Cum. Closed</th>
-                            <th style="background-color:#e2efda;width:8%">Cum. Net</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4. MULTI-MONTH COMPARISON VIEW -->
-    <div id="viewCompare" class="space-y-3 hidden">
-        <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 items-end">
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">1. Aggregation Level</label>
-                    <select id="cmpLevel" onchange="onCmpLevelChange()" class="ctrl-select font-bold text-purple-950">
-                        <option value="division">Division Wise</option>
-                        <option value="subdivision">Sub-Division Wise</option>
-                        <option value="office">Post Office Wise</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">2. Division Filter</label>
-                    <select id="cmpDivision" onchange="renderCompareTable()" class="ctrl-select">
-                        <option value="All">All Divisions</option>
-                    </select>
-                </div>
-                <div id="cmpClassWrapper" class="hidden">
-                    <label class="block text-[10px] font-bold uppercase text-purple-950 mb-0.5">3. Office Class</label>
-                    <select id="cmpClass" onchange="renderCompareTable()" class="ctrl-select">
-                        <option value="All">All Classes</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Months Checkboxes -->
-            <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3">
-                <span class="text-[10px] font-bold uppercase text-purple-950">Select Months / Periods:</span>
-                <div class="flex flex-wrap gap-1.5 text-[11px] font-bold" id="cmpMonthWrap">
-                    <!-- Populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Metrics Checkboxes -->
-            <div class="pt-2 border-t border-slate-100">
-                <span class="text-[10px] font-bold uppercase text-purple-950 block mb-1">Select Metrics to Compare:</span>
-                <div class="flex flex-wrap gap-2 text-[11px] font-semibold">
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
-                        <input type="checkbox" name="cmpMetric" value="open" onchange="renderCompareTable()" class="accent-purple-900">
-                        <span>Account Open</span>
-                    </label>
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
-                        <input type="checkbox" name="cmpMetric" value="close" onchange="renderCompareTable()" class="accent-purple-900">
-                        <span>Account Close</span>
-                    </label>
-                    <label class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-200 cursor-pointer hover:bg-slate-100">
-                        <input type="checkbox" name="cmpMetric" value="net" checked onchange="renderCompareTable()" class="accent-purple-900">
-                        <span>Net Addition</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="cardCompare">
-            <div class="report-header px-4 py-2.5 flex justify-between items-center gap-2">
-                <h2 class="font-bold text-sm">📈 Multi-Month Performance Comparison</h2>
-                <div class="flex gap-1.5">
-                    <button onclick='exportTableToExcel("tableCompare","POSB_MultiMonth_Compare.xlsx")' class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow cursor-pointer">📥 Excel</button>
-                </div>
-            </div>
-            <div class="overflow-x-auto p-2">
-                <table class="nil-table" id="tableCompare">
-                    <thead></thead>
-                    <tbody></tbody>
-                    <tfoot></tfoot>
-                </table>
-            </div>
-        </div>
-    </div>
-</main>
-
-<!-- Drilldown Modal -->
-<div id="drillModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-purple-300">
-        <div class="report-header px-4 py-3 flex justify-between items-center">
-            <div>
-                <h3 id="modalTitle" class="font-bold text-base">Sub-Division Breakdown</h3>
-                <p id="modalSubtitle" class="text-[11px] text-purple-200">List of offices (Sorted by Net Addition)</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="closeDrillModal()" class="bg-purple-950 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold cursor-pointer">✕</button>
-            </div>
-        </div>
-        <div class="p-3 overflow-y-auto flex-grow overflow-x-auto">
-            <table class="nil-table" id="tableModalOffices">
-                <thead>
-                    <tr>
-                        <th style="width:4%">#</th>
-                        <th style="width:8%">Office ID</th>
-                        <th style="width:20%;text-align:left">Office Name</th>
-                        <th style="width:6%">Class</th>
-                        <th style="background-color:#d9edf7">A/C Open</th>
-                        <th style="background-color:#d9edf7">A/C Close</th>
-                        <th style="background-color:#d9edf7">Net Addition</th>
-                        <th style="background-color:#e2efda">Cum. Open</th>
-                        <th style="background-color:#e2efda">Cum. Close</th>
-                        <th style="background-color:#e2efda">Cum. Net</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<footer class="report-header text-purple-200 text-[11px] py-3 px-4 text-center border-t border-purple-950 mt-8">
-    <p>Developed by <span class="text-white font-bold">Kapil Rajput, PA(RO), Regional Office Indore</span></p>
-</footer>
 
 <script>
-// --- CORE DATA CONFIGURATION ---
-const URL_DATA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vStevNQAAnFwO7ynsa5TWutYsYyKp_tFF2dYymclrvRT2j4trLTGIaPczIeGJWdVahJAbwQOJyrObDI/pub?gid=997644037&single=true&output=csv";
-const URL_MASTER = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=0&single=true&output=csv";
+const LOGO = 'data:image/png;base64,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';
+const T = {red:'B3121B', orange:'E46C0A', yellow:'FDB913', total:'FFF0C2', text:'2B2B2B', line:'D0D0D0', zebra:'F6F6F6', grey:'777777', font:'Arial'};
+const $ = id => document.getElementById(id);
+let wb = null, fname = 'Presentation';
 
-let globalData = [];
-let availableMonths = [];
-let dataUpdatedRange = "";   // e.g. "1-19"  (taken from cell A1 of the data sheet)
-const MONTH_BASE = {
-    JAN: "January", FEB: "February", MAR: "March", APR: "April", MAY: "May", JUN: "June",
-    JUL: "July", AUG: "August", SEP: "September", OCT: "October", NOV: "November", DEC: "December"
+$('file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    wb = XLSX.read(await f.arrayBuffer(), {type:'array'});
+    fname = f.name.replace(/\.[^.]+$/,'');
+    $('msg').textContent = `${f.name} mil gayi. Sheets: ${wb.SheetNames.length}`;
+    $('go').disabled = false;
+  }catch(err){ $('msg').textContent = 'File nahi khul payi. Kya ye sahi Excel file hai?'; }
+});
+
+const isNum = v => /^[\s$₹-]*\d[\d,]*(\.\d+)?\s*%?\s*$/.test(String(v));
+const toNum = v => parseFloat(String(v).replace(/[^0-9.\-]/g,''));
+
+function build(){
+  const p = new PptxGenJS(); p.layout = 'LAYOUT_WIDE'; // 13.33 x 7.5
+  const F = T.font;
+
+  // Cover
+  let s = p.addSlide(); s.background = {color:T.red};
+  s.addText($('kicker').value,{x:.9,y:1.6,w:8,h:.5,fontFace:F,fontSize:20,bold:true,color:T.yellow,charSpacing:4,margin:0});
+  s.addText($('ptitle').value,{x:.9,y:2.2,w:8.4,h:2.2,fontFace:F,fontSize:44,bold:true,color:'FFFFFF',valign:'top',margin:0});
+  s.addText($('sub').value,{x:.9,y:4.5,w:8.6,h:.5,fontFace:F,fontSize:16,color:'FFFFFF',margin:0});
+  s.addShape(p.ShapeType.roundRect,{x:.9,y:5.3,w:4.6,h:.55,rectRadius:.27,fill:{color:T.yellow}});
+  s.addText($('badge').value,{x:.9,y:5.3,w:4.6,h:.55,fontFace:F,fontSize:13,bold:true,color:T.text,align:'center',valign:'middle',margin:0});
+  s.addShape(p.ShapeType.roundRect,{x:9.33,y:.6,w:3.1,h:3,rectRadius:.15,fill:{color:'FFFFFF'}});
+  s.addImage({data:LOGO,x:9.65,y:.95,w:2.46,h:1.59*1.0+.0});
+
+  wb.SheetNames.forEach(name => {
+    const raw = XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:'',raw:false});
+    const rows = raw.filter(r => r.some(c => String(c).trim() !== ''));
+    if(rows.length < 2) return;
+    const cols = Math.max(...rows.map(r=>r.length));
+    const pad = r => Array.from({length:cols},(_,i)=>String(r[i] ?? '').trim());
+    const head = pad(rows[0]), body = rows.slice(1).map(pad);
+    const PER = 10, pages = Math.ceil(body.length/PER);
+    const fs = cols>9 ? 9 : cols>6 ? 11 : 13;
+
+    for(let pg=0; pg<pages; pg++){
+      const sl = p.addSlide(); sl.background = {color:'FFFFFF'};
+      sl.addText(name + (pages>1 ? ` (${pg+1}/${pages})` : ''),{x:.6,y:.35,w:12.1,h:.6,fontFace:F,fontSize:30,bold:true,color:T.red,margin:0});
+      const tbl = [head.map(c=>({text:c,options:{bold:true,color:'FFFFFF',fill:{color:T.red},align:'center',valign:'middle'}}))];
+      body.slice(pg*PER,(pg+1)*PER).forEach((r,ri)=>{
+        const isTot = /total/i.test(r[0]);
+        tbl.push(r.map((c,ci)=>{
+          let color = T.text, bold = isTot;
+          if(/%/.test(head[ci]) && isNum(c)){ const n=toNum(c); if(n<50){color='FF0000';bold=true;} else if(n<75){color=T.orange;bold=true;} }
+          return {text:c,options:{color,bold,align:ci===0?'left':(isNum(c)?'center':'left'),valign:'middle',fill:{color:isTot?T.total:(ri%2?T.zebra:'FFFFFF')}}};
+        }));
+      });
+      const c0 = cols>1 ? 2.2 : 12.1, rest = cols>1 ? (12.1-c0)/(cols-1) : 0;
+      sl.addTable(tbl,{x:.6,y:1.2,w:12.1,colW:[c0,...Array(cols-1).fill(rest)],fontFace:F,fontSize:fs,border:{type:'solid',color:T.line,pt:.5},rowH:.42});
+      sl.addText(String(p.slides.length),{x:12.1,y:7.0,w:.6,h:.3,fontFace:F,fontSize:10,color:T.grey,align:'right',margin:0});
+    }
+
+    if($('chart').checked && body.length >= 2){
+      const data = body.filter(r=>!/total/i.test(r[0]));
+      const nc = head.findIndex((_,ci)=>ci>0 && data.filter(r=>isNum(r[ci])).length >= data.length*.6);
+      if(nc > 0){
+        const sub = data.filter(r=>isNum(r[nc])).slice(0,12);
+        const sl = p.addSlide(); sl.background = {color:'FFFFFF'};
+        sl.addText(`${name}: ${head[nc]}`,{x:.6,y:.35,w:12.1,h:.6,fontFace:F,fontSize:30,bold:true,color:T.red,margin:0});
+        sl.addChart(p.charts.BAR,[{name:head[nc],labels:sub.map(r=>r[0]),values:sub.map(r=>toNum(r[nc]))}],
+          {x:.6,y:1.3,w:12.1,h:5.5,barDir:'col',chartColors:[T.red],showLegend:false,showValue:true,dataLabelColor:T.text,dataLabelFontSize:11,
+           catAxisLabelColor:T.text,valAxisLabelColor:T.text,catAxisLabelFontFace:F,valAxisLabelFontFace:F,valGridLine:{color:T.line,size:.5}});
+      }
+    }
+  });
+  return p;
+}
+
+$('go').onclick = async () => {
+  if(typeof PptxGenJS === 'undefined'){ $('msg').textContent = 'Library load nahi hui. Internet check karo aur page refresh karo.'; return; }
+  $('go').disabled = true; $('msg').textContent = 'PPT ban rahi hai...';
+  try{
+    await build().writeFile({fileName: fname + '_PPT.pptx'});
+    $('msg').textContent = 'Ho gaya. Download check karo.';
+  }catch(err){ $('msg').textContent = 'Error: ' + err.message; }
+  $('go').disabled = false;
 };
-let MONTH_NAMES = Object.assign({}, MONTH_BASE);
-
-// ---------------- PERIODS: single months + Q1 / Q2 + cumulative options ----------------
-// Financial-year quarters: Q1 = Apr-Jun, Q2 = Jul-Sep
-const Q_DEF = { Q1: ["APR","MAY","JUN"], Q2: ["JUL","AUG","SEP"] };
-const Q_LABEL = { Q1: "Q1 (April - June)", Q2: "Q2 (July - September)" };
-let periodDefs = {};      // key -> { key, label, short, months[], special }
-let periodOrder = [];     // keys in display order (months first, then special)
-let dataLastDay = "";     // last day of the latest month, e.g. "8" (from A1)
-
-function buildPeriods(){
-    periodDefs = {}; periodOrder = [];
-    availableMonths.forEach(m => {
-        const label = MONTH_NAMES[m] || m;
-        periodDefs[m] = { key: m, label, short: label.replace(/^([A-Za-z]{3})[A-Za-z]*/, "$1"), months: [m], special: false };
-        periodOrder.push(m);
-    });
-    // Quarters (only when every month of that quarter is present in the data)
-    Object.keys(Q_DEF).forEach(q => {
-        if(Q_DEF[q].every(m => availableMonths.includes(m))){
-            periodDefs[q] = { key: q, label: Q_LABEL[q], short: q, months: Q_DEF[q].slice(), special: true };
-            periodOrder.push(q);
-        }
-    });
-    const lastM = availableMonths[availableMonths.length - 1];
-    const firstName = MONTH_BASE[availableMonths[0]] || availableMonths[0];
-    // Cumulative till September (Apr..Sep) - hidden when September itself is the latest month (same as till date)
-    const sepIdx = availableMonths.indexOf("SEP");
-    if(sepIdx >= 0 && lastM !== "SEP"){
-        periodDefs.CUM_SEP = { key: "CUM_SEP", label: `Cumulative till September (${firstName} - September)`, short: "Cum. till Sep", months: availableMonths.slice(0, sepIdx + 1), special: true };
-        periodOrder.push("CUM_SEP");
-    }
-    // Cumulative till date (Apr .. latest month, up to the date in cell A1)
-    const endTxt = dataLastDay ? `${dataLastDay} ${MONTH_BASE[lastM] || lastM}` : (MONTH_BASE[lastM] || lastM);
-    periodDefs.CUM_DATE = { key: "CUM_DATE", label: `Cumulative Till Date (${firstName} to ${endTxt})`, short: "Cum. Till Date", months: availableMonths.slice(), special: true };
-    periodOrder.push("CUM_DATE");
-}
-function periodLabel(key){ return (periodDefs[key] && periodDefs[key].label) || MONTH_NAMES[key] || key; }
-function periodShort(key){ return (periodDefs[key] && periodDefs[key].short) || key; }
-// open / close / net of one record for a period (month, quarter or cumulative) - cached per record
-function getPD(r, key){
-    const cache = r._pc || (r._pc = {});
-    if(cache[key]) return cache[key];
-    const o = { open: 0, close: 0, net: 0 };
-    const def = periodDefs[key];
-    if(def) def.months.forEach(m => { const d = r.monthlyData[m]; if(d){ o.open += d.open; o.close += d.close; o.net += d.net; } });
-    return (cache[key] = o);
-}
-
-const divClassMap = {
-    "INDORE CITY": "div-bg-indore-city",
-    "INDORE MFL": "div-bg-indore-mfl",
-    "KHANDWA": "div-bg-khandwa",
-    "MANDSAUR": "div-bg-mandsaur",
-    "RATLAM": "div-bg-ratlam",
-    "SEHORE": "div-bg-sehore",
-    "UJJAIN": "div-bg-ujjain",
-    "ID DIVISION": "div-bg-id-division",
-    "OTHER DIVISION": "div-bg-other"
-};
-
-const METRIC_LABELS = { open: "A/C Opened", close: "A/C Closed", net: "Net Addition" };
-
-// Performance Pagination globals
-let currentOfficeDataList = [];
-let currentOfficeRenderIndex = 0;
-const OFFICE_CHUNK_SIZE = 100;
-
-// ---------------- CSV HELPERS ----------------
-// Own CSV parser (no automatic date/number guessing, so "1-19" or IDs never get converted)
-function parseCSV(text){
-    const rows = []; let row = [], cur = "", inQ = false;
-    text = String(text || "").replace(/^\uFEFF/, "");
-    for(let i = 0; i < text.length; i++){
-        const c = text[i];
-        if(inQ){
-            if(c === '"'){ if(text[i+1] === '"'){ cur += '"'; i++; } else inQ = false; }
-            else cur += c;
-        } else {
-            if(c === '"') inQ = true;
-            else if(c === ','){ row.push(cur); cur = ""; }
-            else if(c === '\n'){ row.push(cur); rows.push(row); row = []; cur = ""; }
-            else if(c === '\r'){ /* ignore */ }
-            else cur += c;
-        }
-    }
-    if(cur !== "" || row.length){ row.push(cur); rows.push(row); }
-    return rows;
-}
-
-// "office-id", "Office_ID", "OFFICE ID " -> "OFFICE ID"
-const normH = v => String(v == null ? "" : v).toUpperCase().replace(/[_\-\/\.]+/g, " ").replace(/\s+/g, " ").trim();
-const cleanId = v => String(v == null ? "" : v).trim().replace(/\.0+$/, "").replace(/\s+/g, "");
-const toNum = v => { const n = Number(String(v == null ? "" : v).replace(/,/g, "").trim()); return isFinite(n) ? n : 0; };
-
-function monthCode(v){
-    const m = String(v == null ? "" : v).toUpperCase().match(/\b(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)/);
-    return m ? m[1] : "";
-}
-function metricOf(h){
-    if(h.includes("OPEN")) return "open";
-    if(h.includes("CLOSE")) return "close";
-    if(h.includes("NET") || h.includes("ADD")) return "net";
-    return "";
-}
-// A1 cell -> "1-19".  Accepts "19", "1-19", "19-09-2026", "Till 19" etc.
-function deriveRange(a1){
-    const s = String(a1 == null ? "" : a1).trim();
-    if(!s) return "";
-    let m = s.match(/^\D*(\d{1,2})\s*[-\u2013]\s*(\d{1,2})\D*$/);
-    if(m && Number(m[1]) <= Number(m[2]) && Number(m[2]) <= 31) return `${Number(m[1])}-${Number(m[2])}`;
-    m = s.match(/(\d{1,2})\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{2,4}/);   // dd-mm-yyyy
-    if(m && Number(m[1]) <= 31) return `1-${Number(m[1])}`;
-    m = s.match(/\d+/);
-    if(m && Number(m[0]) >= 1 && Number(m[0]) <= 31) return `1-${Number(m[0])}`;
-    return "";
-}
-
-async function fetchCsv(url, label){
-    const bust = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
-    const attempts = [
-        bust,
-        "https://api.allorigins.win/raw?url=" + encodeURIComponent(bust),
-        "https://corsproxy.io/?" + encodeURIComponent(bust)
-    ];
-    let lastErr = null;
-    for(const u of attempts){
-        try{
-            const res = await fetch(u, { cache: "no-store" });
-            if(!res.ok) throw new Error("HTTP " + res.status);
-            const txt = await res.text();
-            if(!txt || /^\s*<(!doctype|html)/i.test(txt)) throw new Error("CSV ki jagah web page mila (sheet 'Publish to web' -> CSV honi chahiye)");
-            return txt;
-        } catch(e){ lastErr = e; }
-    }
-    throw new Error(`${label} sheet load nahi hui: ${lastErr ? lastErr.message : "unknown error"}`);
-}
-
-// ---------------- MASTER (Office ID -> Division / Sub-Division) ----------------
-function parseMaster(csv){
-    const rows = parseCSV(csv);
-    let hIdx = -1;
-    for(let i = 0; i < Math.min(15, rows.length); i++){
-        if(rows[i].some(v => { const h = normH(v); return h.includes("OFFICE ID") || h.includes("FACILITY ID"); })){ hIdx = i; break; }
-    }
-    let c = { id: 0, name: 1, cls: 2, sd: 3, div: 4 };      // default order: office-id, name, class, SD, division
-    let start = 0;
-    if(hIdx >= 0){
-        const H = rows[hIdx].map(normH);
-        const f = fn => H.findIndex(fn);
-        c = {
-            id:   f(h => h.includes("OFFICE ID") || h.includes("FACILITY ID")),
-            name: f(h => h.includes("NAME")),
-            cls:  f(h => h.includes("CLASS") || h === "TYPE"),
-            sd:   f(h => h === "SD" || h.includes("SUB DIV") || h.includes("SUBDIV")),
-            div:  f(h => h.includes("DIV") && !h.includes("SUB") && h !== "SD")
-        };
-        start = hIdx + 1;
-    }
-    const map = new Map();
-    for(let i = start; i < rows.length; i++){
-        const r = rows[i];
-        const id = cleanId(r[c.id]);
-        if(!id) continue;
-        map.set(id, {
-            name: c.name >= 0 ? String(r[c.name] || "").trim() : "",
-            cls:  c.cls  >= 0 ? String(r[c.cls]  || "").trim().toUpperCase() : "",
-            sd:   c.sd   >= 0 ? String(r[c.sd]   || "").trim().toUpperCase() : "",
-            div:  c.div  >= 0 ? String(r[c.div]  || "").trim().toUpperCase() : ""
-        });
-    }
-    return map;
-}
-
-// ---------------- DATA SHEET ----------------
-// Layout:  row 1 -> A1 = date (e.g. 19), H1.. = month names (APRIL APRIL APRIL MAY MAY MAY ...)
-//          row 2 -> S.No | Office ID | ... | Account Open | Account Close | Net Addition | ...
-function parseData(csv, master){
-    const rows = parseCSV(csv);
-    let hIdx = -1;
-    for(let i = 0; i < Math.min(20, rows.length); i++){
-        if(rows[i].some(v => normH(v).includes("OFFICE ID"))){ hIdx = i; break; }
-    }
-    if(hIdx < 0) throw new Error("Data sheet mein 'Office ID' column nahi mila");
-
-    const H = rows[hIdx].map(normH);
-    const monthRow = hIdx > 0 ? rows[hIdx - 1] : [];
-
-    // ---- map every metric column to (month, metric) ----
-    const colMap = [], rangeByMonth = {};
-    let lastMonth = "";
-    for(let j = 0; j < H.length; j++){
-        const topCell = String(monthRow[j] == null ? "" : monthRow[j]).trim();
-        let mc = monthCode(topCell);
-        if(!mc) mc = monthCode(H[j]);                    // old style: month inside the header itself
-        if(!mc && topCell === "" && lastMonth) mc = lastMonth;   // merged month cell -> carry forward
-        if(mc) lastMonth = mc;
-        const metric = metricOf(H[j]);
-        if(!metric || !mc) continue;
-        colMap.push({ col: j, month: mc, metric });
-        const br = topCell.match(/\(\s*(\d{1,2})\s*[-\u2013]\s*(\d{1,2})\s*\)/);
-        if(br) rangeByMonth[mc] = `${Number(br[1])}-${Number(br[2])}`;
-    }
-    const months = [];
-    colMap.forEach(x => { if(!months.includes(x.month)) months.push(x.month); });
-    if(!months.length) throw new Error("Month ke naam nahi mile (headers ke upar wali row mein APRIL, MAY, JUNE... hone chahiye)");
-
-    const lastM = months[months.length - 1];
-    const range = rangeByMonth[lastM] || deriveRange(rows[0] && rows[0][0]);
-
-    // ---- fixed columns ----
-    const idCol   = H.findIndex(h => h.includes("OFFICE ID"));
-    const nameCol = H.findIndex(h => h.includes("OFFICE NAME"));
-    const clsCol  = H.findIndex(h => h === "CLASS");
-    const sdCol   = H.findIndex(h => h.includes("SUB DIV"));
-    const divCol  = H.findIndex(h => h.includes("DIVISION") && !h.includes("SUB"));
-
-    const records = []; let unmapped = 0;
-    for(let i = hIdx + 1; i < rows.length; i++){
-        const r = rows[i];
-        if(!r || !r.length) continue;
-        const id = cleanId(r[idCol]);
-        if(!id || !/\d/.test(id)) continue;
-
-        const m = master.get(id);
-        const sheetDiv = divCol >= 0 ? String(r[divCol] || "").trim().toUpperCase() : "";
-        const sheetSd  = sdCol  >= 0 ? String(r[sdCol]  || "").trim().toUpperCase() : "";
-        const sheetCls = clsCol >= 0 ? String(r[clsCol] || "").trim().toUpperCase() : "";
-        const sheetName = nameCol >= 0 ? String(r[nameCol] || "").trim() : "";
-        if(!m) unmapped++;
-
-        const rec = {
-            officeId: id,
-            officeName: (m && m.name) || sheetName || `Office ${id}`,
-            division:   (m && m.div)  || sheetDiv || "OTHER DIVISION",
-            subDivision:(m && m.sd)   || sheetSd  || "OTHER SD",
-            officeClass:(m && m.cls)  || sheetCls || "SO",
-            monthlyData: {}, cumulative: { open: 0, close: 0, net: 0 }
-        };
-        months.forEach(mo => { rec.monthlyData[mo] = { open: 0, close: 0, net: 0, _hasNet: false }; });
-        colMap.forEach(x => {
-            const cell = rec.monthlyData[x.month];
-            cell[x.metric] = toNum(r[x.col]);
-            if(x.metric === "net") cell._hasNet = true;
-        });
-        months.forEach(mo => {
-            const cell = rec.monthlyData[mo];
-            if(!cell._hasNet) cell.net = cell.open - cell.close;
-            delete cell._hasNet;
-            rec.cumulative.open += cell.open; rec.cumulative.close += cell.close; rec.cumulative.net += cell.net;
-        });
-        records.push(rec);
-    }
-    if(!records.length) throw new Error("Data sheet mein koi office row nahi mili");
-    return { records, months, range, lastMonth: lastM, unmapped };
-}
-
-function processDualCSV(masterCsv, dataCsv){
-    const master = parseMaster(masterCsv);
-    if(!master.size) throw new Error("Master sheet (Office ID -> Division) khali hai ya format alag hai");
-    const out = parseData(dataCsv, master);
-
-    globalData = out.records;
-    availableMonths = out.months;
-    dataUpdatedRange = out.range;
-
-    MONTH_NAMES = Object.assign({}, MONTH_BASE);
-    if(out.range) MONTH_NAMES[out.lastMonth] = `${MONTH_BASE[out.lastMonth]} (${out.range})`;
-    const endM = String(out.range || "").match(/-(\d{1,2})$/);
-    dataLastDay = endM ? String(Number(endM[1])) : "";
-    buildPeriods();
-    return out;
-}
-
-function showError(msg){
-    const b = document.getElementById("errorBanner");
-    if(!b) return;
-    b.classList.remove("hidden");
-    document.getElementById("errorBannerMsg").textContent = msg;
-}
-
-async function initApp(){
-    const banner = document.getElementById("errorBanner");
-    if(banner) banner.classList.add("hidden");
-    try {
-        document.getElementById("loadingSubtext").textContent = "Fetching Master Mapping + POSB Data...";
-        const [masterCsv, dataCsv] = await Promise.all([
-            fetchCsv(URL_MASTER, "Master (Office ID -> Division)"),
-            fetchCsv(URL_DATA, "POSB Data")
-        ]);
-
-        document.getElementById("loadingSubtext").textContent = "Parsing & Merging Records...";
-        const info = processDualCSV(masterCsv, dataCsv);
-
-        const st = document.getElementById("liveStatus");
-        const lastLbl = MONTH_NAMES[info.lastMonth] || info.lastMonth;
-        st.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Data Synced &bull; ${lastLbl}`;
-        st.classList.replace("bg-emerald-600", "bg-purple-800");
-        st.title = `${globalData.length} offices loaded` + (info.unmapped ? ` | ${info.unmapped} offices master sheet mein nahi mile (data sheet ka division use hua)` : "");
-
-        initDropdowns();
-        renderSummaryTable();
-    } catch(err){
-        console.error("Initialization Error:", err);
-        const st = document.getElementById("liveStatus");
-        st.className = "bg-rose-600 text-white text-[11px] px-3 py-1 rounded-full font-bold shadow";
-        st.textContent = "⚠️ Fetch Error";
-        showError(err && err.message ? err.message : String(err));
-    } finally {
-        const loader = document.getElementById("initialLoader");
-        if(loader){
-            loader.style.opacity = "0";
-            setTimeout(() => loader.classList.add("hidden"), 300);
-        }
-    }
-}
-
-function initDropdowns(){
-    const allDivs = new Set();
-    const allClasses = new Set();
-    globalData.forEach(r => {
-        if(r.division) allDivs.add(r.division);
-        if(r.officeClass) allClasses.add(r.officeClass);
-    });
-    
-    const mSelects = ["sumMonth", "offMonth", "rnkMonth"];
-    mSelects.forEach(id => {
-        const el = document.getElementById(id);
-        if(!el) return;
-        el.innerHTML = "";
-        const gMonths = document.createElement("optgroup"); gMonths.label = "Months";
-        const gSpecial = document.createElement("optgroup"); gSpecial.label = "Quarters / Cumulative";
-        periodOrder.forEach(k => {
-            const opt = document.createElement("option");
-            opt.value = k;
-            opt.textContent = periodLabel(k);
-            (periodDefs[k].special ? gSpecial : gMonths).appendChild(opt);
-        });
-        el.appendChild(gMonths);
-        if(gSpecial.children.length) el.appendChild(gSpecial);
-        if(availableMonths.length) el.value = availableMonths[availableMonths.length - 1];
-    });
-
-    const cmpWrap = document.getElementById("cmpMonthWrap");
-    if(cmpWrap){
-        cmpWrap.innerHTML = periodOrder.map(k => {
-            const sp = periodDefs[k].special;
-            return `
-            <label class="flex items-center gap-1 ${sp ? "bg-emerald-50 hover:bg-emerald-100 border-emerald-300" : "bg-purple-50 hover:bg-purple-100 border-purple-200"} px-2.5 py-1 rounded border cursor-pointer">
-                <input type="checkbox" name="cmpMonths" value="${k}" ${sp ? "" : "checked"} onchange="renderCompareTable()" class="accent-purple-900"> ${periodLabel(k)}
-            </label>`;
-        }).join("");
-    }
-    
-    const dSelects = ["sumDivision", "offDivision", "rnkDivision", "cmpDivision"];
-    dSelects.forEach(id => {
-        const el = document.getElementById(id);
-        if(!el) return;
-        el.innerHTML = '<option value="All">All Divisions</option>';
-        [...allDivs].sort().forEach(d => {
-            const opt = document.createElement("option");
-            opt.value = d; opt.textContent = d; el.appendChild(opt);
-        });
-    });
-    
-    const cSelects = ["offClass", "rnkClass", "cmpClass"];
-    cSelects.forEach(id => {
-        const el = document.getElementById(id);
-        if(!el) return;
-        el.innerHTML = '<option value="All">All Classes</option>';
-        [...allClasses].sort().forEach(c => {
-            const opt = document.createElement("option");
-            opt.value = c; opt.textContent = c; el.appendChild(opt);
-        });
-    });
-}
-
-function formatNet(val) {
-    if(val > 0) return `<span class="text-emerald-700 font-bold">+${val.toLocaleString("en-IN")}</span>`;
-    if(val < 0) return `<span class="text-rose-700 font-bold">${val.toLocaleString("en-IN")}</span>`;
-    return `<span class="text-slate-500 font-bold">0</span>`;
-}
-
-function switchTab(tabKey){
-    const tabs = ["summary", "offices", "rankings", "compare"];
-    tabs.forEach(k => {
-        const isTarget = k === tabKey;
-        const btn = document.getElementById("tabBtn" + k.charAt(0).toUpperCase() + k.slice(1));
-        const view = document.getElementById("view" + k.charAt(0).toUpperCase() + k.slice(1));
-        if(btn){
-            btn.className = isTarget 
-                ? "bg-purple-900 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 border-b-2 border-purple-500 cursor-pointer"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 border border-slate-200 cursor-pointer";
-        }
-        if(view) view.classList.toggle("hidden", !isTarget);
-    });
-    requestAnimationFrame(() => {
-        if(tabKey === "summary") renderSummaryTable();
-        else if(tabKey === "offices") renderOfficeTable();
-        else if(tabKey === "rankings") renderRankingsTable();
-        else if(tabKey === "compare") renderCompareTable();
-    });
-}
-
-// ---------------- 1. SUMMARY VIEW ----------------
-function renderSummaryTable(){
-    const selM = document.getElementById("sumMonth").value;
-    const selDiv = document.getElementById("sumDivision").value;
-    const viewType = document.getElementById("sumViewType").value;
-    const isDivOnly = viewType === "division";
-    
-    document.getElementById("thSumCurrentMonth").textContent = `${periodLabel(selM)} Data`;
-    document.getElementById("thSumSubDiv").classList.toggle("hidden", isDivOnly);
-
-    let filtered = globalData;
-    if(selDiv !== "All") filtered = filtered.filter(r => r.division === selDiv);
-    
-    const grouped = {};
-    filtered.forEach(r => {
-        const key = isDivOnly ? r.division : `${r.division}||${r.subDivision}`;
-        if(!grouped[key]){
-            grouped[key] = { div: r.division, sd: r.subDivision, mOpen: 0, mClose: 0, mNet: 0, cOpen: 0, cClose: 0, cNet: 0 };
-        }
-        const pd = getPD(r, selM);
-        grouped[key].mOpen += pd.open;
-        grouped[key].mClose += pd.close;
-        grouped[key].mNet += pd.net;
-        grouped[key].cOpen += r.cumulative.open;
-        grouped[key].cClose += r.cumulative.close;
-        grouped[key].cNet += r.cumulative.net;
-    });
-
-    const tbody = document.querySelector("#tableSummary tbody");
-    const tfoot = document.querySelector("#tableSummary tfoot");
-    tbody.innerHTML = ""; tfoot.innerHTML = "";
-
-    const list = Object.values(grouped);
-    if(!list.length){
-        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-slate-400">No records found.</td></tr>`;
-        return;
-    }
-
-    let gMOpen=0, gMClose=0, gMNet=0, gCOpen=0, gCClose=0, gCNet=0;
-    let html = "";
-
-    if(isDivOnly){
-        list.sort((a,b)=>a.div.localeCompare(b.div)).forEach(item => {
-            gMOpen+=item.mOpen; gMClose+=item.mClose; gMNet+=item.mNet; gCOpen+=item.cOpen; gCClose+=item.cClose; gCNet+=item.cNet;
-            const style = divClassMap[item.div] || divClassMap["OTHER DIVISION"];
-            html += `
-                <tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="${style} text-left font-bold clickable-cell" onclick="openDrillModal('${selM}','${item.div}','ALL')">${item.div}</td>
-                    <td class="font-bold">${item.mOpen.toLocaleString("en-IN")}</td>
-                    <td class="font-semibold text-slate-600">${item.mClose.toLocaleString("en-IN")}</td>
-                    <td class="bg-blue-50/40">${formatNet(item.mNet)}</td>
-                    <td class="font-bold bg-slate-50">${item.cOpen.toLocaleString("en-IN")}</td>
-                    <td class="font-semibold text-slate-600 bg-slate-50">${item.cClose.toLocaleString("en-IN")}</td>
-                    <td class="bg-emerald-50/40">${formatNet(item.cNet)}</td>
-                </tr>
-            `;
-        });
-    } else {
-        const tree = {};
-        list.forEach(item => {
-            tree[item.div] = tree[item.div] || [];
-            tree[item.div].push(item);
-        });
-
-        Object.entries(tree).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([dName, sdList]) => {
-            let dMOpen=0, dMClose=0, dMNet=0, dCOpen=0, dCClose=0, dCNet=0;
-            const style = divClassMap[dName] || divClassMap["OTHER DIVISION"];
-            
-            sdList.sort((a,b)=>a.sd.localeCompare(b.sd)).forEach((sub, idx) => {
-                dMOpen+=sub.mOpen; dMClose+=sub.mClose; dMNet+=sub.mNet; dCOpen+=sub.cOpen; dCClose+=sub.cClose; dCNet+=sub.cNet;
-                gMOpen+=sub.mOpen; gMClose+=sub.mClose; gMNet+=sub.mNet; gCOpen+=sub.cOpen; gCClose+=sub.cClose; gCNet+=sub.cNet;
-
-                const rs = idx === 0 ? `<td rowspan="${sdList.length}" class="${style} text-left font-bold clickable-cell align-middle" onclick="openDrillModal('${selM}','${dName}','ALL')">${dName}</td>` : "";
-                html += `
-                    <tr class="hover:bg-slate-50 border-b border-slate-100">
-                        ${rs}
-                        <td class="text-left font-semibold clickable-cell" onclick="openDrillModal('${selM}','${dName}','${sub.sd}')">${sub.sd}</td>
-                        <td class="font-bold">${sub.mOpen.toLocaleString("en-IN")}</td>
-                        <td class="font-semibold text-slate-600">${sub.mClose.toLocaleString("en-IN")}</td>
-                        <td class="bg-blue-50/40">${formatNet(sub.mNet)}</td>
-                        <td class="font-bold bg-slate-50">${sub.cOpen.toLocaleString("en-IN")}</td>
-                        <td class="font-semibold text-slate-600 bg-slate-50">${sub.cClose.toLocaleString("en-IN")}</td>
-                        <td class="bg-emerald-50/40">${formatNet(sub.cNet)}</td>
-                    </tr>
-                `;
-            });
-            html += `
-                <tr class="row-div-total">
-                    <td colspan="2" class="text-left font-bold pl-3">${dName} Total</td>
-                    <td>${dMOpen.toLocaleString("en-IN")}</td>
-                    <td>${dMClose.toLocaleString("en-IN")}</td>
-                    <td>${formatNet(dMNet)}</td>
-                    <td>${dCOpen.toLocaleString("en-IN")}</td>
-                    <td>${dCClose.toLocaleString("en-IN")}</td>
-                    <td>${formatNet(dCNet)}</td>
-                </tr>
-            `;
-        });
-    }
-
-    tbody.innerHTML = html;
-    tfoot.innerHTML = `
-        <tr class="row-grand-total">
-            <td colspan="${isDivOnly?1:2}" class="text-left pl-3 uppercase">Grand Total</td>
-            <td>${gMOpen.toLocaleString("en-IN")}</td>
-            <td>${gMClose.toLocaleString("en-IN")}</td>
-            <td>${formatNet(gMNet)}</td>
-            <td>${gCOpen.toLocaleString("en-IN")}</td>
-            <td>${gCClose.toLocaleString("en-IN")}</td>
-            <td>${formatNet(gCNet)}</td>
-        </tr>
-    `;
-}
-
-// ---------------- 2. DETAILED OFFICE VIEW ----------------
-function renderOfficeTable(){
-    const selM = document.getElementById("offMonth").value;
-    const selDiv = document.getElementById("offDivision").value;
-    const selClass = document.getElementById("offClass").value;
-    const metric = document.getElementById("offSortMetric").value; // open, close, net
-    const dir = document.getElementById("offSortDir").value; // desc, asc
-    
-    document.getElementById("thOffCurrentMonth").textContent = `${periodLabel(selM)} Data`;
-
-    let filtered = globalData;
-    if(selDiv !== "All") filtered = filtered.filter(r => r.division === selDiv);
-    if(selClass !== "All") filtered = filtered.filter(r => r.officeClass === selClass);
-
-    filtered.sort((a,b) => {
-        const vA = getPD(a, selM)[metric];
-        const vB = getPD(b, selM)[metric];
-        return dir === "desc" ? vB - vA : vA - vB;
-    });
-
-    currentOfficeDataList = filtered;
-    currentOfficeRenderIndex = 0;
-    document.getElementById("officeRecordCountBadge").textContent = `Total Offices: ${filtered.length}`;
-    document.getElementById("officeTableTbody").innerHTML = "";
-    
-    if(!filtered.length){
-        document.getElementById("officeTableTbody").innerHTML = '<tr><td colspan="12" class="py-8 text-slate-400">No matching post offices found.</td></tr>';
-        document.getElementById("officeLoadMoreWrap").classList.add("hidden");
-        return;
-    }
-    appendOfficeChunk(selM);
-}
-
-function appendOfficeChunk(selM){
-    const tbody = document.getElementById("officeTableTbody");
-    const chunk = currentOfficeDataList.slice(currentOfficeRenderIndex, currentOfficeRenderIndex + OFFICE_CHUNK_SIZE);
-    
-    let html = "";
-    chunk.forEach((item, i) => {
-        const md = getPD(item, selM);
-        html += `
-            <tr class="hover:bg-slate-50 border-b border-slate-100">
-                <td>${currentOfficeRenderIndex + i + 1}</td>
-                <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
-                <td class="text-left font-semibold">${item.officeName}</td>
-                <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold text-[10px]">${item.officeClass}</span></td>
-                <td>${item.subDivision}</td>
-                <td>${item.division}</td>
-                <td class="font-bold text-slate-800 bg-blue-50/20">${md.open.toLocaleString("en-IN")}</td>
-                <td class="font-semibold text-slate-500 bg-blue-50/20">${md.close.toLocaleString("en-IN")}</td>
-                <td class="bg-blue-50/40">${formatNet(md.net)}</td>
-                <td class="font-bold text-slate-800 bg-emerald-50/20">${item.cumulative.open.toLocaleString("en-IN")}</td>
-                <td class="font-semibold text-slate-500 bg-emerald-50/20">${item.cumulative.close.toLocaleString("en-IN")}</td>
-                <td class="bg-emerald-50/40">${formatNet(item.cumulative.net)}</td>
-            </tr>
-        `;
-    });
-    tbody.insertAdjacentHTML("beforeend", html);
-    currentOfficeRenderIndex += chunk.length;
-    document.getElementById("officeLoadMoreWrap").classList.toggle("hidden", currentOfficeRenderIndex >= currentOfficeDataList.length);
-}
-function loadMoreOffices(){ appendOfficeChunk(document.getElementById("offMonth").value); }
-
-// ---------------- 3. RANKINGS VIEW ----------------
-function renderRankingsTable(){
-    const selM = document.getElementById("rnkMonth").value;
-    const rType = document.getElementById("rnkType").value;
-    const metric = document.getElementById("rnkMetric").value;
-    const selDiv = document.getElementById("rnkDivision").value;
-    const selClass = document.getElementById("rnkClass").value;
-
-    document.getElementById("thRnkCurrentMonth").textContent = `${periodLabel(selM)} Data`;
-
-    let filtered = globalData;
-    if(selDiv !== "All") filtered = filtered.filter(r => r.division === selDiv);
-    if(selClass !== "All") filtered = filtered.filter(r => r.officeClass === selClass);
-
-    filtered.sort((a,b) => {
-        const vA = getPD(a, selM)[metric];
-        const vB = getPD(b, selM)[metric];
-        return rType === "top" ? vB - vA : vA - vB;
-    });
-
-    const sliced = filtered.slice(0, 20);
-    const tbody = document.querySelector("#tableRankings tbody");
-    if(!sliced.length){
-        tbody.innerHTML = '<tr><td colspan="12" class="py-8 text-slate-400">No ranking records.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = sliced.map((item, i) => {
-        const md = getPD(item, selM);
-        return `
-            <tr class="hover:bg-slate-50 border-b border-slate-100">
-                <td class="font-extrabold ${rType==='top'?'text-emerald-800':'text-rose-800'}">#${i+1}</td>
-                <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
-                <td class="text-left font-semibold">${item.officeName}</td>
-                <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold text-[10px]">${item.officeClass}</span></td>
-                <td>${item.subDivision}</td>
-                <td>${item.division}</td>
-                <td class="font-bold bg-blue-50/20">${md.open.toLocaleString("en-IN")}</td>
-                <td class="font-semibold bg-blue-50/20 text-slate-500">${md.close.toLocaleString("en-IN")}</td>
-                <td class="bg-blue-50/40">${formatNet(md.net)}</td>
-                <td class="font-bold bg-emerald-50/20">${item.cumulative.open.toLocaleString("en-IN")}</td>
-                <td class="font-semibold bg-emerald-50/20 text-slate-500">${item.cumulative.close.toLocaleString("en-IN")}</td>
-                <td class="bg-emerald-50/40">${formatNet(item.cumulative.net)}</td>
-            </tr>
-        `;
-    }).join("");
-}
-
-// ---------------- 4. COMPARE VIEW ----------------
-function onCmpLevelChange(){
-    const lvl = document.getElementById("cmpLevel").value;
-    document.getElementById("cmpClassWrapper").classList.toggle("hidden", lvl !== "office");
-    renderCompareTable();
-}
-
-function renderCompareTable(){
-    const lvl = document.getElementById("cmpLevel").value;
-    const selDiv = document.getElementById("cmpDivision").value;
-    const selClass = lvl === "office" ? document.getElementById("cmpClass").value : "All";
-    
-    const cMonths = Array.from(document.querySelectorAll("input[name='cmpMonths']:checked")).map(cb => cb.value);
-    const cMetrics = Array.from(document.querySelectorAll("input[name='cmpMetric']:checked")).map(cb => cb.value);
-    
-    const thead = document.querySelector("#tableCompare thead");
-    const tbody = document.querySelector("#tableCompare tbody");
-    const tfoot = document.querySelector("#tableCompare tfoot");
-    thead.innerHTML = ""; tbody.innerHTML = ""; tfoot.innerHTML = "";
-    
-    if(!cMonths.length || !cMetrics.length){
-        tbody.innerHTML = '<tr><td class="py-8 text-rose-600 font-bold">Select at least one month and one metric.</td></tr>';
-        return;
-    }
-
-    let tr1 = '<tr><th rowspan="2" style="width:15%">Entity Name</th>';
-    if(lvl === "office") tr1 = '<tr><th rowspan="2" style="width:7%">Office ID</th><th rowspan="2" style="width:14%;text-align:left">Office Name</th><th rowspan="2" style="width:5%">Class</th><th rowspan="2" style="width:10%">Division</th>';
-    else if(lvl === "subdivision") tr1 = '<tr><th rowspan="2" style="width:10%">Division</th><th rowspan="2" style="width:14%;text-align:left">Sub-Division</th>';
-
-    cMetrics.forEach(mKey => {
-        tr1 += `<th colspan="${cMonths.length}" style="background-color:#e1d5e7;border-left:2px solid #707070">${METRIC_LABELS[mKey]}</th>`;
-    });
-    tr1 += '</tr>';
-
-    let tr2 = '<tr>';
-    cMetrics.forEach(() => {
-        cMonths.forEach(m => { tr2 += `<th style="background-color:${periodDefs[m] && periodDefs[m].special ? "#e2efda" : "#fce4d6"}">${periodShort(m)}</th>`; });
-    });
-    tr2 += '</tr>';
-    thead.innerHTML = tr1 + tr2;
-
-    let filtered = globalData;
-    if(selDiv !== "All") filtered = filtered.filter(r => r.division === selDiv);
-    if(lvl === "office" && selClass !== "All") filtered = filtered.filter(r => r.officeClass === selClass);
-
-    const map = {};
-    filtered.forEach(r => {
-        const k = lvl === "division" ? r.division : lvl === "subdivision" ? `${r.division}||${r.subDivision}` : r.officeId;
-        if(!map[k]){
-            map[k] = { officeId: r.officeId, officeName: r.officeName, officeClass: r.officeClass, div: r.division, sd: r.subDivision, data: {} };
-            cMonths.forEach(m => map[k].data[m] = {open:0, close:0, net:0});
-        }
-        cMonths.forEach(m => {
-            const md = getPD(r, m);
-            map[k].data[m].open += md.open;
-            map[k].data[m].close += md.close;
-            map[k].data[m].net += md.net;
-        });
-    });
-
-    const keys = Object.keys(map).sort();
-    if(!keys.length){
-        tbody.innerHTML = '<tr><td colspan="20" class="py-8 text-slate-400">No records found.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = keys.map(k => {
-        const item = map[k];
-        let nameCells = "";
-        if(lvl === "office"){
-            nameCells = `<td class="font-mono font-bold text-purple-950">${item.officeId}</td><td class="text-left font-semibold">${item.officeName}</td><td><span class="bg-purple-100 text-purple-950 px-1 py-0.5 rounded text-[10px] font-bold">${item.officeClass}</span></td><td>${item.div}</td>`;
-        } else if(lvl === "subdivision"){
-            nameCells = `<td class="font-bold">${item.div}</td><td class="text-left font-semibold">${item.sd}</td>`;
-        } else {
-            nameCells = `<td class="font-bold text-left px-3">${item.div}</td>`;
-        }
-
-        let metricCells = "";
-        cMetrics.forEach(metric => {
-            cMonths.forEach(m => {
-                const val = item.data[m][metric] || 0;
-                if(metric === "net") metricCells += `<td>${formatNet(val)}</td>`;
-                else metricCells += `<td class="font-bold">${val.toLocaleString("en-IN")}</td>`;
-            });
-        });
-        return `<tr class="hover:bg-slate-50 border-b border-slate-100">${nameCells}${metricCells}</tr>`;
-    }).join("");
-
-    // ---- REGION TOTAL (last row) ----
-    const tot = {};
-    cMonths.forEach(m => { tot[m] = { open: 0, close: 0, net: 0 }; });
-    keys.forEach(k => cMonths.forEach(m => {
-        tot[m].open += map[k].data[m].open; tot[m].close += map[k].data[m].close; tot[m].net += map[k].data[m].net;
-    }));
-    const lblCols = lvl === "office" ? 4 : lvl === "subdivision" ? 2 : 1;
-    const isAll = selDiv === "All" && selClass === "All";
-    let totCells = "";
-    cMetrics.forEach(metric => cMonths.forEach(m => {
-        const v = tot[m][metric];
-        totCells += metric === "net" ? `<td>${formatNet(v)}</td>` : `<td>${v.toLocaleString("en-IN")}</td>`;
-    }));
-    tfoot.innerHTML = `<tr class="row-grand-total"><td colspan="${lblCols}" class="text-left pl-3 uppercase">${isAll ? "Region Total" : "Total (Filtered)"}</td>${totCells}</tr>`;
-}
-
-// ---------------- DRILLDOWN MODAL ----------------
-function openDrillModal(month, division, sd){
-    let filtered = globalData.filter(r => {
-        if(division !== "ALL" && r.division !== division) return false;
-        if(sd !== "ALL" && r.subDivision !== sd) return false;
-        return true;
-    });
-    filtered.sort((a,b) => getPD(b, month).net - getPD(a, month).net);
-
-    document.getElementById("modalTitle").textContent = `Sub-Division: ${sd==="ALL" ? division : `${sd} (${division})`}`;
-    document.getElementById("modalSubtitle").textContent = `Period: ${periodLabel(month)} | Total ${filtered.length} offices.`;
-
-    document.querySelector("#tableModalOffices tbody").innerHTML = filtered.map((item, i) => {
-        const md = getPD(item, month);
-        return `
-        <tr class="hover:bg-slate-50 border-b border-slate-100">
-            <td>${i+1}</td>
-            <td class="font-mono font-bold text-purple-950">${item.officeId}</td>
-            <td class="text-left font-semibold">${item.officeName}</td>
-            <td><span class="bg-purple-100 text-purple-950 px-1.5 py-0.5 rounded font-bold">${item.officeClass}</span></td>
-            <td class="font-bold bg-blue-50/20">${md.open.toLocaleString("en-IN")}</td>
-            <td class="font-semibold bg-blue-50/20 text-slate-500">${md.close.toLocaleString("en-IN")}</td>
-            <td class="bg-blue-50/40">${formatNet(md.net)}</td>
-            <td class="font-bold bg-emerald-50/20">${item.cumulative.open.toLocaleString("en-IN")}</td>
-            <td class="font-semibold bg-emerald-50/20 text-slate-500">${item.cumulative.close.toLocaleString("en-IN")}</td>
-            <td class="bg-emerald-50/40">${formatNet(item.cumulative.net)}</td>
-        </tr>
-    `}).join("");
-    document.getElementById("drillModal").classList.remove("hidden");
-}
-function closeDrillModal(){ document.getElementById("drillModal").classList.add("hidden"); }
-
-// ---------------- EXPORTS ----------------
-function exportTableToExcel(tableId, fileName){
-    const tbl = document.getElementById(tableId);
-    if(!tbl) return alert("Table not found.");
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(tbl), "Dashboard_Data");
-    XLSX.writeFile(wb, fileName);
-}
-function exportSingleTablePDF(tableId, title){
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF("l", "mm", "a4");
-    doc.setFillColor(44, 12, 56);
-    doc.rect(0, 0, 297, 16, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11); doc.setFont("helvetica", "bold");
-    doc.text("POSB PERFORMANCE DASHBOARD", 12, 10);
-    doc.setFontSize(8.5); doc.text(title.toUpperCase(), 12, 14);
-    doc.autoTable({
-        html: "#" + tableId, startY: 19, margin: { top: 19, right: 8, bottom: 10, left: 8 },
-        theme: "grid", styles: { fontSize: 7, cellPadding: 1.5, valign: "middle", lineColor: [180,180,180], lineWidth: 0.15 },
-        headStyles: { fillColor: [247, 202, 172], textColor: [0,0,0], fontStyle: "bold", halign: "center" }
-    });
-    doc.save(title.replace(/\s+/g, "_") + ".pdf");
-}
-
-initApp();
 </script>
 </body>
 </html>
-
