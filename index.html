@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -80,13 +80,11 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
   <div class="steps"><b data-s="1">1 &nbsp;Upload</b><b data-s="2">2 &nbsp;Tables</b><b data-s="3">3 &nbsp;Edit &amp; Export</b></div>
 
   <section id="s1">
-    <div class="g3">
+    <div class="g2">
       <div class="card"><h2>Excel workbooks</h2>
         <label class="drop"><b>Select one or more Excel files</b><small>.xlsx, .xls, .csv</small><input type="file" id="xl" accept=".xlsx,.xls,.csv" multiple hidden></label></div>
-      <div class="card"><h2>Tables from image or PDF</h2>
-        <label class="drop"><b>Select JPG, PNG or PDF with a table</b><small>Converted to table data, then used for slides</small><input type="file" id="dt" accept="image/*,.pdf" multiple hidden></label></div>
-      <div class="card"><h2>Pictures for slides</h2>
-        <label class="drop"><b>Select JPG, PNG or PDF files</b><small>Photos, logos, scanned pages. Added to the picture library</small><input type="file" class="mi" accept="image/*,.pdf" multiple hidden></label></div>
+      <div class="card"><h2>Photo (JPG/PNG) or PDF &rarr; Table &rarr; Slide</h2>
+        <label class="drop"><b>Select JPG, PNG or PDF with a table</b><small>Photo is read as table data and slides are made automatically in this theme</small><input type="file" id="dt" accept="image/*,.pdf" multiple hidden></label></div>
     </div>
     <div class="card" id="stat" hidden></div>
     <div class="card" id="msg" hidden></div>
@@ -547,11 +545,12 @@ function grid(ws){
   const tol=Math.floor(M.length*.05),cuts=[];let run=-1,sum=0;
   for(let x=0;x<=W;x++){sum+=D[x];if(sum<=tol){if(run<0)run=x}else{if(run>0&&x-run>=gm)cuts.push((run+x)/2);run=-1}}
   const n=cuts.length+1;
-  let rows=L.map(l=>{const r=Array(n).fill('');l.w.forEach(w=>{const c=cuts.filter(x=>x<(w.x0+w.x1)/2).length;r[c]=(r[c]+' '+w.t).trim()});return r});
+  const k0=L.findIndex(l=>l.s>=2),k1=L.length-[...L].reverse().findIndex(l=>l.s>=2),ttl=L.slice(0,k0).map(l=>l.w.map(w=>w.t).join(' ')).join(' ');
+  let rows=L.slice(k0,k1).map(l=>{const r=Array(n).fill('');l.w.forEach(w=>{const c=cuts.filter(x=>x<(w.x0+w.x1)/2).length;r[c]=(r[c]+' '+w.t).trim()});return r});
   const keep=[...Array(n).keys()].filter(c=>rows.some(r=>r[c]));
   rows=rows.map(r=>keep.map(c=>r[c].replace(/\s+%/g,'%').replace(/^\|+|\|+$/g,'').trim()));
   if(keep.length<2)return null;
-  const ne=r=>r.filter(Boolean).length;let a=0,z=rows.length,title='';
+  const ne=r=>r.filter(Boolean).length;let a=0,z=rows.length,title=ttl;
   while(a<z-1&&ne(rows[a])<=1&&keep.length>=3){title=(title+' '+rows[a].join(' ')).trim();a++}
   while(z>a+1&&ne(rows[z-1])<=1&&keep.length>=3)z--;
   rows=rows.slice(a,z);
@@ -565,7 +564,8 @@ async function readData(fs){
   let w=null;
   const ocr=async(c,psm)=>{
     if(!w){if(!window.Tesseract)throw Error('OCR library not loaded. Check your internet connection.');
-      w=await Tesseract.createWorker('eng',1,{langPath:'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int',logger:m=>{if(m.status==='recognizing text')stat(`Reading text ${Math.round(m.progress*100)}%`)}});
+      const mkw=lp=>Promise.race([Tesseract.createWorker('eng',1,{...(lp?{langPath:lp}:{}),logger:m=>stat('OCR: '+(m.status||'')+' '+Math.round((m.progress||0)*100)+'%')}),new Promise((_,j)=>setTimeout(()=>j(Error('OCR engine load nahi hua (internet check karein)')),45000))]);
+      try{w=await mkw('')}catch(e1){w=await mkw('https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int')}
       await w.setParameters({preserve_interword_spaces:'1',tessedit_pageseg_mode:'6'})}
     if(psm)await w.setParameters({tessedit_pageseg_mode:psm});const {data}=await w.recognize(c);
     const W0=data.words||(data.blocks||[]).flatMap(b=>b.paragraphs.flatMap(p=>p.lines.flatMap(l=>l.words)));return W0.filter(x=>x.text.trim()&&x.confidence>25&&!/^[|_~]+$/.test(x.text.trim())).map(x=>({t:x.text,x0:x.bbox.x0,x1:x.bbox.x1,y0:x.bbox.y0,y1:x.bbox.y1}));
@@ -606,7 +606,8 @@ async function readData(fs){
   if(w)await w.terminate();
   stat('');renderTables();info();
 }
-$('dt').onchange=async e=>{const f=[...e.target.files];e.target.value='';await readData(f)};
+$('dt').onchange=async e=>{const f=[...e.target.files];e.target.value='';const n0=tables.length;await readData(f);if(tables.length>n0){if(!deck.length){buildDeck();go(3)}else go(2)}};
+addEventListener('unhandledrejection',e=>stat('Error: '+((e.reason&&e.reason.message)||e.reason)));
 
 // ---------- new: popup position, robust image table reading ----------
 function pos(){pop.hidden=!sel}
@@ -631,13 +632,29 @@ function loose(ws){
   const rows=L.map(l=>{l.w.sort((a,b)=>a.x0-b.x0);const r=[];l.w.forEach((w,i)=>{if(i&&w.x0-l.w[i-1].x1<mh*.7)r[r.length-1]+=' '+w.t;else r.push(w.t)});return r}),n=Math.max(...rows.map(r=>r.length));
   return rows.length>=2?{title:'',rows:rows.map(r=>[...r,...Array(n-r.length).fill('')])}:null;
 }
+function gray(c){const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const x=o.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,o.width,o.height);x.drawImage(c,0,0);const im=x.getImageData(0,0,o.width,o.height),d=im.data;for(let i=0;i<d.length;i+=4)d[i]=d[i+1]=d[i+2]=d[i]*.299+d[i+1]*.587+d[i+2]*.114;x.putImageData(im,0,0);return o}
+function tidy(g){
+  if(!g)return g;
+  const dg=c=>c.replace(/[^\dA-Za-z]/g,''),num=c=>/\d/.test(c)&&dg(c).replace(/[A-Za-z]/g,'').length>=dg(c).length*.6;
+  let rows=g.rows.map(r=>r.map((c,j)=>{c=String(c).trim();
+    if(j>0&&num(c)){c=c.replace(/^[^\d-]+/,'').replace(/\s+%/,'%').replace(/^(\d)\s(\d\d)%$/,'$1.$2%');
+      if(/%/.test(c)){if(/^\d{3}%$/.test(c))c=c[0]+'.'+c.slice(1)}else if(/^\d{1,3}(\.\d{3})+$/.test(c))c=c.replace(/\./g,',')}
+    else if(j>0&&c.length<=2&&!/\d/.test(c))c='';
+    return c}));
+  rows=rows.filter(r=>r.filter(Boolean).length>=2);
+  if(rows.length<2)return null;
+  const d=rows.findIndex((r,i)=>i>0&&r.filter(c=>isNum(c)).length>=3);
+  if(d>1){for(let i=1;i<d;i++)rows[i].forEach((c,j)=>{if(c)rows[0][j]=(rows[0][j]+' '+c).trim()});rows.splice(1,d-1)}
+  rows[0]=rows[0].map(h=>h.replace(/^[^A-Za-z0-9]+\s*|^\S\s+(?=[A-Za-z]{3})/,'').replace(/\bAlc\b/g,'A/c'));
+  return{title:g.title,rows};
+}
 async function fromC(c){
   let L=null;try{L=glines(c)}catch(x){}
-  const hasL=L&&L.xs.length>2&&L.ys.length>2;let best=null,bs=0;
-  for(const p of ['6','4','11']){
-    stat('Reading text (mode '+p+')...');
-    const ws=await ocr2(c,p);let g=hasL?gcells(ws,L):null;const vl=!!g;
-    g=g||grid(ws)||loose(ws);
+  const hasL=L&&L.xs.length>2&&L.xs.length<=20&&L.ys.length>2,gc=gray(c);let best=null,bs=0;
+  for(const p of ['6','11','4']){
+    stat('Photo padh rahe hain (mode '+p+')...');
+    const ws=await ocr2(gc,p);let g=hasL?gcells(ws,L):null;const vl=!!g;
+    g=tidy(g||grid(ws)||loose(ws));
     const sc=g?g.rows.flat().filter(Boolean).length:0;
     if(sc>bs){bs=sc;best=g}
     if(vl&&g)break;
