@@ -123,9 +123,9 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
   <div class="tools" id="rtools">
     <button data-m="area" class="on">1. Select table</button><button data-m="line">2. Draw lines</button><button data-m="row">Skip row</button><button data-m="col">Skip column</button>
     <button id="rauto">Auto-detect lines</button><button id="rrot">Rotate</button><button id="rundo" class="fx">&#8617; Undo last step</button><button id="rlast" class="fx">Remove last line</button><button id="rclr" class="fx">Clear all lines</button><button id="rreset" class="fx">&#10005; Remove selection</button>
-    <label class="tg"><input type="checkbox" id="rbw" checked> Black &amp; white</label><label class="tg"><input type="checkbox" id="rstr" checked> Straighten</label><label class="tg">Language <select id="rlang" style="width:auto;margin:0"><option value="eng">English</option><option value="eng+hin">Hindi + English</option></select></label>
+    <label class="tg"><input type="checkbox" id="rbw" checked> Black &amp; white</label><label class="tg"><input type="checkbox" id="rstr" checked> Straighten</label><label class="tg">Language <select id="rlang" style="width:auto;margin:0"><option value="eng+hin" selected>Hindi + English</option><option value="eng">English only</option><option value="hin">Hindi only</option></select></label>
   </div>
-  <div class="warn" style="margin:0 0 8px">Galat select ho gaya? &#8617; Undo last step dabao, ya kisi line par tap karo (wo line hat jayegi), ya &#10005; Remove selection se table box hata ke dobara chuno.</div>
+  <div class="warn" style="margin:0 0 8px">Line jaha se jaha tak khinchoge utni hi banegi (merged header ke liye chhoti line khincho, wo cells jud jayenge). Galat ho gaya? &#8617; Undo last step dabao, ya line par tap karo (wo line hat jayegi), ya &#10005; Remove selection se table box dobara chuno.</div>
   <div class="rcv"><canvas id="rc"></canvas></div>
   <div id="rtypes" class="cols"></div>
   <div class="acts"><button id="rskip">Cancel / Skip image</button><button id="rquick">Quick read (no lines)</button><button class="pri" id="rread">Read table</button></div>
@@ -300,7 +300,7 @@ function fromRows(raw,fn,name){
       const n=Math.max(...b.map(r=>r.length));
       const idx=[...Array(n).keys()].filter(i=>b.some(r=>String(r[i]??'').trim()!==''));
       const rows=b.map(r=>idx.map(i=>String(r[i]??'').trim()));
-      const head=rows[0].map((h,i)=>h||('Column '+(i+1)));
+      const seen={},head=rows[0].map((h,i)=>h||('Column '+(i+1))).map((h,i)=>{if(seen[h])return h+' '+(i+1);seen[h]=1;return h});
       tables.push({src:fn,sheet:name,inc:true,title:title||(name+(blocks.length>1?' - Table '+k:'')),head,body:rows.slice(1),keep:head.map(()=>true),red:50,orange:75,yellow:90,per:10});
       cnt++;
     });
@@ -738,11 +738,12 @@ function cropImg(){
   t.width=Math.round(w*k);t.height=Math.round(h*k);t.getContext('2d').drawImage(R.w,c?c.x0:0,c?c.y0:0,w,h,0,0,t.width,t.height);
   return t.toDataURL('image/jpeg',.85);
 }
-function rbuild(){R.w=prep(R.src,R.rot,$('rstr').checked);rcv.width=R.w.width;rcv.height=R.w.height;R.crop=null;R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rmode('area');rdraw();rtypes()}
+function rbuild(){R.w=prep(R.src,R.rot,$('rstr').checked);rcv.width=R.w.width;rcv.height=R.w.height;R.crop=null;R.vx=[];R.hy=[];R.ln=[];R.sr.clear();R.sc.clear();rmode('area');rdraw();rtypes()}
 function rmode(m){R.mode=m;$('rtools').querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m))}
 const nrm=d=>({x0:Math.min(d.x,d.x1),y0:Math.min(d.y,d.y1),x1:Math.max(d.x,d.x1),y1:Math.max(d.y,d.y1)});
-const bnd=()=>({xs:[R.crop.x0,...[...R.vx].sort((a,b)=>a-b),R.crop.x1],ys:[R.crop.y0,...[...R.hy].sort((a,b)=>a-b),R.crop.y1]});
-const sline=d=>{const dx=Math.abs(d.x1-d.x),dy=Math.abs(d.y1-d.y),v=dy>=dx;return{v,p:v?(d.x+d.x1)/2:(d.y+d.y1)/2,len:Math.max(dx,dy)}};
+const clus=a=>{const p=[...new Set(a.map(q=>q.p))].sort((x,y)=>x-y),o=[];p.forEach(v=>{if(!o.length||v-o[o.length-1]>6)o.push(v)});return o};
+const bnd=()=>{const c=R.crop;return{xs:[c.x0,...clus(R.vx).filter(x=>x>c.x0+3&&x<c.x1-3),c.x1],ys:[c.y0,...clus(R.hy).filter(y=>y>c.y0+3&&y<c.y1-3),c.y1]}};
+const sline=d=>{const dx=Math.abs(d.x1-d.x),dy=Math.abs(d.y1-d.y),v=dy>=dx;return v?{v,p:(d.x+d.x1)/2,a:Math.min(d.y,d.y1),b:Math.max(d.y,d.y1),len:dy}:{v,p:(d.y+d.y1)/2,a:Math.min(d.x,d.x1),b:Math.max(d.x,d.x1),len:dx}};
 function rdraw(){
   const g=rcv.getContext('2d'),W=rcv.width,H=rcv.height,lw=Math.max(2,W/450);
   g.drawImage(R.w,0,0);
@@ -753,12 +754,12 @@ function rdraw(){
     ys.slice(0,-1).forEach((y,i)=>{if(R.sr.has(i))g.fillRect(xs[0],y,xs[xs.length-1]-xs[0],ys[i+1]-y)});
     xs.slice(0,-1).forEach((x,j)=>{if(R.sc.has(j))g.fillRect(x,ys[0],xs[j+1]-x,ys[ys.length-1]-ys[0])});
     g.strokeStyle='#e11d48';g.lineWidth=lw;g.beginPath();
-    R.vx.forEach(x=>{g.moveTo(x,R.crop.y0);g.lineTo(x,R.crop.y1)});R.hy.forEach(y=>{g.moveTo(R.crop.x0,y);g.lineTo(R.crop.x1,y)});g.stroke();
+    R.vx.forEach(q=>{g.moveTo(q.p,q.a);g.lineTo(q.p,q.b)});R.hy.forEach(q=>{g.moveTo(q.a,q.p);g.lineTo(q.b,q.p)});g.stroke();
   }
-  if(R.d&&R.mode==='line'){const l=sline(R.d);g.strokeStyle='#f59e0b';g.lineWidth=lw;g.beginPath();if(l.v){g.moveTo(l.p,0);g.lineTo(l.p,H)}else{g.moveTo(0,l.p);g.lineTo(W,l.p)}g.stroke()}
+  if(R.d&&R.mode==='line'){const l=sline(R.d);g.strokeStyle='#f59e0b';g.lineWidth=lw;g.beginPath();if(l.v){g.moveTo(l.p,l.a);g.lineTo(l.p,l.b)}else{g.moveTo(l.a,l.p);g.lineTo(l.b,l.p)}g.stroke()}
 }
 function rtypes(){
-  const n=R.vx.length+1;R.types.length=n;for(let j=0;j<n;j++)R.types[j]=R.types[j]||'a';
+  const n=R.crop?bnd().xs.length-1:1;R.types.length=n;for(let j=0;j<n;j++)R.types[j]=R.types[j]||'a';
   $('rtypes').innerHTML=R.crop?Array.from({length:n},(_,j)=>`<span class="col on"><label>Col ${j+1}<select data-j="${j}">${[['a','Auto'],['t','Text'],['n','Number']].map(([v,t])=>`<option value="${v}" ${R.types[j]===v?'selected':''}>${t}</option>`).join('')}</select></label></span>`).join(''):'';
   if(R.msg){$('rm').textContent=R.msg;R.msg='';return}
   if(R.crop){const{xs,ys}=bnd();$('rm').textContent=`${ys.length-1} rows x ${xs.length-1} columns`}else $('rm').textContent='Drag a box around the table';
@@ -768,27 +769,35 @@ const pt=e=>{const r=rcv.getBoundingClientRect(),k=rcv.width/r.width;return{x:(e
 rcv.onpointerdown=e=>{if(!R)return;const p=pt(e);R.d={x:p.x,y:p.y,x1:p.x,y1:p.y,k:p.k};rcv.setPointerCapture(e.pointerId)};
 rcv.onpointermove=e=>{if(!R||!R.d)return;const p=pt(e);R.d.x1=p.x;R.d.y1=p.y;rdraw()};
 rcv.onpointerup=()=>{if(!R||!R.d)return;const d=R.d;R.d=null;const b=rsnap();rfinish(d);if(rsnap()!==b)R.h.push(b);rdraw();rtypes()};
-function snapL(v,p){
-  const c=R.crop,r=8,x0=v?Math.max(0,Math.round(p)-r):Math.round(c.x0),y0=v?Math.round(c.y0):Math.max(0,Math.round(p)-r),w=v?2*r+1:Math.round(c.x1-c.x0),h=v?Math.round(c.y1-c.y0):2*r+1;
-  const g=gray(R.w.getContext('2d').getImageData(x0,y0,w,h)),th=otsu(g)*.95;let bi=-1,bv=0;
-  for(let i=0;i<2*r+1;i++){let s=0;const n=v?h:w;for(let j=0;j<n;j++)if((v?g[j*w+i]:g[i*w+j])<th)s++;if(s/n>bv){bv=s/n;bi=i}}
+function snapL(v,p,a,b){
+  const W=R.w.width,H=R.w.height,r=8,x0=v?Math.max(0,Math.round(p)-r):Math.max(0,Math.round(a)),y0=v?Math.max(0,Math.round(a)):Math.max(0,Math.round(p)-r);
+  const w=v?Math.min(2*r+1,W-x0):Math.min(Math.round(b-a),W-x0),h=v?Math.min(Math.round(b-a),H-y0):Math.min(2*r+1,H-y0);
+  if(w<3||h<3)return p;
+  const g=gray(R.w.getContext('2d').getImageData(x0,y0,w,h)),th=otsu(g)*.95,m=v?w:h,n=v?h:w;let bi=-1,bv=0;
+  for(let i=0;i<m;i++){let s=0;for(let j=0;j<n;j++)if((v?g[j*w+i]:g[i*w+j])<th)s++;if(s/n>bv){bv=s/n;bi=i}}
   return bv>.35?(v?x0+bi:y0+bi):p;
 }
 function rfinish(d){
   const m=R.mode,mv=Math.hypot(d.x1-d.x,d.y1-d.y),tol=8*d.k;
-  if(m==='area'){const c=nrm(d);if(c.x1-c.x0>30&&c.y1-c.y0>30){R.crop=c;R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rmode('line')}return}
+  if(m==='area'){const c=nrm(d);if(c.x1-c.x0>30&&c.y1-c.y0>30){R.crop=c;R.vx=[];R.hy=[];R.ln=[];R.sr.clear();R.sc.clear();rmode('line')}return}
   if(!R.crop){R.msg='Select the table area first';return}
   const c=R.crop;
   if(m==='row'||m==='col'){const{xs,ys}=bnd(),a=m==='row'?ys:xs,v=m==='row'?d.y:d.x,i=a.findIndex((q,n)=>v>=q&&v<a[n+1]);if(i>=0){const S=m==='row'?R.sr:R.sc;S.has(i)?S.delete(i):S.add(i)}return}
   if(mv<6*d.k){
-    let best=null,bd=tol;
-    R.vx.forEach((x,i)=>{const q=Math.abs(x-d.x);if(q<bd){bd=q;best=['vx',i]}});R.hy.forEach((y,i)=>{const q=Math.abs(y-d.y);if(q<bd){bd=q;best=['hy',i]}});
+    let best=null,bd=tol*1.5;
+    R.vx.forEach((q,i)=>{const e=Math.abs(q.p-d.x);if(e<bd&&d.y>=q.a-tol&&d.y<=q.b+tol){bd=e;best=['vx',i]}});
+    R.hy.forEach((q,i)=>{const e=Math.abs(q.p-d.y);if(e<bd&&d.x>=q.a-tol&&d.x<=q.b+tol){bd=e;best=['hy',i]}});
     if(best){R[best[0]].splice(best[1],1);R.sr.clear();R.sc.clear()}
     return;
   }
   const l=sline(d);if(l.len<20*d.k)return;
-  const lo=l.v?c.x0:c.y0,hi=l.v?c.x1:c.y1,p=snapL(l.v,l.p);
-  if(p>lo+tol&&p<hi-tol){(l.v?R.vx:R.hy).push(p);R.ln.push(l.v?'vx':'hy');R.sr.clear();R.sc.clear()}
+  const lo=l.v?c.x0:c.y0,hi=l.v?c.x1:c.y1;
+  let a=Math.max(l.a,l.v?c.y0:c.x0),b=Math.min(l.b,l.v?c.y1:c.x1);
+  const p=snapL(l.v,l.p,a,b),cr=(l.v?clus(R.hy).concat([c.y0,c.y1]):clus(R.vx).concat([c.x0,c.x1])),te=14*d.k;
+  const sn=x=>{let q=x,bd=te;cr.forEach(y=>{const e=Math.abs(y-x);if(e<bd){bd=e;q=y}});return q};
+  a=sn(a);b=sn(b);
+  if(b-a<10*d.k)return;
+  if(p>lo+tol&&p<hi-tol){(l.v?R.vx:R.hy).push({p,a,b});R.ln.push(l.v?'vx':'hy');R.sr.clear();R.sc.clear()}
 }
 function rauto(){
   if(!R.crop){R.msg='Select the table area first';return}
@@ -810,21 +819,29 @@ function rauto(){
   const bh=med(runs(rp,h,v=>v>.004*w).map(([a,b])=>b-a+1))||12;
   if(!hy.length)hy=mid(runs(rp,h,v=>v<=.004*w).filter(([a,b])=>a>0&&b<h-1));
   if(!vx.length)vx=mid(runs(cp,w,v=>v<=.003*h).filter(([a,b])=>a>0&&b<w-1&&b-a+1>=Math.max(10,1.4*bh)));
-  const oy=c.y0,ox=c.x0;
-  R.hy=hy.map(y=>y+oy);R.vx=vx.map(x=>x+ox);R.ln=[];R.sr.clear();R.sc.clear();
-  if(rh){R.crop.y0=oy+hy0[0];R.crop.y1=oy+hy0[hy0.length-1];R.hy=R.hy.filter(y=>y>R.crop.y0+4&&y<R.crop.y1-4)}
-  if(rv){R.crop.x0=ox+vx0[0];R.crop.x1=ox+vx0[vx0.length-1];R.vx=R.vx.filter(x=>x>R.crop.x0+4&&x<R.crop.x1-4)}
+  const oy=c.y0,ox=c.x0,dk=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&D[y*w+x]===1;
+  const seg=(get,n,gap,min)=>{const o=[];let s=-1,l=-1;for(let i=0;i<n;i++){if(get(i)){if(s<0)s=i;l=i}else if(s>=0&&i-l>gap){if(l-s>=min)o.push([s,l]);s=-1}}if(s>=0&&l-s>=min)o.push([s,l]);return o};
+  const vs=x=>{if(!vx0.some(q=>Math.abs(q-x)<4))return[[0,h-1]];const xi=Math.round(x),o=seg(y=>dk(xi,y)||dk(xi-1,y)||dk(xi+1,y),h,8,Math.max(25,h*.04));return o.length?o.map(([a,b])=>[a<10?0:a,b>h-11?h-1:b]):[[0,h-1]]};
+  const hs=y=>{if(!hy0.some(q=>Math.abs(q-y)<4))return[[0,w-1]];const yi=Math.round(y),o=seg(x=>dk(x,yi)||dk(x,yi-1)||dk(x,yi+1),w,8,Math.max(25,w*.04));return o.length?o.map(([a,b])=>[a<10?0:a,b>w-11?w-1:b]):[[0,w-1]]};
+  R.vx=vx.flatMap(x=>vs(x).map(([a,b])=>({p:x+ox,a:a+oy,b:b+oy})));
+  R.hy=hy.flatMap(y=>hs(y).map(([a,b])=>({p:y+oy,a:a+ox,b:b+ox})));
+  R.ln=[];R.sr.clear();R.sc.clear();
+  if(rh){R.crop.y0=oy+hy0[0];R.crop.y1=oy+hy0[hy0.length-1];R.hy=R.hy.filter(q=>q.p>R.crop.y0+4&&q.p<R.crop.y1-4)}
+  if(rv){R.crop.x0=ox+vx0[0];R.crop.x1=ox+vx0[vx0.length-1];R.vx=R.vx.filter(q=>q.p>R.crop.x0+4&&q.p<R.crop.x1-4)}
+  const k=R.crop;
+  R.vx=R.vx.map(q=>({p:q.p,a:Math.max(q.a,k.y0),b:Math.min(q.b,k.y1)})).filter(q=>q.b-q.a>10);
+  R.hy=R.hy.map(q=>({p:q.p,a:Math.max(q.a,k.x0),b:Math.min(q.b,k.x1)})).filter(q=>q.b-q.a>10);
 }
 function fix(s,type){
-  s=s.replace(/\s+/g,' ').trim().replace(/^[^A-Za-z0-9%(]+|[^A-Za-z0-9%)]+$/g,'');
-  if(!/[A-Za-z0-9]/.test(s))return '';
+  s=s.replace(/\s+/g,' ').trim().replace(/^[^A-Za-z0-9\u0900-\u097F%(]+|[^A-Za-z0-9\u0900-\u097F%)]+$/g,'');
+  if(!/[A-Za-z0-9\u0900-\u097F]/.test(s))return '';
   if((type==='n'&&!/[A-Za-z]{3,}/.test(s))||(type==='a'&&/^[\dOolI|SBZ.,%\-\s]+$/.test(s)&&/\d/.test(s)))s=s.replace(/[Oo]/g,'0').replace(/[lI|]/g,'1').replace(/S/g,'5').replace(/B/g,'8').replace(/Z/g,'2').replace(/[^0-9.,%\-]/g,'');
   if(/^\d{1,3}([.,]\d{2})*[.,]\d{3}$/.test(s))s=s.replace(/\./g,',');
   return s;
 }
 async function getWk(){
   if(typeof Tesseract==='undefined')throw new Error('OCR engine not loaded, check your internet connection');
-  const L=($('rlang')||{}).value||'eng';
+  const L=($('rlang')||{}).value||'eng+hin';
   if(wk&&wkL!==L){try{await wk.terminate()}catch(x){}wk=null}
   if(!wk){wk=await Tesseract.createWorker(L,1);wkL=L}
   return wk;
@@ -850,21 +867,31 @@ async function cellRead(x0,y0,x1,y1,type,bw,hdr){
 function rdone(rows){const f=R.res;$('rd').hidden=true;R=null;f(rows)}
 async function rread(){
   if(!R.crop){R.msg='Select the table area first';return rtypes()}
-  const{xs,ys}=bnd(),bw=$('rbw').checked,grid=[];let n=0;
-  const total=(ys.length-1-R.sr.size)*(xs.length-1-R.sc.size);
-  $('rread').disabled=true;
+  const{xs,ys}=bnd(),bw=$('rbw').checked,nr=ys.length-1,nc=xs.length-1,P=[...Array(nr*nc).keys()];
+  const f=a=>P[a]===a?a:(P[a]=f(P[a])),u=(a,b)=>{P[f(a)]=f(b)};
+  const cov=(S,b,lo,hi)=>{const iv=S.filter(q=>Math.abs(q.p-b)<=7).map(q=>[Math.max(q.a,lo),Math.min(q.b,hi)]).filter(q=>q[1]>q[0]).sort((x,y)=>x[0]-y[0]);let t=0,e=-1e9;iv.forEach(([a,z])=>{const s0=Math.max(a,e);if(z>s0)t+=z-s0;e=Math.max(e,z)});return t/(hi-lo)>=.5};
+  for(let i=0;i<nr;i++)for(let j=0;j<nc;j++){
+    if(j<nc-1&&!cov(R.vx,xs[j+1],ys[i],ys[i+1]))u(i*nc+j,i*nc+j+1);
+    if(i<nr-1&&!cov(R.hy,ys[i+1],xs[j],xs[j+1]))u(i*nc+j,(i+1)*nc+j);
+  }
+  const G=new Map();
+  for(let i=0;i<nr;i++)for(let j=0;j<nc;j++){const k=f(i*nc+j);let g=G.get(k);if(!g)G.set(k,g={i0:i,i1:i,j0:j,j1:j});g.i0=Math.min(g.i0,i);g.i1=Math.max(g.i1,i);g.j0=Math.min(g.j0,j);g.j1=Math.max(g.j1,j)}
+  const rows=[...Array(nr).keys()].filter(i=>!R.sr.has(i)),cols=[...Array(nc).keys()].filter(j=>!R.sc.has(j));
+  const ri=new Map(rows.map((i,k)=>[i,k])),ci=new Map(cols.map((j,k)=>[j,k]));
+  const grid=rows.map(()=>cols.map(()=>'')),full=rows.map(()=>cols.map(()=>''));
+  const gl=[...G.values()].map(g=>({...g,r:rows.filter(i=>i>=g.i0&&i<=g.i1),c:cols.filter(j=>j>=g.j0&&j<=g.j1)})).filter(g=>g.r.length&&g.c.length).sort((a,b)=>a.i0-b.i0||a.j0-b.j0);
+  let n=0;$('rread').disabled=true;
   try{
     await getWk();
-    for(let i=0;i<ys.length-1;i++){
-      if(R.sr.has(i))continue;const row=[];
-      for(let j=0;j<xs.length-1;j++){
-        if(R.sc.has(j))continue;
-        $('rm').textContent=`Reading cell ${++n} of ${total}`;
-        row.push(await cellRead(xs[j],ys[i],xs[j+1],ys[i+1],grid.length?R.types[j]:'t',bw,!grid.length));
-      }
-      grid.push(row);
+    for(const g of gl){
+      $('rm').textContent=`Reading cell ${++n} of ${gl.length}`;
+      const first=g.r[0]===rows[0],txt=await cellRead(xs[g.j0],ys[g.i0],xs[g.j1+1],ys[g.i1+1],first?'t':R.types[g.c[0]],bw,first||g.i1>g.i0);
+      grid[ri.get(g.r[0])][ci.get(g.c[0])]=txt;
+      g.r.forEach(i=>g.c.forEach(j=>full[ri.get(i)][ci.get(j)]=txt));
     }
-    $('rread').disabled=false;const out=grid.filter(r=>r.some(Boolean));out.img=cropImg();rdone(out);
+    let out=grid;
+    if(rows.length>2&&gl.some(g=>g.r[0]===rows[0]&&g.c.length>1))out=[cols.map((_,k)=>{const a=full[0][k],b=full[1][k];return a&&b&&a!==b?a+' - '+b:(b||a)}),...grid.slice(2)];
+    $('rread').disabled=false;out=out.filter(r=>r.some(Boolean));out.img=cropImg();rdone(out);
   }catch(err){$('rread').disabled=false;alert('Could not read the table: '+err.message)}
 }
 async function rquick(){
@@ -913,18 +940,71 @@ function targets(t,o){
 }
 function say(w,t){const d=document.createElement('div');d.className=w==='u'?'cu':'cb';d.textContent=t;$('clog').appendChild(d);$('clog').scrollTop=1e9}
 function runCmd(raw){say('u',raw);try{say('b',cmd(raw.toLowerCase().trim(),raw))}catch(err){say('b','Kuch gadbad hui: '+err.message)}}
+const ORD={pehla:1,pehli:1,pahla:1,pahli:1,dusra:2,doosra:2,dusri:2,doosri:2,teesra:3,teesri:3,tisra:3,chautha:4,chauthi:4,chotha:4,paanchva:5,paanchwa:5,panchva:5,panchwa:5,chhatha:6,chhata:6,saatva:7,aathva:8};
+const rxe=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const TL='(?:\\s+(?:likh|rakh|kar|badal|daal|dal|laga|bana|karo|do|de|dena|dijiye|kijiye|please|pls|na))*\\s*[.!]*\\s*$';
+function repl(raw,all){
+  let a,b,m,ko=false;const q=x=>x.replace(/^["'“”‘’\s]+|["'“”‘’\s]+$/g,'');
+  m=raw.match(new RegExp('^\\s*(.+?)\\s+(?:ki jagah|ki jagha|ki jaga|ke jagah|ke badle|ki bajay|ki jgh|ke sthan par)\\s+(.+?)'+TL,'i'));
+  if(!m)m=raw.match(/^\s*replace\s+(.+?)\s+with\s+(.+?)\s*$/i)||raw.match(/^\s*change\s+(.+?)\s+to\s+(.+?)\s*$/i);
+  if(!m){m=raw.match(new RegExp('^\\s*(.+?)\\s+ko\\s+(.+?)(?:\\s+(?:likh|rakh|kar|badal|daal|dal|laga|bana|karo|do|de|dena))+\\s*[.!]*\\s*$','i'));ko=true}
+  if(!m)return null;
+  a=q(m[1]).replace(/^.*?\bbol[uo]?\s+/i,'').replace(/^(?:(?:sab|saari|saare|sabhi|all|har)\s*)?slides?\s*(?:me|mein|par|pe)\s+/i,'').replace(/^(?:is\s*)?slide\s*(?:me|mein|par|pe)\s+/i,'');a=q(a);b=q(m[2]);
+  if(!a||!b)return null;
+  const bl=b.toLowerCase();
+  if(ko&&(/^(hata|hatao|hatado|delete|remove|clear|saaf|mita|bold|mota|moti|rang|colour|color|bada|chhota|select)$/.test(bl)||(pickColor(bl)&&!/\s/.test(bl))))return null;
+  const rx=new RegExp(rxe(a),'gi'),S=all?deck:[deck[cur]];
+  const has=sl=>sl.els.some(e=>e.t==='box'?new RegExp(rxe(a),'i').test(e.text):e.t==='tbl'&&[e.head,...e.rows].some(r=>r.some(c=>!c.f&&!c.rf&&new RegExp(rxe(a),'i').test(c.v))));
+  if(!S.some(has)){
+    if(ko)return null;
+    const other=deck.filter(has).length;
+    return other?`Is slide par "${a}" nahi mila, magar ${other} aur slide me he. "Sab slides me ${a} ki jagah ${b} likh do" likho.`:`"${a}" kisi slide par nahi mila. Spelling check karo.`;
+  }
+  snap();let n=0;
+  S.forEach(sl=>sl.els.forEach(e=>{
+    if(e.t==='box'){e.text=e.text.replace(rx,()=>(n++,b))}
+    else if(e.t==='tbl'){
+      e.head.forEach(c=>{const o=c.v;c.v=c.v.replace(rx,()=>(n++,b));if(c.v!==o)e.rows.forEach(r=>r.forEach(z=>{if(z.f){if(z.f.a===o)z.f.a=c.v;if(z.f.b===o)z.f.b=c.v}}))});
+      e.rows.forEach(r=>r.forEach(c=>{if(!c.f&&!c.rf)c.v=c.v.replace(rx,()=>(n++,b))}));
+    }
+  }));
+  draw();return `${n} jagah "${a}" ki jagah "${b}" likh diya${all?' (sab slides me)':''}.`;
+}
+function numCol(t,raw,o){
+  let u=t;for(const k in ORD)u=u.replace(new RegExp('\\b'+k+'\\s*(?=col)','g'),ORD[k]+' ');
+  const CW='(?:column|colum|colm|col|kolam|कॉलम|कालम)';
+  if(!new RegExp(CW).test(u)||!/(add|jod|naya|nayi|new|bana|insert|daal|dal\b|laga|nikal|chahiye)/.test(u))return null;
+  let op=/(percent|percentage|pratishat|pratisat|fisadi|fisdi|\bpct\b|%)/.test(u)?'%':/(\bsum\b|\bplus\b|\+|\byog\b|jod\s*(?:ho|nikal|ka|kar)|\bjama\b)/.test(u)?'+':/(minus|ghata|antar|difference)/.test(u)?'-':/(guna|multiply|\*)/.test(u)?'*':/(bhag|divide|\/)/.test(u)?'/':'';
+  if(!op)return null;
+  let pos=0;const pm=u.match(new RegExp('(\\d+)\\s*(?:st|nd|rd|th|tha|thi|va|wa|vi|wi|ve|wan|number|no\\.?)?\\s*'+CW+'\\s*(?:add|jod|naya|nayi|bana|insert|daal|dal|laga|chahiye|nikal)'));
+  if(pm){pos=+pm[1];u=u.replace(pm[0],' ')}
+  const nums=(u.match(/\d+/g)||[]).map(Number);if(nums.length<2)return null;
+  const n=o.head.length,bad=nums.filter(x=>x<1||x>n);
+  if(bad.length)return `Column ${bad[0]} nahi he. Is table me ${n} columns hain (1 se ${n} tak).`;
+  const ref=[...new Set(nums)];if(ref.length<2)return 'Do alag columns batao, jaise: column 3 ka column 2 se percentage.';
+  const a=o.head[ref[0]-1].v,b=o.head[ref[1]-1].v,at=pos?Math.min(Math.max(pos-1,0),n):n;
+  const nm=((raw.match(/(?:naam|named|name)\s+["']?([^"']+)/i)||[])[1]||'').trim()||{'%':`${a} % of ${b}`,'+':`${a} + ${b}`,'-':`${a} - ${b}`,'*':`${a} x ${b}`,'/':`${a} / ${b}`}[op];
+  snap();MS=[];o.head.splice(at,0,{v:nm});o.rows.forEach(r=>r.splice(at,0,{v:'',f:{a,op,b}}));draw();
+  return `Column ${at+1} par naya column "${nm}" bana diya (column ${ref[0]} aur column ${ref[1]} se).`;
+}
 function cmd(t,raw){
   if(/\b(undo|wapas)\b/.test(t)){undo();return 'Undo kar diya.'}
   if(/\bredo\b/.test(t)){redoF();return 'Redo kar diya.'}
   const pr=t.split(/\b(?:magar|lekin|but|however|parantu)\b/);t=pr[pr.length-1].trim()||t;
   const sl=deck[cur],o=curTable(),col=pickColor(t);
+  {const rr=repl(raw,/(sab|saari|saare|sabhi|all|har)\s*slides?/.test(t));if(rr)return rr}
   if(/\b(next|agli|agla|aage)\b.*slide|slide.*\b(next|agli|agla)\b/.test(t)){nav(1);return 'Agli slide.'}
   if(/\b(previous|pichli|pichla|peeche)\b.*slide|slide.*\b(previous|pichli|pichla)\b/.test(t)){nav(-1);return 'Pichli slide.'}
   if(/slide|स्लाइड/.test(t)&&!/\b(cell|column|row|table)\b/.test(t)){
     if(!col)return 'Kaun sa colour? Jaise: slide ka colour neela kar do.';
     snap();sl.bg=CL[col][0];draw();return `Slide ka colour ${col} kar diya.`;
   }
-  if(!o)return 'Is slide par table nahi he. Table wali slide kholo.';
+  if(sel&&sel.t==='box'&&!cell&&(col||/\b(bold|mota|moti)\b/.test(t))){
+    snap();if(col){if(/\b(background|bg|fill)\b/.test(t))sel.bg=CL[col][0];else sel.color=CL[col][0]}
+    if(/\b(bold|mota|moti)\b/.test(t))sel.b=true;draw();return 'Text box me laga diya.';
+  }
+  if(!o)return 'Is slide par table nahi he. Text badalne ke liye aise likho: "Indore Region ki jagah Japan likh do". Table wali commands ke liye table wali slide kholo.';
+  {const nc=numCol(t,raw,o);if(nc)return nc}
   const cs=colsIn(t,o),clr=/(hata|hatao|delete|remove|clear|reset|saaf|mita)/.test(t);
   if(clr&&/\b(rule|rules|niyam)\b/.test(t)){snap();o.rules=[];draw();return 'Saare rules hata diye.'}
   if(clr&&/\b(rang|colour|color|style|formatting)\b/.test(t)){
@@ -972,11 +1052,11 @@ function cmd(t,raw){
     snap();tg.forEach(m=>{const c=cellOf(o,m);if(col)Object.assign(c,paint(col));if(bold)c.b=true});draw();
     return `${tg.length} cells me ${[col?col+' colour':'',bold?'bold':''].filter(Boolean).join(' aur ')} laga diya.`;
   }
-  return 'Samajh nahi aaya. Aise likho:\n- Progressive column me 70 se niche wale laal kar do\n- Slide ka colour neela kar do\n- Ratlam row ko peela kar do\n- Total Target aur Progressive ka percentage nikalo\n- % Achievement me 50 se kam laal aur 75 se kam orange';
+  return 'Samajh nahi aaya. Aise likho:\n- Progressive column me 70 se niche wale laal kar do\n- Slide ka colour neela kar do\n- Ratlam row ko peela kar do\n- Total Target aur Progressive ka percentage nikalo\n- % Achievement me 50 se kam laal aur 75 se kam orange\n- Indore Region ki jagah Japan likh do\n- 4th column add karo jo column 3 ka column 2 se percentage ho';
 }
 $('csend').onclick=()=>{const v=$('cin').value;if(!v.trim())return;$('cin').value='';runCmd(v)};
 $('cin').onkeydown=e=>{if(e.key==='Enter')$('csend').click()};
-$('cex').innerHTML=['Progressive column me 70 se niche wale laal kar do','Slide ka colour neela kar do','Header ko bold kar do','Sab rules hata do'].map(x=>`<button>${x}</button>`).join('');
+$('cex').innerHTML=['Progressive column me 70 se niche wale laal kar do','Slide ka colour neela kar do','Indore Region ki jagah Japan likh do','4th column add karo jo column 3 ka column 2 se percentage ho','Header ko bold kar do','Sab rules hata do'].map(x=>`<button>${x}</button>`).join('');
 $('cex').onclick=e=>{if(e.target.tagName==='BUTTON'){$('cin').value=e.target.textContent;$('cin').focus()}};
 say('b','Likho jo karna he, jaise: "Progressive column me 70 se niche wale laal kar do". Kai cells chunne ke liye Shift dabake click karo ya mouse se drag karo.');
 
@@ -1049,12 +1129,4 @@ function exportPpt(){
           s.addTable([e.head.map((c,ci)=>cf(c,-1,ci)),...e.rows.map((r,ri)=>r.map((c,ci)=>cf(c,ri,ci)))],{...g,colW:cw(e),fontFace:F,fontSize:e.fs,border:{type:'solid',color:'D0D0D0',pt:.5},rowH:e.rh});
         }
       });
-      if(si)s.addText(String(si+1),{x:12.1,y:7.0,w:.6,h:.3,fontFace:F,fontSize:10,color:'777777',align:'right',margin:0});
-    });
-    p.writeFile({fileName:base+'_PPT.pptx'});
-  }catch(err){alert('Export failed: '+err.message)}
-}
-go(1);
-</script>
-</body>
-</html>
+      if(si)s.addText(String(si+1),{x:12.1,y:7.0,w:.6,h:.3,fontFa
