@@ -72,9 +72,15 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
 .warn{background:#fff6e5;border:1px solid #f5d28a;color:#8a5a00;border-radius:8px;padding:8px 10px;margin-top:10px;font-size:12px}.warn:empty{display:none}
 .dt{margin-top:10px}.dt summary{cursor:pointer;font-weight:600;font-size:13px}.dt td[contenteditable],.dt th[contenteditable]{outline:0}.dt td:focus,.dt th:focus{background:#fff8d6}
 .tools button.on{background:var(--r);color:#fff;border-color:var(--r)}
+.tools button.fx{border-color:var(--r);color:var(--r);font-weight:600}.tools button.fx:hover{background:#fff1f1}
+.cmpdt table{border-collapse:collapse;font-size:12px;width:100%}.cmpdt th,.cmpdt td{border:1px solid #d8d8d8;padding:3px 6px;white-space:nowrap}.cmpdt th{background:#f2ece6;position:sticky;top:0}.cmpdt .dim{color:#aaa;background:#f6f6f6}
 #rd{position:fixed;inset:0;background:#0007;z-index:70;overflow:auto;padding:12px}.rbox{background:#fff;border-radius:14px;padding:14px;max-width:1000px;margin:0 auto}
 .rcv{margin:10px 0;border:1px solid var(--l);background:#eee}#rc{width:100%;display:block;touch-action:none;cursor:crosshair}
 #rtypes select{width:auto;height:auto;padding:2px 4px;margin:0 0 0 4px}.rbox .top{margin-bottom:10px}
+#cmp .top{display:flex;align-items:center;gap:8px}.cmpimg{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--l);border-radius:8px}.cmpimg img{display:block;width:100%;min-width:640px}
+#clog{max-height:170px;overflow:auto;font-size:13px;margin-bottom:8px}#clog div{padding:6px 10px;border-radius:10px;margin:4px 0;max-width:92%;white-space:pre-wrap}.cu{background:#f2ece6;margin-left:auto}.cb{background:#eef4ff}
+.crow{display:flex;gap:8px}.crow input{margin:0;flex:1}.crow button{border:0;background:var(--r);color:#fff;border-radius:8px;padding:8px 16px;font:inherit;font-weight:600;cursor:pointer}
+#cex{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}#cex button{border:1px solid var(--l);background:#fff;border-radius:16px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer;color:var(--m)}
 </style>
 </head>
 <body>
@@ -99,34 +105,37 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
     <div class="strip" id="strip"></div>
     <div class="nav"><button id="pv">&larr; Previous slide</button><span id="cnt"></span><button id="nx">Next slide &rarr;</button></div>
     <div class="tools" id="tools">
-      <button data-a="undo">Undo</button><button data-a="redo">Redo</button><button data-a="text">+ Text box</button><button data-a="pic">+ Picture</button><button data-a="chart">+ Bar chart</button>
+      <button data-a="undo">Undo</button><button data-a="redo">Redo</button><button data-a="text">+ Text box</button><button data-a="pic">+ Picture</button><button data-a="chart">+ Bar chart</button><button data-a="acol" class="fx">+ Add column</button><button data-a="arow" class="fx">+ Add row</button><button data-a="fx" class="fx">&fnof; Formula (column / row)</button><button data-a="multi" id="multi">&#9745; Multi-select cells</button>
       <button data-a="slide">+ Blank slide</button><button data-a="dslide">Delete slide</button><button data-a="del">Delete selected</button>
       <label>Slide colour <input type="color" id="sbg"></label>
     </div>
     <div class="card" id="lib" hidden><h2>Pictures</h2>
       <label class="drop"><b>Upload JPG, PNG or PDF</b><input type="file" class="mi" accept="image/*,.pdf" multiple hidden></label>
       <div class="grid" id="libgrid"></div></div>
+    <div class="card" id="cmp" hidden><div class="top"><b>Original table (jo upload ki) - neeche slide se match karo</b><label class="tg" style="margin:0 0 0 auto"><input type="checkbox" id="cmpon" checked> Show</label></div><div id="cmpbox"><div class="cmpimg" id="cmpimgw"><img id="cmpi"></div><div class="cmpdt" id="cmpdt"></div></div></div>
     <div class="stage" id="stage"><div id="vp"><div id="cv"></div></div><div class="pop" id="pop" hidden></div></div>
+    <div class="card" id="chat" style="margin-top:14px"><h2>Command box</h2><div id="clog"></div>
+      <div class="crow"><input type="text" id="cin" placeholder="Type what you want, e.g. Progressive column me 70 se niche wale laal kar do"><button id="csend">Send</button></div><div id="cex"></div></div>
   </section>
 </div>
 <div id="rd" hidden><div class="rbox">
   <div class="top"><b id="rt">Table reader</b><span class="chip" id="rm" style="margin:0 0 0 auto"></span></div>
   <div class="tools" id="rtools">
     <button data-m="area" class="on">1. Select table</button><button data-m="line">2. Draw lines</button><button data-m="row">Skip row</button><button data-m="col">Skip column</button>
-    <button id="rauto">Auto-detect lines</button><button id="rclr">Clear lines</button><button id="rrot">Rotate</button>
-    <label class="tg"><input type="checkbox" id="rbw" checked> Black &amp; white</label><label class="tg"><input type="checkbox" id="rstr" checked> Straighten</label>
+    <button id="rauto">Auto-detect lines</button><button id="rrot">Rotate</button><button id="rundo" class="fx">&#8617; Undo last step</button><button id="rlast" class="fx">Remove last line</button><button id="rclr" class="fx">Clear all lines</button><button id="rreset" class="fx">&#10005; Remove selection</button>
+    <label class="tg"><input type="checkbox" id="rbw" checked> Black &amp; white</label><label class="tg"><input type="checkbox" id="rstr" checked> Straighten</label><label class="tg">Language <select id="rlang" style="width:auto;margin:0"><option value="eng">English</option><option value="eng+hin">Hindi + English</option></select></label>
   </div>
+  <div class="warn" style="margin:0 0 8px">Galat select ho gaya? &#8617; Undo last step dabao, ya kisi line par tap karo (wo line hat jayegi), ya &#10005; Remove selection se table box hata ke dobara chuno.</div>
   <div class="rcv"><canvas id="rc"></canvas></div>
   <div id="rtypes" class="cols"></div>
-  <div class="acts"><button id="rskip">Skip image</button><button id="rquick">Quick read (no lines)</button><button class="pri" id="rread">Read table</button></div>
+  <div class="acts"><button id="rskip">Cancel / Skip image</button><button id="rquick">Quick read (no lines)</button><button class="pri" id="rread">Read table</button></div>
 </div></div>
 <div class="ctx" id="ctx" hidden></div>
-<div id="dlg" hidden><div class="dbox"><h2>Formula column</h2>
-  <label>New column name (optional)<input type="text" id="fn"></label>
-  <div class="r3"><label>Column A<select id="fa"></select></label>
-    <label>Operation<select id="fo"><option value="%">A as % of B</option><option value="+">A + B</option><option value="-">A &minus; B</option><option value="*">A &times; B</option><option value="/">A &divide; B</option></select></label>
-    <label>Column B<select id="fb"></select></label></div>
-  <div class="acts"><button id="fcancel">Cancel</button><button class="pri" id="fok">Add column</button></div></div></div>
+<div id="dlg" hidden><div class="dbox"><h2>Formula</h2>
+  <div class="r3" style="grid-template-columns:1fr 2fr"><label>Add<select id="ft"><option value="c">New column</option><option value="r">New row</option></select></label>
+    <label>Name (optional)<input type="text" id="fn"></label></div>
+  <div class="r3"><label><span id="fal">Column A</span><select id="fa"></select></label><label>Calculation<select id="fo"></select></label><label><span id="fbl">Column B</span><select id="fb"></select></label></div>
+  <div class="acts"><button id="fcancel">Cancel</button><button class="pri" id="fok">Add</button></div></div></div>
 <div class="bar"><button id="back">Back</button><button id="xls" hidden>Download formatted Excel</button><button id="next" disabled>Continue</button></div>
 
 <script>
@@ -138,7 +147,7 @@ const toNum=v=>parseFloat(String(v).replace(/[^0-9.\-]/g,''));
 const C={r:['FDE0E0','C00000'],o:['FFE5CC','C25500'],y:['FFF6BF','8A6A00']};
 const RED='B3121B',YEL='FDB913',TX='2B2B2B',PAL=[RED,YEL,'2E9E5B','4A6FA5','E46C0A'];
 const cv=$('cv'),pop=$('pop');
-let tables=[],lib=[],deck=[],files=[],cur=0,step=1,sel=null,cell=null,drag=null,dc=null,K=1,uid=1,base='Presentation',busy=false,wk=null,clip=null,hist=[],redo=[],lastK='',lastT=0,dg=null;
+let tables=[],lib=[],deck=[],files=[],cur=0,step=1,sel=null,cell=null,drag=null,dc=null,K=1,uid=1,base='Presentation',busy=false,wk=null,clip=null,hist=[],redo=[],lastK='',lastT=0,dg=null,wkL='',MS=[],DS=null,MM=false;
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const lvl=(th,v)=>{v=String(v);if(!/%/.test(v)||!isNum(v))return '';const n=toNum(v);return n<th.red?'r':n<th.orange?'o':n<th.yellow?'y':''};
@@ -196,10 +205,11 @@ $('xi').onchange=async e=>{
   if(wk){try{await wk.terminate()}catch(x){}wk=null}
   renderTables();info();
 };
+const attach=(k,img)=>{if(k&&img)tables.slice(-k).forEach(t=>t.img=img)};
 async function ocr(src,label){
   ocr.l=label;
   if(typeof Tesseract==='undefined')throw new Error('OCR engine not loaded, check internet connection');
-  if(!wk)wk=await Tesseract.createWorker('eng',1,{logger:m=>st(`${ocr.l}: ${m.status}${m.status==='recognizing text'?' '+Math.round(m.progress*100)+'%':''}`)});
+  await getWk();
   const{data}=await wk.recognize(src);
   return data.words.filter(w=>w.text.trim()&&w.confidence>25).map(w=>({s:w.text.trim(),x0:w.bbox.x0,x1:w.bbox.x1,y:(w.bbox.y0+w.bbox.y1)/2,h:w.bbox.y1-w.bbox.y0}));
 }
@@ -214,14 +224,14 @@ async function extract(f){
       if(it.length<8){
         const v2=pg.getViewport({scale:2}),c=document.createElement('canvas');c.width=v2.width;c.height=v2.height;
         await pg.render({canvasContext:c.getContext('2d'),viewport:v2}).promise;
-        const rr=await reader(c,`${f.name} p${i}`);if(rr)n+=fromRows(rr,f.name,`${f.name} p${i}`);continue;
+        const rr=await reader(c,`${f.name} p${i}`);if(rr){const k=fromRows(rr,f.name,`${f.name} p${i}`);attach(k,rr.img);n+=k}continue;
       }
       n+=fromRows(rowsFrom(it),f.name,N>1?`${f.name} p${i}`:f.name);
     }
   }else{
     const src=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});
     const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src});
-    const rr=await reader(im,f.name);if(rr)n=fromRows(rr,f.name,f.name);
+    const rr=await reader(im,f.name);if(rr){const k=fromRows(rr,f.name,f.name);attach(k,rr.img);n=k}
   }
   return n;
 }
@@ -362,14 +372,23 @@ function buildDeck(){
     for(let p=0;p<pages;p++)deck.push({bg:'FFFFFF',els:[
       bx(.6,.3,12.1,.65,t.title+(pages>1?` (${p+1}/${pages})`:''),{fs:t.title.length>45?22:30,color:RED,b:true}),
       bx(.6,.98,1.3,.06,'',{bg:YEL}),
-      mk({t:'tbl',x:.6,y:1.3,w:12.1,fs:k.length>9?9:k.length>6?11:13,rh:Math.min(.42,5.5/(t.per+1)),th:{red:t.red,orange:t.orange,yellow:t.yellow},
+      mk({t:'tbl',ti:tables.indexOf(t),p0:p*t.per,p1:(p+1)*t.per,x:.6,y:1.3,w:12.1,fs:k.length>9?9:k.length>6?11:13,rh:Math.min(.42,5.5/(t.per+1)),th:{red:t.red,orange:t.orange,yellow:t.yellow},img:t.img,rules:[],
         head:k.map(j=>({v:t.head[j]})),rows:t.body.slice(p*t.per,(p+1)*t.per).map(r=>k.map(j=>({v:r[j]})))})]});
   });
 }
 function cst(e,c,r){
   if(r<0)return{fc:c.fc||'FFFFFF',bg:c.bg||RED,b:c.b??true};
-  const l=lvl(e.th,c.v),tot=/total/i.test(e.rows[r][0].v);
-  return{fc:c.fc||(l?C[l][1]:TX),bg:c.bg||(l?C[l][0]:tot?'FFF0C2':r%2?'F6F6F6':'FFFFFF'),b:c.b??(!!l||tot)};
+  const l=lvl(e.th,c.v),tot=/total/i.test(e.rows[r][0].v),q=hit(e,c,(e.head[e.rows[r].indexOf(c)]||{}).v);
+  return{fc:c.fc||(q&&q.fc)||(l?C[l][1]:TX),bg:c.bg||(q&&q.bg)||(l?C[l][0]:tot?'FFF0C2':r%2?'F6F6F6':'FFFFFF'),b:c.b??(!!l||tot||!!q)};
+}
+function hit(e,c,h){
+  let m=null;
+  (e.rules||[]).forEach(q=>{
+    if(q.h&&q.h!==h)return;const v=String(c.v);if(!isNum(v))return;
+    const p=/%/.test(v);if((q.pct===true&&!p)||(q.pct===false&&p))return;
+    const n=toNum(v);if(q.op==='<'?n<q.v:q.op==='>'?n>q.v:n===q.v)m=q;
+  });
+  return m;
 }
 function cdata(ch){
   const tb=ch.tb;if(!tb)return[];const hi=n=>tb.head.findIndex(h=>h.v===n),lc=Math.max(0,hi(ch.lc)),rows=tb.rows.filter(r=>!/total/i.test(r[0].v)).slice(0,12);
@@ -395,12 +414,22 @@ function draw(){
     else if(e.t==='chart')h=chartSvg(e);
     else h=`<div class="gr">&#10303; Move table</div><table><colgroup>${cw(e).map(x=>`<col style="width:${x/e.w*100}%">`).join('')}</colgroup>`+
       [-1,...e.rows.keys()].map(r=>`<tr style="height:${e.rh*72}px">${e.head.map((_,c)=>{
-        const o=r<0?e.head[c]:e.rows[r][c],z=cst(e,o,r),g=r<0?'th':'td',s=cell&&cell.el===e&&cell.r===r&&cell.c===c;
+        const o=r<0?e.head[c]:e.rows[r][c],z=cst(e,o,r),g=r<0?'th':'td',s=cell&&cell.el===e&&msOf().some(m=>m.r===r&&m.c===c);
         return `<${g} data-r="${r}" data-c="${c}"${r<0?' draggable="true"':''}${s?' class="sel"':''} style="font-size:${e.fs}px;color:#${z.fc};background:#${z.bg};font-weight:${z.b?700:400};text-align:${r<0||(c&&isNum(o.v))?'center':'left'}">${esc(o.v)}</${g}>`}).join('')}</tr>`).join('')+'</table>';
     return `<div class="el${e===sel?' on':''}" data-i="${i}" style="left:${e.x*72}px;top:${e.y*72}px;width:${e.w*72}px;${e.t==='tbl'?'':`height:${e.h*72}px`}">${h}${e.t==='tbl'?'':'<div class="rs"></div>'}</div>`;
   }).join('');
   $('strip').innerHTML=deck.map((s,i)=>`<button data-i="${i}" class="${i===cur?'on':''}">${i+1}. ${esc(((s.els.find(e=>e.t==='box'&&e.text)||{}).text||'Slide').slice(0,22))}</button>`).join('');
   $('sbg').value='#'+sl.bg;$('cnt').textContent=`${cur+1} / ${deck.length}`;$('pv').disabled=cur===0;$('nx').disabled=cur===deck.length-1;
+  cmpShow(sl);
+}
+function cmpShow(sl){
+  const e=sl.els.find(x=>x.t==='tbl'&&x.ti!=null)||(sl.els.find(x=>x.t==='chart'&&x.tb&&x.tb.ti!=null)||{}).tb,t=e&&tables[e.ti];
+  $('cmp').hidden=!t;if(!t)return;
+  const im=$('cmpimgw');im.hidden=!t.img;
+  if(t.img&&$('cmpi').dataset.k!==String(e.ti)){$('cmpi').dataset.k=e.ti;$('cmpi').src=t.img}
+  const kept=new Set(kc(t)),rows=t.body.slice(e.p0,e.p1),key=[e.ti,e.p0,e.p1,[...kept].join(','),t.body.length,t.title].join('|');
+  if(cmpShow.k===key)return;cmpShow.k=key;
+  $('cmpdt').innerHTML='<div class="sec">'+esc(t.title)+' - rows '+(e.p0+1)+' to '+(e.p0+rows.length)+' (grey column = slide par nahi he)</div><div style="max-height:260px;overflow:auto"><table><tr>'+t.head.map((h,j)=>'<th class="'+(kept.has(j)?'':'dim')+'">'+esc(h)+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+t.head.map((_,j)=>'<td class="'+(kept.has(j)?'':'dim')+'">'+esc(r[j]??'')+'</td>').join('')+'</tr>').join('')+'</table></div>';
 }
 function fit(){K=$('vp').clientWidth/960;cv.style.transform=`scale(${K})`;$('vp').style.height=540*K+'px'}
 addEventListener('resize',()=>{if(step===3){fit();pos()}});
@@ -408,32 +437,45 @@ $('strip').onclick=e=>{const i=e.target.dataset.i;if(i===undefined)return;cur=+i
 $('sbg').oninput=e=>{snap('sbg'+cur);deck[cur].bg=e.target.value.slice(1).toUpperCase();draw()};
 
 // ---------- selection, drag, resize ----------
+$('cmpon').onchange=()=>{$('cmpbox').hidden=!$('cmpon').checked};
+function msOf(){return cell?(MS.some(m=>m.r===cell.r&&m.c===cell.c)?MS:[{r:cell.r,c:cell.c}]):[]}
 function mark(){
   cv.querySelectorAll('.el').forEach(d=>d.classList.toggle('on',deck[cur].els[+d.dataset.i]===sel));
   cv.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));
-  if(cell){const d=cv.querySelector(`.el[data-i="${deck[cur].els.indexOf(cell.el)}"]`),td=d&&d.querySelector(`[data-r="${cell.r}"][data-c="${cell.c}"]`);if(td)td.classList.add('sel')}
+  if(cell){const d=cv.querySelector(`.el[data-i="${deck[cur].els.indexOf(cell.el)}"]`);msOf().forEach(m=>{const td=d&&d.querySelector(`[data-r="${m.r}"][data-c="${m.c}"]`);if(td)td.classList.add('sel')})}
 }
 cv.onpointerdown=e=>{
   if(e.button>0)return;
   const d=e.target.closest('.el');
   if(!d){sel=cell=null;mark();pop.hidden=true;return}
   const o=deck[cur].els[+d.dataset.i],td=e.target.closest('td,th'),rs=e.target.classList.contains('rs'),gr=e.target.classList.contains('gr');
-  sel=o;cell=td?{el:o,r:+td.dataset.r,c:+td.dataset.c}:null;mark();showPop();
+  const rc=td?{r:+td.dataset.r,c:+td.dataset.c}:null,add=td&&(e.shiftKey||e.ctrlKey||e.metaKey||MM)&&cell&&cell.el===o;
+  if(add){const k=msOf(),i=k.findIndex(m=>m.r===rc.r&&m.c===rc.c);MS=i>=0?(k.length>1?k.filter((_,j)=>j!==i):k):[...k,rc]}else MS=rc?[rc]:[];
+  DS=td&&!add&&td.tagName==='TD'?{o,r:rc.r,c:rc.c}:null;
+  sel=o;cell=td?{el:o,...rc}:null;mark();showPop();
   if(rs||gr||o.t!=='tbl'){drag={o,rs,sx:e.clientX,sy:e.clientY,x:o.x,y:o.y,w:o.w,h:o.h};cv.setPointerCapture(e.pointerId);pop.hidden=true}
 };
 cv.onpointermove=e=>{
+  if(DS&&e.buttons){
+    const el=document.elementFromPoint(e.clientX,e.clientY),td=el&&el.closest('td'),d=td&&td.closest('.el');
+    if(d&&deck[cur].els[+d.dataset.i]===DS.o){
+      const r=+td.dataset.r,c=+td.dataset.c,r0=Math.min(r,DS.r),r1=Math.max(r,DS.r),c0=Math.min(c,DS.c),c1=Math.max(c,DS.c);
+      MS=[];for(let i=r0;i<=r1;i++)for(let j=c0;j<=c1;j++)MS.push({r:i,c:j});mark();
+    }
+    return;
+  }
   if(!drag)return;
   if(!drag.sn){snap();drag.sn=1}
   const o=drag.o,dx=(e.clientX-drag.sx)/K/72,dy=(e.clientY-drag.sy)/K/72;
   if(drag.rs){o.w=Math.max(.4,drag.w+dx);o.h=o.t==='img'?o.w*o.ar:Math.max(.3,drag.h+dy)}else{o.x=drag.x+dx;o.y=drag.y+dy}
   draw();
 };
-cv.onpointerup=cv.onpointercancel=()=>{if(drag){drag=null;pos()}};
+cv.onpointerup=cv.onpointercancel=()=>{if(DS){const m=MS.length>1;DS=null;if(m)showPop()}if(drag){drag=null;pos()}};
 cv.ondragstart=e=>{const th=e.target.closest&&e.target.closest('th');if(!th){e.preventDefault();return}dc={d:th.closest('.el'),c:+th.dataset.c};e.dataTransfer.setData('text','c')};
 cv.ondragover=e=>{if(dc)e.preventDefault()};
 cv.ondrop=e=>{
   const th=e.target.closest('th');if(!dc||!th||th.closest('.el')!==dc.d){dc=null;return}
-  e.preventDefault();const o=deck[cur].els[+dc.d.dataset.i],n=+th.dataset.c;snap();mv(o,dc.c,n);sel=o;cell={el:o,r:-1,c:n};dc=null;draw();showPop();
+  e.preventDefault();const o=deck[cur].els[+dc.d.dataset.i],n=+th.dataset.c;snap();mv(o,dc.c,n);sel=o;cell={el:o,r:-1,c:n};MS=[];dc=null;draw();showPop();
 };
 function del(){snap();deck[cur].els=deck[cur].els.filter(x=>x!==sel);sel=cell=null;pop.hidden=true;draw()}
 
@@ -443,10 +485,12 @@ function showPop(){
   const col=(k,v,l)=>`<label>${l}<input type="color" data-o="${k}" value="#${v}"></label>`;
   let h='';
   if(cell){
-    const c=cellOf(o,cell),z=cst(o,c,cell.r);
-    h=`<label>Cell text<input type="text" data-o="v" value="${esc(c.v)}"></label>
+    const c=cellOf(o,cell),z=cst(o,c,cell.r),mn=msOf().length;
+    h=(mn>1?`<div style="margin-bottom:6px"><b>${mn} cells selected</b></div>`:`<label>Cell text<input type="text" data-o="v" value="${esc(c.v)}"></label>`)+`
     <div class="r">${col('fc',z.fc,'Font colour')}${col('bg',z.bg,'Cell colour')}</div>
     <div class="r"><label class="tg"><input type="checkbox" data-o="b" ${z.b?'checked':''}> Bold</label><button data-a="rst">Reset cell</button></div>
+    <div class="r"><button data-a="srow">Select row</button><button data-a="scol">Select column</button></div>
+    <div class="r"><button data-a="sall">Select all cells</button><button data-a="clr2">Clear selection</button></div>
     <div class="r"><button data-a="cl">&larr; Column</button><button data-a="cr">Column &rarr;</button></div>
     <div class="r"><button data-a="cp">Copy style</button><button data-a="ps">Paste style</button></div>`;
   }else if(o.t==='tbl'){
@@ -488,6 +532,7 @@ const pf=e=>{
 pop.addEventListener('input',pf);pop.addEventListener('change',pf);
 function put(o,k,v){
   snap(o.id+k);
+  if(cell&&msOf().length>1&&['fc','bg','b'].includes(k)){msOf().forEach(m=>{cellOf(o,m)[k]=v});return}
   const ks=k.split('.'),last=ks.pop();let b=cell?cellOf(o,cell):o;ks.forEach(x=>b=b[x]);
   if(cell&&last==='v'){if(cell.r<0){const old=b.v;o.rows.forEach(r=>r.forEach(c=>{if(c.f){if(c.f.a===old)c.f.a=v;if(c.f.b===old)c.f.b=v}}))}else delete b.f}
   b[last]=v;if(o.t==='img')o.h=o.w*o.ar;
@@ -499,9 +544,11 @@ pop.onclick=e=>{
   if(a==='menu'){const r=pop.querySelector('[data-a=menu]').getBoundingClientRect();openCtx(r.left,r.bottom);return}
   if(a==='cp')return copyStyle();
   if(a==='ps')return pasteStyle();
+  if(a==='srow'||a==='scol'||a==='sall')return ctxAct(a);
+  if(a==='clr2'){MS=[];mark();return showPop()}
   snap();
   if(a==='nobg')o.bg=null;
-  if(a==='rst'){const c=cellOf(o,cell);delete c.fc;delete c.bg;delete c.b}
+  if(a==='rst'){msOf().forEach(m=>{const c=cellOf(o,m);delete c.fc;delete c.bg;delete c.b})}
   if(a==='cl'||a==='cr'){const n=cell.c+(a==='cl'?-1:1);if(n>=0&&n<o.head.length){mv(o,cell.c,n);cell.c=n}}
   draw();showPop();
 };
@@ -510,6 +557,15 @@ pop.onclick=e=>{
 $('tools').onclick=e=>{
   const a=e.target.dataset.a;if(!a)return;const sl=deck[cur];
   if(a==='undo')return undo();if(a==='redo')return redoF();
+  if(a==='multi'){MM=!MM;$('multi').classList.toggle('on',MM);return}
+  if(a==='fx'){const o=curTable();if(!o)return alert('Open a slide that contains a table first.');const at=cell&&cell.el===o;return openDlg(o,at?cell.c:o.head.length-1,at?cell.r:o.rows.length-1)}
+  if(a==='acol'||a==='arow'){
+    const o=curTable();if(!o)return alert('Open a slide that contains a table first.');snap();
+    const at=cell&&cell.el===o;
+    if(a==='acol'){const i=at?cell.c+1:o.head.length;o.head.splice(i,0,{v:'New column'});o.rows.forEach(x=>x.splice(i,0,{v:''}));cell={el:o,r:-1,c:i}}
+    else{const i=at&&cell.r>=0?cell.r+1:o.rows.length;o.rows.splice(i,0,o.head.map(()=>({v:''})));cell={el:o,r:i,c:0}}
+    sel=o;MS=[];draw();showPop();return;
+  }
   if(a!=='pic'&&a!=='del'&&a!=='chart')snap();
   if(a==='text'){const o=bx(4.5,3,4,1,'Text',{fs:24});sl.els.push(o);sel=o;cell=null;draw();showPop()}
   else if(a==='pic')$('lib').hidden=!$('lib').hidden;
@@ -530,29 +586,48 @@ function addChart(){
 
 // ---------- history, formulas, menus ----------
 const imgK={},hs=s=>{let h=5381;for(let i=0;i<s.length;i+=37)h=(h*33+s.charCodeAt(i))|0;return '@'+s.length+'_'+h};
-function ser(){return JSON.stringify(deck,(k,v)=>{if(k==='tb')return '#'+v.id;if(k==='src'&&typeof v==='string'&&v.length>300){const q=hs(v);imgK[q]=v;return q}return v})}
+function ser(){return JSON.stringify(deck,(k,v)=>{if(k==='tb')return '#'+v.id;if((k==='src'||k==='img')&&typeof v==='string'&&v.length>300){const q=hs(v);imgK[q]=v;return q}return v})}
 function snap(k){const t=Date.now();if(k&&k===lastK&&t-lastT<1200){lastT=t;return}lastK=k||'';lastT=t;hist.push({s:ser(),cur});if(hist.length>40)hist.shift();redo=[]}
 function load(h){
-  deck=JSON.parse(h.s,(k,v)=>k==='src'&&imgK[v]?imgK[v]:v);
+  deck=JSON.parse(h.s,(k,v)=>(k==='src'||k==='img')&&imgK[v]?imgK[v]:v);
   const T={};deck.forEach(s=>s.els.forEach(e=>{if(e.t==='tbl')T[e.id]=e}));
   deck.forEach(s=>s.els.forEach(e=>{if(e.t==='chart')e.tb=T[+String(e.tb).slice(1)]||{head:[],rows:[]}}));
   cur=Math.min(h.cur,deck.length-1);sel=cell=null;pop.hidden=true;lastK='';draw();
 }
 function undo(){if(!hist.length)return;redo.push({s:ser(),cur});load(hist.pop())}
 function redoF(){if(!redo.length)return;hist.push({s:ser(),cur});load(redo.pop())}
+const fmt=n=>Math.abs(n)>=1000?n.toLocaleString('en-IN',{maximumFractionDigits:2}):String(+n.toFixed(2));
 function calc(op,a,b){
   const x=toNum(a),y=toNum(b);if(isNaN(x)||isNaN(y))return '';let n;
   if(op==='+')n=x+y;else if(op==='-')n=x-y;else if(op==='*')n=x*y;else{if(!y)return '';n=op==='/'?x/y:x/y*100}
-  const s=String(+n.toFixed(2));return op==='%'?s+'%':s;
+  return op==='%'?String(+n.toFixed(2))+'%':fmt(n);
 }
-function recalc(e){const hi=n=>e.head.findIndex(h=>h.v===n);e.rows.forEach(r=>r.forEach(c=>{if(c.f){const a=r[hi(c.f.a)],b=r[hi(c.f.b)];c.v=a&&b?calc(c.f.op,a.v,b.v):''}}))}
+function recalc(e){
+  const hi=n=>e.head.findIndex(h=>h.v===n);
+  e.rows.forEach(r=>r.forEach(c=>{if(c.f){const a=r[hi(c.f.a)],b=r[hi(c.f.b)];c.v=a&&b?calc(c.f.op,a.v,b.v):''}}));
+  if(!e.rows.some(r=>r.some(c=>c.rf)))return;
+  const pl=e.rows.filter(r=>!r.some(c=>c.rf)&&!/total/i.test(r[0].v));
+  e.rows.forEach(r=>r.forEach((c,j)=>{
+    const f=c.rf;if(!f||c.f)return;
+    if(f.op==='S'||f.op==='V'){
+      const xs=pl.filter(q=>q[j]&&isNum(q[j].v)).map(q=>toNum(q[j].v));
+      if(!xs.length){c.v='';return}
+      const sm=xs.reduce((a,b)=>a+b,0),pcn=pl.some(q=>q[j]&&/%/.test(q[j].v)),v=f.op==='S'&&!pcn?sm:sm/xs.length;
+      c.v=pl.some(q=>q[j]&&/%/.test(q[j].v))?String(+v.toFixed(2))+'%':(pl.some(q=>q[j]&&/₹/.test(q[j].v))?'\u20b9 ':'')+fmt(v);
+    }else{
+      const ra=e.rows.find(q=>q[0].v===f.a),rb=e.rows.find(q=>q[0].v===f.b);
+      c.v=ra&&rb&&ra[j]&&rb[j]?calc(f.op,ra[j].v,rb[j].v):'';
+    }
+  }));
+}
+const curTable=()=>sel&&sel.t==='tbl'?sel:deck[cur].els.find(e=>e.t==='tbl');
 function copyStyle(){if(!cell)return;const z=cst(sel,cellOf(sel,cell),cell.r);clip={fc:z.fc,bg:z.bg,b:z.b}}
-function pasteStyle(){if(!cell||!clip)return;snap();Object.assign(cellOf(sel,cell),clip);draw();showPop()}
+function pasteStyle(){if(!cell||!clip)return;snap();msOf().forEach(m=>Object.assign(cellOf(sel,m),clip));draw();showPop()}
 function nav(d){const n=cur+d;if(n<0||n>=deck.length)return;cur=n;sel=cell=null;pop.hidden=true;draw()}
 $('pv').onclick=()=>nav(-1);$('nx').onclick=()=>nav(1);
 const ctx=$('ctx');
 function openCtx(x,y){
-  const it=[['cil','Insert column left'],['cir','Insert column right'],['cdel','Delete column'],['fx','Formula column...'],['rin','Insert row below'],['rdel','Delete row'],['cp','Copy cell style'],['ps','Paste cell style']];
+  const it=[['cil','Insert column left'],['cir','Insert column right'],['cdel','Delete column'],['fx','Formula column...'],['rin','Insert row below'],['rdel','Delete row'],['srow','Select row'],['scol','Select column'],['cp','Copy cell style'],['ps','Paste cell style']];
   ctx.innerHTML=it.map(([a,t])=>`<button data-a="${a}">${t}</button>`).join('');ctx.hidden=false;
   ctx.style.left=Math.max(4,Math.min(x,innerWidth-ctx.offsetWidth-4))+'px';ctx.style.top=Math.max(4,Math.min(y,innerHeight-ctx.offsetHeight-4))+'px';
 }
@@ -567,28 +642,47 @@ function ctxAct(a){
   const c=cell.c,r=cell.r;
   if(a==='cp')return copyStyle();
   if(a==='ps')return pasteStyle();
-  if(a==='fx')return openDlg(o,c);
+  if(a==='srow'){MS=o.head.map((_,j)=>({r,c:j}));cell={el:o,r,c:0};mark();return showPop()}
+  if(a==='scol'){MS=o.rows.map((_,i)=>({r:i,c}));if(o.rows.length)cell={el:o,r:0,c};mark();return showPop()}
+  if(a==='sall'){MS=[-1,...o.rows.keys()].flatMap(i=>o.head.map((_,j)=>({r:i,c:j})));cell={el:o,r:o.rows.length?0:-1,c:0};mark();return showPop()}
+  if(a==='fx')return openDlg(o,c,r);
   if(a==='cdel'&&o.head.length<2||a==='rdel'&&r<0)return;
-  snap();
+  snap();MS=[];
   if(a==='cil'||a==='cir'){const i=a==='cil'?c:c+1;o.head.splice(i,0,{v:'New column'});o.rows.forEach(x=>x.splice(i,0,{v:''}));cell={el:o,r,c:i}}
   else if(a==='cdel'){o.head.splice(c,1);o.rows.forEach(x=>x.splice(c,1));cell={el:o,r,c:Math.min(c,o.head.length-1)}}
   else if(a==='rin')o.rows.splice(r+1,0,o.head.map(()=>({v:''})));
   else if(a==='rdel'){o.rows.splice(r,1);cell=null}
   draw();showPop();
 }
-function openDlg(o,c){
-  const opt=i=>o.head.map((h,j)=>`<option value="${j}" ${j===i?'selected':''}>${esc(h.v)}</option>`).join('');
-  $('fa').innerHTML=opt(c);$('fb').innerHTML=opt(Math.min(c+1,o.head.length-1));$('fn').value='';dg={o,at:c+1};$('dlg').hidden=false;
+const OPS={c:[['%','A as % of B'],['+','A + B'],['-','A - B'],['*','A x B'],['/','A / B']],r:[['S','Sum of all rows'],['V','Average of all rows'],['%','Row A as % of Row B'],['+','Row A + Row B'],['-','Row A - Row B'],['/','Row A / Row B']]};
+function openDlg(o,c,r){dg={o,c,r:r==null?o.rows.length-1:r};$('ft').value='c';dlgSet();$('dlg').hidden=false}
+function dlgSet(){
+  const{o,c,r}=dg,t=$('ft').value,col=t==='c';
+  $('fo').innerHTML=OPS[t].map(([v,x])=>`<option value="${v}">${x}</option>`).join('');
+  const L=col?o.head.map(h=>h.v):o.rows.map(x=>x[0].v||'(row)'),opt=i=>L.map((x,j)=>`<option value="${j}" ${j===i?'selected':''}>${esc(x)}</option>`).join('');
+  const i=col?c:Math.max(0,r);
+  $('fa').innerHTML=opt(i);$('fb').innerHTML=opt(Math.min(i+1,L.length-1));
+  $('fal').textContent=col?'Column A':'Row A';$('fbl').textContent=col?'Column B':'Row B';$('fn').value='';dlgOp();
 }
+function dlgOp(){const ag=['S','V'].includes($('fo').value);$('fa').parentElement.hidden=ag;$('fb').parentElement.hidden=ag}
+$('ft').onchange=dlgSet;$('fo').onchange=dlgOp;
 $('fcancel').onclick=()=>$('dlg').hidden=true;
 $('fok').onclick=()=>{
-  const{o,at}=dg,a=o.head[+$('fa').value].v,b=o.head[+$('fb').value].v,op=$('fo').value;
-  const nm=$('fn').value.trim()||{'%':`${a} % of ${b}`,'+':`${a} + ${b}`,'-':`${a} - ${b}`,'*':`${a} x ${b}`,'/':`${a} / ${b}`}[op];
-  snap();o.head.splice(at,0,{v:nm});o.rows.forEach(r=>r.splice(at,0,{v:'',f:{a,op,b}}));
-  $('dlg').hidden=true;cell={el:o,r:-1,c:at};draw();showPop();
+  const{o,c,r}=dg,t=$('ft').value,op=$('fo').value,ia=+$('fa').value,ib=+$('fb').value;
+  snap();MS=[];
+  if(t==='c'){
+    const a=o.head[ia].v,b=o.head[ib].v,at=c+1,nm=$('fn').value.trim()||{'%':`${a} % of ${b}`,'+':`${a} + ${b}`,'-':`${a} - ${b}`,'*':`${a} x ${b}`,'/':`${a} / ${b}`}[op];
+    o.head.splice(at,0,{v:nm});o.rows.forEach(x=>x.splice(at,0,{v:'',f:{a,op,b}}));cell={el:o,r:-1,c:at};
+  }else{
+    const a=o.rows[ia]?o.rows[ia][0].v:'',b=o.rows[ib]?o.rows[ib][0].v:'',at=r<0?0:Math.min(o.rows.length,r+1);
+    const nm=$('fn').value.trim()||{S:'Total',V:'Average'}[op]||`${a} ${op} ${b}`;
+    o.rows.splice(at,0,o.head.map((_,j)=>j?{v:'',rf:{op,a,b}}:{v:nm}));cell={el:o,r:at,c:0};
+  }
+  $('dlg').hidden=true;sel=o;draw();showPop();
 };
 document.onkeydown=e=>{
   if(e.key==='Escape'){ctx.hidden=true;$('dlg').hidden=true;return}
+  if(R&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();rundo();return}
   if(step!==3||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
   const m=e.ctrlKey||e.metaKey,k=e.key.toLowerCase();
   if(m&&k==='z'){e.preventDefault();e.shiftKey?redoF():undo()}
@@ -635,7 +729,14 @@ function prep(src,rot,straight){
   return c;
 }
 function reader(src,label){
-  return new Promise(res=>{R={src,label,res,rot:0,crop:null,vx:[],hy:[],sr:new Set(),sc:new Set(),types:[],mode:'area',d:null};$('rt').textContent='Table reader - '+label;$('rd').hidden=false;rbuild()});
+  return new Promise(res=>{R={src,label,res,h:[],ln:[],rot:0,crop:null,vx:[],hy:[],sr:new Set(),sc:new Set(),types:[],mode:'area',d:null};$('rt').textContent='Table reader - '+label;$('rd').hidden=false;rbuild()});
+}
+const rsnap=()=>JSON.stringify({c:R.crop,vx:R.vx,hy:R.hy,sr:[...R.sr],sc:[...R.sc]});
+function rundo(){if(!R||!R.h.length)return;const o=JSON.parse(R.h.pop());R.crop=o.c;R.vx=o.vx;R.hy=o.hy;R.sr=new Set(o.sr);R.sc=new Set(o.sc);rdraw();rtypes()}
+function cropImg(){
+  const c=R.crop,w=Math.round(c?c.x1-c.x0:R.w.width),h=Math.round(c?c.y1-c.y0:R.w.height),k=Math.min(1,1400/w),t=document.createElement('canvas');
+  t.width=Math.round(w*k);t.height=Math.round(h*k);t.getContext('2d').drawImage(R.w,c?c.x0:0,c?c.y0:0,w,h,0,0,t.width,t.height);
+  return t.toDataURL('image/jpeg',.85);
 }
 function rbuild(){R.w=prep(R.src,R.rot,$('rstr').checked);rcv.width=R.w.width;rcv.height=R.w.height;R.crop=null;R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rmode('area');rdraw();rtypes()}
 function rmode(m){R.mode=m;$('rtools').querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m))}
@@ -666,7 +767,7 @@ $('rtypes').oninput=e=>{R.types[+e.target.dataset.j]=e.target.value};
 const pt=e=>{const r=rcv.getBoundingClientRect(),k=rcv.width/r.width;return{x:(e.clientX-r.left)*k,y:(e.clientY-r.top)*k,k}};
 rcv.onpointerdown=e=>{if(!R)return;const p=pt(e);R.d={x:p.x,y:p.y,x1:p.x,y1:p.y,k:p.k};rcv.setPointerCapture(e.pointerId)};
 rcv.onpointermove=e=>{if(!R||!R.d)return;const p=pt(e);R.d.x1=p.x;R.d.y1=p.y;rdraw()};
-rcv.onpointerup=()=>{if(!R||!R.d)return;const d=R.d;R.d=null;rfinish(d);rdraw();rtypes()};
+rcv.onpointerup=()=>{if(!R||!R.d)return;const d=R.d;R.d=null;const b=rsnap();rfinish(d);if(rsnap()!==b)R.h.push(b);rdraw();rtypes()};
 function snapL(v,p){
   const c=R.crop,r=8,x0=v?Math.max(0,Math.round(p)-r):Math.round(c.x0),y0=v?Math.round(c.y0):Math.max(0,Math.round(p)-r),w=v?2*r+1:Math.round(c.x1-c.x0),h=v?Math.round(c.y1-c.y0):2*r+1;
   const g=gray(R.w.getContext('2d').getImageData(x0,y0,w,h)),th=otsu(g)*.95;let bi=-1,bv=0;
@@ -687,7 +788,7 @@ function rfinish(d){
   }
   const l=sline(d);if(l.len<20*d.k)return;
   const lo=l.v?c.x0:c.y0,hi=l.v?c.x1:c.y1,p=snapL(l.v,l.p);
-  if(p>lo+tol&&p<hi-tol){(l.v?R.vx:R.hy).push(p);R.sr.clear();R.sc.clear()}
+  if(p>lo+tol&&p<hi-tol){(l.v?R.vx:R.hy).push(p);R.ln.push(l.v?'vx':'hy');R.sr.clear();R.sc.clear()}
 }
 function rauto(){
   if(!R.crop){R.msg='Select the table area first';return}
@@ -698,20 +799,21 @@ function rauto(){
   const runs=(p,n,t)=>{const o=[];let s=-1;for(let i=0;i<=n;i++){const k=i<n&&t(p[i]);if(k&&s<0)s=i;if(!k&&s>=0){o.push([s,i-1]);s=-1}}return o};
   const mid=a=>a.map(([x,y])=>(x+y)/2);
   let hy=mid(runs(rp,h,v=>v/w>.5)).filter(q=>q>8&&q<h-8),vx=mid(runs(cp,w,v=>v/h>.5)).filter(q=>q>8&&q<w-8);
+  const hy0=[...hy],vx0=[...vx];
   if(hy.length>2){
     const d=med(hy.slice(1).map((y,i)=>y-hy[i])),o=[hy[0]];
     for(let i=1;i<hy.length;i++){const g=hy[i]-hy[i-1],k=Math.round(g/d);if(k>1&&g>=1.6*d)for(let q=1;q<k;q++)o.push(hy[i-1]+g*q/k);o.push(hy[i])}
     while(o[0]>=2*d)o.unshift(o[0]-d);while(h-o[o.length-1]>=2*d)o.push(o[o.length-1]+d);
     hy=o;
   }
-  const rh=hy.length>1&&hy[0]<h*.1&&h-hy[hy.length-1]<h*.1,rv=vx.length>1&&vx[0]<w*.1&&w-vx[vx.length-1]<w*.1;
+  const rh=hy0.length>1&&hy0[0]<h*.1&&h-hy0[hy0.length-1]<h*.1,rv=vx0.length>1&&vx0[0]<w*.1&&w-vx0[vx0.length-1]<w*.1;
   const bh=med(runs(rp,h,v=>v>.004*w).map(([a,b])=>b-a+1))||12;
   if(!hy.length)hy=mid(runs(rp,h,v=>v<=.004*w).filter(([a,b])=>a>0&&b<h-1));
   if(!vx.length)vx=mid(runs(cp,w,v=>v<=.003*h).filter(([a,b])=>a>0&&b<w-1&&b-a+1>=Math.max(10,1.4*bh)));
   const oy=c.y0,ox=c.x0;
-  R.hy=hy.map(y=>y+oy);R.vx=vx.map(x=>x+ox);R.sr.clear();R.sc.clear();
-  if(rh){R.crop.y0=oy+hy[0];R.crop.y1=oy+hy[hy.length-1];R.hy=R.hy.slice(1,-1)}
-  if(rv){R.crop.x0=ox+vx[0];R.crop.x1=ox+vx[vx.length-1];R.vx=R.vx.slice(1,-1)}
+  R.hy=hy.map(y=>y+oy);R.vx=vx.map(x=>x+ox);R.ln=[];R.sr.clear();R.sc.clear();
+  if(rh){R.crop.y0=oy+hy0[0];R.crop.y1=oy+hy0[hy0.length-1];R.hy=R.hy.filter(y=>y>R.crop.y0+4&&y<R.crop.y1-4)}
+  if(rv){R.crop.x0=ox+vx0[0];R.crop.x1=ox+vx0[vx0.length-1];R.vx=R.vx.filter(x=>x>R.crop.x0+4&&x<R.crop.x1-4)}
 }
 function fix(s,type){
   s=s.replace(/\s+/g,' ').trim().replace(/^[^A-Za-z0-9%(]+|[^A-Za-z0-9%)]+$/g,'');
@@ -722,7 +824,9 @@ function fix(s,type){
 }
 async function getWk(){
   if(typeof Tesseract==='undefined')throw new Error('OCR engine not loaded, check your internet connection');
-  if(!wk)wk=await Tesseract.createWorker('eng',1);
+  const L=($('rlang')||{}).value||'eng';
+  if(wk&&wkL!==L){try{await wk.terminate()}catch(x){}wk=null}
+  if(!wk){wk=await Tesseract.createWorker(L,1);wkL=L}
   return wk;
 }
 async function cellRead(x0,y0,x1,y1,type,bw,hdr){
@@ -760,22 +864,121 @@ async function rread(){
       }
       grid.push(row);
     }
-    $('rread').disabled=false;rdone(grid.filter(r=>r.some(Boolean)));
+    $('rread').disabled=false;const out=grid.filter(r=>r.some(Boolean));out.img=cropImg();rdone(out);
   }catch(err){$('rread').disabled=false;alert('Could not read the table: '+err.message)}
 }
 async function rquick(){
   const c=R.crop,w=Math.round(c?c.x1-c.x0:R.w.width),h=Math.round(c?c.y1-c.y0:R.w.height),t=document.createElement('canvas');
   t.width=w;t.height=h;t.getContext('2d').drawImage(R.w,c?c.x0:0,c?c.y0:0,w,h,0,0,w,h);
   $('rm').textContent='Reading...';
-  try{await getWk();await wk.setParameters({tessedit_pageseg_mode:'3',tessedit_char_whitelist:''});rdone(rowsFrom(await ocr(t.toDataURL('image/png'),R.label)))}
+  try{await getWk();await wk.setParameters({tessedit_pageseg_mode:'3',tessedit_char_whitelist:''});const out=rowsFrom(await ocr(t.toDataURL('image/png'),R.label));out.img=cropImg();rdone(out)}
   catch(err){alert('Could not read the image: '+err.message)}
 }
 $('rtools').onclick=e=>{const m=e.target.dataset.m;if(m&&R)rmode(m)};
-$('rauto').onclick=()=>{rauto();rdraw();rtypes()};
-$('rclr').onclick=()=>{R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rdraw();rtypes()};
+$('rauto').onclick=()=>{const b=rsnap();rauto();if(rsnap()!==b)R.h.push(b);rdraw();rtypes()};
+$('rundo').onclick=rundo;
+$('rlast').onclick=()=>{if(!R)return;let k=R.ln.pop();if(!k||!R[k].length)k=R.vx.length?'vx':R.hy.length?'hy':null;if(!k){R.msg='Hatane ke liye koi line nahi he';rtypes();return}R.h.push(rsnap());R[k].pop();R.sr.clear();R.sc.clear();rdraw();rtypes()};
+$('rreset').onclick=()=>{R.h.push(rsnap());R.ln=[];R.crop=null;R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rmode('area');rdraw();rtypes()};
+$('rclr').onclick=()=>{R.h.push(rsnap());R.ln=[];R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rdraw();rtypes()};
 $('rrot').onclick=()=>{R.rot=(R.rot+1)%4;rbuild()};
 $('rstr').onchange=()=>{if(R)rbuild()};
 $('rskip').onclick=()=>rdone(null);$('rquick').onclick=rquick;$('rread').onclick=rread;
+
+// ---------- command box ----------
+const CN={red:['laal','lal','red','लाल'],green:['hara','hari','green','हरा','हरी'],yellow:['peela','peeli','pila','pili','yellow','पीला','पीली'],blue:['neela','neeli','nila','nili','blue','नीला','नीली'],black:['kala','kaala','kali','black','काला','काली'],white:['safed','safaid','white','सफेद'],orange:['orange','narangi','kesariya','नारंगी'],pink:['pink','gulabi','गुलाबी'],grey:['grey','gray','bhura','dhusar'],purple:['purple','baingani']};
+const CL={red:['C00000','FDE0E0','C00000'],green:['2E9E5B','DFF3E3','1E7B3A'],yellow:['FDB913','FFF6BF','8A6A00'],blue:['1D4ED8','DBEAFE','1D4ED8'],black:['111111','111111','FFFFFF'],white:['FFFFFF','FFFFFF','2B2B2B'],orange:['E46C0A','FFE5CC','C25500'],pink:['EC4899','FCE7F3','BE185D'],grey:['9CA3AF','E5E7EB','374151'],purple:['7C3AED','EDE9FE','6D28D9']};
+const hasW=(t,w)=>/[^\x00-\x7f]/.test(w)?t.includes(w):new RegExp('(^|[^a-z])'+w.replace(/[<>=]/g,'\\$&')+'([^a-z]|$)').test(t);
+const pickColor=t=>{let b=null;for(const k in CN)for(const w of CN[k])if(hasW(t,w)){const i=t.indexOf(w);if(!b||i<b.i)b={k,i}}return b&&b.k};
+const BELOW=['niche','neeche','nichey','kam','less','below','under','lower','chhota','chhote','<','नीचे','कम'],ABOVE=['upar','oopar','zyada','jyada','more','above','over','greater','higher','bada','bade','>','ऊपर','ज्यादा','अधिक'],EQW=['barabar','equal','=','बराबर'];
+const words=x=>x.toLowerCase().split(/[^a-z0-9\u0900-\u097f]+/).filter(w=>w.length>=3||(/^\d+$/.test(w)&&w.length>=2));
+function colsIn(t,o,strict){
+  const a=[],b=[];
+  o.head.forEach((h,j)=>{const ws=words(h.v);if(!ws.length)return;const ps=ws.map(w=>t.indexOf(w)).filter(p=>p>=0);if(ps.length===ws.length)a.push({j,p:Math.min(...ps)});else if(ps.length)b.push({j,p:Math.min(...ps)})});
+  return(a.length?a:strict?[]:b).sort((x,y)=>x.p-y.p).map(x=>x.j);
+}
+function rowsIn(t,o){
+  if(/\b(last|aakhri|aakhiri|antim)\s*row|row.*\b(last)\b/.test(t))return o.rows.length?[o.rows.length-1]:[];
+  const a=[];o.rows.forEach((r,i)=>{const ws=words(r[0].v);if(ws.length&&ws.every(w=>t.includes(w)))a.push(i)});return a;
+}
+function targets(t,o){
+  const cs=colsIn(t,o),rs=rowsIn(t,o),out=[],m=t.match(/(?:column|col)\s*(\d+)|(\d+)\s*(?:st|nd|rd|th|va|wa|wi|vi)?\s*(?:column|col)\b/);
+  if(m){const j=(+(m[1]||m[2]))-1;if(j>=0&&j<o.head.length&&!cs.includes(j))cs.push(j)}
+  if(/\b(header|heading|sheersh)\b/.test(t)){o.head.forEach((_,j)=>{if(!cs.length||cs.includes(j))out.push({r:-1,c:j})});return out}
+  if(cs.length&&rs.length)cs.forEach(j=>rs.forEach(i=>out.push({r:i,c:j})));
+  else if(cs.length)cs.forEach(j=>o.rows.forEach((_,i)=>out.push({r:i,c:j})));
+  else if(rs.length)rs.forEach(i=>o.head.forEach((_,j)=>out.push({r:i,c:j})));
+  else if(/\b(table|sab|saare|sare|poori|puri|all|whole)\b/.test(t))o.rows.forEach((_,i)=>o.head.forEach((_,j)=>out.push({r:i,c:j})));
+  else if(cell&&cell.el===o)msOf().forEach(q=>out.push(q));
+  return out;
+}
+function say(w,t){const d=document.createElement('div');d.className=w==='u'?'cu':'cb';d.textContent=t;$('clog').appendChild(d);$('clog').scrollTop=1e9}
+function runCmd(raw){say('u',raw);try{say('b',cmd(raw.toLowerCase().trim(),raw))}catch(err){say('b','Kuch gadbad hui: '+err.message)}}
+function cmd(t,raw){
+  if(/\b(undo|wapas)\b/.test(t)){undo();return 'Undo kar diya.'}
+  if(/\bredo\b/.test(t)){redoF();return 'Redo kar diya.'}
+  const pr=t.split(/\b(?:magar|lekin|but|however|parantu)\b/);t=pr[pr.length-1].trim()||t;
+  const sl=deck[cur],o=curTable(),col=pickColor(t);
+  if(/\b(next|agli|agla|aage)\b.*slide|slide.*\b(next|agli|agla)\b/.test(t)){nav(1);return 'Agli slide.'}
+  if(/\b(previous|pichli|pichla|peeche)\b.*slide|slide.*\b(previous|pichli|pichla)\b/.test(t)){nav(-1);return 'Pichli slide.'}
+  if(/slide|स्लाइड/.test(t)&&!/\b(cell|column|row|table)\b/.test(t)){
+    if(!col)return 'Kaun sa colour? Jaise: slide ka colour neela kar do.';
+    snap();sl.bg=CL[col][0];draw();return `Slide ka colour ${col} kar diya.`;
+  }
+  if(!o)return 'Is slide par table nahi he. Table wali slide kholo.';
+  const cs=colsIn(t,o),clr=/(hata|hatao|delete|remove|clear|reset|saaf|mita)/.test(t);
+  if(clr&&/\b(rule|rules|niyam)\b/.test(t)){snap();o.rules=[];draw();return 'Saare rules hata diye.'}
+  if(clr&&/\b(rang|colour|color|style|formatting)\b/.test(t)){
+    snap();const tg=targets(t,o),all=tg.length?tg:o.rows.flatMap((_,i)=>o.head.map((_,j)=>({r:i,c:j})));
+    all.forEach(m=>{const c=cellOf(o,m);delete c.fc;delete c.bg;delete c.b});draw();return `${all.length} cells ka colour reset kiya.`;
+  }
+  if(clr&&/\b(column|row)\b/.test(t)){
+    snap();MS=[];
+    if(/\bcolumn\b/.test(t)){const L=cs.length?cs:(cell&&cell.el===o?[cell.c]:[]);if(!L.length||o.head.length-L.length<1)return 'Kaun sa column hataun? Naam likho ya cell chuno.';[...L].sort((a,b)=>b-a).forEach(j=>{o.head.splice(j,1);o.rows.forEach(r=>r.splice(j,1))});cell=null;draw();return `${L.length} column hata diya.`}
+    const L=rowsIn(t,o).length?rowsIn(t,o):(cell&&cell.el===o&&cell.r>=0?[cell.r]:[]);if(!L.length)return 'Kaun si row hataun? Row ka naam likho ya cell chuno.';
+    [...L].sort((a,b)=>b-a).forEach(i=>o.rows.splice(i,1));cell=null;draw();return `${L.length} row hata di.`;
+  }
+  // formula column from two named columns
+  let u=t;o.head.forEach(h=>words(h.v).forEach(w=>{u=u.split(w).join(' ')}));
+  const OW=[['%',['percent','percentage','pratishat','pct','%']],['+',['jod','jodo','sum','plus','add','+']],['-',['minus','ghata','ghatao','antar','difference','-']],['*',['guna','multiply','gunaa']],['/',['bhag','divide','/']]];
+  const op=(OW.find(([k,w])=>w.some(x=>hasW(u,x)||(x.length===1&&u.includes(x))))||[])[0];
+  const cf=colsIn(t,o,true);
+  if(cf.length>=2&&op&&!/\brow\b/.test(t)){
+    let[i0,i1]=cf;
+    if(op==='%'){const sm=j=>o.rows.reduce((q,r)=>q+(isNum(r[j].v)&&!/%/.test(r[j].v)?toNum(r[j].v):0),0);if(sm(i0)>sm(i1))[i0,i1]=[i1,i0]}
+    snap();MS=[];const a=o.head[i0].v,b=o.head[i1].v,nm=((raw.match(/(?:naam|named|name)\s+["']?([^"']+)/i)||[])[1]||'').trim()||{'%':`${a} % of ${b}`,'+':`${a} + ${b}`,'-':`${a} - ${b}`,'*':`${a} x ${b}`,'/':`${a} / ${b}`}[op];
+    o.head.push({v:nm});o.rows.forEach(r=>r.push({v:'',f:{a,op,b}}));draw();return `Naya column "${nm}" bana diya (${a} aur ${b} se).`;
+  }
+  if(/(naya|nayi|new|add|jodo|jod do|badhao|daalo|dalo|insert)/.test(t)&&/\b(column|row)\b/.test(t)){
+    snap();MS=[];const nm=((raw.match(/(?:naam|named|name)\s+["']?([^"']+)/i)||[])[1]||'').trim();
+    if(/\bcolumn\b/.test(t)){const i=cell&&cell.el===o?cell.c+1:o.head.length;o.head.splice(i,0,{v:nm||'New column'});o.rows.forEach(r=>r.splice(i,0,{v:''}));draw();return 'Naya column jod diya.'}
+    const ag=/(total|sum|jod)/.test(t)?'S':/(average|avg|ausat|mean)/.test(t)?'V':'',i=cell&&cell.el===o&&cell.r>=0&&!ag?cell.r+1:o.rows.length;
+    o.rows.splice(i,0,o.head.map((_,j)=>j?(ag?{v:'',rf:{op:ag}}:{v:''}):{v:nm||(ag==='S'?'Total':ag==='V'?'Average':'')}));draw();return ag?'Naya row jod di, formula ke saath.':'Nayi row jod di.';
+  }
+  // number rules, e.g. "70 se niche laal"
+  const nr=t.replace(/(?:column|col)\s*\d+/g,'').split(/\s*(?:\baur\b|\band\b|\bphir\b|,|;)\s*/),rules=[];
+  const numW=/\b(number|numbers|sankhya|count|plain)\b/.test(t),pct=numW?false:/(percent|percentage|pratishat|%)/.test(t)?true:null;
+  const md=/\b(font|text|akshar)\b/.test(t)&&!/\b(background|bg|fill)\b/.test(t)?'f':/\b(background|bg|fill)\b/.test(t)&&!/\b(font|text|akshar)\b/.test(t)?'b':'x';
+  const paint=k=>md==='f'?{fc:CL[k][0]}:md==='b'?{bg:CL[k][0]}:{bg:CL[k][1],fc:CL[k][2]};
+  nr.forEach(cl=>{
+    const n=cl.match(/(\d+(?:\.\d+)?)/),k=pickColor(cl);if(!n||!k)return;
+    const dir=BELOW.some(w=>hasW(cl,w))?'<':ABOVE.some(w=>hasW(cl,w))?'>':EQW.some(w=>hasW(cl,w))?'=':null;if(!dir)return;
+    (cs.length?cs:[null]).forEach(j=>rules.push({h:j==null?null:o.head[j].v,op:dir,v:+n[1],pct,...paint(k)}));
+  });
+  if(rules.length){snap();o.rules=[...(o.rules||[]),...rules];draw();return `Rule laga diya: ${rules.map(q=>`${q.op==='<'?'niche':q.op==='>'?'upar':'barabar'} ${q.v}${q.pct?'%':''}`).join(', ')}${cs.length?' ('+cs.map(j=>o.head[j].v).join(', ')+' me)':' (sab numbers me)'}.`}
+  // direct colouring / bold
+  const bold=/\b(bold|mota|moti)\b/.test(t);
+  if(col||bold){
+    const tg=targets(t,o);if(!tg.length)return 'Kaun se cells? Pehle cell chuno (shift se kai cells) ya column/row ka naam likho.';
+    snap();tg.forEach(m=>{const c=cellOf(o,m);if(col)Object.assign(c,paint(col));if(bold)c.b=true});draw();
+    return `${tg.length} cells me ${[col?col+' colour':'',bold?'bold':''].filter(Boolean).join(' aur ')} laga diya.`;
+  }
+  return 'Samajh nahi aaya. Aise likho:\n- Progressive column me 70 se niche wale laal kar do\n- Slide ka colour neela kar do\n- Ratlam row ko peela kar do\n- Total Target aur Progressive ka percentage nikalo\n- % Achievement me 50 se kam laal aur 75 se kam orange';
+}
+$('csend').onclick=()=>{const v=$('cin').value;if(!v.trim())return;$('cin').value='';runCmd(v)};
+$('cin').onkeydown=e=>{if(e.key==='Enter')$('csend').click()};
+$('cex').innerHTML=['Progressive column me 70 se niche wale laal kar do','Slide ka colour neela kar do','Header ko bold kar do','Sab rules hata do'].map(x=>`<button>${x}</button>`).join('');
+$('cex').onclick=e=>{if(e.target.tagName==='BUTTON'){$('cin').value=e.target.textContent;$('cin').focus()}};
+say('b','Likho jo karna he, jaise: "Progressive column me 70 se niche wale laal kar do". Kai cells chunne ke liye Shift dabake click karo ya mouse se drag karo.');
 
 // ---------- formatted Excel ----------
 $('xls').onclick=exportXlsx;
