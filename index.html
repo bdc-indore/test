@@ -121,14 +121,14 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
 <div id="rd" hidden><div class="rbox">
   <div class="top"><b id="rt">Table reader</b><span class="chip" id="rm" style="margin:0 0 0 auto"></span></div>
   <div class="tools" id="rtools">
-    <button data-m="area" class="on">1. Select table</button><button data-m="line">2. Draw lines</button><button data-m="row">Skip row</button><button data-m="col">Skip column</button>
+    <button data-m="area" class="on">1. Select table</button><button data-m="line">2. Draw lines</button><button data-m="erase">Eraser (line ka hissa mitao)</button><button data-m="row">Skip row</button><button data-m="col">Skip column</button>
     <button id="rauto">Auto-detect lines</button><button id="rrot">Rotate</button><button id="rundo" class="fx">&#8617; Undo last step</button><button id="rlast" class="fx">Remove last line</button><button id="rclr" class="fx">Clear all lines</button><button id="rreset" class="fx">&#10005; Remove selection</button>
     <label class="tg"><input type="checkbox" id="rbw" checked> Black &amp; white</label><label class="tg"><input type="checkbox" id="rstr" checked> Straighten</label><label class="tg">Language <select id="rlang" style="width:auto;margin:0"><option value="eng+hin" selected>Hindi + English</option><option value="hin">Hindi only</option><option value="eng">English only</option></select></label>
   </div>
   <div class="warn" style="margin:0 0 8px">Galat select ho gaya? &#8617; Undo last step dabao, ya kisi line par tap karo (wo line hat jayegi), ya &#10005; Remove selection se table box hata ke dobara chuno.</div>
   <div class="rcv"><canvas id="rc"></canvas></div>
   <div id="rtypes" class="cols"></div>
-  <div class="acts"><button id="rskip">Cancel / Skip image</button><button id="rquick">Quick read (no lines)</button><button class="pri" id="rread">Read table</button></div>
+  <div class="acts"><button id="rskip">Cancel / Skip image</button><button id="rimg">Image hi slide me daalo</button><button id="rquick">Quick read (no lines)</button><button class="pri" id="rread">Read table</button></div>
 </div></div>
 <div class="ctx" id="ctx" hidden></div>
 <div id="dlg" hidden><div class="dbox"><h2>Formula</h2>
@@ -198,14 +198,15 @@ const isPdf=f=>f.type==='application/pdf'||/\.pdf$/i.test(f.name);
 $('xi').onchange=async e=>{
   busy=true;$('next').disabled=true;
   for(const f of e.target.files){
-    try{const n=await extract(f);files.push(`${f.name} - ${n} table(s) extracted`)}
+    try{const n=await extract(f);files.push(`${f.name} - ${n} table(s) extracted${extract.im?', '+extract.im+' image slide':''}`);extract.im=0}
     catch(x){files.push(`${f.name} - extraction failed (${x.message})`)}
   }
   e.target.value='';busy=false;st('');
   if(wk){try{await wk.terminate()}catch(x){}wk=null}
-  renderTables();info();
+  renderTables();renderLib();info();
 };
-const attach=(k,img)=>{if(k&&img)tables.slice(-k).forEach(t=>t.img=img)};
+const attach=(k,img)=>{if(k&&img)tables.slice(-k).forEach(t=>{t.img=img;t.ar=cropImg.ar||.6})};
+const takeImg=rr=>{lib.push({src:rr.imgOnly,ar:rr.ar||.6,slide:true});extract.im=(extract.im||0)+1};
 async function ocr(src,label){
   ocr.l=label;
   if(typeof Tesseract==='undefined')throw new Error('OCR engine not loaded, check internet connection');
@@ -224,14 +225,14 @@ async function extract(f){
       if(it.length<8){
         const v2=pg.getViewport({scale:2}),c=document.createElement('canvas');c.width=v2.width;c.height=v2.height;
         await pg.render({canvasContext:c.getContext('2d'),viewport:v2}).promise;
-        const rr=await reader(c,`${f.name} p${i}`);if(rr){const k=fromRows(rr,f.name,`${f.name} p${i}`);attach(k,rr.img);n+=k}continue;
+        const rr=await reader(c,`${f.name} p${i}`);if(rr){if(rr.imgOnly)takeImg(rr);else{const k=fromRows(rr,f.name,`${f.name} p${i}`);attach(k,rr.img);n+=k}}continue;
       }
       n+=fromRows(rowsFrom(it),f.name,N>1?`${f.name} p${i}`:f.name);
     }
   }else{
     const src=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});
     const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src});
-    const rr=await reader(im,f.name);if(rr){const k=fromRows(rr,f.name,f.name);attach(k,rr.img);n=k}
+    const rr=await reader(im,f.name);if(rr){if(rr.imgOnly)takeImg(rr);else{const k=fromRows(rr,f.name,f.name);attach(k,rr.img);n=k}}
   }
   return n;
 }
@@ -315,6 +316,7 @@ function renderTables(){
     <div class="top"><span class="num">Table ${i+1}</span><span class="chip" style="margin:0">${esc(t.src)} / ${esc(t.sheet)} &middot; ${t.body.length} rows &middot; ${t.head.length} columns</span>
       <label class="sw"><input type="checkbox" data-f="inc" ${t.inc?'checked':''}> Include</label></div>
     <div class="body">
+      ${t.img?`<label class="tg" style="margin-top:10px"><input type="checkbox" data-f="addImg" ${t.addImg?'checked':''}> Original image bhi ek slide me lagao (table ke baad)</label>`:''}
       <label style="margin-top:10px">Slide heading<input type="text" data-f="title" value="${esc(t.title)}"></label>
       <div class="sec">Columns<span><a data-a="all">All</a> &middot; <a data-a="none">None</a></span></div>
       <div class="cols">${t.head.map((h,j)=>`<span class="col ${t.keep[j]?'on':''}"><label><input type="checkbox" data-k="${j}" ${t.keep[j]?'checked':''}> ${esc(h)}</label></span>`).join('')}</div>
@@ -358,6 +360,9 @@ $('tlist').onclick=e=>{
 };
 
 // ---------- deck ----------
+const imgSlide=(src,ar,title)=>{let w=title?12.1:12.8,h=w*ar;const top=title?1.2:0,H=title?6:7.5;if(h>H){h=H;w=h/ar}
+  const els=[];if(title)els.push(bx(.6,.3,12.1,.65,title,{fs:title.length>45?22:30,color:RED,b:true}),bx(.6,.98,1.3,.06,'',{bg:YEL}));
+  els.push(mk({t:'img',src,x:(13.33-w)/2,y:top+(H-h)/2,w,h,ar}));return{bg:'FFFFFF',els}};
 function buildDeck(){
   sel=cell=null;cur=0;pop.hidden=true;hist=[];redo=[];
   deck=[{bg:RED,els:[
@@ -374,7 +379,9 @@ function buildDeck(){
       bx(.6,.98,1.3,.06,'',{bg:YEL}),
       mk({t:'tbl',ti:tables.indexOf(t),p0:p*t.per,p1:(p+1)*t.per,x:.6,y:1.3,w:12.1,fs:k.length>9?9:k.length>6?11:13,rh:Math.min(.42,5.5/(t.per+1)),th:{red:t.red,orange:t.orange,yellow:t.yellow},img:t.img,rules:[],
         head:k.map(j=>({v:t.head[j]})),rows:t.body.slice(p*t.per,(p+1)*t.per).map(r=>k.map(j=>({v:r[j]})))})]});
+    if(t.addImg&&t.img)deck.push(imgSlide(t.img,t.ar||.6,t.title+' (original)'));
   });
+  lib.filter(m=>m.slide).forEach(m=>deck.push(imgSlide(m.src,m.ar)));
 }
 function cst(e,c,r){
   if(r<0)return{fc:c.fc||'FFFFFF',bg:c.bg||RED,b:c.b??true};
@@ -735,7 +742,7 @@ const rsnap=()=>JSON.stringify({c:R.crop,vx:R.vx,hy:R.hy,sr:[...R.sr],sc:[...R.s
 function rundo(){if(!R||!R.h.length)return;const o=JSON.parse(R.h.pop());R.crop=o.c;R.vx=o.vx;R.hy=o.hy;R.sr=new Set(o.sr);R.sc=new Set(o.sc);rdraw();rtypes()}
 function cropImg(){
   const c=R.crop,w=Math.round(c?c.x1-c.x0:R.w.width),h=Math.round(c?c.y1-c.y0:R.w.height),k=Math.min(1,1400/w),t=document.createElement('canvas');
-  t.width=Math.round(w*k);t.height=Math.round(h*k);t.getContext('2d').drawImage(R.w,c?c.x0:0,c?c.y0:0,w,h,0,0,t.width,t.height);
+  cropImg.ar=h/w;t.width=Math.round(w*k);t.height=Math.round(h*k);t.getContext('2d').drawImage(R.w,c?c.x0:0,c?c.y0:0,w,h,0,0,t.width,t.height);
   return t.toDataURL('image/jpeg',.85);
 }
 function rbuild(){R.w=prep(R.src,R.rot,$('rstr').checked);rcv.width=R.w.width;rcv.height=R.w.height;R.crop=null;R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rmode('area');rdraw();rtypes()}
@@ -770,7 +777,8 @@ function rdraw(){
     g.strokeStyle='#e11d48';g.lineWidth=lw;g.beginPath();
     R.vx.forEach(l=>{g.moveTo(l.p,l.a==null?R.crop.y0:l.a);g.lineTo(l.p,l.b==null?R.crop.y1:l.b)});R.hy.forEach(l=>{g.moveTo(l.a==null?R.crop.x0:l.a,l.p);g.lineTo(l.b==null?R.crop.x1:l.b,l.p)});g.stroke();
   }
-  if(R.d&&R.mode==='line'){const l=sline(R.d);g.strokeStyle='#f59e0b';g.lineWidth=lw;g.beginPath();if(l.v){g.moveTo(l.p,l.a);g.lineTo(l.p,l.b)}else{g.moveTo(l.a,l.p);g.lineTo(l.b,l.p)}g.stroke()}
+  if(R.d&&R.mode==='line'){const l=sline(R.d);g.strokeStyle='#f59e0b';g.lineWidth=lw;g.beginPath();if(l.v){g.moveTo(l.p,0);g.lineTo(l.p,H)}else{g.moveTo(0,l.p);g.lineTo(W,l.p)}g.stroke()}
+  if(R.d&&R.mode==='erase'){const q=nrm(R.d),t0=8*(R.d.k||1);g.fillStyle='rgba(250,204,21,.45)';g.fillRect(q.x0-t0,q.y0-t0,q.x1-q.x0+2*t0,q.y1-q.y0+2*t0)}
 }
 function rtypes(){
   const n=R.crop?bnd().xs.length-1:1;R.types.length=n;for(let j=0;j<n;j++)R.types[j]=R.types[j]||'a';
@@ -795,6 +803,16 @@ function rfinish(d){
   if(m==='area'){const c=nrm(d);if(c.x1-c.x0>30&&c.y1-c.y0>30){R.crop=c;R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rmode('line')}return}
   if(!R.crop){R.msg='Select the table area first';return}
   const c=R.crop;
+  if(m==='erase'){
+    const t0=8*d.k,bx0=Math.min(d.x,d.x1)-t0,bx1=Math.max(d.x,d.x1)+t0,by0=Math.min(d.y,d.y1)-t0,by1=Math.max(d.y,d.y1)+t0;
+    const cut=(arr,vert)=>{const out=[],e0=vert?c.y0:c.x0,e1=vert?c.y1:c.x1,s0=vert?by0:bx0,s1=vert?by1:bx1;
+      arr.forEach(l=>{const a=l.a==null?e0:l.a,b=l.b==null?e1:l.b,inl=vert?(l.p>=bx0&&l.p<=bx1):(l.p>=by0&&l.p<=by1);
+        if(!inl||s1<a||s0>b){out.push(l);return}
+        if(s0-a>4)out.push({p:l.p,a:l.a,b:s0});
+        if(b-s1>4)out.push({p:l.p,a:s1,b:l.b});
+      });return out};
+    R.vx=cut(R.vx,true);R.hy=cut(R.hy,false);R.sr.clear();R.sc.clear();return;
+  }
   if(m==='row'||m==='col'){const{xs,ys}=bnd(),a=m==='row'?ys:xs,v=m==='row'?d.y:d.x,i=a.findIndex((q,n)=>v>=q&&v<a[n+1]);if(i>=0){const S=m==='row'?R.sr:R.sc;S.has(i)?S.delete(i):S.add(i)}return}
   if(mv<6*d.k){
     let best=null,bd=tol;
@@ -804,13 +822,8 @@ function rfinish(d){
     return;
   }
   const l=sline(d);if(l.len<20*d.k)return;
-  const lo=l.v?c.x0:c.y0,hi=l.v?c.x1:c.y1,e0=l.v?c.y0:c.x0,e1=l.v?c.y1:c.x1;
-  let a=Math.max(l.a,e0),b=Math.min(l.b,e1);if(b-a<10*d.k)return;
-  const p=snapL(l.v,l.p,a,b),cr=l.v?R.hy:R.vx,st=30*d.k;
-  // line starts/ends exactly where the user drew it; only snaps to the table edge or a crossing line when very close
-  const sn=v=>{if(Math.abs(v-e0)<=st)return e0;if(Math.abs(v-e1)<=st)return e1;let q=null,bd=st;cr.forEach(z=>{const dd=Math.abs(z.p-v);if(dd<bd){bd=dd;q=z.p}});return q==null?v:q};
-  a=sn(a);b=sn(b);
-  if(p>lo+tol&&p<hi-tol&&b>a){(l.v?R.vx:R.hy).push({p,a:a<=e0+.5?null:a,b:b>=e1-.5?null:b});R.ln.push(l.v?'vx':'hy');R.sr.clear();R.sc.clear()}
+  const lo=l.v?c.x0:c.y0,hi=l.v?c.x1:c.y1,p=snapL(l.v,l.p,l.v?c.y0:c.x0,l.v?c.y1:c.x1);
+  if(p>lo+tol&&p<hi-tol){(l.v?R.vx:R.hy).push({p,a:null,b:null});R.ln.push(l.v?'vx':'hy');R.sr.clear();R.sc.clear()}
 }
 function rauto(){
   if(!R.crop){R.msg='Select the table area first';return}
@@ -916,6 +929,7 @@ $('rreset').onclick=()=>{R.h.push(rsnap());R.ln=[];R.crop=null;R.vx=[];R.hy=[];R
 $('rclr').onclick=()=>{R.h.push(rsnap());R.ln=[];R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rdraw();rtypes()};
 $('rrot').onclick=()=>{R.rot=(R.rot+1)%4;rbuild()};
 $('rstr').onchange=()=>{if(R)rbuild()};
+$('rimg').onclick=()=>{if(!R)return;const c=R.crop,w=c?c.x1-c.x0:R.w.width,h=c?c.y1-c.y0:R.w.height,out=[];out.imgOnly=cropImg();out.ar=h/w;rdone(out)};
 $('rskip').onclick=()=>rdone(null);$('rquick').onclick=rquick;$('rread').onclick=rread;
 
 // ---------- command box ----------
@@ -1110,66 +1124,4 @@ async function exportXlsx(){
     const tc=ws.getCell(1,1);tc.value=t.title;tc.font={bold:true,size:16,color:{argb:'FFB3121B'}};tc.alignment={vertical:'middle'};ws.getRow(1).height=28;
     const hr=ws.getRow(3);hr.height=26;
     const W=k.map(j=>String(t.head[j]).length);
-    k.forEach((j,ci)=>{const c=hr.getCell(ci+1);c.value=t.head[j];c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill=fl('B3121B');c.alignment={horizontal:'center',vertical:'middle',wrapText:true};c.border=bd});
-    const runs=k.map(()=>[]);
-    t.body.forEach((r,ri)=>{
-      const row=ws.getRow(4+ri),tot=/total/i.test(r[0]);
-      k.forEach((j,ci)=>{
-        const v=r[j],c=row.getCell(ci+1);let num=false;
-        if(/%/.test(v)&&isNum(v)){c.value=toNum(v)/100;c.numFmt=/\.\d*[1-9]/.test(v)?'0.00%':'0%';num=true;runs[ci].push(4+ri)}
-        else if(ci>0&&isNum(v)&&!/^0\d/.test(v)){c.value=toNum(v);c.numFmt=/\./.test(v)?'#,##0.00':'#,##0';num=true}
-        else c.value=v;
-        c.alignment={horizontal:num?'center':'left',vertical:'middle'};c.border=bd;
-        c.fill=fl(tot?'FFF0C2':ri%2?'F6F6F6':'FFFFFF');if(tot)c.font={bold:true};
-        W[ci]=Math.max(W[ci],String(v).length);
-      });
-    });
-    k.forEach((_,ci)=>ws.getColumn(ci+1).width=Math.min(42,Math.max(11,W[ci]+3)));
-    ws.autoFilter={from:{row:3,column:1},to:{row:3,column:k.length}};
-    let pr=1;
-    runs.forEach((rs,ci)=>{
-      const col=ws.getColumn(ci+1).letter;
-      for(let i=0;i<rs.length;){
-        let e=i;while(e+1<rs.length&&rs[e+1]===rs[e]+1)e++;
-        ws.addConditionalFormatting({ref:`${col}${rs[i]}:${col}${rs[e]}`,rules:[
-          {type:'cellIs',operator:'lessThan',formulae:[t.red/100],priority:pr++,stopIfTrue:true,style:dx('FDE0E0','C00000')},
-          {type:'cellIs',operator:'lessThan',formulae:[t.orange/100],priority:pr++,stopIfTrue:true,style:dx('FFE5CC','C25500')},
-          {type:'cellIs',operator:'lessThan',formulae:[t.yellow/100],priority:pr++,stopIfTrue:true,style:dx('FFF6BF','8A6A00')}]});
-        i=e+1;
-      }
-    });
-  });
-  try{
-    const buf=await wb.xlsx.writeBuffer(),a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-    a.download=base+'_formatted.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  }catch(err){alert('Excel export failed: '+err.message)}
-}
-
-// ---------- export ----------
-function exportPpt(){
-  if(typeof PptxGenJS==='undefined')return alert('The PowerPoint library failed to load. Check your internet connection and refresh the page.');
-  try{
-    deck.forEach(s=>s.els.forEach(e=>{if(e.t==='tbl')recalc(e)}));
-    const p=new PptxGenJS(),F='Arial';p.layout='LAYOUT_WIDE';
-    deck.forEach((sl,si)=>{
-      const s=p.addSlide();s.background={color:sl.bg};
-      sl.els.forEach(e=>{
-        const g={x:e.x,y:e.y,w:e.w};
-        if(e.t==='box')s.addText(e.text,{...g,h:e.h,fontFace:F,fontSize:e.fs,bold:e.b,color:e.color,align:e.al,valign:e.va==='top'?'top':'middle',margin:e.bg?.08:0,...(e.bg?{fill:{color:e.bg}}:{})});
-        else if(e.t==='img')s.addImage({data:e.src,...g,h:e.h});
-        else if(e.t==='chart'){const S=cdata(e);if(S.length)s.addChart(p.charts.BAR,S,{...g,h:e.h,barDir:'col',chartColors:S.map((_,k)=>PAL[k%5]),showLegend:S.length>1,legendPos:'b',showValue:true,dataLabelFontSize:10,catAxisLabelFontSize:11,valGridLine:{color:'D0D0D0',size:.5}})}
-        else{
-          const cf=(c,r,ci)=>{const z=cst(e,c,r);return{text:c.v,options:{bold:z.b,color:z.fc,fill:{color:z.bg},align:r<0||(ci&&isNum(c.v))?'center':'left',valign:'middle'}}};
-          s.addTable([e.head.map((c,ci)=>cf(c,-1,ci)),...e.rows.map((r,ri)=>r.map((c,ci)=>cf(c,ri,ci)))],{...g,colW:cw(e),fontFace:F,fontSize:e.fs,border:{type:'solid',color:'D0D0D0',pt:.5},rowH:e.rh});
-        }
-      });
-      if(si)s.addText(String(si+1),{x:12.1,y:7.0,w:.6,h:.3,fontFace:F,fontSize:10,color:'777777',align:'right',margin:0});
-    });
-    p.writeFile({fileName:base+'_PPT.pptx'});
-  }catch(err){alert('Export failed: '+err.message)}
-}
-go(1);
-</script>
-</body>
-</html>
+    k.forEach((j,ci)=>{const c=hr.getCell(ci+1);c.value=t.head[j];c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill=fl('B3121B');c.alignment={horizontal:'center',vertical:'middle',wrapTe
