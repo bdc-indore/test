@@ -199,7 +199,7 @@ $('xi').onchange=async e=>{
   busy=true;$('next').disabled=true;
   for(const f of e.target.files){
     try{const n=await extract(f);files.push(`${f.name} - ${n} table(s) extracted`)}
-    catch(x){files.push(`${f.name} - extraction failed (${x.message})`)}
+    catch(x){files.push(`${f.name} - extraction failed (${x&&x.message||x})`);if(R){$('rd').hidden=true;R=null}}
   }
   e.target.value='';busy=false;st('');
   if(wk){try{await wk.terminate()}catch(x){}wk=null}
@@ -230,7 +230,8 @@ async function extract(f){
     }
   }else{
     const src=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});
-    const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src});
+    st(f.name+': photo khul rahi he...');
+    const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('photo ka format support nahi (JPG/PNG use karo)'));i.src=src});
     const rr=await reader(im,f.name);if(rr){const k=fromRows(rr,f.name,f.name);attach(k,rr.img);n=k}
   }
   return n;
@@ -843,7 +844,17 @@ async function getWk(){
   if(typeof Tesseract==='undefined')throw new Error('OCR engine not loaded, check your internet connection');
   const L=($('rlang')||{}).value||'eng+hin';
   if(wk&&wkL!==L){try{await wk.terminate()}catch(x){}wk=null}
-  if(!wk){wk=await Tesseract.createWorker(L,1);wkL=L}
+  if(!wk){
+    const lg=m=>{if(m&&m.status)$('rm').textContent=(/loading|download/i.test(m.status)?'Language data download ho raha he ':'Tayyar ho raha he ')+(m.progress!=null?Math.round(m.progress*100)+'%':'')};
+    $('rm').textContent='OCR engine start ho raha he (pehli baar 10-30 second lag sakte hain)...';
+    try{wk=await Tesseract.createWorker(L,1,{logger:lg});wkL=L}
+    catch(err){
+      if(L==='eng')throw err;
+      wk=null;$('rm').textContent='Hindi data load nahi hua, English se padh raha hu...';
+      try{wk=await Tesseract.createWorker('eng',1,{logger:lg});wkL='eng';$('rlang').value='eng';alert('Hindi language data download nahi ho paya (internet check karo). Abhi English se padha ja raha he, Hindi akshar sahi nahi aayenge.')}
+      catch(e2){throw new Error('OCR engine start nahi hua - internet check karo ('+(e2.message||e2)+')')}
+    }
+  }
   return wk;
 }
 async function cellRead(x0,y0,x1,y1,type,bw,hdr){
@@ -1121,12 +1132,4 @@ function exportPpt(){
       const s=p.addSlide();s.background={color:sl.bg};
       sl.els.forEach(e=>{
         const g={x:e.x,y:e.y,w:e.w};
-        if(e.t==='box')s.addText(e.text,{...g,h:e.h,fontFace:F,fontSize:e.fs,bold:e.b,color:e.color,align:e.al,valign:e.va==='top'?'top':'middle',margin:e.bg?.08:0,...(e.bg?{fill:{color:e.bg}}:{})});
-        else if(e.t==='img')s.addImage({data:e.src,...g,h:e.h});
-        else if(e.t==='chart'){const S=cdata(e);if(S.length)s.addChart(p.charts.BAR,S,{...g,h:e.h,barDir:'col',chartColors:S.map((_,k)=>PAL[k%5]),showLegend:S.length>1,legendPos:'b',showValue:true,dataLabelFontSize:10,catAxisLabelFontSize:11,valGridLine:{color:'D0D0D0',size:.5}})}
-        else{
-          const cf=(c,r,ci)=>{const z=cst(e,c,r);return{text:c.v,options:{bold:z.b,color:z.fc,fill:{color:z.bg},align:r<0||(ci&&isNum(c.v))?'center':'left',valign:'middle'}}};
-          s.addTable([e.head.map((c,ci)=>cf(c,-1,ci)),...e.rows.map((r,ri)=>r.map((c,ci)=>cf(c,ri,ci)))],{...g,colW:cw(e),fontFace:F,fontSize:e.fs,border:{type:'solid',color:'D0D0D0',pt:.5},rowH:e.rh});
-        }
-      });
-      if(si)s.addText(String(si+1),{x:12.1,y:7.0,w:.6,h:.3,fontFa
+        if(e.t==='box')s.addText(e.text,{...g,h:e.h,fontFace:F,fo
