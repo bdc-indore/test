@@ -91,7 +91,7 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
       <div class="card"><h2>Images and PDF</h2>
         <label class="drop"><b>Select JPG, PNG or PDF files</b><small>Tables are read from the file and converted to data</small><input type="file" id="xi" accept="image/*,.pdf" multiple></label></div>
     </div>
-    <div class="card" id="stc" hidden><b id="st"></b></div>
+    <div class="card" id="stc" hidden><b id="st"></b><progress id="stp" max="100" value="0" hidden style="display:block;width:100%;height:12px;margin-top:10px;accent-color:var(--r)"></progress></div>
     <div class="card" id="msg" hidden></div>
   </section>
 
@@ -208,27 +208,91 @@ function info(){
 }
 $('msg').onclick=e=>{if(e.target.dataset.a==='clr'){tables=[];files=[];lib=[];renderTables();renderLib();info()}};
 $('xl').onchange=async e=>{
-  for(const f of e.target.files){
-    try{await needLib('xlsx');const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});if(base==='Presentation')base=f.name.replace(/\.[^.]+$/,'');files.push(`${f.name} - ${detect(wb,f.name)} tables`)}
-    catch(x){files.push(f.name+' - could not be read')}
+  const list=[...e.target.files];
+  if(!list.length)return;
+  busy=true;setNext();
+  const readBuffer=(f,onProgress)=>new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onprogress=ev=>{
+      if(ev.lengthComputable)onProgress(Math.round(ev.loaded/ev.total*100));
+    };
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error||new Error('Browser could not read this file.'));
+    reader.onabort=()=>reject(new Error('File reading was cancelled.'));
+    reader.readAsArrayBuffer(f);
+  });
+  try{
+    for(let i=0;i<list.length;i++){
+      const f=list[i],basePct=Math.round(i/list.length*100),span=Math.max(1,Math.round(100/list.length));
+      try{
+        st(`${f.name}: ${basePct}% — loading Excel reader...`,basePct);
+        await new Promise(r=>setTimeout(r,20));
+        await needLib('xlsx');
+        st(`${f.name}: ${basePct}% — reading file...`,basePct);
+        const buffer=await readBuffer(f,p=>{
+          const overall=Math.min(94,basePct+Math.round(span*p/100));
+          st(`${f.name}: ${overall}% — reading file (${p}%)`,overall);
+        });
+        st(`${f.name}: ${Math.min(97,basePct+span-1)}% — analysing workbook...`,Math.min(97,basePct+span-1));
+        await new Promise(r=>setTimeout(r,20));
+        const wb=XLSX.read(buffer,{type:'array'});
+        if(base==='Presentation')base=f.name.replace(/\.[^.]+$/,'');
+        const before=tables.length;
+        const n=detect(wb,f.name);
+        const found=tables.length-before;
+        files.push(`${f.name} - ${n} table(s) detected`);
+        st(`${f.name}: ${Math.min(99,Math.round((i+1)/list.length*100))}% — ${found} table(s) added`,Math.min(99,Math.round((i+1)/list.length*100)));
+      }catch(x){
+        const reason=x&&x.message?x.message:String(x||'Unknown error');
+        files.push(`${f.name} - could not be read: ${reason}`);
+        toast(`Could not read ${f.name}: ${reason}`);
+      }
+    }
+  }finally{
+    e.target.value='';
+    busy=false;
+    st(list.length?`Upload complete: 100% (${list.length} file(s) checked)`:'',list.length?100:null);
+    renderTables();info();setNext();
+    // Keep the completion status visible briefly, then clear it.
+    setTimeout(()=>st(''),4500);
   }
-  e.target.value='';renderTables();info();
 };
 document.querySelectorAll('.mi').forEach(i=>i.onchange=async e=>{await addMedia([...e.target.files]);e.target.value=''});
-const st=t=>{$('stc').hidden=!t;$('st').textContent=t||''};
+const st=(t,p=null)=>{
+  $('stc').hidden=!t;
+  $('st').textContent=t||'';
+  const bar=$('stp');
+  bar.hidden=!t||p===null;
+  if(p!==null)bar.value=Math.max(0,Math.min(100,p));
+};
 const med=a=>{const q=[...a].sort((x,y)=>x-y);return q.length?q[q.length>>1]:0};
 const isPdf=f=>f.type==='application/pdf'||/\.pdf$/i.test(f.name);
 $('xi').onchange=async e=>{
   const list=[...e.target.files];if(!list.length)return;
   busy=true;setNext();
-  for(const f of list){
-    st(`Loading ${f.name}...`);await new Promise(r=>setTimeout(r,60));
-    try{const n=await extract(f);files.push(`${f.name} - ${n} table(s) extracted${extract.im?', '+extract.im+' image slide':''}`);extract.im=0}
-    catch(x){extract.im=0;if(R){R=null;$('rd').hidden=true}files.push(`${f.name} - could not be processed (${x.message||'unsupported file'})`);toast(`Could not process ${f.name}: ${x.message||'unsupported file'}`)}
+  try{
+    for(let i=0;i<list.length;i++){
+      const f=list[i];extract.im=0;
+      try{
+        st(`${f.name}: ${Math.round(i/list.length*100)}% — preparing file...`,Math.round(i/list.length*100));
+        await new Promise(r=>setTimeout(r,30));
+        const n=await extract(f);
+        files.push(`${f.name} - ${n} table(s) extracted${extract.im?', '+extract.im+' image slide(s)':''}`);
+        st(`${f.name}: ${Math.round((i+1)/list.length*100)}% — processed`,Math.round((i+1)/list.length*100));
+      }catch(x){
+        const reason=x&&x.message?x.message:String(x||'unsupported file');
+        if(R){R=null;$('rd').hidden=true}
+        files.push(`${f.name} - could not be processed (${reason})`);
+        toast(`Could not process ${f.name}: ${reason}`);
+      }finally{extract.im=0}
+    }
+  }finally{
+    e.target.value='';busy=false;
+    if(wk){try{await wk.terminate()}catch(x){}wk=null;wkL=''}
+    renderTables();renderLib();info();setNext();
+    st(list.length?`Upload finished: ${list.length} file(s) checked`:'',list.length?100:null);
+    setTimeout(()=>st(''),6000);
   }
-  e.target.value='';busy=false;st('');
-  if(wk){try{await wk.terminate()}catch(x){}wk=null}
-  renderTables();renderLib();info();
 };
 const attach=(k,img)=>{if(k&&img)tables.slice(-k).forEach(t=>{t.img=img;t.ar=cropImg.ar||.6})};
 const takeImg=rr=>{lib.push({src:rr.imgOnly,ar:rr.ar||.6,slide:true});extract.im=(extract.im||0)+1};
@@ -244,7 +308,7 @@ async function extract(f){
   if(isPdf(f)){
     await needLib('pdf');const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,N=Math.min(pdf.numPages,30);
     for(let i=1;i<=N;i++){
-      st(`${f.name}: reading page ${i} of ${N}`);
+      st(`${f.name}: ${Math.round((i-1)/N*100)}% — reading PDF page ${i} of ${N}`,Math.round((i-1)/N*100));
       const pg=await pdf.getPage(i),vp=pg.getViewport({scale:1}),tc=await pg.getTextContent();
       let it=tc.items.filter(x=>x.str.trim()).map(x=>{const h=Math.abs(x.transform[3])||x.height||10;return{s:x.str.trim(),x0:x.transform[4],x1:x.transform[4]+x.width,y:vp.height-x.transform[5]-h*.3,h}});
       if(it.length<8){
@@ -255,10 +319,10 @@ async function extract(f){
       n+=fromRows(rowsFrom(it),f.name,N>1?`${f.name} p${i}`:f.name);
     }
   }else{
-    st(`Preparing ${f.name}...`);
+    st(`${f.name}: 10% — preparing image...`,10);
     const url=URL.createObjectURL(f);
     const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('This image format is not supported. Please use a JPG or PNG file.'));i.src=url});
-    st('');
+    st(`${f.name}: 25% — starting table reader...`,25);
     const rr=await reader(im,f.name);if(rr){if(rr.imgOnly)takeImg(rr);else{const k=fromRows(rr,f.name,f.name);attach(k,rr.img);n=k}}
   }
   return n;
@@ -284,23 +348,31 @@ function rowsFrom(it){
   return out;
 }
 async function addMedia(fs){
-  for(const f of fs){
-    try{
-      if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
-        await needLib('pdf');const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-        for(let i=1;i<=Math.min(pdf.numPages,40);i++){
-          const pg=await pdf.getPage(i),vp=pg.getViewport({scale:1.6}),c=document.createElement('canvas');
-          c.width=vp.width;c.height=vp.height;await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
-          lib.push({src:c.toDataURL('image/jpeg',.85),ar:vp.height/vp.width});
+  const list=[...fs];if(!list.length)return;
+  busy=true;setNext();
+  try{
+    for(let i=0;i<list.length;i++){
+      const f=list[i];
+      try{
+        st(`${f.name}: ${Math.round(i/list.length*100)}% — adding media...`,Math.round(i/list.length*100));
+        if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
+          await needLib('pdf');const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+          for(let j=1;j<=Math.min(pdf.numPages,40);j++){
+            st(`${f.name}: rendering PDF page ${j} of ${Math.min(pdf.numPages,40)}...`,Math.round((j/Math.min(pdf.numPages,40))*100));
+            const pg=await pdf.getPage(j),vp=pg.getViewport({scale:1.6}),c=document.createElement('canvas');
+            c.width=vp.width;c.height=vp.height;await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+            lib.push({src:c.toDataURL('image/jpeg',.85),ar:vp.height/vp.width});
+          }
+        }else{
+          const src=await new Promise((resolve,reject)=>{const x=new FileReader();x.onload=()=>resolve(x.result);x.onerror=()=>reject(x.error||new Error('Browser could not read this image.'));x.readAsDataURL(f)});
+          const im=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error('Unsupported image. Please use JPG or PNG.'));i.src=src});
+          lib.push({src,ar:im.height/im.width});
         }
-      }else{
-        const src=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});
-        const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src});
-        lib.push({src,ar:im.height/im.width});
-      }
-    }catch(x){alert('Could not read '+f.name)}
+      }catch(x){toast(`Could not read ${f.name}: ${(x&&x.message)||'unsupported file'}`)}
+    }
+  }finally{
+    renderLib();info();busy=false;setNext();st('Media upload finished',100);setTimeout(()=>st(''),5000);
   }
-  renderLib();info();
 }
 function renderLib(){$('libgrid').innerHTML=lib.map((m,i)=>`<div><img src="${m.src}"><button data-ins="${i}">Insert</button><button data-sl="${i}">As new slide</button></div>`).join('')}
 $('libgrid').onclick=e=>{
@@ -763,7 +835,7 @@ function prep(src,rot,straight){
   return c;
 }
 function reader(src,label){
-  return new Promise((res,rej)=>{try{R={src,label,res,h:[],ln:[],rot:0,crop:null,vx:[],hy:[],sr:new Set(),sc:new Set(),types:[],mode:'area',d:null};$('rt').textContent='Table reader - '+label;$('rd').hidden=false;rbuild();$('rd').scrollTop=0}catch(err){R=null;$('rd').hidden=true;rej(err)}});
+  return new Promise((res,rej)=>{try{R={src,label,res,h:[],ln:[],rot:0,crop:null,vx:[],hy:[],sr:new Set(),sc:new Set(),types:[],mode:'area',d:null};$('rt').textContent='Table reader - '+label;$('rd').hidden=false;rbuild();$('rd').scrollTop=0;setTimeout(()=>$('rd').scrollIntoView({behavior:'smooth',block:'start'}),80)}catch(err){R=null;$('rd').hidden=true;rej(err)}});
 }
 const rsnap=()=>JSON.stringify({c:R.crop,vx:R.vx,hy:R.hy,sr:[...R.sr],sc:[...R.sc]});
 function rundo(){if(!R||!R.h.length)return;const o=JSON.parse(R.h.pop());R.crop=o.c;R.vx=o.vx;R.hy=o.hy;R.sr=new Set(o.sr);R.sc=new Set(o.sc);rdraw();rtypes()}
@@ -1121,4 +1193,103 @@ function cmd(t,raw){
   // number rules, e.g. "70 se niche laal"
   const nr=t.replace(/(?:column|col)\s*\d+/g,'').split(/\s*(?:\baur\b|\band\b|\bphir\b|,|;)\s*/),rules=[];
   const numW=/\b(number|numbers|sankhya|count|plain)\b/.test(t),pct=numW?false:/(percent|percentage|pratishat|%)/.test(t)?true:null;
-  const md=/\b(font|text|akshar)\b/.test(t)&&!/\b(background|bg|fill)\b/.test(t)
+  const md=/\b(font|text|akshar)\b/.test(t)&&!/\b(background|bg|fill)\b/.test(t)?'f':/\b(background|bg|fill)\b/.test(t)&&!/\b(font|text|akshar)\b/.test(t)?'b':'x';
+  const paint=k=>md==='f'?{fc:CL[k][0]}:md==='b'?{bg:CL[k][0]}:{bg:CL[k][1],fc:CL[k][2]};
+  nr.forEach(cl=>{
+    const n=cl.match(/(\d+(?:\.\d+)?)/),k=pickColor(cl);if(!n||!k)return;
+    const dir=BELOW.some(w=>hasW(cl,w))?'<':ABOVE.some(w=>hasW(cl,w))?'>':EQW.some(w=>hasW(cl,w))?'=':null;if(!dir)return;
+    (cs.length?cs:[null]).forEach(j=>rules.push({h:j==null?null:o.head[j].v,op:dir,v:+n[1],pct,...paint(k)}));
+  });
+  if(rules.length){snap();o.rules=[...(o.rules||[]),...rules];draw();return `Colour rule applied: ${rules.map(q=>`${q.op==='<'?'below':q.op==='>'?'above':'equal to'} ${q.v}${q.pct?'%':''}`).join(', ')}${cs.length?' ('+cs.map(j=>o.head[j].v).join(', ')+')':' (all numeric cells)'}.`}
+  // direct colouring / bold
+  const bold=/\b(bold|mota|moti)\b/.test(t);
+  if(col||bold){
+    const tg=targets(t,o);if(!tg.length)return 'Please specify the cells, by selecting them (hold Shift for several) or by naming a column or row.';
+    snap();tg.forEach(m=>{const c=cellOf(o,m);if(col)Object.assign(c,paint(col));if(bold)c.b=true});draw();
+    return `Applied ${[col?col+' colour':'',bold?'bold':''].filter(Boolean).join(' and ')} to ${tg.length} cell(s).`;
+  }
+  return 'The instruction was not understood. Please name the column or row, the value and the colour, or the text to be replaced.';
+}
+$('csend').onclick=()=>{const v=$('cin').value;if(!v.trim())return;$('cin').value='';runCmd(v)};
+$('cin').onkeydown=e=>{if(e.key==='Enter')$('csend').click()};
+
+// ---------- formatted Excel ----------
+$('xls').onclick=exportXlsx;
+async function exportXlsx(){
+  if(!await need('xl'))return alert('The Excel library failed to load. Check your internet connection and refresh the page.');
+  const L=tables.filter(t=>t.inc&&kc(t).length);if(!L.length)return;
+  const wb=new ExcelJS.Workbook(),used={},thin={style:'thin',color:{argb:'FFD0D0D0'}},bd={top:thin,left:thin,bottom:thin,right:thin};
+  const fl=c=>({type:'pattern',pattern:'solid',fgColor:{argb:'FF'+c}}),dx=(bg,fc)=>({fill:{type:'pattern',pattern:'solid',bgColor:{argb:'FF'+bg}},font:{color:{argb:'FF'+fc},bold:true}});
+  L.forEach(t=>{
+    const k=kc(t),nm=(t.title.replace(/[\\\/?*\[\]:]/g,' ').trim().slice(0,27)||'Table');
+    let q=nm,n=2;while(used[q.toLowerCase()])q=nm+' '+n++;used[q.toLowerCase()]=1;
+    const ws=wb.addWorksheet(q,{views:[{state:'frozen',ySplit:3,showGridLines:false}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0}});
+    if(k.length>1)ws.mergeCells(1,1,1,k.length);
+    const tc=ws.getCell(1,1);tc.value=t.title;tc.font={bold:true,size:16,color:{argb:'FFB3121B'}};tc.alignment={vertical:'middle'};ws.getRow(1).height=28;
+    const hr=ws.getRow(3);hr.height=26;
+    const W=k.map(j=>String(t.head[j]).length);
+    k.forEach((j,ci)=>{const c=hr.getCell(ci+1);c.value=t.head[j];c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill=fl('B3121B');c.alignment={horizontal:'center',vertical:'middle',wrapText:true};c.border=bd});
+    const runs=k.map(()=>[]);
+    t.body.forEach((r,ri)=>{
+      const row=ws.getRow(4+ri),tot=/total/i.test(r[0]);
+      k.forEach((j,ci)=>{
+        const v=r[j],c=row.getCell(ci+1);let num=false;
+        if(/%/.test(v)&&isNum(v)){c.value=toNum(v)/100;c.numFmt=/\.\d*[1-9]/.test(v)?'0.00%':'0%';num=true;runs[ci].push(4+ri)}
+        else if(ci>0&&isNum(v)&&!/^0\d/.test(v)){c.value=toNum(v);c.numFmt=/\./.test(v)?'#,##0.00':'#,##0';num=true}
+        else c.value=v;
+        c.alignment={horizontal:num?'center':'left',vertical:'middle'};c.border=bd;
+        c.fill=fl(tot?'FFF0C2':ri%2?'F6F6F6':'FFFFFF');if(tot)c.font={bold:true};
+        W[ci]=Math.max(W[ci],String(v).length);
+      });
+    });
+    k.forEach((_,ci)=>ws.getColumn(ci+1).width=Math.min(42,Math.max(11,W[ci]+3)));
+    ws.autoFilter={from:{row:3,column:1},to:{row:3,column:k.length}};
+    let pr=1;
+    runs.forEach((rs,ci)=>{
+      const col=ws.getColumn(ci+1).letter;
+      for(let i=0;i<rs.length;){
+        let e=i;while(e+1<rs.length&&rs[e+1]===rs[e]+1)e++;
+        ws.addConditionalFormatting({ref:`${col}${rs[i]}:${col}${rs[e]}`,rules:[
+          {type:'cellIs',operator:'lessThan',formulae:[t.red/100],priority:pr++,stopIfTrue:true,style:dx('FDE0E0','C00000')},
+          {type:'cellIs',operator:'lessThan',formulae:[t.orange/100],priority:pr++,stopIfTrue:true,style:dx('FFE5CC','C25500')},
+          {type:'cellIs',operator:'lessThan',formulae:[t.yellow/100],priority:pr++,stopIfTrue:true,style:dx('FFF6BF','8A6A00')}]});
+        i=e+1;
+      }
+    });
+  });
+  try{
+    const buf=await wb.xlsx.writeBuffer(),a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    a.download=base+'_formatted.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }catch(err){alert('Excel export failed: '+err.message)}
+}
+
+// ---------- export ----------
+function exportPpt(){
+  if(typeof PptxGenJS==='undefined'){toast('Loading the PowerPoint component, please wait...');need('pptx').then(ok=>ok?exportPpt():alert('The PowerPoint library failed to load. Check your internet connection and refresh the page.'));return}
+  try{
+    deck.forEach(s=>s.els.forEach(e=>{if(e.t==='tbl')recalc(e)}));
+    const p=new PptxGenJS(),F='Arial';p.layout='LAYOUT_WIDE';
+    deck.forEach((sl,si)=>{
+      const s=p.addSlide();s.background={color:sl.bg};
+      sl.els.forEach(e=>{
+        const g={x:e.x,y:e.y,w:e.w};
+        if(e.t==='box')s.addText(e.text,{...g,h:e.h,fontFace:F,fontSize:e.fs,bold:e.b,color:e.color,align:e.al,valign:e.va==='top'?'top':'middle',margin:e.bg?.08:0,...(e.bg?{fill:{color:e.bg}}:{})});
+        else if(e.t==='img')s.addImage({data:e.src,...g,h:e.h});
+        else if(e.t==='chart'){const S=cdata(e);if(S.length)s.addChart(p.charts.BAR,S,{...g,h:e.h,barDir:'col',chartColors:S.map((_,k)=>PAL[k%5]),showLegend:S.length>1,legendPos:'b',showValue:true,dataLabelFontSize:10,catAxisLabelFontSize:11,valGridLine:{color:'D0D0D0',size:.5}})}
+        else{
+          const cf=(c,r,ci)=>{const z=cst(e,c,r);return{text:c.v,options:{bold:z.b,color:z.fc,fill:{color:z.bg},align:r<0||(ci&&isNum(c.v))?'center':'left',valign:'middle'}}};
+          s.addTable([e.head.map((c,ci)=>cf(c,-1,ci)),...e.rows.map((r,ri)=>r.map((c,ci)=>cf(c,ri,ci)))],{...g,colW:cw(e),fontFace:F,fontSize:e.fs,border:{type:'solid',color:'D0D0D0',pt:.5},rowH:e.rh});
+        }
+      });
+      if(si)s.addText(String(si+1),{x:12.1,y:7.0,w:.6,h:.3,fontFace:F,fontSize:10,color:'777777',align:'right',margin:0});
+    });
+    p.writeFile({fileName:base+'_PPT.pptx'});
+  }catch(err){alert('Export failed: '+err.message)}
+}
+go(1);
+
+})();
+</script>
+</body>
+</html>
