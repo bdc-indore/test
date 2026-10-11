@@ -806,7 +806,7 @@ function rfinish(d){
   const l=sline(d);if(l.len<20*d.k)return;
   const lo=l.v?c.x0:c.y0,hi=l.v?c.x1:c.y1,e0=l.v?c.y0:c.x0,e1=l.v?c.y1:c.x1;
   let a=Math.max(l.a,e0),b=Math.min(l.b,e1);if(b-a<10*d.k)return;
-  const p=snapL(l.v,l.p,a,b),cr=l.v?R.hy:R.vx,st=16*d.k;
+  const p=snapL(l.v,l.p,a,b),cr=l.v?R.hy:R.vx,st=30*d.k;
   // line starts/ends exactly where the user drew it; only snaps to the table edge or a crossing line when very close
   const sn=v=>{if(Math.abs(v-e0)<=st)return e0;if(Math.abs(v-e1)<=st)return e1;let q=null,bd=st;cr.forEach(z=>{const dd=Math.abs(z.p-v);if(dd<bd){bd=dd;q=z.p}});return q==null?v:q};
   a=sn(a);b=sn(b);
@@ -848,7 +848,15 @@ async function getWk(){
   if(typeof Tesseract==='undefined')throw new Error('OCR engine not loaded, check your internet connection');
   const L=($('rlang')||{}).value||'eng';
   if(wk&&wkL!==L){try{await wk.terminate()}catch(x){}wk=null}
-  if(!wk){wk=await Tesseract.createWorker(L,1);wkL=L}
+  if(!wk){
+    const mkw=l=>Promise.race([Tesseract.createWorker(l,1),new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),45000))]);
+    try{wk=await mkw(L);wkL=L}
+    catch(err){
+      if(L==='eng')throw new Error('OCR language data load nahi hua ('+err.message+'). Internet check karo.');
+      try{wk=await mkw('eng');wkL='eng';alert('Hindi data load nahi hua, is baar English me padh raha hu. Internet theek hone par dobara try karo.')}
+      catch(e2){throw new Error('OCR load nahi hua ('+e2.message+'). Internet check karo.')}
+    }
+  }
   return wk;
 }
 async function cellRead(x0,y0,x1,y1,type,bw,hdr){
@@ -1140,4 +1148,28 @@ async function exportXlsx(){
 
 // ---------- export ----------
 function exportPpt(){
-  if(typeof PptxGenJS==='undefined')return alert('T
+  if(typeof PptxGenJS==='undefined')return alert('The PowerPoint library failed to load. Check your internet connection and refresh the page.');
+  try{
+    deck.forEach(s=>s.els.forEach(e=>{if(e.t==='tbl')recalc(e)}));
+    const p=new PptxGenJS(),F='Arial';p.layout='LAYOUT_WIDE';
+    deck.forEach((sl,si)=>{
+      const s=p.addSlide();s.background={color:sl.bg};
+      sl.els.forEach(e=>{
+        const g={x:e.x,y:e.y,w:e.w};
+        if(e.t==='box')s.addText(e.text,{...g,h:e.h,fontFace:F,fontSize:e.fs,bold:e.b,color:e.color,align:e.al,valign:e.va==='top'?'top':'middle',margin:e.bg?.08:0,...(e.bg?{fill:{color:e.bg}}:{})});
+        else if(e.t==='img')s.addImage({data:e.src,...g,h:e.h});
+        else if(e.t==='chart'){const S=cdata(e);if(S.length)s.addChart(p.charts.BAR,S,{...g,h:e.h,barDir:'col',chartColors:S.map((_,k)=>PAL[k%5]),showLegend:S.length>1,legendPos:'b',showValue:true,dataLabelFontSize:10,catAxisLabelFontSize:11,valGridLine:{color:'D0D0D0',size:.5}})}
+        else{
+          const cf=(c,r,ci)=>{const z=cst(e,c,r);return{text:c.v,options:{bold:z.b,color:z.fc,fill:{color:z.bg},align:r<0||(ci&&isNum(c.v))?'center':'left',valign:'middle'}}};
+          s.addTable([e.head.map((c,ci)=>cf(c,-1,ci)),...e.rows.map((r,ri)=>r.map((c,ci)=>cf(c,ri,ci)))],{...g,colW:cw(e),fontFace:F,fontSize:e.fs,border:{type:'solid',color:'D0D0D0',pt:.5},rowH:e.rh});
+        }
+      });
+      if(si)s.addText(String(si+1),{x:12.1,y:7.0,w:.6,h:.3,fontFace:F,fontSize:10,color:'777777',align:'right',margin:0});
+    });
+    p.writeFile({fileName:base+'_PPT.pptx'});
+  }catch(err){alert('Export failed: '+err.message)}
+}
+go(1);
+</script>
+</body>
+</html>
