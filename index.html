@@ -116,20 +116,20 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
     <div class="card" id="cmp" hidden><div class="top"><b>Original table (as uploaded) - compare with the slide below</b><label class="tg" style="margin:0 0 0 auto"><input type="checkbox" id="cmpon" checked> Show</label></div><div id="cmpbox"><div class="cmpimg" id="cmpimgw"><img id="cmpi"></div><div class="cmpdt" id="cmpdt"></div></div></div>
     <div class="stage" id="stage"><div id="vp"><div id="cv"></div></div><div class="pop" id="pop" hidden></div></div>
     <div class="card" id="chat" style="margin-top:14px"><h2>Command box</h2><div id="clog"></div>
-      <div class="crow"><input type="text" id="cin" placeholder="Enter an instruction for the current slide"><button id="csend">Send</button></div><div id="cex"></div></div>
+      <div class="crow"><input type="text" id="cin" placeholder="Enter an instruction for the current slide"><button id="csend">Send</button></div></div>
   </section>
 </div>
 <div id="rd" hidden><div class="rbox">
   <div class="top"><b id="rt">Table reader</b><span class="chip" id="rm" style="margin:0 0 0 auto"></span></div>
   <div class="tools" id="rtools">
-    <button data-m="area" class="on">1. Select table</button><button data-m="line">2. Draw lines</button><button data-m="erase">Eraser (line ka hissa mitao)</button><button data-m="row">Skip row</button><button data-m="col">Skip column</button>
+    <button data-m="area" class="on">1. Select table</button><button data-m="line">2. Draw lines</button><button data-m="erase">Eraser (rubber)</button><button data-m="row">Skip row</button><button data-m="col">Skip column</button>
     <button id="rauto">Auto-detect lines</button><button id="rrot">Rotate</button><button id="rundo" class="fx">&#8617; Undo last step</button><button id="rlast" class="fx">Remove last line</button><button id="rclr" class="fx">Clear all lines</button><button id="rreset" class="fx">&#10005; Remove selection</button>
     <label class="tg"><input type="checkbox" id="rbw" checked> Black &amp; white</label><label class="tg"><input type="checkbox" id="rstr" checked> Straighten</label><label class="tg">Language <select id="rlang" style="width:auto;margin:0"><option value="eng+hin" selected>Hindi + English</option><option value="hin">Hindi only</option><option value="eng">English only</option></select></label>
   </div>
-  <div class="warn" style="margin:0 0 8px">Selected the wrong area? Use Undo last step, tap a line to remove it, or use Remove selection and select the table again.</div>
+  <div class="warn" style="margin:0 0 8px">Selected the wrong area? Use Undo last step, tap a line to remove it, or use Remove selection and select the table again. To draw a line, drag a short distance and the full line is created. Use the Eraser to brush over any portion of a line you wish to remove.</div>
   <div class="rcv"><canvas id="rc"></canvas></div>
   <div id="rtypes" class="cols"></div>
-  <div class="acts"><button id="rskip">Cancel / Skip image</button><button id="rimg">Image hi slide me daalo</button><button id="rquick">Quick read (no lines)</button><button class="pri" id="rread">Read table</button></div>
+  <div class="acts"><button id="rskip">Cancel / Skip image</button><button id="rimg">Insert image as slide</button><button id="rquick">Quick read (no lines)</button><button class="pri" id="rread">Read table</button></div>
 </div></div>
 <div class="ctx" id="ctx" hidden></div>
 <div id="dlg" hidden><div class="dbox"><h2>Formula</h2>
@@ -327,7 +327,7 @@ function renderTables(){
     <div class="top"><span class="num">Table ${i+1}</span><span class="chip" style="margin:0">${esc(t.src)} / ${esc(t.sheet)} &middot; ${t.body.length} rows &middot; ${t.head.length} columns</span>
       <label class="sw"><input type="checkbox" data-f="inc" ${t.inc?'checked':''}> Include</label></div>
     <div class="body">
-      ${t.img?`<label class="tg" style="margin-top:10px"><input type="checkbox" data-f="addImg" ${t.addImg?'checked':''}> Original image bhi ek slide me lagao (table ke baad)</label>`:''}
+      ${t.img?`<label class="tg" style="margin-top:10px"><input type="checkbox" data-f="addImg" ${t.addImg?'checked':''}> Also add the original image as a slide (after the table)</label>`:''}
       <label style="margin-top:10px">Slide heading<input type="text" data-f="title" value="${esc(t.title)}"></label>
       <div class="sec">Columns<span><a data-a="all">All</a> &middot; <a data-a="none">None</a></span></div>
       <div class="cols">${t.head.map((h,j)=>`<span class="col ${t.keep[j]?'on':''}"><label><input type="checkbox" data-k="${j}" ${t.keep[j]?'checked':''}> ${esc(h)}</label></span>`).join('')}</div>
@@ -712,7 +712,7 @@ document.onkeydown=e=>{
 };
 
 // ---------- image table reader ----------
-let R=null;const rcv=$('rc');
+let R=null;const rcv=$('rc');const ERR=11;
 const gray=d=>{const a=d.data,g=new Uint8Array(a.length/4);for(let i=0;i<g.length;i++)g[i]=a[4*i]*.299+a[4*i+1]*.587+a[4*i+2]*.114;return g};
 function otsu(g){
   const h=new Array(256).fill(0);g.forEach(v=>h[v]++);const n=g.length;let sum=0;for(let i=0;i<256;i++)sum+=i*h[i];
@@ -789,7 +789,7 @@ function rdraw(){
     R.vx.forEach(l=>{g.moveTo(l.p,l.a==null?R.crop.y0:l.a);g.lineTo(l.p,l.b==null?R.crop.y1:l.b)});R.hy.forEach(l=>{g.moveTo(l.a==null?R.crop.x0:l.a,l.p);g.lineTo(l.b==null?R.crop.x1:l.b,l.p)});g.stroke();
   }
   if(R.d&&R.mode==='line'){const l=sline(R.d);g.strokeStyle='#f59e0b';g.lineWidth=lw;g.beginPath();if(l.v){g.moveTo(l.p,0);g.lineTo(l.p,H)}else{g.moveTo(0,l.p);g.lineTo(W,l.p)}g.stroke()}
-  if(R.d&&R.mode==='erase'){const q=nrm(R.d),t0=8*(R.d.k||1);g.fillStyle='rgba(250,204,21,.45)';g.fillRect(q.x0-t0,q.y0-t0,q.x1-q.x0+2*t0,q.y1-q.y0+2*t0)}
+  if(R.d&&R.mode==='erase'&&R.d.path){const r=ERR*(R.d.k||1),P=R.d.path;g.save();g.strokeStyle='rgba(250,204,21,.55)';g.fillStyle='rgba(250,204,21,.55)';g.lineWidth=2*r;g.lineCap='round';g.lineJoin='round';g.beginPath();P.forEach((q,i)=>i?g.lineTo(q.x,q.y):g.moveTo(q.x,q.y));if(P.length===1)g.lineTo(P[0].x+.01,P[0].y);g.stroke();g.restore()}
 }
 function rtypes(){
   const n=R.crop?bnd().xs.length-1:1;R.types.length=n;for(let j=0;j<n;j++)R.types[j]=R.types[j]||'a';
@@ -799,8 +799,10 @@ function rtypes(){
 }
 $('rtypes').oninput=e=>{R.types[+e.target.dataset.j]=e.target.value};
 const pt=e=>{const r=rcv.getBoundingClientRect(),k=rcv.width/r.width;return{x:(e.clientX-r.left)*k,y:(e.clientY-r.top)*k,k}};
-rcv.onpointerdown=e=>{if(!R)return;const p=pt(e);R.d={x:p.x,y:p.y,x1:p.x,y1:p.y,k:p.k};rcv.setPointerCapture(e.pointerId)};
-rcv.onpointermove=e=>{if(!R||!R.d)return;const p=pt(e);R.d.x1=p.x;R.d.y1=p.y;rdraw()};
+rcv.onpointerdown=e=>{if(!R)return;const p=pt(e);R.d={x:p.x,y:p.y,x1:p.x,y1:p.y,k:p.k,path:[{x:p.x,y:p.y}]};rcv.setPointerCapture(e.pointerId)};
+rcv.onpointermove=e=>{if(!R||!R.d)return;const p=pt(e);R.d.x1=p.x;R.d.y1=p.y;
+  if(R.mode==='erase'&&R.d.path){const L=R.d.path[R.d.path.length-1],r=ERR*R.d.k,n=Math.ceil(Math.hypot(p.x-L.x,p.y-L.y)/(r/2));for(let i=1;i<=n;i++)R.d.path.push({x:L.x+(p.x-L.x)*i/n,y:L.y+(p.y-L.y)*i/n})}
+  rdraw()};
 rcv.onpointerup=()=>{if(!R||!R.d)return;const d=R.d;R.d=null;const b=rsnap();rfinish(d);if(rsnap()!==b)R.h.push(b);rdraw();rtypes()};
 function snapL(v,p,a,b){
   const c=R.crop,r=8,x0=v?Math.max(0,Math.round(p)-r):Math.round(a),y0=v?Math.round(a):Math.max(0,Math.round(p)-r),w=v?2*r+1:Math.round(b-a),h=v?Math.round(b-a):2*r+1;
@@ -815,24 +817,29 @@ function rfinish(d){
   if(!R.crop){R.msg='Select the table area first';return}
   const c=R.crop;
   if(m==='erase'){
-    const t0=8*d.k,bx0=Math.min(d.x,d.x1)-t0,bx1=Math.max(d.x,d.x1)+t0,by0=Math.min(d.y,d.y1)-t0,by1=Math.max(d.y,d.y1)+t0;
-    const cut=(arr,vert)=>{const out=[],e0=vert?c.y0:c.x0,e1=vert?c.y1:c.x1,s0=vert?by0:bx0,s1=vert?by1:bx1;
-      arr.forEach(l=>{const a=l.a==null?e0:l.a,b=l.b==null?e1:l.b,inl=vert?(l.p>=bx0&&l.p<=bx1):(l.p>=by0&&l.p<=by1);
-        if(!inl||s1<a||s0>b){out.push(l);return}
-        if(s0-a>4)out.push({p:l.p,a:l.a,b:s0});
-        if(b-s1>4)out.push({p:l.p,a:s1,b:l.b});
+    const r=ERR*d.k,P=d.path&&d.path.length?d.path:[{x:d.x,y:d.y}];
+    const cut=(arr,vert)=>{const e0=vert?c.y0:c.x0,e1=vert?c.y1:c.x1,out=[];
+      arr.forEach(l=>{
+        const a=l.a==null?e0:l.a,b=l.b==null?e1:l.b,iv=[];
+        P.forEach(q=>{const dp=Math.abs((vert?q.x:q.y)-l.p);if(dp<=r){const h=Math.sqrt(r*r-dp*dp),al=vert?q.y:q.x;iv.push([al-h,al+h])}});
+        if(!iv.length){out.push(l);return}
+        iv.sort((x,y)=>x[0]-y[0]);
+        const piece=(s0,s1)=>{if(s1-s0>4)out.push({p:l.p,a:s0<=e0+1?null:s0,b:s1>=e1-1?null:s1})};
+        let cur=a;
+        for(const[s0,s1]of iv){if(s1<cur)continue;if(s0>b)break;piece(cur,Math.min(s0,b));cur=Math.max(cur,s1)}
+        if(cur<b)piece(cur,b);
       });return out};
     R.vx=cut(R.vx,true);R.hy=cut(R.hy,false);R.sr.clear();R.sc.clear();return;
   }
   if(m==='row'||m==='col'){const{xs,ys}=bnd(),a=m==='row'?ys:xs,v=m==='row'?d.y:d.x,i=a.findIndex((q,n)=>v>=q&&v<a[n+1]);if(i>=0){const S=m==='row'?R.sr:R.sc;S.has(i)?S.delete(i):S.add(i)}return}
-  if(mv<6*d.k){
+  if(mv<5*d.k){
     let best=null,bd=tol;
     R.vx.forEach((l,i)=>{const q=Math.abs(l.p-d.x);if(q<bd&&d.y>=(l.a==null?c.y0:l.a)-tol&&d.y<=(l.b==null?c.y1:l.b)+tol){bd=q;best=['vx',i]}});
     R.hy.forEach((l,i)=>{const q=Math.abs(l.p-d.y);if(q<bd&&d.x>=(l.a==null?c.x0:l.a)-tol&&d.x<=(l.b==null?c.x1:l.b)+tol){bd=q;best=['hy',i]}});
     if(best){R[best[0]].splice(best[1],1);R.sr.clear();R.sc.clear()}
     return;
   }
-  const l=sline(d);if(l.len<20*d.k)return;
+  const l=sline(d);if(l.len<8*d.k)return;
   const lo=l.v?c.x0:c.y0,hi=l.v?c.x1:c.y1,p=snapL(l.v,l.p,l.v?c.y0:c.x0,l.v?c.y1:c.x1);
   if(p>lo+tol&&p<hi-tol){(l.v?R.vx:R.hy).push({p,a:null,b:null});R.ln.push(l.v?'vx':'hy');R.sr.clear();R.sc.clear()}
 }
@@ -1074,7 +1081,7 @@ function cmd(t,raw){
         const at=pm&&+pm[1]>=1&&+pm[1]<=o.head.length+1?+pm[1]-1:o.head.length;
         snap();MS=[];o.head.splice(at,0,{v:nm});o.rows.forEach(r=>r.splice(at,0,{v:'',f:{a,op,b}}));cell=null;draw();
         const how=op==='%'?`${a} \u00f7 ${b} \u00d7 100`:`${a} ${{'+':'+','-':'-','*':'\u00d7','/':'\u00f7'}[op]} ${b}`;
-        return `Added column ${at+1}: ${how} (from column ${nums[0]} and column ${nums[1]}). To reverse the calculation, ask for column ${nums[1]} as a percentage of column ${nums[0]}.`;
+        return `Added column ${at+1}: ${how} (from column ${nums[0]} and column ${nums[1]}).`;
       }
     }
   }
@@ -1117,17 +1124,10 @@ function cmd(t,raw){
 }
 $('csend').onclick=()=>{const v=$('cin').value;if(!v.trim())return;$('cin').value='';runCmd(v)};
 $('cin').onkeydown=e=>{if(e.key==='Enter')$('csend').click()};
-$('cex').hidden=true;
-say('b','Enter an instruction for the current slide, such as replacing text, adding a calculated column or applying colour rules.');
 
 // ---------- formatted Excel ----------
 $('xls').onclick=exportXlsx;
 async function exportXlsx(){
   if(typeof ExcelJS==='undefined')return alert('The Excel library failed to load. Check your internet connection and refresh the page.');
   const L=tables.filter(t=>t.inc&&kc(t).length);if(!L.length)return;
-  const wb=new ExcelJS.Workbook(),used={},thin={style:'thin',color:{argb:'FFD0D0D0'}},bd={top:thin,left:thin,bottom:thin,right:thin};
-  const fl=c=>({type:'pattern',pattern:'solid',fgColor:{argb:'FF'+c}}),dx=(bg,fc)=>({fill:{type:'pattern',pattern:'solid',bgColor:{argb:'FF'+bg}},font:{color:{argb:'FF'+fc},bold:true}});
-  L.forEach(t=>{
-    const k=kc(t),nm=(t.title.replace(/[\\\/?*\[\]:]/g,' ').trim().slice(0,27)||'Table');
-    let q=nm,n=2;while(used[q.toLowerCase()])q=nm+' '+n++;used[q.toLowerCase()]=1;
-    const ws=wb.addWorksheet(q,{views:[{state:'frozen',ySplit:3,showGridLines:fal
+  const wb=new ExcelJS.Workbook(),used={},thin={style:'thin',color:{argb:'FFD0D0D0'}},bd=
