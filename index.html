@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
+#toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:#25282d;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:90;max-width:92%;box-shadow:0 6px 20px #0004}
 :root{--r:#b3121b;--rd:#7f0b12;--y:#fdb913;--bg:#f5f3f1;--t:#25282d;--m:#6b7280;--l:#e5e1dc;--b:#2563eb}
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--t);padding-bottom:84px}
@@ -39,7 +40,7 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
 .col label{margin:0;color:var(--t);display:flex;align-items:center;gap:6px;font-size:13px}.col input{margin:0}
 .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;padding:10px 12px;display:flex;gap:10px;box-shadow:0 -4px 18px #0002;justify-content:center;z-index:20}
 .bar button{height:46px;border:0;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;flex:1;max-width:360px}
-#next{background:var(--r);color:#fff}#next:disabled{opacity:.4;cursor:not-allowed}#back{background:#f2ece6;color:var(--t)}
+#next{background:var(--r);color:#fff}#next.off{opacity:.45}#back{background:#f2ece6;color:var(--t)}
 .tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
 .tools button,.strip button,.pop button{border:1px solid var(--l);background:#fff;border-radius:8px;padding:7px 11px;font:inherit;font-size:13px;cursor:pointer;color:var(--t)}
 .tools button:hover,.pop button:hover{border-color:var(--r)}
@@ -112,10 +113,10 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
     <div class="card" id="lib" hidden><h2>Pictures</h2>
       <label class="drop"><b>Upload JPG, PNG or PDF</b><input type="file" class="mi" accept="image/*,.pdf" multiple hidden></label>
       <div class="grid" id="libgrid"></div></div>
-    <div class="card" id="cmp" hidden><div class="top"><b>Original table (jo upload ki) - neeche slide se match karo</b><label class="tg" style="margin:0 0 0 auto"><input type="checkbox" id="cmpon" checked> Show</label></div><div id="cmpbox"><div class="cmpimg" id="cmpimgw"><img id="cmpi"></div><div class="cmpdt" id="cmpdt"></div></div></div>
+    <div class="card" id="cmp" hidden><div class="top"><b>Original table (as uploaded) - compare with the slide below</b><label class="tg" style="margin:0 0 0 auto"><input type="checkbox" id="cmpon" checked> Show</label></div><div id="cmpbox"><div class="cmpimg" id="cmpimgw"><img id="cmpi"></div><div class="cmpdt" id="cmpdt"></div></div></div>
     <div class="stage" id="stage"><div id="vp"><div id="cv"></div></div><div class="pop" id="pop" hidden></div></div>
     <div class="card" id="chat" style="margin-top:14px"><h2>Command box</h2><div id="clog"></div>
-      <div class="crow"><input type="text" id="cin" placeholder="Type what you want, e.g. Progressive column me 70 se niche wale laal kar do"><button id="csend">Send</button></div><div id="cex"></div></div>
+      <div class="crow"><input type="text" id="cin" placeholder="Enter an instruction for the current slide"><button id="csend">Send</button></div><div id="cex"></div></div>
   </section>
 </div>
 <div id="rd" hidden><div class="rbox">
@@ -125,7 +126,7 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
     <button id="rauto">Auto-detect lines</button><button id="rrot">Rotate</button><button id="rundo" class="fx">&#8617; Undo last step</button><button id="rlast" class="fx">Remove last line</button><button id="rclr" class="fx">Clear all lines</button><button id="rreset" class="fx">&#10005; Remove selection</button>
     <label class="tg"><input type="checkbox" id="rbw" checked> Black &amp; white</label><label class="tg"><input type="checkbox" id="rstr" checked> Straighten</label><label class="tg">Language <select id="rlang" style="width:auto;margin:0"><option value="eng+hin" selected>Hindi + English</option><option value="hin">Hindi only</option><option value="eng">English only</option></select></label>
   </div>
-  <div class="warn" style="margin:0 0 8px">Galat select ho gaya? &#8617; Undo last step dabao, ya kisi line par tap karo (wo line hat jayegi), ya &#10005; Remove selection se table box hata ke dobara chuno.</div>
+  <div class="warn" style="margin:0 0 8px">Selected the wrong area? Use Undo last step, tap a line to remove it, or use Remove selection and select the table again.</div>
   <div class="rcv"><canvas id="rc"></canvas></div>
   <div id="rtypes" class="cols"></div>
   <div class="acts"><button id="rskip">Cancel / Skip image</button><button id="rimg">Image hi slide me daalo</button><button id="rquick">Quick read (no lines)</button><button class="pri" id="rread">Read table</button></div>
@@ -136,9 +137,12 @@ input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--l);b
     <label>Name (optional)<input type="text" id="fn"></label></div>
   <div class="r3"><label><span id="fal">Column A</span><select id="fa"></select></label><label>Calculation<select id="fo"></select></label><label><span id="fbl">Column B</span><select id="fb"></select></label></div>
   <div class="acts"><button id="fcancel">Cancel</button><button class="pri" id="fok">Add</button></div></div></div>
-<div class="bar"><button id="back">Back</button><button id="xls" hidden>Download formatted Excel</button><button id="next" disabled>Continue</button></div>
+<div id="toast" hidden></div>
+<div class="bar"><button id="back">Back</button><button id="xls" hidden>Download formatted Excel</button><button id="next">Continue</button></div>
 
 <script>
+(function(){
+
 const LOGO='data:image/png;base64,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';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -147,6 +151,11 @@ const toNum=v=>parseFloat(String(v).replace(/[^0-9.\-]/g,''));
 const C={r:['FDE0E0','C00000'],o:['FFE5CC','C25500'],y:['FFF6BF','8A6A00']};
 const RED='B3121B',YEL='FDB913',TX='2B2B2B',PAL=[RED,YEL,'2E9E5B','4A6FA5','E46C0A'];
 const cv=$('cv'),pop=$('pop');
+let toastT=0;
+function toast(m){const e=$('toast');e.textContent=m;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{e.hidden=true},6000)}
+function setNext(){$('next').disabled=false;$('next').classList.toggle('off',busy||!can())}
+addEventListener('error',e=>{busy=false;try{setNext()}catch(x){}toast('An unexpected error occurred: '+(e.message||'unknown error')+'. Please try again.')});
+addEventListener('unhandledrejection',e=>{busy=false;try{setNext()}catch(x){}toast('An unexpected error occurred: '+((e.reason&&e.reason.message)||e.reason||'unknown error')+'. Please try again.')});
 let tables=[],lib=[],deck=[],files=[],cur=0,step=1,sel=null,cell=null,drag=null,dc=null,K=1,uid=1,base='Presentation',busy=false,wk=null,clip=null,hist=[],redo=[],lastK='',lastT=0,dg=null,wkL='',MS=[],DS=null,MM=false;
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -165,13 +174,15 @@ function go(n){
   [1,2,3].forEach(i=>{$('s'+i).hidden=i!==n;document.querySelector(`.steps b[data-s="${i}"]`).classList.toggle('on',i===n)});
   $('back').style.visibility=n>1?'visible':'hidden';$('xls').hidden=n!==2;
   $('next').textContent=['Continue','Build slides','Download PPT'][n-1];
-  $('next').disabled=!can();
+  setNext();
   if(n===3){fit();draw()}
   scrollTo(0,0);
 }
 document.querySelectorAll('.steps b').forEach(b=>b.onclick=()=>{const n=+b.dataset.s;if(n===3&&!deck.length||n===2&&!tables.length)return;go(n)});
 $('back').onclick=()=>go(step-1);
 $('next').onclick=()=>{
+  if(busy){toast('Processing is still in progress. Please wait until it completes.');return}
+  if(!can()){toast(step===1?'No table has been detected yet. Upload a file and complete the table reader, or insert the image as a slide.':'Select at least one table with one column to continue.');return}
   if(step===1){if(tables.length)go(2);else{buildDeck();go(3)}}
   else if(step===2){if(deck.length&&!confirm('Rebuilding the slides will discard manual edits. Continue?'))return;buildDeck();go(3)}
   else exportPpt();
@@ -181,7 +192,7 @@ $('next').onclick=()=>{
 function info(){
   const m=$('msg');m.hidden=!files.length&&!lib.length;
   m.innerHTML=files.map(f=>`<span class="chip">${esc(f)}</span>`).join('')+(lib.length?`<span class="chip">${lib.length} picture(s)</span>`:'')+' <a data-a="clr">Clear all</a>';
-  $('next').disabled=!can();
+  setNext();
 }
 $('msg').onclick=e=>{if(e.target.dataset.a==='clr'){tables=[];files=[];lib=[];renderTables();renderLib();info()}};
 $('xl').onchange=async e=>{
@@ -196,7 +207,7 @@ const st=t=>{$('stc').hidden=!t;$('st').textContent=t||''};
 const med=a=>{const q=[...a].sort((x,y)=>x-y);return q.length?q[q.length>>1]:0};
 const isPdf=f=>f.type==='application/pdf'||/\.pdf$/i.test(f.name);
 $('xi').onchange=async e=>{
-  busy=true;$('next').disabled=true;
+  busy=true;setNext();
   for(const f of e.target.files){
     try{const n=await extract(f);files.push(`${f.name} - ${n} table(s) extracted${extract.im?', '+extract.im+' image slide':''}`);extract.im=0}
     catch(x){files.push(`${f.name} - extraction failed (${x.message})`)}
@@ -350,13 +361,13 @@ $('tlist').oninput=e=>{
   if(f)t[f]=el.type==='checkbox'?el.checked:(el.type==='number'||el.tagName==='SELECT')?+el.value:el.value;
   else if(el.dataset.k!==undefined){t.keep[+el.dataset.k]=el.checked;el.closest('.col').classList.toggle('on',el.checked)}
   else if(el.dataset.dc!==undefined){const r=+el.dataset.dr,j=+el.dataset.dc,v=el.textContent.trim();if(r<0)t.head[j]=v||t.head[j];else t.body[r][j]=v;c.querySelector('.warn').textContent=chk(t)}
-  c.classList.toggle('off',!t.inc);$('next').disabled=!can();
+  c.classList.toggle('off',!t.inc);setNext();
 };
 $('tlist').onclick=e=>{
   const a=e.target.dataset.a,c=e.target.closest('.tb');if(!a||!c)return;
   const t=tables[+c.dataset.i];t.keep=t.keep.map(()=>a==='all');
   c.querySelectorAll('[data-k]').forEach(x=>{x.checked=a==='all';x.closest('.col').classList.toggle('on',a==='all')});
-  $('next').disabled=!can();
+  setNext();
 };
 
 // ---------- deck ----------
@@ -436,7 +447,7 @@ function cmpShow(sl){
   if(t.img&&$('cmpi').dataset.k!==String(e.ti)){$('cmpi').dataset.k=e.ti;$('cmpi').src=t.img}
   const kept=new Set(kc(t)),rows=t.body.slice(e.p0,e.p1),key=[e.ti,e.p0,e.p1,[...kept].join(','),t.body.length,t.title].join('|');
   if(cmpShow.k===key)return;cmpShow.k=key;
-  $('cmpdt').innerHTML='<div class="sec">'+esc(t.title)+' - rows '+(e.p0+1)+' to '+(e.p0+rows.length)+' (grey column = slide par nahi he)</div><div style="max-height:260px;overflow:auto"><table><tr>'+t.head.map((h,j)=>'<th class="'+(kept.has(j)?'':'dim')+'">'+esc(h)+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+t.head.map((_,j)=>'<td class="'+(kept.has(j)?'':'dim')+'">'+esc(r[j]??'')+'</td>').join('')+'</tr>').join('')+'</table></div>';
+  $('cmpdt').innerHTML='<div class="sec">'+esc(t.title)+' - rows '+(e.p0+1)+' to '+(e.p0+rows.length)+' (greyed columns are not shown on the slide)</div><div style="max-height:260px;overflow:auto"><table><tr>'+t.head.map((h,j)=>'<th class="'+(kept.has(j)?'':'dim')+'">'+esc(h)+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+t.head.map((_,j)=>'<td class="'+(kept.has(j)?'':'dim')+'">'+esc(r[j]??'')+'</td>').join('')+'</tr>').join('')+'</table></div>';
 }
 function fit(){K=$('vp').clientWidth/960;cv.style.transform=`scale(${K})`;$('vp').style.height=540*K+'px'}
 addEventListener('resize',()=>{if(step===3){fit();pos()}});
@@ -865,9 +876,9 @@ async function getWk(){
     const mkw=l=>Promise.race([Tesseract.createWorker(l,1),new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),45000))]);
     try{wk=await mkw(L);wkL=L}
     catch(err){
-      if(L==='eng')throw new Error('OCR language data load nahi hua ('+err.message+'). Internet check karo.');
-      try{wk=await mkw('eng');wkL='eng';alert('Hindi data load nahi hua, is baar English me padh raha hu. Internet theek hone par dobara try karo.')}
-      catch(e2){throw new Error('OCR load nahi hua ('+e2.message+'). Internet check karo.')}
+      if(L==='eng')throw new Error('The OCR language data could not be loaded ('+err.message+'). Please check your internet connection.');
+      try{wk=await mkw('eng');wkL='eng';alert('The Hindi language data could not be loaded. English will be used for this read. Please check your connection and try again.')}
+      catch(e2){throw new Error('The OCR engine could not be loaded ('+e2.message+'). Please check your internet connection.')}
     }
   }
   return wk;
@@ -924,7 +935,7 @@ async function rquick(){
 $('rtools').onclick=e=>{const m=e.target.dataset.m;if(m&&R)rmode(m)};
 $('rauto').onclick=()=>{const b=rsnap();rauto();if(rsnap()!==b)R.h.push(b);rdraw();rtypes()};
 $('rundo').onclick=rundo;
-$('rlast').onclick=()=>{if(!R)return;let k=R.ln.pop();if(!k||!R[k].length)k=R.vx.length?'vx':R.hy.length?'hy':null;if(!k){R.msg='Hatane ke liye koi line nahi he';rtypes();return}R.h.push(rsnap());R[k].pop();R.sr.clear();R.sc.clear();rdraw();rtypes()};
+$('rlast').onclick=()=>{if(!R)return;let k=R.ln.pop();if(!k||!R[k].length)k=R.vx.length?'vx':R.hy.length?'hy':null;if(!k){R.msg='There is no line to remove';rtypes();return}R.h.push(rsnap());R[k].pop();R.sr.clear();R.sc.clear();rdraw();rtypes()};
 $('rreset').onclick=()=>{R.h.push(rsnap());R.ln=[];R.crop=null;R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rmode('area');rdraw();rtypes()};
 $('rclr').onclick=()=>{R.h.push(rsnap());R.ln=[];R.vx=[];R.hy=[];R.sr.clear();R.sc.clear();rdraw();rtypes()};
 $('rrot').onclick=()=>{R.rot=(R.rot+1)%4;rbuild()};
@@ -960,7 +971,7 @@ function targets(t,o){
   return out;
 }
 function say(w,t){const d=document.createElement('div');d.className=w==='u'?'cu':'cb';d.textContent=t;$('clog').appendChild(d);$('clog').scrollTop=1e9}
-function runCmd(raw){say('u',raw);try{say('b',cmd(raw.toLowerCase().trim(),raw))}catch(err){say('b','Kuch gadbad hui: '+err.message)}}
+function runCmd(raw){say('u',raw);try{say('b',cmd(raw.toLowerCase().trim(),raw))}catch(err){say('b','The instruction could not be completed: '+err.message)}}
 const slideRefs=sl=>{const L=[];sl.els.forEach(e=>{
   if(e.t==='box')L.push({e,k:'box',g:()=>e.text,s:v=>{e.text=v}});
   else if(e.t==='tbl'){
@@ -970,13 +981,14 @@ const slideRefs=sl=>{const L=[];sl.els.forEach(e=>{
 const reEsc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const mcase=(o,y)=>{if(y!==y.toLowerCase())return y;if(/[A-Z]/.test(o)&&o===o.toUpperCase())return y.toUpperCase();if(/^[A-Z]/.test(o))return y.replace(/\b[a-z]/g,c=>c.toUpperCase());return y};
 function parseReplace(raw){
+  raw=raw.replace(/\s+(?:on|in|across|for)\s+(?:all|every|the\s+whole|the\s+entire)\s+(?:slides?|deck|presentation)\s*\.?\s*$/i,'');
   const q=x=>x.replace(/^[\s"'\u201c\u201d\u2018\u2019]+|[\s"'\u201c\u201d\u2018\u2019.]+$/g,'').trim();
   const V='(?:likh|likho|likhdo|likhna|rakh|rakho|daal|daalo|dal|dalo|laga|lagao|kar|karo|kardo|bana|banao|badal|badlo|badaldo|\u0932\u093f\u0916|\u0915\u0930)';
   let m;
   if(m=raw.match(new RegExp('^(.+?)\\s+(?:ki|ka|ke|\u0915\u0940|\u0915\u093e|\u0915\u0947)\\s+(?:jagah|jagha|jaga|\u091c\u0917\u0939)\\s+(.+?)\\s+'+V+'\\b','i')))return{x:q(m[1]),y:q(m[2]),sure:true};
   if(m=raw.match(new RegExp('^(.+?)\\s+(?:ki|ka|ke|\u0915\u0940|\u0915\u093e|\u0915\u0947)\\s+(?:jagah|jagha|jaga|\u091c\u0917\u0939)\\s+(.+)$','i')))return{x:q(m[1]),y:q(m[2]),sure:true};
   if(m=raw.match(/replace\s+(.+?)\s+(?:with|by)\s+(.+)$/i))return{x:q(m[1]),y:q(m[2]),sure:true};
-  if(m=raw.match(/(?:change|rename)\s+(.+?)\s+to\s+(.+)$/i))return{x:q(m[1]),y:q(m[2]),sure:true};
+  if(m=raw.match(/(?:change|rename|update)\s+(.+?)\s+to\s+(.+)$/i))return{x:q(m[1]),y:q(m[2]),sure:true};
   if(m=raw.match(new RegExp('^(.+?)\\s+(?:ko|\u0915\u094b)\\s+(.+?)\\s+(?:se\\s+)?(?:badal|badlo|badaldo|badal\\s*do|badal\\s*de)\\b','i')))return{x:q(m[1]),y:q(m[2]),sure:false};
   if(m=raw.match(new RegExp('^(.+?)\\s+(?:ko|\u0915\u094b)\\s+(.+?)\\s+(?:likh|likho|likhdo|likh\\s*do|likh\\s*de|kar\\s*do|kar\\s*de|karo)\\b','i')))return{x:q(m[1]),y:q(m[2]),sure:false};
   return null;
@@ -994,7 +1006,7 @@ function doReplace(rp,raw){
   if(!has(X,scope)){
     if(!rp.sure)return null;
     const other=refsOf(deck).filter(r=>new RegExp(reEsc(X),'i').test(r.g())).length;
-    return other&&!wide?`"${X}" is slide par nahi mila, lekin dusri slides par ${other} jagah he. "sab slides me ${X} ki jagah ${Y} likh do" likho to wahan bhi badal dunga.`:`"${X}" kahin nahi mila.`;
+    return other&&!wide?`"${X}" was not found on this slide, but it appears ${other} time(s) on other slides. Add "on all slides" to the instruction to replace it everywhere.`:`"${X}" was not found.`;
   }
   if(!rp.sure&&(pickColor(Y.toLowerCase())||/\b(bold|mota|moti|hata|hatao|delete|remove|clear)\b/i.test(Y)||BELOW.concat(ABOVE).some(w=>hasW(Y.toLowerCase(),w))))return null;
   snap();
@@ -1013,32 +1025,32 @@ function doReplace(rp,raw){
     deck.forEach(sl=>sl.els.forEach(ch=>{if(ch.t==='chart'&&ch.tb===e){if(ch.lc===o)ch.lc=nv;ch.vc=(ch.vc||[]).map(v=>v===o?nv:v)}}));
   }));
   draw();
-  return `${n} jagah "${X}" ki jagah "${Y}" likh diya${wide?' (sab slides me)':''}.`;
+  return `Replaced "${X}" with "${Y}" (${n} occurrence${n===1?'':'s'}${wide?', all slides':''}).`;
 }
 function cmd(t,raw){
-  if(/\b(undo|wapas)\b/.test(t)){undo();return 'Undo kar diya.'}
-  if(/\bredo\b/.test(t)){redoF();return 'Redo kar diya.'}
+  if(/\b(undo|wapas)\b/.test(t)){undo();return 'Last change undone.'}
+  if(/\bredo\b/.test(t)){redoF();return 'Change restored.'}
   {const rp=parseReplace(raw.trim());if(rp){const r=doReplace(rp,raw.trim());if(r!==null)return r}}
   const pr=t.split(/\b(?:magar|lekin|but|however|parantu)\b/);t=pr[pr.length-1].trim()||t;
   const sl=deck[cur],o=curTable(),col=pickColor(t);
-  if(/\b(next|agli|agla|aage)\b.*slide|slide.*\b(next|agli|agla)\b/.test(t)){nav(1);return 'Agli slide.'}
-  if(/\b(previous|pichli|pichla|peeche)\b.*slide|slide.*\b(previous|pichli|pichla)\b/.test(t)){nav(-1);return 'Pichli slide.'}
+  if(/\b(next|agli|agla|aage)\b.*slide|slide.*\b(next|agli|agla)\b/.test(t)){nav(1);return 'Moved to the next slide.'}
+  if(/\b(previous|pichli|pichla|peeche)\b.*slide|slide.*\b(previous|pichli|pichla)\b/.test(t)){nav(-1);return 'Moved to the previous slide.'}
   if(/slide|स्लाइड/.test(t)&&!/\b(cell|column|row|table)\b/.test(t)){
-    if(!col)return 'Kaun sa colour? Jaise: slide ka colour neela kar do.';
-    snap();sl.bg=CL[col][0];draw();return `Slide ka colour ${col} kar diya.`;
+    if(!col)return 'Please specify a colour for the slide.';
+    snap();sl.bg=CL[col][0];draw();return `Slide colour set to ${col}.`;
   }
-  if(!o)return 'Is slide par table nahi he, isliye table wale commands yahan nahi chalenge. Yahan ye chalega:\n- Indore Region ki jagah Japan likh do\n- Slide ka colour neela kar do\n- Agli slide';
+  if(!o)return 'This slide has no table. On this slide you can replace text, change the slide colour, or move between slides.';
   const cs=colsIn(t,o),clr=/(hata|hatao|delete|remove|clear|reset|saaf|mita)/.test(t);
-  if(clr&&/\b(rule|rules|niyam)\b/.test(t)){snap();o.rules=[];draw();return 'Saare rules hata diye.'}
+  if(clr&&/\b(rule|rules|niyam)\b/.test(t)){snap();o.rules=[];draw();return 'All colour rules removed.'}
   if(clr&&/\b(rang|colour|color|style|formatting)\b/.test(t)){
     snap();const tg=targets(t,o),all=tg.length?tg:o.rows.flatMap((_,i)=>o.head.map((_,j)=>({r:i,c:j})));
-    all.forEach(m=>{const c=cellOf(o,m);delete c.fc;delete c.bg;delete c.b});draw();return `${all.length} cells ka colour reset kiya.`;
+    all.forEach(m=>{const c=cellOf(o,m);delete c.fc;delete c.bg;delete c.b});draw();return `Formatting reset on ${all.length} cell(s).`;
   }
   if(clr&&/\b(column|row)\b/.test(t)){
     snap();MS=[];
-    if(/\bcolumn\b/.test(t)){const L=cs.length?cs:(cell&&cell.el===o?[cell.c]:[]);if(!L.length||o.head.length-L.length<1)return 'Kaun sa column hataun? Naam likho ya cell chuno.';[...L].sort((a,b)=>b-a).forEach(j=>{o.head.splice(j,1);o.rows.forEach(r=>r.splice(j,1))});cell=null;draw();return `${L.length} column hata diya.`}
-    const L=rowsIn(t,o).length?rowsIn(t,o):(cell&&cell.el===o&&cell.r>=0?[cell.r]:[]);if(!L.length)return 'Kaun si row hataun? Row ka naam likho ya cell chuno.';
-    [...L].sort((a,b)=>b-a).forEach(i=>o.rows.splice(i,1));cell=null;draw();return `${L.length} row hata di.`;
+    if(/\bcolumn\b/.test(t)){const L=cs.length?cs:(cell&&cell.el===o?[cell.c]:[]);if(!L.length||o.head.length-L.length<1)return 'Please specify which column to remove, by name or by selecting a cell.';[...L].sort((a,b)=>b-a).forEach(j=>{o.head.splice(j,1);o.rows.forEach(r=>r.splice(j,1))});cell=null;draw();return `Removed ${L.length} column(s).`}
+    const L=rowsIn(t,o).length?rowsIn(t,o):(cell&&cell.el===o&&cell.r>=0?[cell.r]:[]);if(!L.length)return 'Please specify which row to remove, by name or by selecting a cell.';
+    [...L].sort((a,b)=>b-a).forEach(i=>o.rows.splice(i,1));cell=null;draw();return `Removed ${L.length} row(s).`;
   }
   // formula column from column numbers, e.g. "4th column add karo jo column 3 ka 2 se percentage he"
   {
@@ -1057,12 +1069,12 @@ function cmd(t,raw){
       if(!op&&OW2['+'].filter(x=>x!=='add').some(x=>hasW(u2,x)||(x.length===1&&u2.includes(x))))op='+';
       if(nums.length>=2&&op){
         const i0=nums[0]-1,i1=nums[1]-1,a=o.head[i0].v,b=o.head[i1].v,dup=i=>o.head.findIndex(h=>h.v===o.head[i].v)!==i;
-        if(dup(i0)||dup(i1))return 'In dono me se kisi column ka naam kisi aur column jaisa he, pehle naam alag kar do.';
+        if(dup(i0)||dup(i1))return 'Two columns share the same name. Please give them unique names first.';
         const nm=((raw.match(/(?:naam|named|name)\s+["']?([^"']+)/i)||[])[1]||'').trim()||{'%':`${a} % of ${b}`,'+':`${a} + ${b}`,'-':`${a} - ${b}`,'*':`${a} x ${b}`,'/':`${a} / ${b}`}[op];
         const at=pm&&+pm[1]>=1&&+pm[1]<=o.head.length+1?+pm[1]-1:o.head.length;
         snap();MS=[];o.head.splice(at,0,{v:nm});o.rows.forEach(r=>r.splice(at,0,{v:'',f:{a,op,b}}));cell=null;draw();
         const how=op==='%'?`${a} \u00f7 ${b} \u00d7 100`:`${a} ${{'+':'+','-':'-','*':'\u00d7','/':'\u00f7'}[op]} ${b}`;
-        return `Naya column ${at+1} par bana diya: ${how} (Column ${nums[0]} aur Column ${nums[1]} se). Ulta chahiye to likho: column ${nums[1]} ka column ${nums[0]} se percentage.`;
+        return `Added column ${at+1}: ${how} (from column ${nums[0]} and column ${nums[1]}). To reverse the calculation, ask for column ${nums[1]} as a percentage of column ${nums[0]}.`;
       }
     }
   }
@@ -1075,13 +1087,13 @@ function cmd(t,raw){
     let[i0,i1]=cf;
     if(op==='%'){const sm=j=>o.rows.reduce((q,r)=>q+(isNum(r[j].v)&&!/%/.test(r[j].v)?toNum(r[j].v):0),0);if(sm(i0)>sm(i1))[i0,i1]=[i1,i0]}
     snap();MS=[];const a=o.head[i0].v,b=o.head[i1].v,nm=((raw.match(/(?:naam|named|name)\s+["']?([^"']+)/i)||[])[1]||'').trim()||{'%':`${a} % of ${b}`,'+':`${a} + ${b}`,'-':`${a} - ${b}`,'*':`${a} x ${b}`,'/':`${a} / ${b}`}[op];
-    o.head.push({v:nm});o.rows.forEach(r=>r.push({v:'',f:{a,op,b}}));draw();return `Naya column "${nm}" bana diya (${a} aur ${b} se).`;
+    o.head.push({v:nm});o.rows.forEach(r=>r.push({v:'',f:{a,op,b}}));draw();return `Added column "${nm}" (${a} and ${b}).`;
   }
   if(/(naya|nayi|new|add|jodo|jod do|badhao|daalo|dalo|insert)/.test(t)&&/\b(column|row)\b/.test(t)){
     snap();MS=[];const nm=((raw.match(/(?:naam|named|name)\s+["']?([^"']+)/i)||[])[1]||'').trim();
-    if(/\bcolumn\b/.test(t)){const i=cell&&cell.el===o?cell.c+1:o.head.length;o.head.splice(i,0,{v:nm||'New column'});o.rows.forEach(r=>r.splice(i,0,{v:''}));draw();return 'Naya column jod diya.'}
+    if(/\bcolumn\b/.test(t)){const i=cell&&cell.el===o?cell.c+1:o.head.length;o.head.splice(i,0,{v:nm||'New column'});o.rows.forEach(r=>r.splice(i,0,{v:''}));draw();return 'New column added.'}
     const ag=/(total|sum|jod)/.test(t)?'S':/(average|avg|ausat|mean)/.test(t)?'V':'',i=cell&&cell.el===o&&cell.r>=0&&!ag?cell.r+1:o.rows.length;
-    o.rows.splice(i,0,o.head.map((_,j)=>j?(ag?{v:'',rf:{op:ag}}:{v:''}):{v:nm||(ag==='S'?'Total':ag==='V'?'Average':'')}));draw();return ag?'Naya row jod di, formula ke saath.':'Nayi row jod di.';
+    o.rows.splice(i,0,o.head.map((_,j)=>j?(ag?{v:'',rf:{op:ag}}:{v:''}):{v:nm||(ag==='S'?'Total':ag==='V'?'Average':'')}));draw();return ag?'New row added with a formula.':'New row added.';
   }
   // number rules, e.g. "70 se niche laal"
   const nr=t.replace(/(?:column|col)\s*\d+/g,'').split(/\s*(?:\baur\b|\band\b|\bphir\b|,|;)\s*/),rules=[];
@@ -1093,21 +1105,20 @@ function cmd(t,raw){
     const dir=BELOW.some(w=>hasW(cl,w))?'<':ABOVE.some(w=>hasW(cl,w))?'>':EQW.some(w=>hasW(cl,w))?'=':null;if(!dir)return;
     (cs.length?cs:[null]).forEach(j=>rules.push({h:j==null?null:o.head[j].v,op:dir,v:+n[1],pct,...paint(k)}));
   });
-  if(rules.length){snap();o.rules=[...(o.rules||[]),...rules];draw();return `Rule laga diya: ${rules.map(q=>`${q.op==='<'?'niche':q.op==='>'?'upar':'barabar'} ${q.v}${q.pct?'%':''}`).join(', ')}${cs.length?' ('+cs.map(j=>o.head[j].v).join(', ')+' me)':' (sab numbers me)'}.`}
+  if(rules.length){snap();o.rules=[...(o.rules||[]),...rules];draw();return `Colour rule applied: ${rules.map(q=>`${q.op==='<'?'below':q.op==='>'?'above':'equal to'} ${q.v}${q.pct?'%':''}`).join(', ')}${cs.length?' ('+cs.map(j=>o.head[j].v).join(', ')+')':' (all numeric cells)'}.`}
   // direct colouring / bold
   const bold=/\b(bold|mota|moti)\b/.test(t);
   if(col||bold){
-    const tg=targets(t,o);if(!tg.length)return 'Kaun se cells? Pehle cell chuno (shift se kai cells) ya column/row ka naam likho.';
+    const tg=targets(t,o);if(!tg.length)return 'Please specify the cells, by selecting them (hold Shift for several) or by naming a column or row.';
     snap();tg.forEach(m=>{const c=cellOf(o,m);if(col)Object.assign(c,paint(col));if(bold)c.b=true});draw();
-    return `${tg.length} cells me ${[col?col+' colour':'',bold?'bold':''].filter(Boolean).join(' aur ')} laga diya.`;
+    return `Applied ${[col?col+' colour':'',bold?'bold':''].filter(Boolean).join(' and ')} to ${tg.length} cell(s).`;
   }
-  return 'Samajh nahi aaya. Aise likho:\n- Progressive column me 70 se niche wale laal kar do\n- Slide ka colour neela kar do\n- Ratlam row ko peela kar do\n- Total Target aur Progressive ka percentage nikalo\n- % Achievement me 50 se kam laal aur 75 se kam orange';
+  return 'The instruction was not understood. Please name the column or row, the value and the colour, or the text to be replaced.';
 }
 $('csend').onclick=()=>{const v=$('cin').value;if(!v.trim())return;$('cin').value='';runCmd(v)};
 $('cin').onkeydown=e=>{if(e.key==='Enter')$('csend').click()};
-$('cex').innerHTML=['Indore Region ki jagah Japan likh do','4th column add karo jo column 3 ka column 2 se percentage ho','Progressive column me 70 se niche wale laal kar do','Slide ka colour neela kar do','Sab rules hata do'].map(x=>`<button>${x}</button>`).join('');
-$('cex').onclick=e=>{if(e.target.tagName==='BUTTON'){$('cin').value=e.target.textContent;$('cin').focus()}};
-say('b','Ye box har slide par chalta he (title wali slide par bhi). Jaise: "Indore Region ki jagah Japan likh do" (sab slides me badalna ho to "sab slides me ..." likho), "4th column add karo jo column 3 ka column 2 se percentage ho", "Progressive column me 70 se niche wale laal kar do".');
+$('cex').hidden=true;
+say('b','Enter an instruction for the current slide, such as replacing text, adding a calculated column or applying colour rules.');
 
 // ---------- formatted Excel ----------
 $('xls').onclick=exportXlsx;
@@ -1119,9 +1130,4 @@ async function exportXlsx(){
   L.forEach(t=>{
     const k=kc(t),nm=(t.title.replace(/[\\\/?*\[\]:]/g,' ').trim().slice(0,27)||'Table');
     let q=nm,n=2;while(used[q.toLowerCase()])q=nm+' '+n++;used[q.toLowerCase()]=1;
-    const ws=wb.addWorksheet(q,{views:[{state:'frozen',ySplit:3,showGridLines:false}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0}});
-    if(k.length>1)ws.mergeCells(1,1,1,k.length);
-    const tc=ws.getCell(1,1);tc.value=t.title;tc.font={bold:true,size:16,color:{argb:'FFB3121B'}};tc.alignment={vertical:'middle'};ws.getRow(1).height=28;
-    const hr=ws.getRow(3);hr.height=26;
-    const W=k.map(j=>String(t.head[j]).length);
-    k.forEach((j,ci)=>{const c=hr.getCell(ci+1);c.value=t.head[j];c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill=fl('B3121B');c.alignment={horizontal:'center',vertical:'middle',wrapTe
+    const ws=wb.addWorksheet(q,{views:[{state:'frozen',ySplit:3,showGridLines:fal
