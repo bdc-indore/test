@@ -910,6 +910,8 @@ const find=id=>{for(const s of S.sl){const e=s.els.find(x=>x.id==id);if(e)return
 const curT=()=>{const s=cur();if(!s)return null;const e=find(S.sel);return e&&e.t==='table'&&s.els.includes(e)?e:s.els.find(x=>x.t==='table')||null};
 const cmp=(a,op,b)=>op==='>'?a>b:op==='>='?a>=b:op==='<'?a<b:op==='<='?a<=b:Math.abs(a-b)<1e-9;
 const blank=()=>({v:'',n:null});
+const cLab=(el,c)=>{const o=el.ci?el.ci[c]:el.c0+c;return o==null?'+':colL(o)};
+const ixOf=(el,L)=>{const o=colN(L)-1;return el.ci?el.ci.indexOf(o):o-el.c0};
 const isCover=i=>i===0&&S.sl[0]&&S.sl[0].k==='title';
 
 /* ---------- undo / redo (full snapshots of the presentation) ---------- */
@@ -968,7 +970,7 @@ function delRows(el,r1,r2){
 function insCols(el,at,n){
  bakeRules(el);
  el.m=el.m.map(([r,c,rs,cs])=>c>=at?[r,c+n,rs,cs]:(c+cs>at?[r,c,rs,cs+n]:[r,c,rs,cs]));
- el.d.forEach(row=>row.splice(at,0,...Array.from({length:n},blank)));
+ el.d.forEach(row=>row.splice(at,0,...Array.from({length:n},blank)));if(el.ci)el.ci.splice(at,0,...Array(n).fill(null));
  const f=n/(el.cw.length+n);el.cw=el.cw.map(x=>x*(1-f));el.cw.splice(at,0,...Array(n).fill(f/n));
  relayout(el,true)}
 function delCols(el,c1,c2){
@@ -981,7 +983,7 @@ function delCols(el,c1,c2){
   let nc=c;
   if(c>=c1){el.d[r][c2+1]={...el.d[r][c]};nc=c1}
   if(rs>1||ncs>1)nm.push([r,nc,rs,ncs])});
- el.d.forEach(row=>row.splice(c1,n));
+ el.d.forEach(row=>row.splice(c1,n));if(el.ci)el.ci.splice(c1,n);
  el.cw.splice(c1,n);const sm=el.cw.reduce((a,b)=>a+b,0)||1;el.cw=el.cw.map(x=>x/sm);
  el.m=nm;relayout(el,true)}
 function extractRows(el,r1,r2){
@@ -1001,8 +1003,8 @@ function sub(F,rows,c1,c2,fs0){const rm=new Map(rows.map((r,i)=>[r,i])),m=[];
  const cw0=F.cw.slice(c1,c2+1),sm=cw0.reduce((a,b)=>a+b,0),cw=cw0.map(x=>x/sm),hr=rows.filter(r=>r<F.hr).length;
  let fs=fs0;if(!fs)for(fs=13;fs>6;fs--)if(linesFor(d,m,cw,fs,832).reduce((a,b)=>a+b,0)*fs*1.8<=370)break;
  const lines=linesFor(d,m,cw,fs,832),u=lines.reduce((a,b)=>a+b,0),h=Math.min(380,u*fs*1.8);
- return{id:++S.id,t:'table',x:64,y:118,w:832,h,u,fs,d,m,rn:rows.map(r=>F.rn[r]),c0:F.c0+c1,cw,rh:lines.map(x=>x/u),hr,rules:[],g:F.g}}
-async function load(f){if(!f)return;S.wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellNF:true});
+ return{id:++S.id,t:'table',x:64,y:118,w:832,h,u,fs,d,m,rn:rows.map(r=>F.rn[r]),c0:F.c0+c1,ci:F.ci?F.ci.slice(c1,c2+1):undefined,cw,rh:lines.map(x=>x/u),hr,rules:[],g:F.g}}
+async function load(f){if(!f)return;S.wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellNF:true,cellStyles:true});
  const v=visSheets(S.wb),fr=frontSheet(S.wb);
  if(!v.length)return alert('This workbook has no visible sheet.');
  if(v.length>1)$('pmPick').innerHTML='Visible sheet used: <select id="pmSh">'+v.map(x=>'<option'+(x===fr?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select> <button class="b sm" onclick="PM.make()">Create slides from the selected sheet</button> <span class="hint">(hidden sheets are ignored; the sheet that was open in Excel is used by default)</span>';
@@ -1016,11 +1018,21 @@ function build(name,at,noChk){const ws=S.wb.Sheets[name];if(!ws||!ws['!ref'])ret
  (ws['!merges']||[]).forEach(m=>{if(ws[XLSX.utils.encode_cell(m.s)]){lr=Math.max(lr,m.e.r);lc=Math.max(lc,m.e.c)}});
  if(lr<0)return alert('The sheet is empty.');
  if(!noChk)chk();
- const d=[],rn=[];for(let r=rg.s.r;r<=lr;r++){rn.push(r+1);const row=[];for(let c=rg.s.c;c<=lc;c++){const a=ws[XLSX.utils.encode_cell({r,c})];row.push({v:a?(a.w!=null?a.w:a.v!=null?String(a.v):''):'',n:numOf(a)})}d.push(row)}
- const m=(ws['!merges']||[]).filter(x=>x.s.r>=rg.s.r&&x.e.r<=lr&&x.e.c<=lc&&(x.e.r>x.s.r||x.e.c>x.s.c)).map(x=>[x.s.r-rg.s.r,x.s.c-rg.s.c,x.e.r-x.s.r+1,x.e.c-x.s.c+1]);
- const nc=d[0].length,cw=[];for(let c=0;c<nc;c++){const q=(ws['!cols']||[])[rg.s.c+c];cw.push(Math.max(4,(q&&(q.wch||q.wpx/7))||(c?10:14)))}
+ /* hidden rows and hidden columns of the sheet are skipped – only what is visible in Excel is imported */
+ const hcol=c=>{const q=(ws['!cols']||[])[c];return !!(q&&q.hidden)},hrow=r=>{const q=(ws['!rows']||[])[r];return !!(q&&q.hidden)};
+ const RS=[],CS=[];for(let r=rg.s.r;r<=lr;r++)if(!hrow(r))RS.push(r);for(let c=rg.s.c;c<=lc;c++)if(!hcol(c))CS.push(c);
+ if(!RS.length||!CS.length)return alert('All rows or columns of this sheet are hidden.');
+ const rix=new Map(RS.map((r,i)=>[r,i])),cix=new Map(CS.map((c,i)=>[c,i]));
+ const cellAt=(r,c)=>{const a=ws[XLSX.utils.encode_cell({r,c})];return{v:a?(a.w!=null?a.w:a.v!=null?String(a.v):''):'',n:numOf(a)}};
+ const d=RS.map(r=>CS.map(c=>cellAt(r,c))),rn=RS.map(r=>r+1),m=[];
+ (ws['!merges']||[]).forEach(x=>{if(x.s.r<rg.s.r||x.e.r>lr||x.e.c>lc||(x.e.r===x.s.r&&x.e.c===x.s.c))return;
+  const rr=RS.filter(r=>r>=x.s.r&&r<=x.e.r),cc=CS.filter(c=>c>=x.s.c&&c<=x.e.c);if(!rr.length||!cc.length)return;
+  const r0=rix.get(rr[0]),c0=cix.get(cc[0]);
+  if(rr[0]!==x.s.r||cc[0]!==x.s.c)d[r0][c0]=cellAt(x.s.r,x.s.c);
+  if(rr.length>1||cc.length>1)m.push([r0,c0,rr.length,cc.length])});
+ const nc=CS.length,cw=CS.map((c,i)=>{const q=(ws['!cols']||[])[c];return Math.max(4,(q&&(q.wch||q.wpx/7))||(i?10:14))});
  const sm=cw.reduce((a,b)=>a+b,0);const hv=$('pmHr').value;let hr;if(hv==='auto'){hr=0;while(hr<Math.min(5,d.length-1)&&d[hr].every(x=>x.n==null))hr++;hr=Math.max(1,hr)}else hr=Math.min(+hv,d.length-1);
- const F={d,m,rn,c0:rg.s.c,cw:cw.map(x=>x/sm),hr,g:++S.g};
+ const F={d,m,rn,c0:rg.s.c,ci:CS,cw:cw.map(x=>x/sm),hr,g:++S.g};
  const per=Math.max(3,+$('pmRows').value||15),h=[...Array(hr).keys()],ch=[];
  let fs=13,L,Hu=0;for(;fs>9;fs--){L=linesFor(d,m,F.cw,fs,832);Hu=h.reduce((a,r)=>a+L[r],0);if(Hu*1.8*fs<=150)break}
  L=linesFor(d,m,F.cw,fs,832);Hu=h.reduce((a,r)=>a+L[r],0);
@@ -1229,7 +1241,7 @@ function ital(){const el=curT();if(!el)return;const cs=scopeCells(el);if(!cs)ret
 function al(a){fmt(x=>x.al=a)}
 
 /* ---------- graph dialog ---------- */
-const hdrName=(el,c)=>{const t=[];for(let r=0;r<el.hr;r++){let v=el.d[r][c].v;const g=el.m.find(([mr,mc,rs,cs])=>r>=mr&&r<mr+rs&&c>=mc&&c<mc+cs);if(g)v=el.d[g[0]][g[1]].v;if(v&&!t.includes(v))t.push(v)}return t.join(' – ')||colL(el.c0+c)};
+const hdrName=(el,c)=>{const t=[];for(let r=0;r<el.hr;r++){let v=el.d[r][c].v;const g=el.m.find(([mr,mc,rs,cs])=>r>=mr&&r<mr+rs&&c>=mc&&c<mc+cs);if(g)v=el.d[g[0]][g[1]].v;if(v&&!t.includes(v))t.push(v)}return t.join(' – ')||cLab(el,c)};
 function openChart(){
  const el=curT();if(!el)return alert('Please open a slide that contains a table first.');
  const nc=el.d[0].length,ids=[...Array(nc).keys()];
@@ -1246,8 +1258,8 @@ function openChart(){
  let h=`<h3 style="margin:0 0 6px;color:#B3121B">Create graph</h3>
  <div class="gr"><label>Graph title</label><input type="text" id="gTitle" value="${esc(base)}"></div>
  <div class="gr"><label>Chart type</label><select id="gTy"><option value="col">Column (vertical bars)</option><option value="bar">Bar (horizontal bars)</option><option value="line">Line</option></select></div>
- <div class="gr"><label>Name (category) column – shown on the axis</label><select id="gLab">${ids.map(c=>`<option value="${c}" ${c===lab?'selected':''}>${esc(colL(el.c0+c)+' – '+hdrName(el,c).slice(0,50))}</option>`).join('')}</select></div>
- <div class="gr"><label>Value columns – tick one or more, rename and choose a colour for each series</label><div class="gcols">${ids.map((c,i)=>`<div class="gcol"><input type="checkbox" id="gk_${c}" ${vals.includes(c)?'checked':''}><span>${esc(colL(el.c0+c)+' – '+hdrName(el,c).slice(0,40))}</span><input type="text" id="gn_${c}" value="${esc(hdrName(el,c).slice(0,40))}"><input type="color" id="gc_${c}" value="#${PAL[i%PAL.length].toLowerCase()}"></div>`).join('')}</div></div>
+ <div class="gr"><label>Name (category) column – shown on the axis</label><select id="gLab">${ids.map(c=>`<option value="${c}" ${c===lab?'selected':''}>${esc(cLab(el,c)+' – '+hdrName(el,c).slice(0,50))}</option>`).join('')}</select></div>
+ <div class="gr"><label>Value columns – tick one or more, rename and choose a colour for each series</label><div class="gcols">${ids.map((c,i)=>`<div class="gcol"><input type="checkbox" id="gk_${c}" ${vals.includes(c)?'checked':''}><span>${esc(cLab(el,c)+' – '+hdrName(el,c).slice(0,40))}</span><input type="text" id="gn_${c}" value="${esc(hdrName(el,c).slice(0,40))}"><input type="color" id="gc_${c}" value="#${PAL[i%PAL.length].toLowerCase()}"></div>`).join('')}</div></div>
  <div class="gr"><label>Rows</label><label style="font-weight:400"><input type="radio" name="gR" value="all" ${hasRows?'':'checked'}> All data rows</label> &nbsp; <label style="font-weight:400"><input type="radio" name="gR" value="sel" ${hasRows?'checked':'disabled'}> Selected rows only</label></div>
  <div class="gr"><label style="font-weight:400"><input type="checkbox" id="gTot"> Include the "Total" row</label> &nbsp; <label style="font-weight:400"><input type="checkbox" id="gLbl" checked> Show data labels</label></div>
  <div class="row"><button class="b" onclick="PM.mkChart()">Create graph</button><button class="b gray" onclick="PM.closeChart()">Cancel</button></div>`;
@@ -1273,11 +1285,11 @@ function slideFromSel(){const el=curT();if(!el||!S.rg)return false;chk();const t
 
 /* ---------- command assistant ---------- */
 function colorsIn(t){const o=[];t.toLowerCase().split(/[\s,.;:!?()"']+/).forEach(w=>{if(CN[w])o.push(CN[w])});return o}
-function target(t,el){const n=el.d.length,nc=el.d[0].length,cell=(L,N)=>({r:el.rn.indexOf(+N),c:colN(L)-1-el.c0});let m;
+function target(t,el){const n=el.d.length,nc=el.d[0].length,cell=(L,N)=>({r:el.rn.indexOf(+N),c:ixOf(el,L)});let m;
  if((m=t.match(/\b([a-z]{1,2})(\d{1,4})\s*(?::|-|to|se)\s*([a-z]{1,2})(\d{1,4})\b/i))){const a=cell(m[1],m[2]),b=cell(m[3],m[4]);if(a.r>=0&&b.r>=0)return{r1:Math.min(a.r,b.r),r2:Math.max(a.r,b.r),c1:Math.max(0,Math.min(a.c,b.c)),c2:Math.min(nc-1,Math.max(a.c,b.c))}}
  if((m=t.match(/\b([a-z]{1,2})(\d{1,4})\b/i))){const a=cell(m[1],m[2]);if(a.r>=0&&a.c>=0&&a.c<nc)return{r1:a.r,r2:a.r,c1:a.c,c2:a.c}}
  if((m=t.match(/(?:row|line|रो|पंक्ति|लाइन)\s*(\d+)/i))){let r=el.rn.indexOf(+m[1]);if(r<0)r=+m[1]-1;if(r>=0&&r<n)return{r1:r,r2:r,c1:0,c2:nc-1}}
- if((m=t.match(/(?:column|col|कॉलम|कालम|स्तंभ)\s*([a-z]+|\d+)/i))){let c=isNaN(m[1])?colN(m[1])-1-el.c0:+m[1]-1-el.c0;if(c<0||c>=nc)c=isNaN(m[1])?-1:+m[1]-1;if(c>=0&&c<nc)return{r1:0,r2:n-1,c1:c,c2:c,col:1}}
+ if((m=t.match(/(?:column|col|कॉलम|कालम|स्तंभ)\s*([a-z]+|\d+)/i))){let c=isNaN(m[1])?ixOf(el,m[1]):ixOf(el,colL(+m[1]-1));if(c<0||c>=nc)c=isNaN(m[1])?-1:+m[1]-1;if(c>=0&&c<nc)return{r1:0,r2:n-1,c1:c,c2:c,col:1}}
  return S.rg&&S.sel===el.id?{...S.rg}:null}
 function chat(){const raw=$('pmChat').value.trim();if(!raw)return;const L=raw.toLowerCase(),el=curT(),say=m=>{const o=$('pmOut');o.style.display='';o.textContent=m};let m;
  if((m=raw.match(/(?:title|topic|heading|शीर्षक|टाइटल|टॉपिक)[^:"“]*[:"“]\s*(.+?)["”]?\s*$/i))){if(!cur())return say('Please create a slide first.');chk();cur().title=m[1];draw();syncUI();return say('Title set: '+m[1])}
