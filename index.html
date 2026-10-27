@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f4f4f6;color:#222}
@@ -48,6 +49,22 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 .s2 td.bad{background:#fff2b3}
 .dl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 2px;padding-top:8px;border-top:1px dashed #ddd}
 .dl b{font-size:13px}
+/* ===== PPT Maker ===== */
+.pmgrid{display:grid;grid-template-columns:150px minmax(0,1fr) 300px;gap:10px;align-items:start}
+@media(max-width:1100px){.pmgrid{grid-template-columns:1fr}}
+.pmsl div{padding:6px 8px;border:1px solid #ccc;border-radius:6px;margin-bottom:5px;font-size:12px;cursor:pointer;background:#fff}
+.pmsl div.on{border-color:#c8102e;background:#fdeaea;font-weight:700}
+.pmsl small{float:right;white-space:nowrap}
+#pmView{position:relative;width:100%}
+.pmel{position:absolute}.pmel.on{outline:2px dashed #c8102e}
+.pmel td{user-select:none}.pmel td[contenteditable=true]{user-select:text;outline:2px solid #1a73e8}
+.pmel td.sel{outline:2px solid #1a73e8;outline-offset:-2px;filter:brightness(.9)}
+.pmel .rz{display:none;position:absolute;right:-7px;bottom:-7px;width:13px;height:13px;background:#c8102e;cursor:nwse-resize}
+.pmel .mv{display:none;position:absolute;left:0;top:-19px;background:#c8102e;color:#fff;font-size:12px;padding:0 6px;cursor:move}
+.pmel.on .rz,.pmel.on .mv{display:block}
+.pmp .card{padding:10px 12px;margin-bottom:10px}.pmp .card h3{margin-bottom:6px}
+.pmp input[type=color]{width:34px;height:26px;padding:0;border:1px solid #bbb;vertical-align:middle}
+.pmp label{font-size:12px}
 @media print{header,nav,.noprint{display:none!important}main{padding:0}.card{box-shadow:none}}
 </style>
 </head>
@@ -59,6 +76,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <nav class="noprint">
   <button id="t-report" class="on" onclick="showTab('report')">📊 Report</button>
   <button id="t-upload" onclick="showTab('upload')">⬆️ Daily Upload</button>
+  <button id="t-ppt" onclick="showTab('ppt')">🎞️ PPT Maker</button>
   <button id="t-settings" onclick="showTab('settings')">⚙️ Settings</button>
 </nav>
 <main>
@@ -113,6 +131,58 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
       Poora workbook (kai sheets) upload karenge to sheet chunne ka option aayega.</div>
     <div id="aadMsg"></div>
     <div id="aadPick"></div>
+  </div>
+</section>
+
+<!-- ============ PPT MAKER ============ -->
+<section id="p-ppt" style="display:none">
+  <div class="card">
+    <div class="row">
+      <label class="b">📂 Excel chuniye<input type="file" id="pmFile" accept=".xlsx,.xls,.csv" hidden onchange="PM.load(this.files[0]);this.value=''"></label>
+      <span class="hint">Ek slide pe max rows:</span><input type="number" id="pmRows" value="15" min="3" style="width:60px">
+      <span class="hint">Header rows (har slide pe):</span><select id="pmHr"><option value="auto">Auto</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select><button class="b sm gray" onclick="PM.rebuild()" title="Isi Excel sheet ko naye rows/header setting se dobara banao">🔄 Dobara banao</button>
+      <button class="b alt sm" onclick="PM.add('title')">+ Title slide</button>
+      <button class="b alt sm" onclick="PM.add('content')">+ Khali slide</button>
+      <button class="b alt sm" onclick="PM.txt()">+ Text box</button>
+      <label class="b alt sm">🖼️ Photo daalo<input type="file" accept="image/*" hidden onchange="PM.img(this.files[0]);this.value=''"></label>
+      <button class="b gray sm" onclick="PM.del()">🗑️ Chuna hua element hatao</button>
+      <button class="b" onclick="PM.dl()">⬇️ PPT Download</button>
+    </div>
+    <div id="pmPick"></div>
+    <div id="pmInfo" class="hint"></div>
+    <div class="hint">Excel jaisi table (merge cells + fill colour) slide me aati he. Cell pe click/drag = select, double-click = text badlo. Table ko ✥ se, photo/graph ko seedha pakad ke khicho; laal kone se size badlo.</div>
+  </div>
+  <div class="pmgrid">
+    <div class="pmsl" id="pmList"></div>
+    <div><div id="pmView"></div></div>
+    <div class="pmp">
+      <div class="card"><h3>Slide ka topic</h3>
+        <input type="text" id="pmT" oninput="PM.ti(this.value)" style="width:100%" placeholder="Title / topic">
+        <input type="text" id="pmS" oninput="PM.su(this.value)" style="width:100%;margin-top:4px" placeholder="Sub-title (optional)"></div>
+      <div class="card"><h3>Cell colour</h3>
+        BG <input type="color" id="pmBg" value="#ffff00"> <button class="b sm" onclick="PM.fill('bg')">Lagao</button>
+        Font <input type="color" id="pmFg" value="#ff0000"> <button class="b sm" onclick="PM.fill('fg')">Lagao</button><br>
+        <div class="row"><button class="b sm gray" onclick="PM.bold()">B Bold</button><button class="b sm gray" onclick="PM.ext('r')">Pura row</button><button class="b sm gray" onclick="PM.ext('c')">Pura column</button><button class="b sm gray" onclick="PM.clr()">Reset</button></div></div>
+      <div class="card"><h3>Rule (selected cells pe)</h3>
+        Agar value <select id="pmOp"><option>&gt;</option><option>&gt;=</option><option>&lt;</option><option>&lt;=</option><option>=</option></select>
+        <input type="text" id="pmVal" value="25" style="width:60px"><br>
+        to <input type="color" id="pmC1" value="#ff0000"> warna <input type="color" id="pmC2" value="#00b050">
+        <select id="pmK"><option value="bg">Background</option><option value="fg">Number ka colour</option></select>
+        <label><input type="checkbox" id="pmElse" checked> baaki ko bhi colour</label><br>
+        <label><input type="checkbox" id="pmAll"> Isi Excel ki sab slides pe (same columns)</label>
+        <div class="row"><button class="b sm" onclick="PM.rule()">Rule lagao</button><button class="b sm gray" onclick="PM.clrRules()">Rules hatao</button></div></div>
+      <div class="card"><h3>Bar graph</h3>
+        Label column <select id="pmLab"></select>
+        <div id="pmVc" class="hint"></div>
+        <select id="pmTy"><option value="bar">Bar (aadi)</option><option value="col">Column (khadi)</option><option value="line">Line</option></select>
+        <button class="b sm" onclick="PM.chart()">Graph slide banao</button>
+        <div class="hint">Column tick nahi kiye to selected columns / pehle numeric columns lenge. 2+ rows select ho to sirf wahi rows.</div></div>
+      <div class="card"><h3>💬 Chat (Hindi / Hinglish)</h3>
+        <textarea id="pmChat" rows="3" style="width:100%" placeholder="jaise: C5 cell me green background kar do"></textarea>
+        <button class="b sm" onclick="PM.chat()">Bhejo</button>
+        <div id="pmOut" class="msg" style="display:none"></div>
+        <div class="hint" style="margin-top:6px">Udaharan:<br>• C5 cell me green background<br>• B7 ke number ka colour laal<br>• row 4 me 25 se upar red baki green<br>• column D me 90 se kam laal baaki hara<br>• ek slide banao is data ki (selected cells)<br>• bar graph banao<br>• title: Parcel Report</div></div>
+    </div>
   </div>
 </section>
 
@@ -231,12 +301,13 @@ function xlDate(v){   // text ho ya Excel ki asli date (serial number) – dono 
 
 /* ===================== TABS ===================== */
 function showTab(t){
-  ['report','upload','settings'].forEach(x=>{
+  ['report','upload','ppt','settings'].forEach(x=>{
     document.getElementById('p-'+x).style.display=x===t?'':'none';
     document.getElementById('t-'+x).classList.toggle('on',x===t);
   });
   if(t==='report')renderReport();
   if(t==='settings')renderSettings();
+  if(t==='ppt'&&window.PM)PM.draw();
 }
 
 /* ===================== CSV UPLOAD (MO / Parcel / IRGB) ===================== */
@@ -732,6 +803,201 @@ async function restore(f){
   try{DB=normDB(JSON.parse(await f.text()));save();alert('Restore ho gaya');renderSettings()}catch(e){alert('File galat he')}
 }
 function resetAll(){if(confirm('Saara data delete hoga. Pakka?')){localStorage.removeItem(KEY);DB=load();renderSettings();renderReport()}}
+
+/* ===================== PPT MAKER ===================== */
+const PM=(()=>{
+const RED='B3121B',YEL='FDB913',PAL=['B3121B','FDB913','1B6B2F','2B2B2B','C64D54','9A6A00'];
+const S={sl:[],cur:0,id:0,sel:null,rg:null,an:null,dn:0,sc:1,wb:null,g:0};
+const $=i=>document.getElementById(i);
+const CN={red:'FF0000',laal:'FF0000',lal:'FF0000','लाल':'FF0000',green:'00B050',hara:'00B050',hare:'00B050','हरा':'00B050','हरे':'00B050',yellow:'FFFF00',peela:'FFFF00',pila:'FFFF00','पीला':'FFFF00',blue:'0070C0',neela:'0070C0',nila:'0070C0','नीला':'0070C0',orange:'FFA500','नारंगी':'FFA500',white:'FFFFFF',safed:'FFFFFF','सफेद':'FFFFFF','सफ़ेद':'FFFFFF',black:'000000',kala:'000000','काला':'000000',grey:'BFBFBF',gray:'BFBFBF',pink:'FFC0CB',purple:'7030A0'};
+const cur=()=>S.sl[S.cur];
+const colN=s=>[...s.toUpperCase()].reduce((a,ch)=>a*26+ch.charCodeAt(0)-64,0);
+const colL=n=>{let s='';n++;while(n>0){s=String.fromCharCode(65+(n-1)%26)+s;n=Math.floor((n-1)/26)}return s};
+const lum=h=>.299*parseInt(h.substr(0,2),16)+.587*parseInt(h.substr(2,2),16)+.114*parseInt(h.substr(4,2),16);
+const strN=s=>{s=String(s==null?'':s).replace(/[,₹\s]/g,'');if(!s)return null;const p=/%$/.test(s),n=Number(p?s.slice(0,-1):s);return isNaN(n)?null:n};
+const numOf=a=>{if(!a)return null;if(a.t==='n')return +((/%/.test(a.z||'')?a.v*100:a.v).toFixed(6));return strN(a.v)};
+const fsOf=(h,n)=>Math.max(7,Math.min(13,Math.floor(h/n*.5)));
+const find=id=>{for(const s of S.sl){const e=s.els.find(x=>x.id==id);if(e)return e}};
+const curT=()=>{const s=cur();if(!s)return null;const e=find(S.sel);return e&&e.t==='table'&&s.els.includes(e)?e:s.els.find(x=>x.t==='table')||null};
+const cmp=(a,op,b)=>op==='>'?a>b:op==='>='?a>=b:op==='<'?a<b:op==='<='?a<=b:Math.abs(a-b)<1e-9;
+
+/* ---- style of one cell (excel fill < manual < rules) ---- */
+function sty(el,r,c){const x=el.d[r][c],H=r<el.hr;let bg=x.bg||(H?RED:null),fg=x.fg||(H&&!x.bg?'FFFFFF':'2B2B2B'),b=!!(x.b||H);
+ for(const q of el.rules){if(r<q.r1||r>q.r2||c<q.c1||c>q.c2||x.n==null)continue;const col=cmp(x.n,q.op,q.v)?q.t:q.f;if(!col)continue;if(q.k==='fg')fg=col;else{bg=col;if(!x.fg)fg=lum(col)<150?'FFFFFF':'2B2B2B'}}
+ return{bg,fg,b,al:c===0?'left':'center'}}
+const covSet=el=>{const s=new Set();el.m.forEach(([r,c,rs,cs])=>{for(let i=0;i<rs;i++)for(let j=0;j<cs;j++)if(i||j)s.add((r+i)+','+(c+j))});return s};
+
+/* ---- build ---- */
+function sub(F,rows,c1,c2,bake,fs0){const rm=new Map(rows.map((r,i)=>[r,i])),m=[];
+ const cl=(r,c)=>{const y={...F.d[r][c]};if(bake){const q=sty(F,r,c);y.bg=q.bg;y.fg=q.fg;y.b=q.b}return y};
+ const d=rows.map(r=>{const o=[];for(let c=c1;c<=c2;c++)o.push(cl(r,c));return o});
+ F.m.forEach(([r,c,rs,cs])=>{if(c>c2||c+cs-1<c1)return;const inc=[];for(let i=0;i<rs;i++)if(rm.has(r+i))inc.push(r+i);if(!inc.length)return;
+  const s0=inc[0];let k=1;while(k<inc.length&&inc[k]===s0+k)k++;const cc=Math.max(c,c1),ncs=Math.min(c+cs-1,c2)-cc+1;
+  if(s0!==r||cc!==c)d[rm.get(s0)][cc-c1]=cl(r,c);   /* kata hua merge: naye page pe value dobara dikhao */
+  if(k>1||ncs>1)m.push([rm.get(s0),cc-c1,k,ncs])});
+ const cw0=F.cw.slice(c1,c2+1),sm=cw0.reduce((a,b)=>a+b,0),cw=cw0.map(x=>x/sm),hr=rows.filter(r=>r<F.hr).length;
+ const lin=f=>d.map((row,r)=>{let ln=1;row.forEach((x,c)=>{if(!x.v)return;const g=m.find(a=>a[0]===r&&a[1]===c);if(g&&g[2]>1)return;const sp=g?g[3]:1,wpx=832*cw.slice(c,c+sp).reduce((a,b)=>a+b,0)-8;ln=Math.max(ln,Math.min(4,Math.ceil(String(x.v).length*f*.55/Math.max(20,wpx))))});return ln});
+ let fs=fs0;if(!fs)for(fs=13;fs>7;fs--)if(lin(fs).reduce((a,b)=>a+b,0)*fs*1.8<=370)break;
+ const lines=lin(fs),u=lines.reduce((a,b)=>a+b,0),h=Math.min(380,u*fs*1.8);
+ return{id:++S.id,t:'table',x:64,y:118,w:832,h,u,fs,d,m,rn:rows.map(r=>F.rn[r]),c0:F.c0+c1,cw,rh:lines.map(x=>x/u),hr,rules:[],g:F.g}}
+async function load(f){if(!f)return;S.wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellStyles:true,cellNF:true});const n=S.wb.SheetNames;
+ if(n.length>1){$('pmPick').innerHTML='Sheet: <select id="pmSh">'+n.map(x=>'<option>'+esc(x)+'</option>').join('')+'</select> <button class="b sm" onclick="PM.make()">Is sheet ki slides banao</button>'}else{$('pmPick').innerHTML='';build(n[0])}}
+function make(){build($('pmSh').value)}
+function rebuild(){if(!S.last)return alert('Pehle Excel upload karein');const g=S.last.g,ix=S.sl.findIndex(x=>x.els.some(e=>e.g===g));if(ix<0)return build(S.last.name);if(!confirm('Is sheet ki slides dobara banengi (is par kiye colour / rules reset honge). Theek he?'))return;S.sl=S.sl.filter(x=>!x.els.some(e=>e.g===g));build(S.last.name,ix)}
+function build(name,at){const ws=S.wb.Sheets[name];if(!ws||!ws['!ref'])return alert('Sheet khali he');
+ const rg=XLSX.utils.decode_range(ws['!ref']);let lr=-1,lc=-1;
+ for(let r=rg.s.r;r<=rg.e.r;r++)for(let c=rg.s.c;c<=rg.e.c;c++){const a=ws[XLSX.utils.encode_cell({r,c})];if(a&&a.v!=null&&String(a.v)!==''){lr=Math.max(lr,r);lc=Math.max(lc,c)}}
+ (ws['!merges']||[]).forEach(m=>{if(ws[XLSX.utils.encode_cell(m.s)]){lr=Math.max(lr,m.e.r);lc=Math.max(lc,m.e.c)}});
+ if(lr<0)return alert('Sheet khali he');
+ const d=[],rn=[];for(let r=rg.s.r;r<=lr;r++){rn.push(r+1);const row=[];for(let c=rg.s.c;c<=lc;c++){const a=ws[XLSX.utils.encode_cell({r,c})],o={v:a?(a.w!=null?a.w:a.v!=null?String(a.v):''):'',n:numOf(a)};
+  const s=a&&a.s;if(s&&s.patternType==='solid'&&s.fgColor&&s.fgColor.rgb){const h=String(s.fgColor.rgb).slice(-6).toUpperCase();if(/^[0-9A-F]{6}$/.test(h)&&h!=='FFFFFF')o.bg=h}row.push(o)}d.push(row)}
+ const m=(ws['!merges']||[]).filter(x=>x.s.r>=rg.s.r&&x.e.r<=lr&&x.e.c<=lc&&(x.e.r>x.s.r||x.e.c>x.s.c)).map(x=>[x.s.r-rg.s.r,x.s.c-rg.s.c,x.e.r-x.s.r+1,x.e.c-x.s.c+1]);
+ const nc=d[0].length,cw=[];for(let c=0;c<nc;c++){const q=(ws['!cols']||[])[rg.s.c+c];cw.push(Math.max(4,(q&&(q.wch||q.wpx/7))||(c?10:14)))}
+ const sm=cw.reduce((a,b)=>a+b,0);const hv=$('pmHr').value;let hr;if(hv==='auto'){hr=0;while(hr<Math.min(5,d.length-1)&&d[hr].every(x=>x.n==null))hr++;hr=Math.max(1,hr)}else hr=Math.min(+hv,d.length-1);
+ const F={d,m,rn,c0:rg.s.c,cw:cw.map(x=>x/sm),hr,g:++S.g};
+ const per=Math.max(3,+$('pmRows').value||15),h=[...Array(hr).keys()],ch=[];
+ const lF=(r,f)=>{let ln=1;d[r].forEach((x,c)=>{if(!x.v)return;const g=m.find(a=>a[0]===r&&a[1]===c);if(g&&g[2]>1)return;const sp=g?g[3]:1,wpx=832*F.cw.slice(c,c+sp).reduce((a,b)=>a+b,0)-8;ln=Math.max(ln,Math.min(4,Math.ceil(String(x.v).length*f*.55/Math.max(20,wpx))))});return ln};
+ let fs=13,Hu=0;for(;fs>9;fs--){Hu=h.reduce((a,r)=>a+lF(r,fs),0);if(Hu*1.8*fs<=150)break}Hu=h.reduce((a,r)=>a+lF(r,fs),0);
+ const B=315/(1.8*fs);let st=hr;
+ while(st<d.length){let u=Hu,e=st,mx;while(e<d.length&&e-st<per&&(e===st||u+lF(e,fs)<=B)){u+=lF(e,fs);e++}
+  while(e<d.length&&(mx=F.m.filter(([r,c,rs])=>r>=st&&r<e&&r+rs>e&&r+rs-e<=2).map(([r,c,rs])=>r+rs)).length)e=Math.max(...mx);
+  ch.push([st,e]);st=e}
+ if(!ch.length)ch.push([hr,hr]);const k=ch.length,out=ch.map(([a,b],i)=>{const rows=[...h];for(let r=a;r<b;r++)rows.push(r);return{k:'content',title:name+(k>1?' ('+(i+1)+'/'+k+')':''),sub:'',els:[sub(F,rows,0,nc-1,false,fs)]}});
+ const pos=at==null?S.sl.length:at;S.sl.splice(pos,0,...out);S.last={name,g:F.g};
+ $('pmInfo').textContent='Header rows: '+hr+(hv==='auto'?' (auto pehchane)':' (aapne chune)')+' – har slide pe repeat hongi. Galat ho to "Header rows" badal ke 🔄 dabayein.';
+S.cur=pos;S.sel=null;S.rg=null;draw();syncUI()}
+
+/* ---- slides ---- */
+function add(k){S.sl.push({k,title:k==='title'?'Indore Region Performance Review':'Naya Slide',sub:k==='title'?'Indore Region | FY 2026-27':'',els:[]});S.cur=S.sl.length-1;draw();syncUI()}
+function txt(){const s=cur();if(!s)return alert('Pehle slide banaiye');const t=prompt('Text likhiye:');if(!t)return;const e={id:++S.id,t:'text',x:64,y:140,w:500,h:60,txt:t,fs:18};s.els.push(e);S.sel=e.id;draw()}
+function img(f){const s=cur();if(!f)return;if(!s)return alert('Pehle slide banaiye');const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const w=Math.min(360,im.width),h=w*im.height/im.width;const e={id:++S.id,t:'img',x:540,y:130,w,h,src:r.result};s.els.push(e);S.sel=e.id;draw()};im.src=r.result};r.readAsDataURL(f)}
+function del(){const s=cur(),e=find(S.sel);if(!s||!e)return alert('Pehle element pe click karein');s.els=s.els.filter(x=>x!==e);S.sel=null;S.rg=null;draw();syncUI()}
+function ti(v){if(cur()){cur().title=v;draw()}}function su(v){if(cur()){cur().sub=v;draw()}}
+function go(i){S.cur=i;S.sel=null;S.rg=null;draw();syncUI()}
+function mvS(i,d){const j=i+d;if(j<0||j>=S.sl.length)return;[S.sl[i],S.sl[j]]=[S.sl[j],S.sl[i]];S.cur=j;draw()}
+function rmS(i){if(!confirm('Slide hataye?'))return;S.sl.splice(i,1);S.cur=Math.max(0,Math.min(S.cur,S.sl.length-1));draw();syncUI()}
+function list(){$('pmList').innerHTML=S.sl.map((s,i)=>`<div class="${i===S.cur?'on':''}" onclick="PM.go(${i})">${i+1}. ${esc((s.title||'').slice(0,22))}<br><small><span onclick="event.stopPropagation();PM.mvS(${i},-1)">▲</span> <span onclick="event.stopPropagation();PM.mvS(${i},1)">▼</span> <span onclick="event.stopPropagation();PM.rmS(${i})">✖</span></small>&nbsp;</div>`).join('')}
+
+/* ---- render ---- */
+function tblHTML(el){const cv=covSet(el);let h=`<table style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;font:${el.fs}px Arial"><colgroup>${el.cw.map(w=>`<col style="width:${w*100}%">`).join('')}</colgroup>`;
+ el.d.forEach((row,r)=>{h+=`<tr style="height:${(el.rh?el.rh[r]:1/el.d.length)*100}%">`;row.forEach((x,c)=>{if(cv.has(r+','+c))return;const mg=el.m.find(a=>a[0]===r&&a[1]===c),s=sty(el,r,c);
+  h+=`<td data-r="${r}" data-c="${c}"${mg?` rowspan="${mg[2]}" colspan="${mg[3]}"`:''} style="border:1px solid #CBCBCB;padding:1px 4px;text-align:${s.al};overflow:hidden;color:#${s.fg};${s.bg?'background:#'+s.bg+';':''}${s.b?'font-weight:700':''}">${esc(x.v)}</td>`});h+='</tr>'});return h+'</table>'}
+function chartHTML(e){const W=e.w,H=e.h,n=e.labels.length,k=e.series.length,bar=e.ty==='bar',lab=bar?130:20,top=30,bt=bar?10:34,aw=W-lab-(bar?60:10),ah=H-top-bt;
+ const mx=Math.max(1e-9,...e.series.flatMap(s=>s.vals.map(v=>Math.max(0,v))));let g='';
+ e.series.forEach((s,j)=>{g+=`<rect x="${10+j*120}" y="6" width="10" height="10" fill="#${PAL[j%6]}"/><text x="${24+j*120}" y="15" font-size="11">${esc(s.name).slice(0,16)}</text>`});
+ const gs=(bar?ah:aw)/n,th=gs*.8/k;
+ e.labels.forEach((l,i)=>{const gp=(bar?top:lab)+i*gs;
+  if(bar)g+=`<text x="${lab-4}" y="${gp+gs/2+4}" font-size="11" text-anchor="end">${esc(String(l).slice(0,18))}</text>`;else g+=`<text x="${gp+gs/2}" y="${H-bt+14}" font-size="10" text-anchor="middle">${esc(String(l).slice(0,12))}</text>`;
+  e.series.forEach((s,j)=>{const v=s.vals[i]||0,len=Math.max(0,v)/mx*(bar?aw:ah-14),c='#'+PAL[j%6];
+   if(e.ty==='line'){return}
+   if(bar)g+=`<rect x="${lab}" y="${gp+gs*.1+j*th}" width="${len}" height="${th}" fill="${c}"/><text x="${lab+len+3}" y="${gp+gs*.1+j*th+th/2+4}" font-size="10">${v}</text>`;
+   else g+=`<rect x="${gp+gs*.1+j*th}" y="${top+ah-len}" width="${th}" height="${len}" fill="${c}"/><text x="${gp+gs*.1+j*th+th/2}" y="${top+ah-len-3}" font-size="9" text-anchor="middle">${v}</text>`})});
+ if(e.ty==='line')e.series.forEach((s,j)=>{const pts=s.vals.map((v,i)=>`${lab+(i+.5)*aw/n},${top+ah-Math.max(0,v)/mx*(ah-14)}`).join(' ');g+=`<polyline points="${pts}" fill="none" stroke="#${PAL[j%6]}" stroke-width="3"/>`});
+ return`<svg width="${W}" height="${H}" font-family="Arial">${g}</svg>`}
+function elHTML(e){let h='';if(e.t==='table')h=tblHTML(e);else if(e.t==='chart')h=chartHTML(e);else if(e.t==='img')h=`<img src="${e.src}" draggable="false" style="width:100%;height:100%">`;else h=`<div style="font:${e.fs}px Arial;color:#2B2B2B;white-space:pre-wrap">${esc(e.txt)}</div>`;
+ return`<div class="pmel" data-id="${e.id}" data-t="${e.t}" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px">${h}<span class="rz"></span>${e.t==='table'?'<span class="mv">✥ pakdo</span>':''}</div>`}
+function stageHTML(s){let h;
+ if(s.k==='title')h=`<div style="position:absolute;inset:0;background:#B3121B"></div><div style="position:absolute;left:65px;top:115px;font:bold 20px Arial;color:#FDB913">INDIA POST</div><div style="position:absolute;left:65px;top:158px;width:700px;font:bold 44px/1.15 Arial;color:#fff">${esc(s.title)}</div><div style="position:absolute;left:65px;top:330px;width:760px;font:16px Arial;color:#fff">${esc(s.sub)}</div>`;
+ else h=`<div style="position:absolute;left:64px;top:36px;width:832px;font:bold 28px Arial;color:#B3121B;white-space:nowrap;overflow:hidden">${esc(s.title)}</div><div style="position:absolute;left:64px;top:68px;width:100px;height:4px;background:#FDB913"></div><div style="position:absolute;left:64px;top:84px;width:832px;font:14px Arial;color:#2B2B2B">${esc(s.sub)}</div><div style="position:absolute;right:64px;top:495px;font:12px Arial;color:#B3121B">डाक सेवा जन सेवा</div>`;
+ return h+s.els.map(elHTML).join('')}
+function draw(){const s=cur(),v=$('pmView');list();if(!s){v.style.height='80px';v.innerHTML='<div class="hint" style="padding:20px">Excel upload karein ya Slide add karein.</div>';return}
+ const sc=Math.min(1.4,(v.clientWidth||960)/960);S.sc=sc;v.style.height=540*sc+'px';
+ v.innerHTML=`<div style="position:absolute;left:0;top:0;width:960px;height:540px;transform:scale(${sc});transform-origin:0 0;background:#fff;overflow:hidden;box-shadow:0 0 0 1px #bbb">${stageHTML(s)}</div>`;paint()}
+function paint(){document.querySelectorAll('#pmView .pmel').forEach(d=>d.classList.toggle('on',d.dataset.id==S.sel));const R=S.rg;
+ document.querySelectorAll('#pmView td[data-r]').forEach(td=>{const r=+td.dataset.r,c=+td.dataset.c,on=R&&td.closest('.pmel').dataset.id==S.sel&&r>=R.r1&&r<=R.r2&&c>=R.c1&&c<=R.c2;td.classList.toggle('sel',!!on)})}
+function syncUI(){const s=cur();$('pmT').value=s?s.title:'';$('pmS').value=s?s.sub:'';const el=curT(),L=$('pmLab'),V=$('pmVc');
+ if(!el){L.innerHTML='';V.innerHTML='';return}
+ const nm=c=>{let t=[];for(let r=0;r<el.hr;r++){const v=el.d[r][c].v;if(v&&!t.includes(v))t.push(v)}return colL(el.c0+c)+': '+(t.join(' ').slice(0,22)||'-')};
+ const nc=el.d[0].length,ids=[...Array(nc).keys()];L.innerHTML=ids.map(c=>`<option value="${c}">${esc(nm(c))}</option>`).join('');
+ V.innerHTML=ids.map(c=>`<label style="display:inline-block;margin-right:6px"><input type="checkbox" class="pmVc" value="${c}"> ${esc(nm(c))}</label>`).join('')}
+
+/* ---- mouse ---- */
+function setRg(r,c){const a=S.an;S.rg={r1:Math.min(a[0],r),r2:Math.max(a[0],r),c1:Math.min(a[1],c),c2:Math.max(a[1],c)}}
+function drag(E,rz,e){const x0=e.clientX,y0=e.clientY,o={x:E.x,y:E.y,w:E.w,h:E.h},dv=document.querySelector('.pmel[data-id="'+E.id+'"]');
+ const mv=ev=>{const dx=(ev.clientX-x0)/S.sc,dy=(ev.clientY-y0)/S.sc;if(rz){E.w=Math.max(30,o.w+dx);E.h=Math.max(20,o.h+dy)}else{E.x=o.x+dx;E.y=o.y+dy}Object.assign(dv.style,{left:E.x+'px',top:E.y+'px',width:E.w+'px',height:E.h+'px'})};
+ const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);if(E.t==='table')E.fs=fsOf(E.h,E.u||E.d.length);draw()};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
+function bind(){const v=$('pmView');
+ v.addEventListener('mousedown',e=>{const t=e.target,d=t.closest('.pmel');if(!d){S.sel=null;S.rg=null;paint();return}
+  const E=find(d.dataset.id);if(!E)return;if(S.sel!=E.id){S.sel=E.id;S.rg=null}
+  if(t.classList.contains('rz')||t.classList.contains('mv')||E.t!=='table'){e.preventDefault();drag(E,t.classList.contains('rz')?1:0,e);paint();syncUI();return}
+  const td=t.closest('td');if(td&&!td.isContentEditable){const r=+td.dataset.r,c=+td.dataset.c;if(e.shiftKey&&S.an)setRg(r,c);else{S.an=[r,c];setRg(r,c)}S.dn=1}paint()});
+ v.addEventListener('mouseover',e=>{const td=e.target.closest&&e.target.closest('td[data-r]');if(S.dn&&td&&td.closest('.pmel').dataset.id==S.sel){setRg(+td.dataset.r,+td.dataset.c);paint()}});
+ addEventListener('mouseup',()=>{S.dn=0});
+ v.addEventListener('dblclick',e=>{const td=e.target.closest('td[data-r]');if(td){td.contentEditable='true';td.focus();td.onblur=()=>{const el=find(S.sel);if(!el)return;const x=el.d[+td.dataset.r][+td.dataset.c];x.v=td.textContent;x.n=strN(x.v);draw()};return}
+  const d=e.target.closest('.pmel'),E=d&&find(d.dataset.id);if(E&&E.t==='text'){const t=prompt('Text badlein:',E.txt);if(t!=null){E.txt=t;draw()}}});
+ addEventListener('keydown',e=>{if(e.key==='Delete'&&$('p-ppt').style.display!=='none'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!document.activeElement.isContentEditable)del()});
+ addEventListener('resize',()=>{if($('p-ppt').style.display!=='none')draw()})}
+
+/* ---- cell tools ---- */
+const needSel=()=>{const el=curT();if(!el||!S.rg||S.sel!==el.id){alert('Pehle table ke cells select karein (click / drag)');return null}return el};
+function each(el,R,fn){for(let r=R.r1;r<=R.r2;r++)for(let c=R.c1;c<=R.c2;c++)fn(el.d[r][c],r,c)}
+function fill(k){const el=needSel();if(!el)return;const v=$(k==='bg'?'pmBg':'pmFg').value.slice(1).toUpperCase();each(el,S.rg,x=>x[k]=v);draw()}
+function bold(){const el=needSel();if(!el)return;let all=true;each(el,S.rg,x=>{if(!x.b)all=false});each(el,S.rg,x=>x.b=!all);draw()}
+function ext(w){const el=curT();if(!el||!S.rg)return alert('Pehle ek cell select karein');const R=S.rg;if(w==='r'){R.c1=0;R.c2=el.d[0].length-1}else{R.r1=0;R.r2=el.d.length-1}paint()}
+function clr(){const el=needSel();if(!el)return;each(el,S.rg,x=>{delete x.bg;delete x.fg;delete x.b});clrRules(1);draw()}
+function clrRules(q){const el=curT();if(!el)return;const R=S.rg;el.rules=R&&S.sel===el.id?el.rules.filter(x=>!(x.r1>=R.r1&&x.r2<=R.r2&&x.c1>=R.c1&&x.c2<=R.c2)):[];if(!q)draw()}
+function addRule(el,R,op,v,t,f,k,all){const mk=(e,r1,r2)=>e.rules.push({r1,r2,c1:R.c1,c2:R.c2,op,v,t,f,k});mk(el,R.r1,R.r2);
+ if(all)S.sl.forEach(s=>s.els.forEach(e=>{if(e!==el&&e.t==='table'&&e.g===el.g&&e.c0===el.c0)mk(e,e.hr,e.d.length-1)}))}
+function rule(){const el=needSel();if(!el)return;const v=strN($('pmVal').value);if(v==null)return alert('Value number me likhein');
+ addRule(el,S.rg,$('pmOp').value,v,$('pmC1').value.slice(1).toUpperCase(),$('pmElse').checked?$('pmC2').value.slice(1).toUpperCase():null,$('pmK').value,$('pmAll').checked);draw()}
+
+/* ---- charts ---- */
+function chart(ty,quiet){const el=curT(),s=cur();if(!el)return alert('Pehle table wali slide chuniye');const nc=el.d[0].length,lc=+$('pmLab').value||0;
+ let vc=[...document.querySelectorAll('.pmVc:checked')].map(x=>+x.value);
+ if(!vc.length&&S.rg&&S.sel===el.id)for(let c=S.rg.c1;c<=S.rg.c2;c++)if(c!==lc)vc.push(c);
+ if(!vc.length)for(let c=0;c<nc&&vc.length<4;c++)if(c!==lc&&el.d.slice(el.hr).some(r=>r[c].n!=null))vc.push(c);
+ if(!vc.length)return alert('Numeric column nahi mila');
+ let r1=el.hr,r2=el.d.length-1;if(S.rg&&S.sel===el.id&&S.rg.r2>S.rg.r1){r1=Math.max(S.rg.r1,el.hr);r2=S.rg.r2}
+ const rows=[];for(let r=r1;r<=r2;r++)rows.push(r);
+ const nm=c=>{const t=[];for(let r=0;r<el.hr;r++){const v=el.d[r][c].v;if(v&&!t.includes(v))t.push(v)}return t.join(' ')||colL(el.c0+c)};
+ const e={id:++S.id,t:'chart',ty:ty||$('pmTy').value,x:64,y:118,w:832,h:380,labels:rows.map(r=>el.d[r][lc].v),series:vc.map(c=>({name:nm(c),vals:rows.map(r=>el.d[r][c].n||0)}))};
+ S.sl.splice(S.cur+1,0,{k:'content',title:s.title.replace(/ \(\d+\/\d+\)$/,'')+' – Graph',sub:'',els:[e]});S.cur++;S.sel=e.id;S.rg=null;draw();syncUI()}
+function slideFromSel(){const el=curT();if(!el||!S.rg)return false;const R=S.rg,rows=[];for(let r=0;r<el.hr;r++)rows.push(r);for(let r=Math.max(R.r1,el.hr);r<=R.r2;r++)rows.push(r);
+ const e=sub(el,rows,R.c1,R.c2,true);S.sl.splice(S.cur+1,0,{k:'content',title:cur().title+' – Selected',sub:'',els:[e]});S.cur++;S.sel=null;S.rg=null;draw();syncUI();return true}
+
+/* ---- chat ---- */
+function colorsIn(t){const o=[];t.toLowerCase().split(/[\s,.;:!?()"']+/).forEach(w=>{if(CN[w])o.push(CN[w])});return o}
+function target(t,el){const n=el.d.length,nc=el.d[0].length,cell=(L,N)=>({r:el.rn.indexOf(+N),c:colN(L)-1-el.c0});let m;
+ if((m=t.match(/\b([a-z]{1,2})(\d{1,4})\s*(?::|-|to|se)\s*([a-z]{1,2})(\d{1,4})\b/i))){const a=cell(m[1],m[2]),b=cell(m[3],m[4]);if(a.r>=0&&b.r>=0)return{r1:Math.min(a.r,b.r),r2:Math.max(a.r,b.r),c1:Math.max(0,Math.min(a.c,b.c)),c2:Math.min(nc-1,Math.max(a.c,b.c))}}
+ if((m=t.match(/\b([a-z]{1,2})(\d{1,4})\b/i))){const a=cell(m[1],m[2]);if(a.r>=0&&a.c>=0&&a.c<nc)return{r1:a.r,r2:a.r,c1:a.c,c2:a.c}}
+ if((m=t.match(/(?:row|line|रो|पंक्ति|लाइन)\s*(\d+)/i))){let r=el.rn.indexOf(+m[1]);if(r<0)r=+m[1]-1;if(r>=0&&r<n)return{r1:r,r2:r,c1:0,c2:nc-1}}
+ if((m=t.match(/(?:column|col|कॉलम|कालम|स्तंभ)\s*([a-z]+|\d+)/i))){let c=isNaN(m[1])?colN(m[1])-1-el.c0:+m[1]-1-el.c0;if(c<0||c>=nc)c=isNaN(m[1])?-1:+m[1]-1;if(c>=0&&c<nc)return{r1:0,r2:n-1,c1:c,c2:c,col:1}}
+ return S.rg&&S.sel===el.id?{...S.rg}:null}
+function chat(){const raw=$('pmChat').value.trim();if(!raw)return;const L=raw.toLowerCase(),el=curT(),say=m=>{const o=$('pmOut');o.style.display='';o.textContent=m};let m;
+ if((m=raw.match(/(?:title|topic|heading|शीर्षक|टाइटल|टॉपिक)[^:"“]*[:"“]\s*(.+?)["”]?\s*$/i))){if(!cur())return say('Pehle slide banaiye');cur().title=m[1];draw();syncUI();return say('Title: '+m[1])}
+ if(/graph|chart|ग्राफ|चार्ट/.test(L)){chart(/line|लाइन/.test(L)?'line':/column|vertical|khadi|खड़ी/.test(L)?'col':'bar');return say('Graph slide ban gayi')}
+ if(/slide|स्लाइड/.test(L)&&/bana|बना|add|jod|जोड़/.test(L)){if(slideFromSel())return say('Selected data ki nayi slide ban gayi');add('content');return say('Khali slide ban gayi (cells select karke bolenge to data bhi aayega)')}
+ if(!el)return say('Pehle table wali slide chuniye');
+ const T=target(raw,el);if(!T)return say('Kaunsa cell/row/column? (jaise C5, row 3, column B) ya cells select karein');
+ const cs=colorsIn(raw),fg=/number|font|text|akshar|अक्षर|अंक|नंबर|नम्बर/.test(L),k=fg?'fg':'bg';
+ const num=raw.replace(/\b[a-z]{1,2}\d{1,4}\b/ig,' ').replace(/(?:row|line|रो|पंक्ति|लाइन|column|col|कॉलम|कालम|स्तंभ)\s*(?:\d+|[a-z]\b)/ig,' ').match(/(\d+(?:\.\d+)?)\s*%?/),op=/upar|ऊपर|zyada|jyada|ज्यादा|ज़्यादा|above|greater|more|>/.test(L)?'>':/niche|नीचे|kam|कम|below|less|</.test(L)?'<':/barabar|बराबर|equal|=/.test(L)?'=':null;
+ if(op&&num&&cs.length){const R={...T};if(T.col)R.r1=el.hr;addRule(el,R,op,+num[1],cs[0],cs[1]||null,k,/sab slide|all slide|सभी स्लाइड|सब स्लाइड/.test(L));draw();return say('Rule laga: value '+op+' '+num[1]+' → pehla colour, baaki → '+(cs[1]?'dusra colour':'koi change nahi'))}
+ if(/bold|mota|मोटा/.test(L)){each(el,T,x=>x.b=true);draw();return say('Bold ho gaya')}
+ if(cs.length){each(el,T,x=>x[k]=cs[0]);draw();return say((fg?'Font':'Background')+' colour laga diya')}
+ say('Samajh nahi aaya. Udaharan dekhein: "C5 cell me green background", "row 4 me 25 se upar red baki green"')}
+
+/* ---- export ---- */
+function dl(){if(!window.PptxGenJS)return alert('PptxGenJS library load nahi hui – internet check karke page refresh karein.');if(!S.sl.length)return alert('Koi slide nahi he');
+ const p=new PptxGenJS();p.layout='LAYOUT_WIDE';p.title='Indore Region';const I=v=>v/72,F='Arial';
+ S.sl.forEach(s=>{const sd=p.addSlide();
+  if(s.k==='title'){sd.background={color:RED};sd.addText('INDIA POST',{x:.9,y:1.55,w:8,h:.45,fontSize:20,bold:true,color:YEL,fontFace:F,margin:0});sd.addText(s.title,{x:.9,y:2.2,w:9.7,h:1.9,fontSize:44,bold:true,color:'FFFFFF',fontFace:F,valign:'top',margin:0});if(s.sub)sd.addText(s.sub,{x:.9,y:4.5,w:10,h:.5,fontSize:16,color:'FFFFFF',fontFace:F,margin:0})}
+  else{sd.background={color:'FFFFFF'};sd.addText(s.title,{x:.89,y:.5,w:11.6,h:.45,fontSize:28,bold:true,color:RED,fontFace:F,valign:'top',margin:0,fit:'shrink'});
+   sd.addShape(p.ShapeType.rect,{x:.89,y:.94,w:1.39,h:.055,fill:{color:YEL},line:{color:YEL,width:0}});
+   if(s.sub)sd.addText(s.sub,{x:.89,y:1.15,w:11.6,h:.3,fontSize:14,color:'2B2B2B',fontFace:F,margin:0});
+   sd.addText('डाक सेवा जन सेवा',{x:7.4,y:6.87,w:4.5,h:.25,fontSize:12,color:RED,align:'right',fontFace:F,margin:0})}
+  s.els.forEach(e=>{const g={x:I(e.x),y:I(e.y),w:I(e.w),h:I(e.h)};
+   if(e.t==='img')sd.addImage({data:e.src,...g});
+   else if(e.t==='text')sd.addText(e.txt,{...g,fontSize:e.fs,color:'2B2B2B',fontFace:F,valign:'top',margin:0});
+   else if(e.t==='chart')sd.addChart(e.ty==='line'?p.charts.LINE:p.charts.BAR,e.series.map(q=>({name:q.name,labels:e.labels,values:q.vals})),{...g,barDir:e.ty==='bar'?'bar':'col',chartColors:PAL.slice(0,e.series.length),showLegend:e.series.length>1,legendPos:'b',showValue:true,dataLabelFontSize:10,catAxisLabelFontSize:10,catAxisLabelFrequency:1,catAxisOrientation:e.ty==='bar'?'maxMin':'minMax',valAxisLabelFontSize:10,catAxisLabelFontFace:F,valGridLine:{color:'E5E5E5',size:.5}});
+   else if(e.t==='table'){const cv=covSet(e),rows=[];
+    e.d.forEach((row,r)=>{const o=[];row.forEach((x,c)=>{if(cv.has(r+','+c))return;const mg=e.m.find(a=>a[0]===r&&a[1]===c),st=sty(e,r,c),op={color:st.fg,bold:st.b,align:st.al,valign:'middle',fontSize:e.fs,fontFace:F,margin:[0,.05,0,.05],border:{type:'solid',pt:.75,color:'CBCBCB'}};
+     if(st.bg)op.fill={color:st.bg};if(mg){if(mg[2]>1)op.rowspan=mg[2];if(mg[3]>1)op.colspan=mg[3]}o.push({text:x.v,options:op})});rows.push(o)});
+    sd.addTable(rows,{x:g.x,y:g.y,w:g.w,colW:e.cw.map(f=>f*g.w),rowH:(e.rh||e.d.map(()=>1/e.d.length)).map(f=>f*g.h)})}})});
+ p.writeFile({fileName:'Indore_Region_PPT.pptx'})}
+
+bind();draw();
+return{load,make,rebuild,add,txt,img,del,ti,su,go,mvS,rmS,fill,bold,ext,clr,rule,clrRules,chart,chat,dl,draw}
+})();
 
 renderReport();
 </script>
