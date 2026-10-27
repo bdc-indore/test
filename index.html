@@ -374,6 +374,10 @@ function xlDate(v){   // text or a real Excel date (serial number)
   return parseDate(v);
 }
 
+/* ---- workbook helpers: hidden sheets are always ignored ---- */
+function visSheets(wb){const m=(wb.Workbook&&wb.Workbook.Sheets)||[];return wb.SheetNames.filter((n,i)=>!(m[i]&&m[i].Hidden))}
+function frontSheet(wb){const v=visSheets(wb),w=wb.Workbook&&wb.Workbook.WBView&&wb.Workbook.WBView[0],nm=w&&w.activeTab!=null?wb.SheetNames[w.activeTab]:null;return v.includes(nm)?nm:v[0]}
+
 /* ===================== TABS ===================== */
 function showTab(t){
   ['report','upload','ppt','settings'].forEach(x=>{
@@ -392,7 +396,7 @@ async function handleCSV(file){
   try{
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:'array',raw:true});
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:true});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});
     if(!rows.length)throw new Error('The file is empty.');
     const agg={},unkDiv=new Set(),dates=new Set(),prods=new Set();
     let used=0,skipped=0;
@@ -546,7 +550,7 @@ async function handleAadhaar(file){
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:'array',raw:true});
     const cands=[],skipped=[];
-    for(const nm of wb.SheetNames){
+    for(const nm of visSheets(wb)){
       let rows;
       try{rows=XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,raw:true,defval:null,blankrows:true})}catch(e){continue}
       let p=null;try{p=parseAadSheet(rows)}catch(e){}
@@ -998,8 +1002,12 @@ function sub(F,rows,c1,c2,fs0){const rm=new Map(rows.map((r,i)=>[r,i])),m=[];
  let fs=fs0;if(!fs)for(fs=13;fs>6;fs--)if(linesFor(d,m,cw,fs,832).reduce((a,b)=>a+b,0)*fs*1.8<=370)break;
  const lines=linesFor(d,m,cw,fs,832),u=lines.reduce((a,b)=>a+b,0),h=Math.min(380,u*fs*1.8);
  return{id:++S.id,t:'table',x:64,y:118,w:832,h,u,fs,d,m,rn:rows.map(r=>F.rn[r]),c0:F.c0+c1,cw,rh:lines.map(x=>x/u),hr,rules:[],g:F.g}}
-async function load(f){if(!f)return;S.wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellNF:true});const n=S.wb.SheetNames;
- if(n.length>1){$('pmPick').innerHTML='Sheet: <select id="pmSh">'+n.map(x=>'<option>'+esc(x)+'</option>').join('')+'</select> <button class="b sm" onclick="PM.make()">Create slides from this sheet</button>'}else{$('pmPick').innerHTML='';build(n[0])}}
+async function load(f){if(!f)return;S.wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellNF:true});
+ const v=visSheets(S.wb),fr=frontSheet(S.wb);
+ if(!v.length)return alert('This workbook has no visible sheet.');
+ if(v.length>1)$('pmPick').innerHTML='Visible sheet used: <select id="pmSh">'+v.map(x=>'<option'+(x===fr?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select> <button class="b sm" onclick="PM.make()">Create slides from the selected sheet</button> <span class="hint">(hidden sheets are ignored; the sheet that was open in Excel is used by default)</span>';
+ else $('pmPick').innerHTML='';
+ build(fr)}
 function make(){build($('pmSh').value)}
 function rebuild(){if(!S.last)return alert('Please import an Excel file first.');const g=S.last.g,ix=S.sl.findIndex(x=>x.els.some(e=>e.g===g));if(ix<0)return build(S.last.name);if(!confirm('The slides of this sheet will be rebuilt (colours and rules applied to them will be reset). Continue?'))return;chk();S.sl=S.sl.filter(x=>!x.els.some(e=>e.g===g));build(S.last.name,ix,true)}
 function build(name,at,noChk){const ws=S.wb.Sheets[name];if(!ws||!ws['!ref'])return alert('The sheet is empty.');
