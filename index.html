@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Day Wise Report – MO, Parcel & CCS (Aadhaar) – Indore Region</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f4f4f6;color:#222}
@@ -19,9 +20,12 @@ main{padding:16px 20px}
 .card{background:#fff;border-radius:8px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .card h3{margin:0 0 10px;font-size:15px;color:#c8102e}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.hint{font-size:12px;color:#555}
 button.b,label.b{background:#c8102e;color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;display:inline-block}
 button.b.alt{background:#ffc20e;color:#222}
 button.b.gray{background:#777}
+button.b.sm{padding:5px 10px;font-size:12px}
+button.b:disabled{opacity:.55;cursor:wait}
 select,input[type=text],input[type=number]{padding:6px;border:1px solid #bbb;border-radius:4px;font-size:13px}
 .msg{font-size:13px;padding:8px 10px;border-radius:6px;margin-top:8px;background:#eef6ee;border:1px solid #b9d9b9;white-space:pre-line}
 .msg.warn{background:#fff6e0;border-color:#f0cf7a}
@@ -39,23 +43,18 @@ table.rep tr.base td{background:#fffbe6}
 table.rep tr.tot td{background:#92d050;font-weight:700}
 table.rep tr.off td{color:#b00}
 table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1px;font-size:13px;background:transparent}
-table.g{border-collapse:collapse;font-size:12px}
-table.g td,table.g th{border:1px solid #bbb;padding:2px}
-table.g input{width:62px;text-align:right;border:0;padding:3px;font-size:12px}
-table.g input.dt{width:84px;text-align:center;font-weight:600}
-table.g td.bad{background:#ffd9d9}
-table.g td.miss input{background:#fff2b3}
-table.g th{background:#fde8c8}
 .s2 td,.s2 th{padding:4px 8px;border:1px solid #ccc;font-size:13px}
 .s2{border-collapse:collapse}
-img.pv{max-width:100%;max-height:220px;border:1px solid #ccc;margin-top:8px}
+.s2 td.bad{background:#fff2b3}
+.dl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 2px;padding-top:8px;border-top:1px dashed #ddd}
+.dl b{font-size:13px}
 @media print{header,nav,.noprint{display:none!important}main{padding:0}.card{box-shadow:none}}
 </style>
 </head>
 <body>
 <header>
   <h1>Day Wise Report – MO, Parcel &amp; CCS (Aadhaar) Verticals</h1>
-  <small>Indore Region • Division wise • Daily CSV + Aadhaar JPEG upload</small>
+  <small>Indore Region • Division wise • Daily CSV + Aadhaar Excel upload • Excel / JPG / PDF download</small>
 </header>
 <nav class="noprint">
   <button id="t-report" class="on" onclick="showTab('report')">📊 Report</button>
@@ -70,8 +69,19 @@ img.pv{max-width:100%;max-height:220px;border:1px solid #ccc;margin-top:8px}
     <div class="row">
       <b>Month:</b> <select id="monthSel" onchange="renderReport()"></select>
       <label><input type="checkbox" id="showIRGB" onchange="renderReport()"> IRGB column dikhao</label>
-      <button class="b alt" onclick="exportExcel()">⬇️ Excel (sab divisions)</button>
-      <button class="b gray" onclick="window.print()">🖨️ Print / PDF</button>
+      <button class="b gray" onclick="window.print()">🖨️ Print</button>
+    </div>
+    <div class="dl">
+      <b>⬇️ Download – sab divisions (Region Total + 8 divisions):</b>
+      <button class="b alt" id="dlXls" onclick="exportExcel()">Excel</button>
+      <button class="b alt" id="dlJpgAll" onclick="exportJPG(true)">JPG (ZIP – har division ki alag JPG)</button>
+      <button class="b alt" id="dlPdfAll" onclick="exportPDF(true)">PDF (ek file, har division ka alag page)</button>
+    </div>
+    <div class="dl" style="border-top:0;margin-top:0;padding-top:0">
+      <b>Sirf ye tab (<span id="curDivName"></span>):</b>
+      <button class="b sm" id="dlJpgOne" onclick="exportJPG(false)">JPG</button>
+      <button class="b sm" id="dlPdfOne" onclick="exportPDF(false)">PDF</button>
+      <span id="dlMsg" class="hint"></span>
     </div>
     <div class="tabs" id="divTabs"></div>
   </div>
@@ -84,29 +94,32 @@ img.pv{max-width:100%;max-height:220px;border:1px solid #ccc;margin-top:8px}
     <h3>1) Daily CSV upload (MO / Parcel / IRGB data)</h3>
     <div class="row">
       <label class="b">📂 CSV chuniye<input type="file" id="csvFile" accept=".csv,.xlsx,.xls" hidden onchange="handleCSV(this.files[0])"></label>
-      <span style="font-size:12px;color:#555">CSV me jo dates hongi unka purana data replace ho jayega (duplicate nahi banega).</span>
+      <span class="hint">CSV me jo dates hongi unka purana data replace ho jayega (duplicate nahi banega). Product name me "International" aaye to wo IRGB gina jayega.</span>
     </div>
     <div id="csvMsg"></div>
   </div>
   <div class="card">
-    <h3>2) Aadhaar transactions – JPEG upload</h3>
+    <h3>2) Aadhaar transactions – Excel upload</h3>
     <div class="row">
-      <label class="b">🖼️ Aadhaar JPEG chuniye<input type="file" id="imgFile" accept="image/*" hidden onchange="handleImage(this.files[0])"></label>
-      <button class="b gray" onclick="manualGrid()">✍️ Manually enter karna he</button>
-      <span style="font-size:12px;color:#555">OCR ke baad neeche grid me check karke Save dabayein.</span>
+      <label class="b">📂 Aadhaar Excel chuniye<input type="file" id="aadFile" accept=".xlsx,.xls,.csv" hidden onchange="handleAadhaar(this.files[0])"></label>
+      <button class="b gray" onclick="downloadAadTemplate()">📄 Format (sample) download</button>
     </div>
-    <div id="ocrMsg"></div>
-    <img id="imgPv" class="pv" style="display:none">
-    <div id="gridBox" class="wrap" style="margin-top:10px"></div>
+    <div class="hint">Do format chalte hain (apne aap pehchan lete hain):<br>
+      ① <b>Division × Date grid</b> – pehli row me dates, pehle column me division ka naam, andar total transactions (jaise "VC 15 may 26" sheet).<br>
+      ② <b>Office wise monthly sheet</b> – row 1 me dates, row 2 me "Total Enrolment / Total Update", har office ki ek row (jaise Oct 25 / Dec 25 / Feb 26 sheet). Division ka total (Enrolment + Update) khud ban jayega.<br>
+      Poora workbook (kai sheets) upload karenge to sheet chunne ka option aayega.</div>
+    <div id="aadMsg"></div>
+    <div id="aadPick"></div>
   </div>
 </section>
 
 <!-- ============ SETTINGS ============ -->
 <section id="p-settings" style="display:none">
   <div class="card">
-    <h3>Aadhaar centres / machines (division wise)</h3>
+    <h3>Aadhaar machines aur SO ki sankhya (division wise)</h3>
     <div id="centresBox"></div>
-    <button class="b" onclick="saveCentres()">Save centres</button>
+    <div class="hint" style="margin:6px 0">No of SO's – Nil Booking Report ke "Total Offices" se bhare gaye hain (Indore City 34, Mfl 51, Khandwa 51, Mandsaur 35, Ratlam 38, Sehore 33, Ujjain 54 = 296). Report me kisi din ka SO alag karna ho to division tab me us din ka number badal dein.</div>
+    <button class="b" onclick="saveCentres()">Save</button>
   </div>
   <div class="card">
     <h3>Pichla saal (jaise Oct-25) ki baseline row – division wise</h3>
@@ -117,7 +130,7 @@ img.pv{max-width:100%;max-height:220px;border:1px solid #ccc;margin-top:8px}
     <h3>Product → Category mapping</h3>
     <div class="wrap" id="mapBox"></div>
     <button class="b" onclick="saveMap()">Save mapping</button>
-    <div style="font-size:12px;color:#555;margin-top:6px">Mapping badalne ke baad CSV dobara upload karein taaki naya mapping lage.</div>
+    <div class="hint" style="margin-top:6px">"International" wale product hamesha IRGB gine jate hain. Mapping badalne par CSV dobara upload karne ki zaroorat nahi – report turant naye mapping se ban jati he.</div>
   </div>
   <div class="card">
     <h3>Backup / Reset</h3>
@@ -126,7 +139,7 @@ img.pv{max-width:100%;max-height:220px;border:1px solid #ccc;margin-top:8px}
       <label class="b gray">⬆️ Restore backup<input type="file" accept=".json" hidden onchange="restore(this.files[0])"></label>
       <button class="b" onclick="resetAll()">🗑️ Saara data delete</button>
     </div>
-    <div style="font-size:12px;color:#555">Data sirf is browser me (localStorage) save hota he – kabhi kabhi Backup le lein.</div>
+    <div class="hint">Data sirf is browser me (localStorage) save hota he – kabhi kabhi Backup le lein.</div>
   </div>
 </section>
 </main>
@@ -135,31 +148,56 @@ img.pv{max-width:100%;max-height:220px;border:1px solid #ccc;margin-top:8px}
 /* ===================== CONFIG ===================== */
 const DIVS=['Indore City','Indore Mfl','Indore RMS','Khandwa','Mandsaur','Ratlam','Sehore','Ujjain'];
 const DEF_CENTRES={'Indore City':21,'Indore Mfl':21,'Indore RMS':1,'Khandwa':20,'Mandsaur':21,'Ratlam':18,'Sehore':16,'Ujjain':24};
+/* Nil Booking Report (Indore Region) ke "Total Offices in Sub Dn" ka division-wise total */
+const DEF_SO={'Indore City':34,'Indore Mfl':51,'Indore RMS':0,'Khandwa':51,'Mandsaur':35,'Ratlam':38,'Sehore':33,'Ujjain':54};
 const DEF_MAP={
  'blind literature':'MO','gyan post':'MO','indiapost parcel retail':'Parcel','inland speed post document':'MO',
- 'international air parcel':'IRGB','international speed post document':'IRGB','international speed post merchandise':'IRGB',
- 'magazine post':'MO','speed post parcel domestic':'Parcel','indiapost parcel contractual':'Parcel',
- 'international registered letter':'IRGB','international tracked packet service':'IRGB','international blind literature':'IRGB',
- 'registered international printed papers':'IRGB'
+ 'magazine post':'MO','speed post parcel domestic':'Parcel','indiapost parcel contractual':'Parcel'
 };
 const KEY='daywiseReportV1';
 let DB=load();
 let curDiv='Region Total';
-let grid=null; // aadhaar preview grid
+let PENDING=null; // Aadhaar workbook ki detect hui sheets
 
+/* ===================== HELPERS ===================== */
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const toNum=v=>{const n=Number(String(v==null?'':v).replace(/,/g,'').trim());return isFinite(n)?n:0};
+const norm=s=>String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim();
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dmy=d=>d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(0,4);
+
+function normDB(d){
+  d=d&&typeof d==='object'?d:{};
+  d.days=d.days||{};            // purana (pehle se saved) data
+  d.raw=d.raw||{};              // naya: division -> date -> product -> count
+  d.csvDates=d.csvDates||{}; d.aad=d.aad||{}; d.aadDates=d.aadDates||{};
+  d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[];
+  d.centres=Object.assign({},DEF_CENTRES,d.centres||{});
+  d.soDef=Object.assign({},DEF_SO,d.soDef||{});
+  return d;
+}
 function load(){
   let d={};
   try{d=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
-  d.days=d.days||{}; d.csvDates=d.csvDates||{}; d.aad=d.aad||{}; d.aadDates=d.aadDates||{};
-  d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[];
-  d.centres=Object.assign({},DEF_CENTRES,d.centres||{});
-  return d;
+  return normDB(d);
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){alert('Save nahi ho paya: '+e.message)}}
-const norm=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
-const catOf=p=>{const n=norm(p);return DB.customMap[n]||DEF_MAP[n]||null};
+
+/* ---- product -> category ---- */
+const isIntl=n=>n.includes('international');           // "International" wala har product IRGB
+function catOf(p){
+  const n=norm(p);
+  if(isIntl(n))return 'IRGB';
+  if(Object.prototype.hasOwnProperty.call(DB.customMap,n))return DB.customMap[n]||null;
+  return DEF_MAP[n]||null;
+}
+const autoCat=n=>isIntl(n)?'IRGB':(DEF_MAP[n]||'');
+
+/* ---- division / date ---- */
 function divKey(name){
   const n=norm(name);
+  if(!n)return null;
   if(n.includes('moffusil')||n.includes('mfl'))return 'Indore Mfl';
   if(n.includes('indore')&&n.includes('city'))return 'Indore City';
   if(n.includes('id division')||n.includes('rms'))return 'Indore RMS';
@@ -167,13 +205,22 @@ function divKey(name){
   return null;
 }
 function parseDate(s){
-  s=String(s||'').trim(); let m;
-  if(m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))return `${m[1]}-${m[2]}-${m[3]}`;
-  if(m=s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})/))return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-  return null;
+  s=String(s==null?'':s).trim(); let m,y,mo,d;
+  if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)){y=+m[1];mo=+m[2];d=+m[3]}
+  else if(m=s.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{2,4})/)){d=+m[1];mo=+m[2];y=+m[3];if(y<100)y+=2000}   // 03..02.2026, 7.10.2025, 01.01.26 sab chalenge
+  else return null;
+  if(mo<1||mo>12||d<1||d>31||y<2000||y>2100)return null;
+  return `${y}-${pad(mo)}-${pad(d)}`;
 }
-const dmy=d=>d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(0,4);
-const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function xlDate(v){   // text ho ya Excel ki asli date (serial number) – dono chalega
+  if(v==null||v==='')return null;
+  if(v instanceof Date&&!isNaN(v))return `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}`;
+  if(typeof v==='number'){
+    if(v>36000&&v<80000){const o=XLSX.SSF.parse_date_code(v);return o?`${o.y}-${pad(o.m)}-${pad(o.d)}`:null}
+    return null;
+  }
+  return parseDate(v);
+}
 
 /* ===================== TABS ===================== */
 function showTab(t){
@@ -185,7 +232,7 @@ function showTab(t){
   if(t==='settings')renderSettings();
 }
 
-/* ===================== CSV UPLOAD ===================== */
+/* ===================== CSV UPLOAD (MO / Parcel / IRGB) ===================== */
 async function handleCSV(file){
   if(!file)return;
   const box=document.getElementById('csvMsg');
@@ -194,156 +241,214 @@ async function handleCSV(file){
     const wb=XLSX.read(buf,{type:'array',raw:true});
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:true});
     if(!rows.length)throw new Error('File khali he');
-    const agg={},unmapped=new Set(),unkDiv=new Set(),dates=new Set();
+    const agg={},unkDiv=new Set(),dates=new Set(),prods=new Set();
     let used=0,skipped=0;
     for(const r0 of rows){
-      const r={};for(const k in r0)r[k.replace(/^\uFEFF/,'').trim().toLowerCase()]=r0[k];
+      const r={};for(const k in r0)r[k.replace(/^﻿/,'').trim().toLowerCase()]=r0[k];
       const dk=divKey(r['division-name']||r['office-name']);
-      const dt=parseDate(r['booking-date']);
-      const prod=r['product-name'];
-      if(!dt||!prod){skipped++;continue}
-      if(!dk){unkDiv.add(r['division-name']);skipped++;continue}
-      dates.add(dt);
-      const cat=catOf(prod);
-      DB.seenProducts.includes(norm(prod))||DB.seenProducts.push(norm(prod));
-      const key=dk+'|'+dt;
-      const a=agg[key]=agg[key]||{div:dk,date:dt,mo:0,parcel:0,irgb:0,off:new Set()};
-      a.off.add(String(r['office-id']||r['office-name']||''));
-      const cnt=Number(r['article-count'])||0;
-      if(cat==='MO')a.mo+=cnt;else if(cat==='Parcel')a.parcel+=cnt;else if(cat==='IRGB')a.irgb+=cnt;
-      else unmapped.add(prod);
+      const dt=xlDate(r['booking-date']);
+      const pn=norm(r['product-name']);
+      if(!dt||!pn){skipped++;continue}
+      if(!dk){unkDiv.add(r['division-name']||r['office-name']);skipped++;continue}
+      dates.add(dt);prods.add(pn);
+      const a=((agg[dk]=agg[dk]||{})[dt]=agg[dk][dt]||{});
+      a[pn]=(a[pn]||0)+toNum(r['article-count']);
       used++;
     }
-    // purane data of these dates hatao
+    if(!used)throw new Error('Koi valid row nahi mili (division-name, booking-date, product-name, article-count columns chahiye)');
+    // in dates ka purana data hatao
     for(const dv of Object.keys(DB.days))for(const dt of dates)delete DB.days[dv][dt];
-    for(const k in agg){
-      const a=agg[k];
-      DB.days[a.div]=DB.days[a.div]||{};
-      DB.days[a.div][a.date]={mo:a.mo,parcel:a.parcel,irgb:a.irgb,so:a.off.size>1?a.off.size:null};
-    }
+    for(const dv of Object.keys(DB.raw))for(const dt of dates)delete DB.raw[dv][dt];
+    for(const dv in agg){DB.raw[dv]=DB.raw[dv]||{};for(const dt in agg[dv])DB.raw[dv][dt]=agg[dv][dt]}
+    prods.forEach(p=>{if(!DB.seenProducts.includes(p))DB.seenProducts.push(p)});
     dates.forEach(d=>DB.csvDates[d]=1);
     save();
-    const ds=[...dates].sort();
-    let t=`✅ ${used} rows process hui • ${ds.length} din (${ds.length?dmy(ds[0])+' se '+dmy(ds[ds.length-1]):''}) • ${new Set(Object.values(agg).map(a=>a.div)).size} divisions`;
+    const ds=[...dates].sort(),unmapped=[...prods].filter(p=>!catOf(p));
+    let t=`✅ ${used} rows process hui • ${ds.length} din (${dmy(ds[0])} se ${dmy(ds[ds.length-1])}) • ${Object.keys(agg).length} divisions`;
     let cls='msg';
-    if(unmapped.size){cls='msg warn';t+=`\n⚠️ In products ka category mapping nahi mila (count me nahi joda gaya): ${[...unmapped].join(', ')}\n   → Settings me jaakar category chuniye, phir CSV dobara upload karein.`}
+    const intl=[...prods].filter(isIntl);
+    if(intl.length)t+=`\n🌐 International wale products IRGB me gine gaye: ${intl.join(', ')}`;
+    if(unmapped.length){cls='msg warn';t+=`\n⚠️ In products ka category mapping nahi mila (count me nahi joda gaya): ${unmapped.join(', ')}\n   → Settings me category chuniye – report turant update ho jayegi, CSV dobara upload nahi karni.`}
     if(unkDiv.size){cls='msg warn';t+=`\n⚠️ Division pehchana nahi gaya: ${[...unkDiv].join(', ')}`}
     if(skipped)t+=`\n(${skipped} rows skip hui)`;
-    if(!Object.values(agg).some(a=>a.off.size>1))t+=`\nℹ️ CSV me sirf division-level office he, isliye "No of SO's" auto nahi aaya – Report me division tab par haath se bhar sakte hain.`;
-    box.innerHTML=`<div class="${cls}">${t.replace(/</g,'&lt;')}</div>`;
+    box.innerHTML=`<div class="${cls}">${esc(t)}</div>`;
     document.getElementById('csvFile').value='';
-  }catch(e){box.innerHTML=`<div class="msg err">❌ ${e.message}</div>`}
+  }catch(e){box.innerHTML=`<div class="msg err">❌ ${esc(e.message)}</div>`}
+}
+function dayVals(dv,date){
+  const rw=(DB.raw[dv]||{})[date];
+  if(rw){
+    const o={mo:0,parcel:0,irgb:0};
+    for(const p in rw){const c=catOf(p);if(c==='MO')o.mo+=rw[p];else if(c==='Parcel')o.parcel+=rw[p];else if(c==='IRGB')o.irgb+=rw[p]}
+    return o;
+  }
+  return (DB.days[dv]||{})[date]||{mo:0,parcel:0,irgb:0};
 }
 
-/* ===================== AADHAAR IMAGE (OCR) ===================== */
-function cluster(vals,thr){
-  const s=[...vals].sort((a,b)=>a-b),out=[];
-  for(const v of s){const l=out[out.length-1];if(l&&v-l.last<=thr){l.v.push(v);l.last=v}else out.push({v:[v],last:v})}
-  return out.map(c=>({mean:c.v.reduce((a,b)=>a+b,0)/c.v.length,n:c.v.length}));
+/* ===================== AADHAAR EXCEL UPLOAD ===================== */
+/* Format 1: Division x Date grid   (A = division, row-1 = dates, andar total transactions)
+   Format 2: Office wise monthly    (row-1 = dates, row-2 = Total Enrolment / Total Update, har office ek row) */
+function findDateHeader(rows){
+  for(let i=0;i<Math.min(rows.length,6);i++){
+    const c=[];(rows[i]||[]).forEach((v,j)=>{if(j>0){const d=xlDate(v);if(d)c.push({j,d})}});
+    if(c.length>=2)return {hi:i,cols:c};
+  }
+  return null;
 }
-function allWords(d){
-  if(d.words&&d.words.length)return d.words;
-  const w=[];(d.blocks||[]).forEach(b=>b.paragraphs.forEach(p=>p.lines.forEach(l=>l.words.forEach(x=>w.push(x)))));return w;
-}
-async function handleImage(file){
-  if(!file)return;
-  const msg=document.getElementById('ocrMsg');
-  const pv=document.getElementById('imgPv');pv.src=URL.createObjectURL(file);pv.style.display='';
-  msg.innerHTML='<div class="msg">⏳ OCR chal rahi he… (pehli baar 20-30 sec lag sakte hain, internet chahiye)</div>';
-  try{
-    const bmp=await createImageBitmap(file);
-    const S=Math.max(1,Math.round(2400/bmp.width));
-    const c=document.createElement('canvas');c.width=bmp.width*S;c.height=bmp.height*S;
-    const cx=c.getContext('2d');cx.imageSmoothingEnabled=true;cx.drawImage(bmp,0,0,c.width,c.height);
-    const worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text')msg.innerHTML=`<div class="msg">⏳ OCR ${Math.round(m.progress*100)}%</div>`}});
-    await worker.setParameters({tessedit_char_whitelist:'0123456789',tessedit_pageseg_mode:'11'});
-    const r1=await worker.recognize(c);
-    let ws=allWords(r1.data).map(w=>({t:(w.text||'').trim(),x1:w.bbox.x1,x0:w.bbox.x0,y0:w.bbox.y0,y1:w.bbox.y1,cf:w.confidence}))
-      .filter(w=>/^\d+$/.test(w.t)&&w.cf>30&&(w.y1-w.y0)<24*S);
-    if(!ws.length)throw new Error('Image me numbers nahi mile – manually enter karein.');
-    ws.forEach(w=>w.yc=(w.y0+w.y1)/2);
-    // rows
-    let rc=cluster(ws.map(w=>w.yc),12*S);
-    const mx=Math.max(...rc.map(r=>r.n));
-    rc=rc.filter(r=>r.n>=mx*0.5);
-    rc=rc.slice(-9); // 8 divisions + total
-    const rowTol=12*S;
-    const body=ws.filter(w=>rc.some(r=>Math.abs(r.mean-w.yc)<=rowTol));
-    let cc=cluster(body.map(w=>w.x1),20*S).filter(c=>c.n>=rc.length*0.4);
-    const nR=rc.length,nC=cc.length;
-    const vals=[],miss=[];
-    for(let i=0;i<nR;i++){
-      vals.push([]);miss.push([]);
-      for(let j=0;j<nC;j++){
-        const cand=body.filter(w=>Math.abs(w.yc-rc[i].mean)<=rowTol&&Math.abs(w.x1-cc[j].mean)<=20*S);
-        if(cand.length){vals[i].push(Number(cand[0].t));miss[i].push(false)}else{vals[i].push(0);miss[i].push(true)}
+function parseAadSheet(rows){
+  const f=findDateHeader(rows);
+  if(!f)return null;
+  const {hi,cols}=f;
+  const sub=(rows[hi+1]||[]).map(norm).join('|');
+  const out={vals:{},warn:[]};
+  if(/enrol/.test(sub)&&/updat/.test(sub)){
+    /* ---- Format 2: office wise ---- */
+    out.kind='Office wise';
+    const hdr=rows[hi+1],dr=rows[hi];
+    let divCol=hdr.findIndex(x=>/^division/.test(norm(x)));if(divCol<0)divCol=1;
+    const pc=[];let prev=null;
+    for(let j=0;j<hdr.length;j++){
+      const h=norm(hdr[j]);
+      if(!/enrol|updat/.test(h)){prev=null;continue}
+      let d=xlDate(dr[j]);if(!d)d=prev;
+      if(d){pc.push({j,d});prev=d}
+    }
+    /* monthly sheet = ek hi mahina. Date me typo (jaise 2005 ya 2020, ya din-mahina ulta) ho to theek karo, na ho to ignore karo */
+    const cnt={};pc.forEach(c=>{const k=c.d.slice(0,7);cnt[k]=(cnt[k]||0)+1});
+    const dom=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||(a<b?1:-1))[0];
+    if(dom){
+      const dy=dom.slice(0,4),dm=dom.slice(5,7),dim=new Date(+dy,+dm,0).getDate();
+      const have=new Set(pc.filter(c=>c.d.startsWith(dom)).map(c=>c.d));
+      const fixMap={},fixed=[],dropped=[];
+      const okDay=n=>n>=1&&n<=dim;
+      for(const c of pc){
+        if(c.d.startsWith(dom)||fixMap[c.d]!==undefined)continue;
+        const [y,m,dd]=c.d.split('-');
+        let nd=null;
+        if(m===dm&&okDay(+dd))nd=`${dy}-${dm}-${dd}`;                    // saal galat likha
+        else if(dd===dm&&okDay(+m))nd=`${dy}-${dm}-${m}`;                // din aur mahina ulte
+        if(nd&&!have.has(nd)){fixMap[c.d]=nd;have.add(nd);fixed.push(`${dmy(c.d)} → ${dmy(nd)}`)}
+        else{fixMap[c.d]=null;dropped.push(dmy(c.d))}
+      }
+      for(let k=pc.length-1;k>=0;k--){
+        const f=fixMap[pc[k].d];
+        if(f===undefined)continue;
+        if(f===null)pc.splice(k,1);else pc[k].d=f;
+      }
+      if(fixed.length)out.warn.push(`Date ka typo apne aap theek kiya: ${fixed.slice(0,6).join(', ')}${fixed.length>6?' …':''}`);
+      if(dropped.length)out.warn.push(`Ye dates mahine se bahar/galat thi, ignore ki: ${dropped.slice(0,6).join(', ')}${dropped.length>6?' …':''} – sheet me date sahi karke dobara upload karein`);
+    }
+    const unk=new Set();let started=false,nOff=0;
+    for(let i=hi+2;i<rows.length;i++){
+      const r=rows[i]||[],dn=r[divCol];
+      if(dn==null||String(dn).trim()===''){if(started)break;else continue}   // pehla block khatam = aage ke pivot/summary ignore
+      started=true;
+      const dk=divKey(dn);
+      if(!dk){unk.add(String(dn).trim());continue}
+      nOff++;
+      const o=out.vals[dk]=out.vals[dk]||{};
+      for(const c of pc)o[c.d]=(o[c.d]||0)+toNum(r[c.j]);
+    }
+    if(unk.size)out.warn.push(`Division pehchana nahi gaya (skip): ${[...unk].join(', ')}`);
+    out.info=`${nOff} offices`;
+  }else{
+    /* ---- Format 1: division x date grid ---- */
+    out.kind='Division × Date';
+    let totalRow=null;
+    for(let i=hi+1;i<rows.length;i++){
+      const r=rows[i]||[],lab=r[0],dk=divKey(lab);
+      if(dk){
+        if(out.vals[dk])continue;                      // dobara aaye to pehli wali hi
+        const o=out.vals[dk]={};for(const c of cols)o[c.d]=toNum(r[c.j]);
+      }else if(!totalRow&&(lab==null||String(lab).trim()===''||/total/.test(norm(lab)))){
+        const n=cols.filter(c=>typeof r[c.j]==='number').length;
+        if(n>=cols.length/2&&Object.keys(out.vals).length)totalRow=r;
       }
     }
-    // dates from rotated header
-    const headBottom=Math.max(10,Math.min(...body.map(w=>w.y0))-4*S);
-    const hc=document.createElement('canvas');hc.width=headBottom;hc.height=c.width;
-    const hx=hc.getContext('2d');hx.fillStyle='#fff';hx.fillRect(0,0,hc.width,hc.height);
-    hx.translate(headBottom,0);hx.rotate(Math.PI/2);hx.drawImage(c,0,0,c.width,headBottom,0,0,c.width,headBottom);
-    const id=hx.getImageData(0,0,hc.width,hc.height);
-    for(let i=0;i<id.data.length;i+=4){const g=(id.data[i]*.3+id.data[i+1]*.59+id.data[i+2]*.11);const v=g<150?0:255;id.data[i]=id.data[i+1]=id.data[i+2]=v}
-    hx.setTransform(1,0,0,1,0,0);hx.putImageData(id,0,0);
-    await worker.setParameters({tessedit_char_whitelist:'0123456789.',tessedit_pageseg_mode:'11'});
-    const r2=await worker.recognize(hc);
-    await worker.terminate();
-    const dm=(r2.data.text||'').match(/\d{2}\.\d{2}\.\d{4}/g)||[];
-    let dates=dm.length===nC?dm.map(parseDate):new Array(nC).fill('');
-    grid={dates,vals,miss,hasTotal:nR===9};
-    let t=`✅ ${nR} rows × ${nC} columns padhe gaye.`,cls='msg';
-    if(dm.length!==nC){cls='msg warn';t+=`\n⚠️ Dates (${dm.length} mili, ${nC} chahiye) pakki nahi padh payi – neeche dates khud bhar dein (dd.mm.yyyy).`}
-    if(nR!==9){cls='msg warn';t+=`\n⚠️ 9 rows (8 division + total) ki jagah ${nR} mili – grid ko dhyan se check karein.`}
-    t+='\nPeele cell = number nahi mila, laal = column ka total image ke total se match nahi hua. Check karke "Save" dabayein.';
-    msg.innerHTML=`<div class="${cls}">${t}</div>`;
-    renderGrid();
-  }catch(e){msg.innerHTML=`<div class="msg err">❌ OCR fail: ${e.message}<br>Internet check karein ya "Manually enter" use karein.</div>`}
-  document.getElementById('imgFile').value='';
-}
-function manualGrid(){
-  const n=parseInt(prompt('Kitne din (columns) ka data bharna he?','1'))||0;
-  if(n<1)return;
-  grid={dates:new Array(n).fill(''),vals:DIVS.map(()=>new Array(n).fill(0)),miss:DIVS.map(()=>new Array(n).fill(false)),hasTotal:false};
-  document.getElementById('ocrMsg').innerHTML='<div class="msg">Dates (dd.mm.yyyy) aur transactions bharkar Save dabayein.</div>';
-  renderGrid();
-}
-function renderGrid(){
-  const g=grid,box=document.getElementById('gridBox');
-  if(!g){box.innerHTML='';return}
-  const nC=g.dates.length;
-  let h='<table class="g"><tr><th>Division</th>';
-  for(let j=0;j<nC;j++)h+=`<th><input class="dt" value="${g.dates[j]?dmy(g.dates[j]):''}" placeholder="dd.mm.yyyy" onchange="gDate(${j},this.value)"></th>`;
-  h+='</tr>';
-  for(let i=0;i<DIVS.length;i++){
-    h+=`<tr><th>${DIVS[i]}</th>`;
-    for(let j=0;j<nC;j++)h+=`<td class="${(g.miss[i]&&g.miss[i][j])?'miss':''}"><input type="number" value="${g.vals[i]?g.vals[i][j]:0}" onchange="gVal(${i},${j},this.value)"></td>`;
-    h+='</tr>';
+    if(totalRow){
+      const bad=[];
+      for(const c of cols){
+        let s=0;for(const dv in out.vals)s+=out.vals[dv][c.d]||0;
+        const t=toNum(totalRow[c.j]);
+        if(Math.abs(s-t)>0.5)bad.push(`${dmy(c.d)} (division jod ${s}, sheet total ${t})`);
+      }
+      if(bad.length)out.warn.push(`Total match nahi hua: ${bad.slice(0,5).join('; ')}${bad.length>5?' …':''}`);
+    }
+    out.info=`${Object.keys(out.vals).length} divisions`;
   }
-  h+='<tr><th>Calc total</th>';
-  for(let j=0;j<nC;j++){let s=0;for(let i=0;i<DIVS.length;i++)s+=Number(g.vals[i]?g.vals[i][j]:0)||0;h+=`<td style="text-align:right;font-weight:700">${s}</td>`}
-  h+='</tr>';
-  if(g.hasTotal){
-    h+='<tr><th>Image total</th>';
-    for(let j=0;j<nC;j++){let s=0;for(let i=0;i<DIVS.length;i++)s+=Number(g.vals[i][j])||0;const t=g.vals[8][j];h+=`<td class="${s!==t?'bad':''}" style="text-align:right">${t}</td>`}
-    h+='</tr>';
-  }
-  h+='</table><div class="row"><button class="b" onclick="saveAadhaar()">💾 Save Aadhaar data</button><button class="b gray" onclick="grid=null;renderGrid()">Cancel</button></div>';
-  box.innerHTML=h;
+  const dset=new Set();for(const dv in out.vals)for(const d in out.vals[dv])dset.add(d);
+  out.dates=[...dset].sort();
+  if(Object.keys(out.vals).length<2||!out.dates.length)return null;
+  let tot=0;for(const dv in out.vals)for(const d in out.vals[dv])tot+=out.vals[dv][d];
+  out.total=tot;
+  return out;
 }
-function gDate(j,v){grid.dates[j]=parseDate(v)||'';renderGrid()}
-function gVal(i,j,v){grid.vals[i][j]=Number(v)||0;if(grid.miss[i])grid.miss[i][j]=false;renderGrid()}
-function saveAadhaar(){
-  const g=grid;let n=0,bad=0;
-  for(let j=0;j<g.dates.length;j++){
-    const d=g.dates[j];if(!d){bad++;continue}
-    DIVS.forEach((dv,i)=>{DB.aad[dv]=DB.aad[dv]||{};DB.aad[dv][d]=Number(g.vals[i][j])||0});
-    DB.aadDates[d]=1;n++;
+async function handleAadhaar(file){
+  if(!file)return;
+  const msg=document.getElementById('aadMsg'),pick=document.getElementById('aadPick');
+  pick.innerHTML='';PENDING=null;
+  msg.innerHTML='<div class="msg">⏳ Excel padh rahe hain…</div>';
+  try{
+    await new Promise(r=>setTimeout(r,30));
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',raw:true});
+    const cands=[],skipped=[];
+    for(const nm of wb.SheetNames){
+      let rows;
+      try{rows=XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,raw:true,defval:null,blankrows:true})}catch(e){continue}
+      let p=null;try{p=parseAadSheet(rows)}catch(e){}
+      if(p){p.name=nm;cands.push(p)}else skipped.push(nm);
+    }
+    document.getElementById('aadFile').value='';
+    if(!cands.length)throw new Error('Is file me Aadhaar ka format nahi mila.\nChahiye: pehli row me dates (dd.mm.yyyy) aur pehle column me division ke naam, ya office wise monthly sheet (Total Enrolment / Total Update). "Format (sample) download" dekhein.');
+    const latest=cands.map(c=>c.dates[c.dates.length-1].slice(0,7)).sort().pop();
+    cands.forEach(c=>c.on=c.dates[c.dates.length-1].slice(0,7)===latest);
+    PENDING={cands,skipped};
+    if(cands.length===1){cands[0].on=true;importAad();return}
+    let h=`<div class="msg warn">Is workbook me ${cands.length} sheets me Aadhaar data mila. Jo import karni hain unhe tick karein (sabse naya mahina pehle se tick he):</div>`;
+    h+='<div class="wrap"><table class="s2" style="margin-top:8px"><tr><th></th><th>Sheet</th><th>Format</th><th>Dates</th><th>Din</th><th>Total trans.</th></tr>';
+    cands.forEach((c,i)=>{
+      h+=`<tr><td><input type="checkbox" id="ps_${i}" ${c.on?'checked':''}></td><td>${esc(c.name)}</td><td>${c.kind} (${c.info})</td><td>${dmy(c.dates[0])} – ${dmy(c.dates[c.dates.length-1])}</td><td>${c.dates.length}</td><td style="text-align:right">${c.total}</td></tr>`;
+    });
+    h+='</table></div><div class="row"><button class="b" onclick="importAad()">✅ Import karein</button>'+
+       '<button class="b gray" onclick="aadSelAll(true)">Sab chunein</button><button class="b gray" onclick="aadSelAll(false)">Sab hatayein</button>'+
+       '<button class="b gray" onclick="PENDING=null;document.getElementById(\'aadPick\').innerHTML=\'\';document.getElementById(\'aadMsg\').innerHTML=\'\'">Cancel</button></div>';
+    msg.innerHTML='';pick.innerHTML=h;
+  }catch(e){msg.innerHTML=`<div class="msg err">❌ ${esc(e.message)}</div>`}
+}
+function aadSelAll(v){if(PENDING)PENDING.cands.forEach((c,i)=>{const e=document.getElementById('ps_'+i);if(e)e.checked=v})}
+function importAad(){
+  if(!PENDING)return;
+  const sel=PENDING.cands.filter((c,i)=>{const e=document.getElementById('ps_'+i);return e?e.checked:c.on});
+  if(!sel.length){document.getElementById('aadMsg').innerHTML='<div class="msg warn">Koi sheet chuni nahi gayi.</div>';return}
+  const dates=new Set(),divs=new Set(),warns=[];
+  for(const c of sel){
+    for(const dv in c.vals){
+      divs.add(dv);DB.aad[dv]=DB.aad[dv]||{};
+      for(const d in c.vals[dv]){DB.aad[dv][d]=c.vals[dv][d];dates.add(d);DB.aadDates[d]=1}
+    }
+    c.warn.forEach(w=>warns.push(`[${c.name}] ${w}`));
   }
   save();
-  document.getElementById('ocrMsg').innerHTML=`<div class="msg">✅ ${n} din ka Aadhaar data save ho gaya.${bad?` ⚠️ ${bad} column bina date ke the – skip hue.`:''}</div>`;
-  grid=null;renderGrid();
+  const ds=[...dates].sort();
+  let t=`✅ ${sel.length} sheet import hui (${sel.map(c=>c.name).join(', ')}) • ${ds.length} din (${dmy(ds[0])} se ${dmy(ds[ds.length-1])}) • ${divs.size} divisions`;
+  let cls='msg';
+  if(warns.length){cls='msg warn';t+='\n⚠️ '+warns.join('\n⚠️ ')}
+  const miss=DIVS.filter(d=>!divs.has(d));
+  if(miss.length)t+=`\nℹ️ Is data me ye division nahi the (unke din 0 maane jayenge): ${miss.join(', ')}`;
+  document.getElementById('aadMsg').innerHTML=`<div class="${cls}">${esc(t)}</div>`;
+  document.getElementById('aadPick').innerHTML='';
+  PENDING=null;
+}
+function downloadAadTemplate(){
+  const dts=['01.10.2026','03.10.2026','05.10.2026'];
+  const aoa=[[''].concat(dts)];
+  DIVS.forEach(d=>aoa.push([d].concat(dts.map(()=>0))));
+  const tot=[''];dts.forEach((_,i)=>{const c=String.fromCharCode(66+i);tot.push({t:'n',f:`SUM(${c}2:${c}${DIVS.length+1})`})});
+  aoa.push(tot);
+  const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[{wch:16}].concat(dts.map(()=>({wch:12})));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Aadhaar');
+  XLSX.writeFile(wb,'Aadhaar_format_sample.xlsx');
 }
 
 /* ===================== REPORT ===================== */
@@ -352,18 +457,19 @@ function monthsAvail(){
   return [...s].sort();
 }
 function maxAadDate(){const k=Object.keys(DB.aadDates);return k.length?k.sort().pop():''}
+function listOf(dv){return dv==='Region Total'?DIVS:[dv]}
+function soDefOf(dv){return listOf(dv).reduce((a,d)=>a+(+DB.soDef[d]||0),0)}
 function rowFor(dv,date){
-  const list=dv==='Region Total'?DIVS:[dv];
+  const list=listOf(dv);
   const hasCsv=!!DB.csvDates[date],hasAad=!!DB.aadDates[date];
   if(!hasCsv&&!hasAad)return null;
   const mAad=maxAadDate();
-  let so=null,mo=0,parcel=0,irgb=0,mach=0,trans=0,tNull=false;
+  let so=0,mo=0,parcel=0,irgb=0,mach=0,trans=0,tNull=false;
   for(const d of list){
-    const x=(DB.days[d]||{})[date]||{};
+    const x=dayVals(d,date);
     mo+=x.mo||0;parcel+=x.parcel||0;irgb+=x.irgb||0;
     const manual=(DB.so[d]||{})[date];
-    const s=manual!=null&&manual!==''?Number(manual):x.so;
-    if(s!=null)so=(so||0)+s;
+    so+=(manual!=null&&manual!=='')?Number(manual):(+DB.soDef[d]||0);
     mach+=DB.centres[d]||0;
     const a=(DB.aad[d]||{})[date];
     if(a!=null)trans+=a;
@@ -374,7 +480,7 @@ function rowFor(dv,date){
   return {so,mo,parcel,irgb,mach,trans:t,avg:t==null||!mach?null:Math.round(t/mach)};
 }
 function baseFor(dv){
-  const list=dv==='Region Total'?DIVS:[dv];
+  const list=listOf(dv);
   let so=0,mo=0,parcel=0,irgb=0,mach=0,trans=0,avgW=0,any=false,label='';
   for(const d of list){
     const b=DB.base[d];if(!b)continue;any=true;label=label||b.label;
@@ -389,43 +495,44 @@ function buildAOA(dv,month,irgb){
   const [y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate();
   const head=['DATE',"NO of So's",'MO','PARCEL'].concat(irgb?['IRGB']:[]).concat(['Total Machines','Total Trans.','Per day average']);
   const out=[];
-  const b=baseFor(dv);
+  const b=baseFor(dv),defSO=soDefOf(dv);
   if(b)out.push({cls:'base',cells:[b.label||defLabel(month),b.so,b.mo,b.parcel].concat(irgb?[b.irgb]:[]).concat([b.mach,b.trans,b.avg])});
   let tmo=0,tpa=0,tir=0,ttr=0;
   for(let d=1;d<=days;d++){
-    const date=`${month}-${String(d).padStart(2,'0')}`;
+    const date=`${month}-${pad(d)}`;
     const r=rowFor(dv,date);
     const lbl=dmy(date);
     if(!r){out.push({cls:'',date,cells:[lbl].concat(new Array(head.length-1).fill(''))});continue}
     tmo+=r.mo;tpa+=r.parcel;tir+=r.irgb;ttr+=r.trans||0;
-    out.push({cls:(r.so!=null&&r.so<=3)?'off':'',date,cells:[lbl,r.so,r.mo,r.parcel].concat(irgb?[r.irgb]:[]).concat([r.mach,r.trans,r.avg])});
+    out.push({cls:(r.so<=3&&r.so<defSO)?'off':'',date,cells:[lbl,r.so,r.mo,r.parcel].concat(irgb?[r.irgb]:[]).concat([r.mach,r.trans,r.avg])});
   }
   out.push({cls:'tot',cells:['TOTAL','',tmo,tpa].concat(irgb?[tir]:[]).concat(['',ttr,''])});
   return {head,rows:out};
 }
+const divTitle=dv=>dv==='Region Total'?'INDORE REGION (TOTAL)':dv.toUpperCase();
 function renderReport(){
   const ms=monthsAvail(),sel=document.getElementById('monthSel');
   const prev=sel.value;
   sel.innerHTML=ms.map(m=>`<option value="${m}">${MONTHS[+m.slice(5,7)-1]} ${m.slice(0,4)}</option>`).join('');
-  if(!ms.length){document.getElementById('reportBox').innerHTML='<p>Abhi koi data nahi he. "Daily Upload" tab me CSV aur Aadhaar JPEG upload karein.</p>';document.getElementById('divTabs').innerHTML='';return}
+  document.getElementById('curDivName').textContent=curDiv;
+  if(!ms.length){document.getElementById('reportBox').innerHTML='<p>Abhi koi data nahi he. "Daily Upload" tab me CSV aur Aadhaar Excel upload karein.</p>';document.getElementById('divTabs').innerHTML='';return}
   sel.value=ms.includes(prev)?prev:ms[ms.length-1];
   const tabs=['Region Total'].concat(DIVS);
   document.getElementById('divTabs').innerHTML=tabs.map(t=>`<button class="${t===curDiv?'on':''}" onclick="curDiv='${t}';renderReport()">${t}</button>`).join('');
   const irgb=document.getElementById('showIRGB').checked,month=sel.value;
   const {head,rows}=buildAOA(curDiv,month,irgb);
   const n=head.length;
-  const divName=curDiv==='Region Total'?'INDORE REGION (TOTAL)':curDiv.toUpperCase();
   let h=`<table class="rep"><tr><th class="title" colspan="${n}">Day wise report for the MO, Parcel and CCS Verticals</th></tr>`;
-  h+=`<tr><th colspan="${n-3}">NAME OF DIVISION: ${divName}</th><th colspan="3">ADHAR</th></tr><tr>`;
-  head.forEach(x=>h+=`<th>${x}</th>`);h+='</tr>';
+  h+=`<tr><th colspan="${n-3}">NAME OF DIVISION: ${divTitle(curDiv)}</th><th colspan="3">ADHAR</th></tr><tr>`;
+  head.forEach(x=>h+=`<th>${esc(x)}</th>`);h+='</tr>';
   for(const r of rows){
     h+=`<tr class="${r.cls}">`;
     r.cells.forEach((c,i)=>{
       const v=c==null||c===''?'':c;
-      if(i===0)h+=`<td class="d">${v}</td>`;
+      if(i===0)h+=`<td class="d">${esc(v)}</td>`;
       else if(i===1&&r.date&&curDiv!=='Region Total'){
         h+=`<td><input class="so" type="number" value="${v}" onchange="setSO('${r.date}',this.value)"></td>`;
-      }else h+=`<td>${v}</td>`;
+      }else h+=`<td>${esc(v)}</td>`;
     });
     h+='</tr>';
   }
@@ -434,18 +541,35 @@ function renderReport(){
 }
 function setSO(date,v){
   DB.so[curDiv]=DB.so[curDiv]||{};
-  if(v==='')delete DB.so[curDiv][date];else DB.so[curDiv][date]=Number(v);
+  if(v===''||Number(v)===(+DB.soDef[curDiv]||0))delete DB.so[curDiv][date];else DB.so[curDiv][date]=Number(v);
   save();renderReport();
 }
+
+/* ===================== DOWNLOADS: Excel / JPG / PDF ===================== */
+const ALL_TABS=()=>['Region Total'].concat(DIVS);
+const curMonth=()=>document.getElementById('monthSel').value;
+const irgbOn=()=>document.getElementById('showIRGB').checked;
+const safeName=s=>s.replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');
+function setBusy(on,txt){
+  ['dlXls','dlJpgAll','dlPdfAll','dlJpgOne','dlPdfOne'].forEach(id=>{const e=document.getElementById(id);if(e)e.disabled=on});
+  document.getElementById('dlMsg').textContent=txt||'';
+}
+function saveBlob(blob,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},3000);
+}
+const canvasBlob=(c,type,q)=>new Promise(r=>c.toBlob(r,type,q));
+
 function exportExcel(){
-  const month=document.getElementById('monthSel').value,irgb=document.getElementById('showIRGB').checked;
+  const month=curMonth(),irgb=irgbOn();
   if(!month){alert('Data nahi he');return}
   const wb=XLSX.utils.book_new();
-  ['Region Total'].concat(DIVS).forEach(dv=>{
+  ALL_TABS().forEach(dv=>{
     const {head,rows}=buildAOA(dv,month,irgb);
     const n=head.length;
     const aoa=[['Day wise report for the MO, Parcel and CCS Verticals'],
-      ['NAME OF DIVISION: '+(dv==='Region Total'?'INDORE REGION (TOTAL)':dv.toUpperCase())].concat(new Array(n-4).fill('')).concat(['ADHAR','','']),
+      ['NAME OF DIVISION: '+divTitle(dv)].concat(new Array(n-4).fill('')).concat(['ADHAR','','']),
       head].concat(rows.map(r=>r.cells.map(c=>c==null?'':c)));
     const ws=XLSX.utils.aoa_to_sheet(aoa);
     ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:n-1}},{s:{r:1,c:0},e:{r:1,c:n-4}},{s:{r:1,c:n-3},e:{r:1,c:n-1}}];
@@ -455,27 +579,126 @@ function exportExcel(){
   XLSX.writeFile(wb,`Daywise_Report_${month}.xlsx`);
 }
 
+/* report ko canvas par banata he (JPG/PDF dono isi se) */
+function drawReport(dv,month,irgb){
+  const {head,rows}=buildAOA(dv,month,irgb);
+  const n=head.length,S=2,F='"Segoe UI",Arial,sans-serif';
+  const RH=26,TH=36;
+  const mc=document.createElement('canvas').getContext('2d');
+  const fit=(txt,font)=>{mc.font=font;return Math.ceil(mc.measureText(String(txt)).width)};
+  const widths=head.map((h,j)=>{
+    let w=fit(h,`bold 13px ${F}`);
+    for(const r of rows){const v=r.cells[j];if(v!=null&&v!=='')w=Math.max(w,fit(v,`${j===0?'600':'400'} 13px ${F}`))}
+    return Math.max(w+24,j===0?96:64);
+  });
+  const W=Math.max(widths.reduce((a,b)=>a+b,0),520);
+  const extra=(W-widths.reduce((a,b)=>a+b,0))/n;widths.forEach((_,j)=>widths[j]+=extra);
+  const H=TH+RH*(rows.length+2);
+  const c=document.createElement('canvas');c.width=Math.round(W*S);c.height=Math.round(H*S);
+  const x=c.getContext('2d');x.scale(S,S);
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);
+  x.textAlign='center';x.textBaseline='middle';
+  const cell=(px,py,w,h,txt,o={})=>{
+    x.fillStyle=o.bg||'#fff';x.fillRect(px,py,w,h);
+    x.strokeStyle='#222';x.lineWidth=1;x.strokeRect(px+.5,py+.5,w-1,h-1);
+    if(txt!==''&&txt!=null){x.fillStyle=o.color||'#222';x.font=`${o.bold?'bold':(o.semi?'600':'400')} ${o.size||13}px ${F}`;x.fillText(String(txt),px+w/2,py+h/2+1)}
+  };
+  const HB='#dce6f1';
+  cell(0,0,W,TH,'Day wise report for the MO, Parcel and CCS Verticals',{bg:HB,bold:true,size:17});
+  const wl=widths.slice(0,n-3).reduce((a,b)=>a+b,0);
+  cell(0,TH,wl,RH,'NAME OF DIVISION: '+divTitle(dv),{bg:HB,bold:true});
+  cell(wl,TH,W-wl,RH,'ADHAR',{bg:HB,bold:true});
+  let px=0;head.forEach((h,j)=>{cell(px,TH+RH,widths[j],RH,h,{bg:HB,bold:true});px+=widths[j]});
+  rows.forEach((r,i)=>{
+    const py=TH+RH*(i+2);px=0;
+    r.cells.forEach((v,j)=>{
+      const o={};
+      if(r.cls==='base')o.bg='#fffbe6';
+      if(r.cls==='tot'){o.bg='#92d050';o.bold=true}
+      if(r.cls==='off')o.color='#bb0000';
+      if(j===0&&r.cls!=='tot')o.semi=true;
+      cell(px,py,widths[j],RH,v==null?'':v,o);px+=widths[j];
+    });
+  });
+  return c;
+}
+function needLib(names){
+  const miss=names.filter(n=>!(n==='JSZip'?window.JSZip:window.jspdf));
+  if(miss.length){alert('Library load nahi hui ('+miss.join(', ')+') – internet check karein aur page refresh karein.');return false}
+  return true;
+}
+async function exportJPG(all){
+  const month=curMonth();if(!month){alert('Data nahi he');return}
+  const irgb=irgbOn(),list=all?ALL_TABS():[curDiv];
+  if(all&&!needLib(['JSZip']))return;
+  setBusy(true,'⏳ JPG ban rahi he…');
+  try{
+    if(!all){
+      const b=await canvasBlob(drawReport(curDiv,month,irgb),'image/jpeg',.95);
+      saveBlob(b,`Daywise_${month}_${safeName(curDiv)}.jpg`);
+    }else{
+      const zip=new JSZip();
+      for(let i=0;i<list.length;i++){
+        setBusy(true,`⏳ JPG ${i+1}/${list.length}…`);
+        const b=await canvasBlob(drawReport(list[i],month,irgb),'image/jpeg',.95);
+        zip.file(`${pad(i+1)}_${safeName(list[i])}_${month}.jpg`,b);
+        await new Promise(r=>setTimeout(r,0));
+      }
+      const zb=await zip.generateAsync({type:'blob'});
+      saveBlob(zb,`Daywise_JPG_${month}.zip`);
+    }
+    setBusy(false,'✅ Download ho gaya');
+  }catch(e){setBusy(false,'');alert('JPG nahi ban payi: '+e.message)}
+}
+async function exportPDF(all){
+  const month=curMonth();if(!month){alert('Data nahi he');return}
+  if(!needLib(['jspdf']))return;
+  const irgb=irgbOn(),list=all?ALL_TABS():[curDiv];
+  setBusy(true,'⏳ PDF ban rahi he…');
+  try{
+    const {jsPDF}=window.jspdf;
+    let pdf=null;
+    for(let i=0;i<list.length;i++){
+      setBusy(true,`⏳ PDF page ${i+1}/${list.length}…`);
+      const c=drawReport(list[i],month,irgb);
+      const orient=c.width>c.height*1.15?'l':'p';
+      if(!pdf)pdf=new jsPDF({orientation:orient,unit:'mm',format:'a4'});else pdf.addPage('a4',orient);
+      const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),m=8;
+      const k=Math.min((pw-2*m)/c.width,(ph-2*m)/c.height);
+      const w=c.width*k,h=c.height*k;
+      pdf.addImage(c.toDataURL('image/jpeg',.95),'JPEG',(pw-w)/2,m,w,h);
+      await new Promise(r=>setTimeout(r,0));
+    }
+    pdf.save(all?`Daywise_Report_${month}.pdf`:`Daywise_${month}_${safeName(curDiv)}.pdf`);
+    setBusy(false,'✅ Download ho gaya');
+  }catch(e){setBusy(false,'');alert('PDF nahi ban payi: '+e.message)}
+}
+
 /* ===================== SETTINGS ===================== */
 function renderSettings(){
-  document.getElementById('centresBox').innerHTML='<table class="s2"><tr>'+DIVS.map(d=>`<th>${d}</th>`).join('')+'<th>Total</th></tr><tr>'+
-    DIVS.map(d=>`<td><input type="number" id="c_${d}" value="${DB.centres[d]}" style="width:70px"></td>`).join('')+
-    `<td><b>${DIVS.reduce((a,d)=>a+(DB.centres[d]||0),0)}</b></td></tr></table>`;
+  const sum=o=>DIVS.reduce((a,d)=>a+(+o[d]||0),0);
+  document.getElementById('centresBox').innerHTML='<table class="s2"><tr><th></th>'+DIVS.map(d=>`<th>${d}</th>`).join('')+'<th>Total</th></tr>'+
+    '<tr><th>Aadhaar machines</th>'+DIVS.map(d=>`<td><input type="number" id="c_${d}" value="${DB.centres[d]}" style="width:70px"></td>`).join('')+`<td><b>${sum(DB.centres)}</b></td></tr>`+
+    "<tr><th>No of SO's</th>"+DIVS.map(d=>`<td><input type="number" id="s_${d}" value="${DB.soDef[d]}" style="width:70px"></td>`).join('')+`<td><b>${sum(DB.soDef)}</b></td></tr></table>`;
   const f=['label','so','mo','parcel','irgb','trans','avg'];
   const fl=['Label (Oct-25)',"No of SO's",'MO','Parcel','IRGB','Total Trans.','Per day avg'];
   let h='<table class="s2"><tr><th>Division</th>'+fl.map(x=>`<th>${x}</th>`).join('')+'</tr>';
   DIVS.forEach(d=>{
     const b=DB.base[d]||{};
-    h+=`<tr><th>${d}</th>`+f.map(k=>`<td><input type="${k==='label'?'text':'number'}" id="b_${d}_${k}" value="${b[k]==null?'':b[k]}" style="width:${k==='label'?80:80}px"></td>`).join('')+'</tr>';
+    h+=`<tr><th>${d}</th>`+f.map(k=>`<td><input type="${k==='label'?'text':'number'}" id="b_${d}_${k}" value="${esc(b[k]==null?'':b[k])}" style="width:80px"></td>`).join('')+'</tr>';
   });
   document.getElementById('baseBox').innerHTML=h+'</table>';
   const prods=[...new Set([...Object.keys(DEF_MAP),...Object.keys(DB.customMap),...DB.seenProducts])].sort();
-  document.getElementById('mapBox').innerHTML='<table class="s2"><tr><th>Product name</th><th>Category</th></tr>'+prods.map((p,i)=>{
-    const c=DB.customMap[p]||DEF_MAP[p]||'';
-    return `<tr><td>${p}</td><td><select data-p="${p}" class="mp"><option value="" ${c===''?'selected':''}>— (count nahi hoga) —</option>`+
+  document.getElementById('mapBox').innerHTML='<table class="s2"><tr><th>Product name</th><th>Category</th></tr>'+prods.map(p=>{
+    const c=catOf(p)||'',lock=isIntl(p);
+    return `<tr><td class="${!c?'bad':''}">${esc(p)}</td><td><select data-p="${esc(p)}" class="mp" ${lock?'disabled title="International = IRGB"':''}><option value="" ${c===''?'selected':''}>— (count nahi hoga) —</option>`+
       ['MO','Parcel','IRGB'].map(x=>`<option ${c===x?'selected':''}>${x}</option>`).join('')+'</select></td></tr>';
   }).join('')+'</table>';
 }
-function saveCentres(){DIVS.forEach(d=>DB.centres[d]=Number(document.getElementById('c_'+d).value)||0);save();renderSettings();alert('Saved')}
+function saveCentres(){
+  DIVS.forEach(d=>{DB.centres[d]=Number(document.getElementById('c_'+d).value)||0;DB.soDef[d]=Number(document.getElementById('s_'+d).value)||0});
+  save();renderSettings();alert('Saved');
+}
 function saveBase(){
   DIVS.forEach(d=>{
     const b={};['label','so','mo','parcel','irgb','trans','avg'].forEach(k=>{const v=document.getElementById(`b_${d}_${k}`).value;b[k]=k==='label'?v:(v===''?0:Number(v))});
@@ -485,10 +708,11 @@ function saveBase(){
 }
 function saveMap(){
   document.querySelectorAll('select.mp').forEach(s=>{
+    if(s.disabled)return;
     const p=s.dataset.p,v=s.value;
-    if(v===(DEF_MAP[p]||''))delete DB.customMap[p];else DB.customMap[p]=v||null;
+    if(v===autoCat(p))delete DB.customMap[p];else DB.customMap[p]=v;
   });
-  save();alert('Saved – CSV dobara upload karein.');
+  save();renderSettings();alert('Saved – report naye mapping se ban gayi.');
 }
 function backup(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(DB)],{type:'application/json'}));
@@ -496,7 +720,7 @@ function backup(){
 }
 async function restore(f){
   if(!f)return;
-  try{DB=Object.assign(load(),JSON.parse(await f.text()));save();alert('Restore ho gaya');renderSettings()}catch(e){alert('File galat he')}
+  try{DB=normDB(JSON.parse(await f.text()));save();alert('Restore ho gaya');renderSettings()}catch(e){alert('File galat he')}
 }
 function resetAll(){if(confirm('Saara data delete hoga. Pakka?')){localStorage.removeItem(KEY);DB=load();renderSettings();renderReport()}}
 
