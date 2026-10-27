@@ -69,6 +69,9 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
     <div class="row">
       <b>Month:</b> <select id="monthSel" onchange="renderReport()"></select>
       <label><input type="checkbox" id="showIRGB" onchange="renderReport()"> IRGB column dikhao</label>
+      <label title="Is date ka data report me khali rahega aur total me nahi judega"><input type="checkbox" id="exclOn" onchange="setExcl()"> Is date ka data exclude karo:</label>
+      <input type="date" id="exclDate" onchange="setExcl()">
+      <button class="b sm gray" onclick="setExclToday()">Aaj</button>
       <button class="b gray" onclick="window.print()">🖨️ Print</button>
     </div>
     <div class="dl">
@@ -459,7 +462,16 @@ function monthsAvail(){
 function maxAadDate(){const k=Object.keys(DB.aadDates);return k.length?k.sort().pop():''}
 function listOf(dv){return dv==='Region Total'?DIVS:[dv]}
 function soDefOf(dv){return listOf(dv).reduce((a,d)=>a+(+DB.soDef[d]||0),0)}
+const todayStr=()=>{const t=new Date();return `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`};
+function setExcl(){
+  DB.exclOn=document.getElementById('exclOn').checked;
+  DB.exclDate=document.getElementById('exclDate').value||todayStr();
+  document.getElementById('exclDate').value=DB.exclDate;
+  save();renderReport();
+}
+function setExclToday(){document.getElementById('exclDate').value=todayStr();document.getElementById('exclOn').checked=true;setExcl()}
 function rowFor(dv,date){
+  if(DB.exclOn&&DB.exclDate===date)return null;      // exclude: us din ki row khali, total me bhi nahi
   const list=listOf(dv);
   const hasCsv=!!DB.csvDates[date],hasAad=!!DB.aadDates[date];
   if(!hasCsv&&!hasAad)return null;
@@ -497,16 +509,22 @@ function buildAOA(dv,month,irgb){
   const out=[];
   const b=baseFor(dv),defSO=soDefOf(dv);
   if(b)out.push({cls:'base',cells:[b.label||defLabel(month),b.so,b.mo,b.parcel].concat(irgb?[b.irgb]:[]).concat([b.mach,b.trans,b.avg])});
-  let tmo=0,tpa=0,tir=0,ttr=0;
+  let tmo=0,tpa=0,tir=0,ttr=0,nz=0,lastSO='',lastMach='';
+  const days_=[];
   for(let d=1;d<=days;d++){
     const date=`${month}-${pad(d)}`;
     const r=rowFor(dv,date);
     const lbl=dmy(date);
-    if(!r){out.push({cls:'',date,cells:[lbl].concat(new Array(head.length-1).fill(''))});continue}
+    if(!r){days_.push({cls:'',date,cells:[lbl].concat(new Array(head.length-1).fill(''))});continue}
     tmo+=r.mo;tpa+=r.parcel;tir+=r.irgb;ttr+=r.trans||0;
-    out.push({cls:(r.so<=3&&r.so<defSO)?'off':'',date,cells:[lbl,r.so,r.mo,r.parcel].concat(irgb?[r.irgb]:[]).concat([r.mach,r.trans,r.avg])});
+    if(r.trans>0)nz++;
+    lastSO=r.so;lastMach=r.mach;
+    days_.push({cls:(r.so<=3&&r.so<defSO)?'off':'',date,cells:[lbl,r.so,r.mo,r.parcel].concat(irgb?[r.irgb]:[]).concat([r.mach,r.trans,r.avg])});
   }
-  out.push({cls:'tot',cells:['TOTAL','',tmo,tpa].concat(irgb?[tir]:[]).concat(['',ttr,''])});
+  /* TOTAL row upar (baseline ke baad). Per day average = total trans / machines / jitne din trans 0 nahi the */
+  const tAvg=(nz&&lastMach)?Math.round(ttr/lastMach/nz):'';
+  out.push({cls:'tot',cells:['TOTAL',lastSO,tmo,tpa].concat(irgb?[tir]:[]).concat([lastMach,ttr,tAvg])});
+  days_.forEach(r=>out.push(r));
   return {head,rows:out};
 }
 const divTitle=dv=>dv==='Region Total'?'INDORE REGION (TOTAL)':dv.toUpperCase();
@@ -515,6 +533,8 @@ function renderReport(){
   const prev=sel.value;
   sel.innerHTML=ms.map(m=>`<option value="${m}">${MONTHS[+m.slice(5,7)-1]} ${m.slice(0,4)}</option>`).join('');
   document.getElementById('curDivName').textContent=curDiv;
+  document.getElementById('exclOn').checked=!!DB.exclOn;
+  document.getElementById('exclDate').value=DB.exclDate||todayStr();
   if(!ms.length){document.getElementById('reportBox').innerHTML='<p>Abhi koi data nahi he. "Daily Upload" tab me CSV aur Aadhaar Excel upload karein.</p>';document.getElementById('divTabs').innerHTML='';return}
   sel.value=ms.includes(prev)?prev:ms[ms.length-1];
   const tabs=['Region Total'].concat(DIVS);
