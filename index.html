@@ -125,9 +125,8 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
     <button class="b" onclick="saveCentres()">Save</button>
   </div>
   <div class="card">
-    <h3>Pichla saal (jaise Oct-25) ki baseline row – division wise</h3>
-    <div class="wrap" id="baseBox"></div>
-    <button class="b" onclick="saveBase()">Save baseline</button>
+    <h3>Pichla saal ki baseline row</h3>
+    <div class="hint">Ab har mahine ki baseline pichle saal ke usi mahine ka data (MO, Parcel, IRGB, Aadhaar trans) apne aap upar rakhti he. Per day average = Total Trans ÷ Machines ÷ 25.</div>
   </div>
   <div class="card">
     <h3>Product → Category mapping</h3>
@@ -157,6 +156,11 @@ const DEF_MAP={
  'blind literature':'MO','gyan post':'MO','indiapost parcel retail':'Parcel','inland speed post document':'MO',
  'magazine post':'MO','speed post parcel domestic':'Parcel','indiapost parcel contractual':'Parcel'
 };
+/* Pichle saal (Apr-25 se Mar-26) ka data: division -> mahina(1-12) -> [MO, Parcel, IRGB, Aadhaar Trans] */
+const LY={"Sehore":{"4":[19949,1909,9,3389],"5":[26268,2047,7,3273],"6":[14525,2131,9,2844],"7":[16813,2392,16,2595],"8":[26201,1557,15,1925],"9":[23737,1290,5,2314],"10":[26865,1407,6,2254],"11":[28771,1491,3,2479],"12":[26036,1736,4,2979],"1":[16638,1622,9,3126],"2":[18691,1721,11,2826],"3":[19416,1797,5,2108]},"Ratlam":{"4":[22988,2187,17,7761],"5":[21838,2174,16,9447],"6":[15746,2379,16,14246],"7":[23240,2509,36,21595],"8":[33089,1965,29,16226],"9":[35722,2136,19,15933],"10":[23249,2176,22,12743],"11":[29817,2172,19,15497],"12":[32594,2894,20,19560],"1":[18833,2665,28,15416],"2":[17535,2511,23,12564],"3":[16280,2336,17,9837]},"Khandwa":{"4":[37998,5420,52,10177],"5":[47241,6887,43,9996],"6":[34991,6775,45,7418],"7":[41064,6556,60,9295],"8":[51110,4961,52,8698],"9":[39531,5530,13,10383],"10":[31297,6014,23,7221],"11":[40438,6167,18,7095],"12":[44998,7136,23,8551],"1":[34629,7003,27,8341],"2":[30230,6168,33,7078],"3":[41178,5926,24,6034]},"Indore Mfl":{"4":[69036,7304,58,3943],"5":[55602,5694,78,4562],"6":[37982,6210,98,5376],"7":[46643,6024,168,5290],"8":[51477,4182,175,5073],"9":[38563,4664,67,6395],"10":[38194,5402,73,4570],"11":[40042,6012,67,4728],"12":[39114,7732,65,5332],"1":[32917,7347,39,6442],"2":[36183,8230,89,6459],"3":[37549,6472,60,4896]},"Mandsaur":{"4":[23530,4172,128,10177],"5":[21228,4843,116,11213],"6":[20925,4832,75,10158],"7":[23188,5372,63,11115],"8":[26633,4173,81,9388],"9":[25212,5406,60,9996],"10":[19510,6354,64,6529],"11":[18406,5871,72,8687],"12":[24745,5317,106,10003],"1":[17959,4999,85,9379],"2":[18737,4248,66,9494],"3":[18369,4881,68,7298]},"Indore RMS":{"4":[8805,1347,0,0],"5":[8785,1648,0,0],"6":[8895,1463,0,0],"7":[8705,1082,27,0],"8":[11250,1205,59,0],"9":[9390,1198,19,49],"10":[7528,1144,0,34],"11":[9070,1248,0,102],"12":[9162,1304,0,299],"1":[8475,1495,1,481],"2":[8779,1789,0,289],"3":[11921,3399,5,183]},"Indore City":{"4":[123387,42276,509,9952],"5":[136438,44031,624,11374],"6":[99138,38498,559,11180],"7":[952130,38756,757,10535],"8":[245668,27854,390,8857],"9":[143493,30244,274,9725],"10":[97116,32308,337,7537],"11":[128409,39332,310,9686],"12":[147538,48374,343,11880],"1":[112957,50253,459,11477],"2":[148067,37320,392,9734],"3":[126535,40883,329,6926]},"Ujjain":{"4":[34360,6583,140,7391],"5":[44643,6929,144,9249],"6":[41903,7121,118,10005],"7":[39419,7410,37,10077],"8":[53131,4694,42,9325],"9":[45146,5699,50,11244],"10":[38312,5847,32,8707],"11":[35520,5714,72,9606],"12":[48898,6615,130,10982],"1":[42585,6880,135,10819],"2":[31818,6777,135,8529],"3":[46531,6058,87,6636]}};
+/* Pichle saal ki Aadhaar machines (division wise) */
+const LY_MACH={"Indore City": 22, "Indore Mfl": 21, "Khandwa": 20, "Mandsaur": 21, "Ratlam": 18, "Sehore": 16, "Ujjain": 24, "Indore RMS": 0};
+const LY_DAYS=25;   /* pichle saal ka average = Trans / Machines / 25 */
 const KEY='daywiseReportV1';
 let DB=load();
 let curDiv='Region Total';
@@ -491,24 +495,24 @@ function rowFor(dv,date){
   const t=tNull?null:trans;
   return {so,mo,parcel,irgb,mach,trans:t,avg:t==null||!mach?null:Math.round(t/mach)};
 }
-function baseFor(dv){
+function baseFor(dv,month){
+  const mm=+month.slice(5,7),yr=+month.slice(0,4)-1;
+  if(yr!==(mm>=4?2025:2026))return null;   /* LY data sirf Apr-25..Mar-26 ka he */
   const list=listOf(dv);
-  let so=0,mo=0,parcel=0,irgb=0,mach=0,trans=0,avgW=0,any=false,label='';
+  let mo=0,parcel=0,irgb=0,trans=0,mach=0;
   for(const d of list){
-    const b=DB.base[d];if(!b)continue;any=true;label=label||b.label;
-    so+=+b.so||0;mo+=+b.mo||0;parcel+=+b.parcel||0;irgb+=+b.irgb||0;trans+=+b.trans||0;
-    const m=DB.centres[d]||0;mach+=m;avgW+=(+b.avg||0)*m;
+    const x=(LY[d]||{})[mm];if(!x)continue;
+    mo+=x[0];parcel+=x[1];irgb+=x[2];trans+=x[3];mach+=LY_MACH[d]||0;
   }
-  if(!any)return null;
-  return {label,so,mo,parcel,irgb,mach,trans,avg:dv==='Region Total'?(mach?Math.round(avgW/mach):0):(DB.base[dv].avg||0)};
+  return {label:defLabel(month),so:soDefOf(dv),mo,parcel,irgb,mach,trans,avg:mach?Math.round(trans/mach/LY_DAYS):0};
 }
 function defLabel(m){return MONTHS[+m.slice(5,7)-1]+'-'+String(+m.slice(0,4)-1).slice(2)}
 function buildAOA(dv,month,irgb){
   const [y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate();
   const head=['DATE',"NO of So's",'MO','PARCEL'].concat(irgb?['IRGB']:[]).concat(['Total Machines','Total Trans.','Per day average']);
   const out=[];
-  const b=baseFor(dv),defSO=soDefOf(dv);
-  if(b)out.push({cls:'base',cells:[b.label||defLabel(month),b.so,b.mo,b.parcel].concat(irgb?[b.irgb]:[]).concat([b.mach,b.trans,b.avg])});
+  const b=baseFor(dv,month),defSO=soDefOf(dv);
+  if(b)out.push({cls:'base',cells:[b.label,b.so,b.mo,b.parcel].concat(irgb?[b.irgb]:[]).concat([b.mach,b.trans,b.avg])});
   let tmo=0,tpa=0,tir=0,ttr=0,nz=0,lastSO='',lastMach='';
   const days_=[];
   for(let d=1;d<=days;d++){
@@ -521,10 +525,10 @@ function buildAOA(dv,month,irgb){
     lastSO=r.so;lastMach=r.mach;
     days_.push({cls:(r.so<=3&&r.so<defSO)?'off':'',date,cells:[lbl,r.so,r.mo,r.parcel].concat(irgb?[r.irgb]:[]).concat([r.mach,r.trans,r.avg])});
   }
-  /* TOTAL row upar (baseline ke baad). Per day average = total trans / machines / jitne din trans 0 nahi the */
+  /* TOTAL row sabse niche. Per day average = total trans / machines / jitne din trans 0 nahi the */
   const tAvg=(nz&&lastMach)?Math.round(ttr/lastMach/nz):'';
-  out.push({cls:'tot',cells:['TOTAL',lastSO,tmo,tpa].concat(irgb?[tir]:[]).concat([lastMach,ttr,tAvg])});
   days_.forEach(r=>out.push(r));
+  out.push({cls:'tot',cells:['TOTAL',lastSO,tmo,tpa].concat(irgb?[tir]:[]).concat([lastMach,ttr,tAvg])});
   return {head,rows:out};
 }
 const divTitle=dv=>dv==='Region Total'?'INDORE REGION (TOTAL)':dv.toUpperCase();
@@ -700,14 +704,6 @@ function renderSettings(){
   document.getElementById('centresBox').innerHTML='<table class="s2"><tr><th></th>'+DIVS.map(d=>`<th>${d}</th>`).join('')+'<th>Total</th></tr>'+
     '<tr><th>Aadhaar machines</th>'+DIVS.map(d=>`<td><input type="number" id="c_${d}" value="${DB.centres[d]}" style="width:70px"></td>`).join('')+`<td><b>${sum(DB.centres)}</b></td></tr>`+
     "<tr><th>No of SO's</th>"+DIVS.map(d=>`<td><input type="number" id="s_${d}" value="${DB.soDef[d]}" style="width:70px"></td>`).join('')+`<td><b>${sum(DB.soDef)}</b></td></tr></table>`;
-  const f=['label','so','mo','parcel','irgb','trans','avg'];
-  const fl=['Label (Oct-25)',"No of SO's",'MO','Parcel','IRGB','Total Trans.','Per day avg'];
-  let h='<table class="s2"><tr><th>Division</th>'+fl.map(x=>`<th>${x}</th>`).join('')+'</tr>';
-  DIVS.forEach(d=>{
-    const b=DB.base[d]||{};
-    h+=`<tr><th>${d}</th>`+f.map(k=>`<td><input type="${k==='label'?'text':'number'}" id="b_${d}_${k}" value="${esc(b[k]==null?'':b[k])}" style="width:80px"></td>`).join('')+'</tr>';
-  });
-  document.getElementById('baseBox').innerHTML=h+'</table>';
   const prods=[...new Set([...Object.keys(DEF_MAP),...Object.keys(DB.customMap),...DB.seenProducts])].sort();
   document.getElementById('mapBox').innerHTML='<table class="s2"><tr><th>Product name</th><th>Category</th></tr>'+prods.map(p=>{
     const c=catOf(p)||'',lock=isIntl(p);
@@ -718,13 +714,6 @@ function renderSettings(){
 function saveCentres(){
   DIVS.forEach(d=>{DB.centres[d]=Number(document.getElementById('c_'+d).value)||0;DB.soDef[d]=Number(document.getElementById('s_'+d).value)||0});
   save();renderSettings();alert('Saved');
-}
-function saveBase(){
-  DIVS.forEach(d=>{
-    const b={};['label','so','mo','parcel','irgb','trans','avg'].forEach(k=>{const v=document.getElementById(`b_${d}_${k}`).value;b[k]=k==='label'?v:(v===''?0:Number(v))});
-    DB.base[d]=b;
-  });
-  save();alert('Saved');
 }
 function saveMap(){
   document.querySelectorAll('select.mp').forEach(s=>{
