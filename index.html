@@ -89,6 +89,13 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 #gdlg .gcols{border:1px solid var(--line);border-radius:6px;max-height:230px;overflow:auto}
 #gdlg .gcol{display:grid;grid-template-columns:22px 1fr 150px 34px;gap:6px;align-items:center;padding:5px 8px;border-bottom:1px solid #f0f2f6;font-size:12.5px}
 #gdlg .gcol input[type=color]{width:30px;height:24px;padding:0;border:1px solid #bbb}
+.pvt{border-collapse:collapse;font:11px Arial;white-space:nowrap}
+.pvt td{border:1px solid #d5d9e0;padding:1px 6px;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.pvt td.pvh{width:24px;text-align:center;cursor:row-resize;background:#fff;color:#444;font-size:14px;user-select:none;position:sticky;left:0}
+.pvt td.pvh[data-b]:hover{background:#fdeaea;color:#b3121b}
+.pvt td.pvn{background:#fff;color:#666;position:sticky;left:24px;cursor:pointer}
+.pvt td[rowspan]{background:rgba(255,255,255,.6)}
+.pvt tr.pvd td{filter:brightness(.86)}
 @media print{header,nav,.noprint{display:none!important}main{padding:0}.card{box-shadow:none}}
 </style>
 </head>
@@ -166,7 +173,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div class="card">
     <div class="row">
       <label class="b">Choose Excel file<input type="file" id="pmFile" accept=".xlsx,.xls,.csv" hidden onchange="PM.load(this.files[0]);this.value=''"></label>
-      <span class="hint">Max rows per slide:</span><input type="number" id="pmRows" value="15" min="3" style="width:60px">
+      <span class="hint">Max rows per slide:</span><input type="number" id="pmRows" value="15" min="1" style="width:60px" onchange="PM.applyPer()" title="Changing this re-splits all slides of the current sheet">
       <span class="hint">Header rows (repeated on every slide):</span><select id="pmHr"><option value="auto">Auto</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
       <button class="b sm gray" onclick="PM.rebuild()" title="Rebuild the slides of the last imported sheet with the current rows / header settings">Rebuild</button>
       <button class="b alt sm" onclick="PM.add('content')">+ Blank slide</button>
@@ -223,6 +230,15 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
         <div id="pmOut" class="msg" style="display:none"></div>
         <div class="hint" style="margin-top:6px">Examples (English, Hindi or Hinglish):<br>• C5 cell green background<br>• font colour of B7 red<br>• row 4 above 25 red otherwise green<br>• column D below 90 red otherwise green<br>• create a slide from the selected cells<br>• create a graph<br>• title: Parcel Report</div></div>
     </div>
+  </div>
+  <div class="card" id="pmPrevCard" style="display:none;margin-top:12px">
+    <h3>Excel preview – <span id="pmPrevName"></span></h3>
+    <div class="row">
+      <label><input type="checkbox" id="pmKeep" checked onchange="PM.applyPer()"> Keep merged groups together (e.g. a division with all its sub divisions stays on one slide)</label>
+      <span id="pmPrevMsg" class="hint" style="font-weight:700;color:#b3121b"></span>
+    </div>
+    <div class="hint" style="margin-bottom:6px">Every colour band is one slide. Drag the &#8661; handle at the end of a band up or down: all slides of this sheet are re-split with the same number of rows (for example 13 rows on every slide). Click a row number to open that slide. Ctrl+Z undoes the change.</div>
+    <div id="pmPrev" style="overflow:auto;max-height:340px;border:1px solid #ccd1da;background:#fff"></div>
   </div>
 </section>
 
@@ -896,7 +912,7 @@ const PM=(()=>{
 const RED='B3121B',YEL='FDB913',PAL=['B3121B','FDB913','1B6B2F','2B2B2B','C64D54','9A6A00'];
 const LOGO='data:image/png;base64,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';
 const mkCover=()=>({k:'title',org:'INDIA POST',title:'Indore Region\nPerformance Review',sub:'Revenue, Article Count & POSB Net Addition | FY 2026-27',badge:'Indore Region | H-1 & Q-2, FY 2026-27',els:[]});
-const S={sl:[mkCover()],cur:0,id:0,sel:null,rg:null,an:null,dn:0,sc:1,wb:null,g:0,last:null,cd:null};
+const S={sl:[mkCover()],cur:0,id:0,sel:null,rg:null,an:null,dn:0,sc:1,wb:null,g:0,last:null,cd:null,src:{}};
 const $=i=>document.getElementById(i);
 const CN={red:'FF0000',laal:'FF0000',lal:'FF0000','लाल':'FF0000',green:'00B050',hara:'00B050',hare:'00B050','हरा':'00B050','हरे':'00B050',yellow:'FFFF00',peela:'FFFF00',pila:'FFFF00','पीला':'FFFF00',blue:'0070C0',neela:'0070C0',nila:'0070C0','नीला':'0070C0',orange:'FFA500','नारंगी':'FFA500',white:'FFFFFF',safed:'FFFFFF','सफेद':'FFFFFF','सफ़ेद':'FFFFFF',black:'000000',kala:'000000','काला':'000000',grey:'BFBFBF',gray:'BFBFBF',pink:'FFC0CB',purple:'7030A0'};
 const cur=()=>S.sl[S.cur];
@@ -916,10 +932,10 @@ const isCover=i=>i===0&&S.sl[0]&&S.sl[0].k==='title';
 
 /* ---------- undo / redo (full snapshots of the presentation) ---------- */
 const HU=[],HR=[];let hKey='',hT=0;
-const snap=()=>JSON.stringify({sl:S.sl,cur:S.cur,id:S.id,g:S.g});
+const snap=()=>JSON.stringify({sl:S.sl,cur:S.cur,id:S.id,g:S.g,src:S.src});
 function updUndo(){const u=$('pmUndo'),r=$('pmRedo');if(u)u.disabled=!HU.length;if(r)r.disabled=!HR.length}
 function chk(key){const n=Date.now();if(key&&key===hKey&&n-hT<1500){hT=n;return}hKey=key||'';hT=n;HU.push(snap());if(HU.length>60)HU.shift();HR.length=0;updUndo()}
-function put(s){const o=JSON.parse(s);S.sl=o.sl;S.cur=Math.max(0,Math.min(o.cur,S.sl.length-1));S.id=Math.max(S.id,o.id);S.g=Math.max(S.g,o.g);S.sel=null;S.rg=null;hKey='';draw();syncUI();updUndo()}
+function put(s){const o=JSON.parse(s);S.sl=o.sl;S.cur=Math.max(0,Math.min(o.cur,S.sl.length-1));S.id=Math.max(S.id,o.id);S.g=Math.max(S.g,o.g);S.src=o.src||{};S.sel=null;S.rg=null;hKey='';draw();syncUI();updUndo()}
 function undo(){if(!HU.length)return toast('Nothing to undo');HR.push(snap());put(HU.pop());toast('Undone')}
 function redo(){if(!HR.length)return toast('Nothing to redo');HU.push(snap());put(HR.pop());toast('Redone')}
 
@@ -1031,26 +1047,71 @@ function build(name,at,noChk){const ws=S.wb.Sheets[name];if(!ws||!ws['!ref'])ret
   if(rr[0]!==x.s.r||cc[0]!==x.s.c)d[r0][c0]=cellAt(x.s.r,x.s.c);
   if(rr.length>1||cc.length>1)m.push([r0,c0,rr.length,cc.length])});
  const nc=CS.length,cw=CS.map((c,i)=>{const q=(ws['!cols']||[])[c];return Math.max(4,(q&&(q.wch||q.wpx/7))||(i?10:14))});
- const sm=cw.reduce((a,b)=>a+b,0);const hv=$('pmHr').value;let hr;if(hv==='auto'){hr=0;while(hr<Math.min(5,d.length-1)&&d[hr].every(x=>x.n==null))hr++;hr=Math.max(1,hr)}else hr=Math.min(+hv,d.length-1);
- const F={d,m,rn,c0:rg.s.c,ci:CS,cw:cw.map(x=>x/sm),hr,g:++S.g};
- const per=Math.max(3,+$('pmRows').value||15),h=[...Array(hr).keys()],ch=[];
- let fs=13,L,Hu=0;for(;fs>9;fs--){L=linesFor(d,m,F.cw,fs,832);Hu=h.reduce((a,r)=>a+L[r],0);if(Hu*1.8*fs<=150)break}
- L=linesFor(d,m,F.cw,fs,832);Hu=h.reduce((a,r)=>a+L[r],0);
- const B=315/(1.8*fs);let st=hr;
- while(st<d.length){let u=Hu,e=st,mx;while(e<d.length&&e-st<per&&(e===st||u+L[e]<=B)){u+=L[e];e++}
-  while(e<d.length&&(mx=F.m.filter(([r,c,rs])=>r>=st&&r<e&&r+rs>e&&r+rs-e<=2).map(([r,c,rs])=>r+rs)).length)e=Math.max(...mx);
+ const sm=cw.reduce((a,b)=>a+b,0);
+ start({d,m,rn,c0:rg.s.c,ci:CS,cw:cw.map(x=>x/sm)},name,at)}
+function start(M,name,at){
+ const d=M.d,hv=$('pmHr').value;let hr;if(hv==='auto'){hr=0;while(hr<Math.min(5,d.length-1)&&d[hr].every(x=>x.n==null))hr++;hr=Math.max(1,hr)}else hr=Math.min(+hv,d.length-1);
+ const F={...M,hr,g:++S.g};S.src[F.g]={name,F};
+ emit(F,name,at,Math.max(1,+$('pmRows').value||15),name);S.last={name,g:F.g};
+ $('pmInfo').textContent='Header rows: '+hr+(hv==='auto'?' (detected automatically)':' (selected)')+' – repeated on every slide. Use the Excel preview below the slides to change how many rows go on each slide.';
+ draw()}
+/* page breaks: exactly "per" data rows per slide; a vertically merged group (division + its sub divisions) is never cut when "keep" is on */
+function chunks(F,per,keep){const N=F.d.length,hr=F.hr,ch=[];let st=hr;
+ while(st<N){let e=Math.min(st+per,N);
+  if(keep&&e<N){for(let g=0;g<50;g++){const cr=F.m.filter(([r,c,rs])=>rs>1&&r>=hr&&r<e&&r+rs>e);if(!cr.length)break;const r0=Math.min(...cr.map(x=>x[0]));e=r0>st?r0:Math.max(...cr.map(x=>x[0]+x[2]))}}
   ch.push([st,e]);st=e}
- if(!ch.length)ch.push([hr,hr]);const k=ch.length,out=ch.map(([a,b],i)=>{const rows=[...h];for(let r=a;r<b;r++)rows.push(r);return{k:'content',title:name+(k>1?' ('+(i+1)+'/'+k+')':''),sub:'',els:[sub(F,rows,0,nc-1,fs)]}});
- const pos=Math.max(1,at==null?S.sl.length:at);S.sl.splice(pos,0,...out);S.last={name,g:F.g};
- $('pmInfo').textContent='Header rows: '+hr+(hv==='auto'?' (detected automatically)':' (selected)')+' – repeated on every slide. If this is wrong, change "Header rows" and click Rebuild.';
+ if(!ch.length)ch.push([hr,hr]);return ch}
+function emit(F,name,at,per,base){
+ const nc=F.d[0].length,hrs=[...Array(F.hr).keys()],ch=chunks(F,per,$('pmKeep').checked);
+ const mk=fs=>ch.map(([a,b])=>{const rows=[...hrs];for(let r=a;r<b;r++)rows.push(r);return sub(F,rows,0,nc-1,fs)});
+ let ts=mk(null);const fs=Math.min(...ts.map(t=>t.fs));if(ts.some(t=>t.fs!==fs))ts=mk(fs);
+ const out=ts.map(t=>({k:'content',title:'',sub:'',grp:F.g,base,els:[t]}));
+ const pos=Math.max(1,at==null?S.sl.length:at);S.sl.splice(pos,0,...out);
  S.cur=pos;S.sel=null;S.rg=null;draw();syncUI()}
+function resplit(g,n){const src=S.src[g];if(!src)return;const ix=S.sl.findIndex(s=>s.els.some(e=>e.t==='table'&&e.g===g));if(ix<0)return;
+ const base=S.sl[ix].grp?S.sl[ix].base:src.name;chk();
+ S.sl=S.sl.filter(s=>!s.els.some(e=>e.t==='table'&&e.g===g));
+ emit(src.F,src.name,ix,Math.max(1,n),base);toast('All slides re-split: '+n+' rows per slide (Ctrl+Z to undo)')}
+const prevGroup=()=>{const el=curT();if(el&&S.src[el.g])return el.g;if(S.last&&S.src[S.last.g])return S.last.g;return null};
+function setPer(n){const g=prevGroup();if(!g)return;$('pmRows').value=Math.max(1,n);resplit(g,n)}
+function applyPer(){const g=prevGroup();if(!g)return;resplit(g,Math.max(1,+$('pmRows').value||15))}
+/* sub slide headings follow the main (first) slide heading: "<heading> (2/5)" */
+function renum(){const gs={};S.sl.forEach(s=>{if(s.grp)(gs[s.grp]=gs[s.grp]||[]).push(s)});
+ for(const g in gs){const a=gs[g],k=a.length,base=a[0].base;a.forEach((s,i)=>{s.base=base;if(i>0&&s.own)return;s.own=false;s.title=base+(k>1?' ('+(i+1)+'/'+k+')':'')})}}
+function setTitle(s,v){
+ if(!s.grp){s.title=v;return}
+ const a=S.sl.filter(x=>x.grp===s.grp);
+ if(a[0]===s){const b=v.replace(/\s*\(\d+\/\d+\)\s*$/,'');a.forEach(x=>x.base=b)}else{s.own=true;s.title=v}}
+const PV=['#fde2e4','#dbeafe','#fef3c7','#dcfce7','#ede9fe','#ffe4cc'],PS=['#e11d48','#2563eb','#d97706','#16a34a','#7c3aed','#ea580c'];
+function drawPrev(){const card=$('pmPrevCard');if(!card)return;const g=prevGroup();if(!g){card.style.display='none';return}
+ const src=S.src[g],F=src.F,N=F.d.length,nc=F.d[0].length;card.style.display='';$('pmPrevName').textContent=src.name;
+ const idx=new Map();F.rn.forEach((n,i)=>idx.set(n,i));
+ const own=new Array(N).fill(-1),bands=[];
+ S.sl.forEach((s,si)=>{const t=s.els.find(e=>e.t==='table'&&e.g===g);if(!t)return;const b={si,first:1e9,last:-1};
+  t.rn.forEach((n,r)=>{if(r<t.hr||n==null)return;const i=idx.get(n);if(i==null)return;own[i]=bands.length;b.first=Math.min(b.first,i);b.last=Math.max(b.last,i)});
+  if(b.last>=0)bands.push(b)});
+ const cv=covSet(F),box=$('pmPrev'),sc=box.scrollTop;let h='<table class="pvt">';
+ for(let i=0;i<N;i++){const b=own[i],bd=b>=0?bands[b]:null,H=i<F.hr,isL=bd&&i===bd.last,isF=bd&&i===bd.first,cu=bd&&bd.si===S.cur;
+  h+=`<tr data-i="${i}"${bd?` data-si="${bd.si}"`:''} style="background:${H?'#e5e7eb':bd?PV[b%6]:'#fff'};${isL?`border-bottom:3px solid ${PS[b%6]};`:''}${cu?'font-weight:700;':''}">`;
+  h+=`<td class="pvh"${isL?` data-b="${b}" data-f="${bd.first}" title="Drag up or down to change the number of rows per slide"`:''}>${isL?'&#8661;':''}</td>`;
+  h+=`<td class="pvn">${F.rn[i]}${isF?` <b style="color:${PS[b%6]}">Slide ${bd.si+1}</b>`:(H&&i===0?' <b>Header</b>':'')}</td>`;
+  for(let c=0;c<nc;c++){if(cv.has(i+','+c))continue;const mg=F.m.find(a=>a[0]===i&&a[1]===c);h+=`<td${mg?` rowspan="${mg[2]}" colspan="${mg[3]}"`:''}>${esc(F.d[i][c].v)}</td>`}
+  h+='</tr>'}
+ box.innerHTML=h+'</table>';box.scrollTop=sc}
+let PD=null;
+function bindPrev(){const pv=$('pmPrev');
+ pv.addEventListener('mousedown',e=>{const hd=e.target.closest('.pvh[data-b]');if(!hd||e.button!==0)return;e.preventDefault();PD={first:+hd.dataset.f,to:+hd.closest('tr').dataset.i}});
+ pv.addEventListener('mouseover',e=>{if(!PD)return;const tr=e.target.closest('tr[data-i]');if(!tr)return;const i=+tr.dataset.i;if(i<PD.first)return;PD.to=i;
+  pv.querySelectorAll('tr').forEach(t=>{const k=+t.dataset.i;t.classList.toggle('pvd',k>=PD.first&&k<=i)});$('pmPrevMsg').textContent=(i-PD.first+1)+' rows per slide'});
+ addEventListener('mouseup',()=>{if(!PD)return;const n=PD.to-PD.first+1;PD=null;$('pmPrevMsg').textContent='';pv.querySelectorAll('tr.pvd').forEach(t=>t.classList.remove('pvd'));if(n>=1)setPer(n)});
+ pv.addEventListener('click',e=>{if(e.target.closest('.pvh'))return;const tr=e.target.closest('tr[data-si]');if(tr&&+tr.dataset.si!==S.cur)go(+tr.dataset.si)})}
 
 /* ---------- slides ---------- */
 function add(k){chk();const at=S.cur+1;S.sl.splice(at,0,{k:'content',title:'New slide',sub:'',els:[]});S.cur=at;S.sel=null;S.rg=null;draw();syncUI()}
 function txt(){const s=cur();if(!s)return;const t=prompt('Enter text:');if(!t)return;chk();const e={id:++S.id,t:'text',x:64,y:140,w:500,h:60,txt:t,fs:18};s.els.push(e);S.sel=e.id;draw()}
 function img(f){const s=cur();if(!f||!s)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{chk();const w=Math.min(360,im.width),h=w*im.height/im.width;const e={id:++S.id,t:'img',x:540,y:130,w,h,src:r.result};s.els.push(e);S.sel=e.id;draw()};im.src=r.result};r.readAsDataURL(f)}
 function del(){const s=cur(),e=find(S.sel);if(!s||!e)return alert('Please click an element first.');chk();s.els=s.els.filter(x=>x!==e);S.sel=null;S.rg=null;draw();syncUI()}
-function ti(v){if(cur()){chk('t'+S.cur);cur().title=v;draw()}}
+function ti(v){if(cur()){chk('t'+S.cur);setTitle(cur(),v);draw()}}
 function su(v){if(cur()){chk('s'+S.cur);cur().sub=v;draw()}}
 function og(v){if(cur()){chk('o'+S.cur);cur().org=v;draw()}}
 function bd(v){if(cur()){chk('b'+S.cur);cur().badge=v;draw()}}
@@ -1102,9 +1163,9 @@ function stageHTML(s){let h;
  if(s.k==='title')h=`<div style="position:absolute;inset:0;background:#B3121B"></div><div class="stf" data-f="org" style="position:absolute;left:65px;top:115px;width:576px;height:36px;line-height:36px;font:bold 20px/36px Arial;color:#FDB913">${esc(s.org||'')}</div><div class="stf" data-f="title" style="position:absolute;left:65px;top:158px;width:605px;height:158px;font:bold 44px/1.15 Arial;color:#fff;white-space:pre-wrap">${esc(s.title)}</div><div class="stf" data-f="sub" style="position:absolute;left:65px;top:324px;width:619px;height:36px;font:16px/36px Arial;color:#fff">${esc(s.sub)}</div><div class="stf" data-f="badge" style="position:absolute;left:65px;top:382px;width:331px;height:40px;background:#FDB913;color:#2B2B2B;font:bold 13px/40px Arial;text-align:center">${esc(s.badge||'')}</div><div style="position:absolute;left:672px;top:43px;width:223px;height:216px;background:#fff"></div><img src="${LOGO}" draggable="false" style="position:absolute;left:695px;top:68px;width:177px;height:114px">`;
  else h=`<div class="stf" data-f="title" style="position:absolute;left:64px;top:36px;width:832px;font:bold 28px Arial;color:#B3121B;white-space:nowrap;overflow:hidden">${esc(s.title)}</div><div style="position:absolute;left:64px;top:68px;width:100px;height:4px;background:#FDB913"></div><div class="stf" data-f="sub" style="position:absolute;left:64px;top:84px;width:832px;min-height:18px;font:14px Arial;color:#2B2B2B">${esc(s.sub)}</div><div style="position:absolute;right:64px;top:495px;font:12px Arial;color:#B3121B">डाक सेवा जन सेवा</div>`;
  return h+s.els.map(elHTML).join('')}
-function draw(){const s=cur(),v=$('pmView');list();if(!s){v.style.height='80px';v.innerHTML='';return}
+function draw(){renum();const s=cur(),v=$('pmView');list();if(!s){v.style.height='80px';v.innerHTML='';return}
  const sc=Math.min(1.4,(v.clientWidth||960)/960);S.sc=sc;v.style.height=540*sc+'px';
- v.innerHTML=`<div style="position:absolute;left:0;top:0;width:960px;height:540px;transform:scale(${sc});transform-origin:0 0;background:#fff;overflow:hidden;box-shadow:0 0 0 1px #bbb">${stageHTML(s)}</div>`;paint();updUndo()}
+ v.innerHTML=`<div style="position:absolute;left:0;top:0;width:960px;height:540px;transform:scale(${sc});transform-origin:0 0;background:#fff;overflow:hidden;box-shadow:0 0 0 1px #bbb">${stageHTML(s)}</div>`;paint();updUndo();drawPrev()}
 function paint(){document.querySelectorAll('#pmView .pmel').forEach(d=>d.classList.toggle('on',d.dataset.id==S.sel));const R=S.rg;
  document.querySelectorAll('#pmView td[data-r]').forEach(td=>{const r=+td.dataset.r,c=+td.dataset.c,on=R&&td.closest('.pmel').dataset.id==S.sel&&r>=R.r1&&r<=R.r2&&c>=R.c1&&c<=R.c2;td.classList.toggle('sel',!!on)})}
 function syncUI(){const s=cur();$('pmT').value=s?s.title:'';$('pmS').value=s?s.sub:'';const o=$('pmO');o.style.display=s&&s.k==='title'?'':'none';o.value=s&&s.org!=null?s.org:'';const b=$('pmB');b.style.display=s&&s.k==='title'?'':'none';b.value=s&&s.badge!=null?s.badge:''}
@@ -1119,7 +1180,7 @@ function colDrag(E,j,e){const k=j+1<E.cw.length?j+1:j-1;if(k<0)return;chk();cons
  const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);draw()};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
 function editField(el){const f=el.dataset.f,s=cur();el.contentEditable='true';el.focus();
  const rg=document.createRange();rg.selectNodeContents(el);const sl=getSelection();sl.removeAllRanges();sl.addRange(rg);
- el.onblur=()=>{const v=el.innerText.replace(/\n+$/,'');if(v!==s[f]){chk();s[f]=v}draw();syncUI()}}
+ el.onblur=()=>{const v=el.innerText.replace(/\n+$/,'');if(v!==s[f]){chk();if(f==='title')setTitle(s,v);else s[f]=v}draw();syncUI()}}
 function bind(){const v=$('pmView');
  v.addEventListener('mousedown',e=>{const t=e.target;if(t.isContentEditable||e.button!==0)return;const d=t.closest('.pmel');if(!d){S.sel=null;S.rg=null;paint();return}
   const E=find(d.dataset.id);if(!E)return;if(S.sel!=E.id){S.sel=E.id;S.rg=null}
@@ -1184,9 +1245,13 @@ function ctxShow(x,y,E){
 function op(fn){chk();fn();S.rg=null;draw();syncUI()}
 function clearCells(el,R){chk();each(el,R,x=>{x.v='';x.n=null});relayout(el,true);draw()}
 function mergeSel(){const el=needSel();if(!el)return;const R=S.rg;if(R.r1===R.r2&&R.c1===R.c2)return toast('Select two or more cells to merge');chk();
+ /* the merged cell keeps the text of every selected cell (e.g. a division name typed in the 8th cell is not lost) */
+ const vals=[];each(el,R,x=>{const v=String(x.v==null?'':x.v).trim();if(v&&!vals.includes(v))vals.push(v)});
  el.m=el.m.filter(([r,c,rs,cs])=>!(r<=R.r2&&r+rs-1>=R.r1&&c<=R.c2&&c+cs-1>=R.c1));
  el.m.push([R.r1,R.c1,R.r2-R.r1+1,R.c2-R.c1+1]);
- each(el,R,(x,r,c)=>{if(r!==R.r1||c!==R.c1){x.v='';x.n=null}});relayout(el,true);draw()}
+ each(el,R,(x,r,c)=>{if(r!==R.r1||c!==R.c1){x.v='';x.n=null}});
+ const tl=el.d[R.r1][R.c1];tl.v=vals.join(' ');tl.n=vals.length===1?strN(vals[0]):null;
+ relayout(el,true);draw()}
 function unmergeSel(){const el=needSel();if(!el)return;const R=S.rg;const n=el.m.length;
  const keep=el.m.filter(([r,c,rs,cs])=>!(r<=R.r2&&r+rs-1>=R.r1&&c<=R.c2&&c+cs-1>=R.c1));
  if(keep.length===n)return toast('No merged cells in the selection');chk();el.m=keep;relayout(el,true);draw()}
@@ -1207,7 +1272,7 @@ function moveRows(dir){
   const nt=JSON.parse(JSON.stringify(el));nt.id=++S.id;nt.rules=[];
   if(nt.d.length>nt.hr)delRows(nt,nt.hr,nt.d.length-1);
   insRows(nt,nt.hr,n,ex.rows,ex.mg);
-  S.sl.splice(si+1,0,{k:'content',title:s.title.replace(/ \(\d+\/\d+\)$/,'')+' (cont.)',sub:'',els:[nt]});
+  S.sl.splice(si+1,0,s.grp?{k:'content',title:'',sub:'',grp:s.grp,base:s.base,els:[nt]}:{k:'content',title:s.title+' (cont.)',sub:'',els:[nt]});
   tsi=si+1;tgt=nt;at=nt.hr;
  }else if(dir<0){at=tgt.d.length;insRows(tgt,at,n,ex.rows,ex.mg)}
  else{at=tgt.hr;insRows(tgt,at,n,ex.rows,ex.mg)}
@@ -1337,8 +1402,8 @@ function dl(){if(!window.PptxGenJS)return alert('The PptxGenJS library could not
     sd.addTable(rows,{x:g.x,y:g.y,w:g.w,colW:e.cw.map(f=>f*g.w),rowH:(e.rh||e.d.map(()=>1/e.d.length)).map(f=>f*g.h)})}})});
  p.writeFile({fileName:'Indore_Region_PPT.pptx'})}
 
-bind();draw();syncUI();
-return{load,make,rebuild,add,txt,img,del,ti,su,og,bd,go,mvS,rmS,fill,ext,clr,rule,clrRules,openChart,closeChart,mkChart,chat,dl,draw,undo,redo,moveRows,mergeSel,unmergeSel,ff,fsz,fsd,bold,ital,al}
+bind();bindPrev();draw();syncUI();
+return{_S:S,start,applyPer,setPer,load,make,rebuild,add,txt,img,del,ti,su,og,bd,go,mvS,rmS,fill,ext,clr,rule,clrRules,openChart,closeChart,mkChart,chat,dl,draw,undo,redo,moveRows,mergeSel,unmergeSel,ff,fsz,fsd,bold,ital,al}
 })();
 
 renderReport();
