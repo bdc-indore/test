@@ -97,6 +97,16 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 .pvt td[rowspan]{background:rgba(255,255,255,.6)}
 .pvt tr.pvd td{filter:brightness(.86)}
 @media print{header,nav,.noprint{display:none!important}main{padding:0}.card{box-shadow:none}}
+#pmTb{position:fixed;z-index:8000;display:none;gap:8px;align-items:center;flex-wrap:wrap;max-width:min(680px,96vw);background:#fff;border:1px solid #c5cad3;border-radius:8px;padding:5px 8px;box-shadow:0 6px 20px rgba(16,24,40,.25)}
+#pmTb .tg{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+#pmTb input[type=color]{width:28px;height:26px;padding:0;border:1px solid #bbb;background:#fff}
+#pmTb button{border:1px solid #c5cad3;background:#f6f7fa;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:13px;font-weight:600}
+#pmTb button:hover{background:#fdeaea}
+#pmTb select,#pmTb input[type=number]{padding:3px;font-size:12px}
+#pmTb label{font-size:11px;color:#5b6472}
+.gmt{border-collapse:collapse;font-size:12.5px;width:100%}.gmt th,.gmt td{border:1px solid #e1e4ea;padding:3px;vertical-align:middle}.gmt input[type=text],.gmt input[type=number]{width:100%;min-width:70px}.gmt input[type=color]{width:28px;height:22px;padding:0}
+#gdlg .box{width:760px}
+.pmel .rz{width:16px;height:16px;right:-9px;bottom:-9px}
 </style>
 </head>
 <body>
@@ -190,7 +200,18 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   </div>
   <div class="pmgrid">
     <div class="pmsl" id="pmList"></div>
-    <div><div id="pmView"></div></div>
+    <div><div class="row" id="pmStrip" style="margin:0 0 8px"><button class="b alt sm" onclick="PM.txt()">+ Text box</button><label class="b alt sm">Insert image / logo<input type="file" accept="image/*" hidden onchange="PM.img(this.files[0]);this.value=''"></label><button class="b sm" onclick="PM.openChart()">Create graph</button><button class="b alt sm" onclick="PM.add('content')">+ Blank slide</button><span class="hint">Click any item (cell, text, image, graph): a toolbar appears above it. Drag the red corner to resize (images keep proportion, hold Shift to stretch).</span></div><div id="pmView"></div>
+  <div class="card" id="pmPrevCard" style="display:none;margin-top:10px">
+    <h3>Excel preview – <span id="pmPrevName"></span></h3>
+    <div class="row">
+      <label><input type="checkbox" id="pmKeep" checked onchange="PM.applyPer(1)"> Keep merged groups together (e.g. a division with all its sub divisions stays on one slide)</label>
+      <label><input type="checkbox" id="pmAllSl"> Drag changes ALL slides (untick = only that slide)</label>
+      <span id="pmPrevMsg" class="hint" style="font-weight:700;color:#b3121b"></span>
+    </div>
+    <div class="hint" style="margin-bottom:6px">Every colour band is one slide. Drag the &#8661; handle at the end of a band up or down: by default only THAT slide gets the new row count (e.g. slide 1 = 14 rows, slide 2 = 12 rows). Tick the box to apply it to every slide. Click a row number to open that slide. Ctrl+Z undoes the change.</div>
+    <div id="pmPrev" style="overflow:auto;max-height:300px;border:1px solid #ccd1da;background:#fff"></div>
+  </div>
+</div>
     <div class="pmp">
       <div class="card"><h3>Slide text</h3>
         <input type="text" id="pmO" oninput="PM.og(this.value)" style="width:100%;display:none;margin-bottom:4px" placeholder="Cover label (e.g. INDIA POST)">
@@ -231,15 +252,6 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
         <div class="hint" style="margin-top:6px">Examples (English, Hindi or Hinglish):<br>• C5 cell green background<br>• font colour of B7 red<br>• row 4 above 25 red otherwise green<br>• column D below 90 red otherwise green<br>• create a slide from the selected cells<br>• create a graph<br>• title: Parcel Report</div></div>
     </div>
   </div>
-  <div class="card" id="pmPrevCard" style="display:none;margin-top:12px">
-    <h3>Excel preview – <span id="pmPrevName"></span></h3>
-    <div class="row">
-      <label><input type="checkbox" id="pmKeep" checked onchange="PM.applyPer()"> Keep merged groups together (e.g. a division with all its sub divisions stays on one slide)</label>
-      <span id="pmPrevMsg" class="hint" style="font-weight:700;color:#b3121b"></span>
-    </div>
-    <div class="hint" style="margin-bottom:6px">Every colour band is one slide. Drag the &#8661; handle at the end of a band up or down: all slides of this sheet are re-split with the same number of rows (for example 13 rows on every slide). Click a row number to open that slide. Ctrl+Z undoes the change.</div>
-    <div id="pmPrev" style="overflow:auto;max-height:340px;border:1px solid #ccd1da;background:#fff"></div>
-  </div>
 </section>
 
 <!-- ============ SETTINGS ============ -->
@@ -273,6 +285,14 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 </main>
 
 <div id="pmCtx"></div>
+<div id="pmPickBar" style="display:none;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9500;background:#1a73e8;color:#fff;padding:10px 16px;border-radius:8px;align-items:center;gap:12px;box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:14px;max-width:92vw"><span></span><button class="b sm gray" onclick="PM.pickCancel()">Cancel</button></div>
+<div id="pmTb" onmousedown="document.getElementById('pmSc').value='sel';if(!/INPUT|SELECT/.test(event.target.tagName))event.preventDefault()">
+<span class="tg" data-g="cell"><label>Fill</label><input type="color" id="tbBg" value="#ffff00" onchange="PM.tbFill('bg',this.value)"><label>Text</label><input type="color" id="tbFg" value="#ff0000" onchange="PM.tbFill('fg',this.value)">
+<select id="tbFf" onchange="PM.ff(this.value);this.value=''"><option value="">Font…</option><option>Arial</option><option>Calibri</option><option>Cambria</option><option>Georgia</option><option>Tahoma</option><option>Times New Roman</option><option>Trebuchet MS</option><option>Verdana</option><option>Courier New</option></select><input type="number" id="tbFs" value="12" min="6" max="40" style="width:50px" onchange="PM.tbSz(this.value)">
+<button onclick="PM.fsd(-1)">A&minus;</button><button onclick="PM.fsd(1)">A+</button><button onclick="PM.bold()"><b>B</b></button><button onclick="PM.ital()"><i>I</i></button><button onclick="PM.al('left')">&#8676;</button><button onclick="PM.al('center')">&#8596;</button><button onclick="PM.al('right')">&#8677;</button><button onclick="PM.mergeSel()">Merge</button></span>
+<span class="tg" data-g="txt"><label>Colour</label><input type="color" id="tbTc" value="#2b2b2b" onchange="PM.tx('col',this.value)"><select id="tbTf" onchange="PM.tx('ff',this.value)"><option>Arial</option><option>Calibri</option><option>Cambria</option><option>Georgia</option><option>Tahoma</option><option>Times New Roman</option><option>Trebuchet MS</option><option>Verdana</option><option>Courier New</option></select><input type="number" id="tbTs" min="6" max="120" style="width:54px" onchange="PM.tx('fs',this.value)"><button onclick="PM.txT('b')"><b>B</b></button><button onclick="PM.txT('i')"><i>I</i></button></span>
+<span class="tg" data-g="chart"><label>Bar thickness</label><input type="range" id="tbBw" min="30" max="100" style="width:90px" oninput="PM.bw(this.value)"><span id="tbSer" class="tg"></span><button onclick="PM.lblT()">Values</button><button onclick="PM.editChart()">Edit data</button></span>
+<span class="tg" data-g="obj"><button onclick="PM.scl(1/1.1)" title="Smaller">&minus;</button><button onclick="PM.scl(1.1)" title="Bigger">+</button><button onclick="PM.del()">Delete</button></span></div>
 <div id="gdlg"><div class="box" id="gbox"></div></div>
 <div id="toast"></div>
 
@@ -1056,25 +1076,27 @@ function start(M,name,at){
  $('pmInfo').textContent='Header rows: '+hr+(hv==='auto'?' (detected automatically)':' (selected)')+' – repeated on every slide. Use the Excel preview below the slides to change how many rows go on each slide.';
  draw()}
 /* page breaks: exactly "per" data rows per slide; a vertically merged group (division + its sub divisions) is never cut when "keep" is on */
-function chunks(F,per,keep){const N=F.d.length,hr=F.hr,ch=[];let st=hr;
- while(st<N){let e=Math.min(st+per,N);
+function chunks(F,per,keep,sz){const N=F.d.length,hr=F.hr,ch=[];let st=hr;sz=sz||{};
+ while(st<N){let e=Math.min(st+(sz[ch.length]||per),N);
   if(keep&&e<N){for(let g=0;g<50;g++){const cr=F.m.filter(([r,c,rs])=>rs>1&&r>=hr&&r<e&&r+rs>e);if(!cr.length)break;const r0=Math.min(...cr.map(x=>x[0]));e=r0>st?r0:Math.max(...cr.map(x=>x[0]+x[2]))}}
   ch.push([st,e]);st=e}
  if(!ch.length)ch.push([hr,hr]);return ch}
 function emit(F,name,at,per,base){
- const nc=F.d[0].length,hrs=[...Array(F.hr).keys()],ch=chunks(F,per,$('pmKeep').checked);
+ const nc=F.d[0].length,hrs=[...Array(F.hr).keys()],ch=chunks(F,per,$('pmKeep').checked,(S.src[F.g]||{}).sz);
  const mk=fs=>ch.map(([a,b])=>{const rows=[...hrs];for(let r=a;r<b;r++)rows.push(r);return sub(F,rows,0,nc-1,fs)});
  let ts=mk(null);const fs=Math.min(...ts.map(t=>t.fs));if(ts.some(t=>t.fs!==fs))ts=mk(fs);
  const out=ts.map(t=>({k:'content',title:'',sub:'',grp:F.g,base,els:[t]}));
  const pos=Math.max(1,at==null?S.sl.length:at);S.sl.splice(pos,0,...out);
  S.cur=pos;S.sel=null;S.rg=null;draw();syncUI()}
-function resplit(g,n){const src=S.src[g];if(!src)return;const ix=S.sl.findIndex(s=>s.els.some(e=>e.t==='table'&&e.g===g));if(ix<0)return;
- const base=S.sl[ix].grp?S.sl[ix].base:src.name;chk();
+function resplit(g,n,k){const src=S.src[g];if(!src)return;const ix=S.sl.findIndex(s=>s.els.some(e=>e.t==='table'&&e.g===g));if(ix<0)return;
+ const base=S.sl[ix].grp?S.sl[ix].base:src.name;chk();let per=Math.max(1,n);src.sz=src.sz||{};
+ if(typeof k==='number'){src.sz[k]=per;per=Math.max(1,+$('pmRows').value||15)}else if(k!=='keep')src.sz={};
  S.sl=S.sl.filter(s=>!s.els.some(e=>e.t==='table'&&e.g===g));
- emit(src.F,src.name,ix,Math.max(1,n),base);toast('All slides re-split: '+n+' rows per slide (Ctrl+Z to undo)')}
+ emit(src.F,src.name,ix,per,base);toast(typeof k==='number'?'Slide '+(k+1)+' now has '+n+' rows (Ctrl+Z to undo)':'All slides re-split (Ctrl+Z to undo)')}
+function setOne(b,n){const g=prevGroup();if(g)resplit(g,n,b)}
 const prevGroup=()=>{const el=curT();if(el&&S.src[el.g])return el.g;if(S.last&&S.src[S.last.g])return S.last.g;return null};
 function setPer(n){const g=prevGroup();if(!g)return;$('pmRows').value=Math.max(1,n);resplit(g,n)}
-function applyPer(){const g=prevGroup();if(!g)return;resplit(g,Math.max(1,+$('pmRows').value||15))}
+function applyPer(kp){const g=prevGroup();if(!g)return;resplit(g,Math.max(1,+$('pmRows').value||15),kp===1?'keep':undefined)}
 /* sub slide headings follow the main (first) slide heading: "<heading> (2/5)" */
 function renum(){const gs={};S.sl.forEach(s=>{if(s.grp)(gs[s.grp]=gs[s.grp]||[]).push(s)});
  for(const g in gs){const a=gs[g],k=a.length,base=a[0].base;a.forEach((s,i)=>{s.base=base;if(i>0&&s.own)return;s.own=false;s.title=base+(k>1?' ('+(i+1)+'/'+k+')':'')})}}
@@ -1100,10 +1122,10 @@ function drawPrev(){const card=$('pmPrevCard');if(!card)return;const g=prevGroup
  box.innerHTML=h+'</table>';box.scrollTop=sc}
 let PD=null;
 function bindPrev(){const pv=$('pmPrev');
- pv.addEventListener('mousedown',e=>{const hd=e.target.closest('.pvh[data-b]');if(!hd||e.button!==0)return;e.preventDefault();PD={first:+hd.dataset.f,to:+hd.closest('tr').dataset.i}});
+ pv.addEventListener('mousedown',e=>{const hd=e.target.closest('.pvh[data-b]');if(!hd||e.button!==0)return;e.preventDefault();PD={first:+hd.dataset.f,to:+hd.closest('tr').dataset.i,b:+hd.dataset.b}});
  pv.addEventListener('mouseover',e=>{if(!PD)return;const tr=e.target.closest('tr[data-i]');if(!tr)return;const i=+tr.dataset.i;if(i<PD.first)return;PD.to=i;
   pv.querySelectorAll('tr').forEach(t=>{const k=+t.dataset.i;t.classList.toggle('pvd',k>=PD.first&&k<=i)});$('pmPrevMsg').textContent=(i-PD.first+1)+' rows per slide'});
- addEventListener('mouseup',()=>{if(!PD)return;const n=PD.to-PD.first+1;PD=null;$('pmPrevMsg').textContent='';pv.querySelectorAll('tr.pvd').forEach(t=>t.classList.remove('pvd'));if(n>=1)setPer(n)});
+ addEventListener('mouseup',()=>{if(!PD)return;const n=PD.to-PD.first+1,bb=PD.b;PD=null;$('pmPrevMsg').textContent='';pv.querySelectorAll('tr.pvd').forEach(t=>t.classList.remove('pvd'));if(n>=1)($('pmAllSl').checked?setPer(n):setOne(bb,n))});
  pv.addEventListener('click',e=>{if(e.target.closest('.pvh'))return;const tr=e.target.closest('tr[data-si]');if(tr&&+tr.dataset.si!==S.cur)go(+tr.dataset.si)})}
 
 /* ---------- slides ---------- */
@@ -1136,15 +1158,16 @@ function chartHTML(e){
  if(k>1){const tw=e.series.reduce((a,s)=>a+String(s.name).slice(0,22).length*6.2+30,0);let lx=(W-tw)/2;e.series.forEach((s,j)=>{g+=`<rect x="${lx}" y="${H-20}" width="11" height="11" rx="2" fill="${col(j)}"/><text x="${lx+16}" y="${H-10}" font-size="11" fill="#444">${esc(String(s.name).slice(0,22))}</text>`;lx+=String(s.name).slice(0,22).length*6.2+30})}
  const lbl=e.lbl!==false;
  if(bar){
-  const labW=Math.min(190,Math.max(40,...e.labels.map(l=>String(l).length*6.2+12))),x0=labW+8,x1=W-58,y0=tH,y1=H-lH-4,gs=(y1-y0)/n,th=Math.min(34,gs*.7/k);
+  const labW=Math.min(190,Math.max(40,...e.labels.map(l=>String(l).length*6.2+12))),x0=labW+8,x1=W-58,y0=tH,y1=H-lH-4,gs=(y1-y0)/n,th=Math.min(e.bw?120:34,gs*(e.bw?e.bw/100:.7)/k);
   g+=`<line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}" stroke="#9aa1ad"/>`;
   e.labels.forEach((l,i)=>{const gp=y0+i*gs,cy=gp+gs/2,top=cy-th*k/2;
    g+=`<text x="${labW}" y="${cy+4}" font-size="11.5" fill="#333" text-anchor="end">${esc(String(l).slice(0,Math.floor(labW/6.2)))}</text>`;
    e.series.forEach((s,j)=>{const v=s.vals[i]||0,len=Math.max(0,v)/nm.mx*(x1-x0);
     g+=`<rect x="${x0}" y="${top+j*th}" width="${len}" height="${th-2}" rx="2" fill="${col(j)}"/>`;
     if(lbl)g+=`<text x="${x0+len+4}" y="${top+j*th+th/2+3}" font-size="11" font-weight="700" fill="#333">${fmtN(v)}</text>`})});
+  (e.sep||[]).forEach(i=>{const y=y0+i*gs;g+=`<line x1="6" y1="${y}" x2="${x1+40}" y2="${y}" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="5 4"/>`});
  }else{
-  const x0=60,x1=W-14,y0=tH+14,y1=H-lH-34,aw=x1-x0,ah=y1-y0,gs=aw/n,th=Math.min(46,gs*.72/k);
+  const x0=60,x1=W-14,y0=tH+14,y1=H-lH-34,aw=x1-x0,ah=y1-y0,gs=aw/n,th=Math.min(e.bw?140:46,gs*(e.bw?e.bw/100:.72)/k);
   for(let t=0;t<=Math.round(nm.mx/nm.st);t++){const v=t*nm.st,y=y1-v/nm.mx*ah;g+=`<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="${t?'#e3e6ec':'#9aa1ad'}"/><text x="${x0-6}" y="${y+4}" font-size="10" fill="#666" text-anchor="end">${fmtN(v)}</text>`}
   const mc=Math.max(4,Math.floor(gs/5.4));
   e.labels.forEach((l,i)=>{const cx=x0+(i+.5)*gs,s0=String(l),t=s0.length>mc?s0.slice(0,mc-1)+'…':s0;
@@ -1152,12 +1175,13 @@ function chartHTML(e){
    if(ty==='col')e.series.forEach((s,j)=>{const v=s.vals[i]||0,len=Math.max(0,v)/nm.mx*ah,bx=cx-th*k/2+j*th;
     g+=`<rect x="${bx}" y="${y1-len}" width="${th-2}" height="${len}" rx="2" fill="${col(j)}"/>`;
     if(lbl)g+=`<text x="${bx+(th-2)/2}" y="${y1-len-4}" font-size="10" font-weight="700" fill="#333" text-anchor="middle">${fmtN(v)}</text>`})});
+  (e.sep||[]).forEach(i=>{const x=x0+i*gs;g+=`<line x1="${x}" y1="${y0-8}" x2="${x}" y2="${y1+30}" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="5 4"/>`});
   if(ty==='line')e.series.forEach((s,j)=>{const pts=s.vals.map((v,i)=>[x0+(i+.5)*gs,y1-Math.max(0,v)/nm.mx*ah]);
    g+=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${col(j)}" stroke-width="3"/>`;
    pts.forEach((p,i)=>{g+=`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#fff" stroke="${col(j)}" stroke-width="2.5"/>`;if(lbl)g+=`<text x="${p[0]}" y="${p[1]-9}" font-size="10" font-weight="700" fill="#333" text-anchor="middle">${fmtN(s.vals[i]||0)}</text>`})});
  }
  return`<svg width="${W}" height="${H}" font-family="${F}">${g}</svg>`}
-function elHTML(e){let h='';if(e.t==='table')h=tblHTML(e);else if(e.t==='chart')h=chartHTML(e);else if(e.t==='img')h=`<img src="${e.src}" draggable="false" style="width:100%;height:100%">`;else h=`<div style="font:${e.fs}px Arial;color:#2B2B2B;white-space:pre-wrap">${esc(e.txt)}</div>`;
+function elHTML(e){let h='';if(e.t==='table')h=tblHTML(e);else if(e.t==='chart')h=chartHTML(e);else if(e.t==='img')h=`<img src="${e.src}" draggable="false" style="width:100%;height:100%">`;else h=`<div style="font:${e.i?'italic ':''}${e.b?'bold ':''}${e.fs}px ${e.ff||'Arial'};color:${e.col||'#2B2B2B'};white-space:pre-wrap">${esc(e.txt)}</div>`;
  return`<div class="pmel" data-id="${e.id}" data-t="${e.t}" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px">${h}<span class="rz"></span>${e.t==='table'?'<span class="mv">&#10021; drag</span>':''}</div>`}
 function stageHTML(s){let h;
  if(s.k==='title')h=`<div style="position:absolute;inset:0;background:#B3121B"></div><div class="stf" data-f="org" style="position:absolute;left:65px;top:115px;width:576px;height:36px;line-height:36px;font:bold 20px/36px Arial;color:#FDB913">${esc(s.org||'')}</div><div class="stf" data-f="title" style="position:absolute;left:65px;top:158px;width:605px;height:158px;font:bold 44px/1.15 Arial;color:#fff;white-space:pre-wrap">${esc(s.title)}</div><div class="stf" data-f="sub" style="position:absolute;left:65px;top:324px;width:619px;height:36px;font:16px/36px Arial;color:#fff">${esc(s.sub)}</div><div class="stf" data-f="badge" style="position:absolute;left:65px;top:382px;width:331px;height:40px;background:#FDB913;color:#2B2B2B;font:bold 13px/40px Arial;text-align:center">${esc(s.badge||'')}</div><div style="position:absolute;left:672px;top:43px;width:223px;height:216px;background:#fff"></div><img src="${LOGO}" draggable="false" style="position:absolute;left:695px;top:68px;width:177px;height:114px">`;
@@ -1167,14 +1191,14 @@ function draw(){renum();const s=cur(),v=$('pmView');list();if(!s){v.style.height
  const sc=Math.min(1.4,(v.clientWidth||960)/960);S.sc=sc;v.style.height=540*sc+'px';
  v.innerHTML=`<div style="position:absolute;left:0;top:0;width:960px;height:540px;transform:scale(${sc});transform-origin:0 0;background:#fff;overflow:hidden;box-shadow:0 0 0 1px #bbb">${stageHTML(s)}</div>`;paint();updUndo();drawPrev()}
 function paint(){document.querySelectorAll('#pmView .pmel').forEach(d=>d.classList.toggle('on',d.dataset.id==S.sel));const R=S.rg;
- document.querySelectorAll('#pmView td[data-r]').forEach(td=>{const r=+td.dataset.r,c=+td.dataset.c,on=R&&td.closest('.pmel').dataset.id==S.sel&&r>=R.r1&&r<=R.r2&&c>=R.c1&&c<=R.c2;td.classList.toggle('sel',!!on)})}
+ document.querySelectorAll('#pmView td[data-r]').forEach(td=>{const r=+td.dataset.r,c=+td.dataset.c,on=R&&td.closest('.pmel').dataset.id==S.sel&&r>=R.r1&&r<=R.r2&&c>=R.c1&&c<=R.c2;td.classList.toggle('sel',!!on)});tb()}
 function syncUI(){const s=cur();$('pmT').value=s?s.title:'';$('pmS').value=s?s.sub:'';const o=$('pmO');o.style.display=s&&s.k==='title'?'':'none';o.value=s&&s.org!=null?s.org:'';const b=$('pmB');b.style.display=s&&s.k==='title'?'':'none';b.value=s&&s.badge!=null?s.badge:''}
 
 /* ---------- mouse ---------- */
 function setRg(r,c){const a=S.an;S.rg={r1:Math.min(a[0],r),r2:Math.max(a[0],r),c1:Math.min(a[1],c),c2:Math.max(a[1],c)}}
-function drag(E,rz,e){chk();const x0=e.clientX,y0=e.clientY,o={x:E.x,y:E.y,w:E.w,h:E.h},dv=document.querySelector('.pmel[data-id="'+E.id+'"]');
- const mv=ev=>{const dx=(ev.clientX-x0)/S.sc,dy=(ev.clientY-y0)/S.sc;if(rz){E.w=Math.max(30,o.w+dx);E.h=Math.max(20,o.h+dy)}else{E.x=o.x+dx;E.y=o.y+dy}Object.assign(dv.style,{left:E.x+'px',top:E.y+'px',width:E.w+'px',height:E.h+'px'})};
- const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);if(E.t==='table'&&rz)E.fs=fsOf(E.h,E.u||E.d.length);draw()};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
+function drag(E,rz,e){chk();S.mv=1;{const q=$('pmTb');if(q)q.style.display='none'}const x0=e.clientX,y0=e.clientY,o={x:E.x,y:E.y,w:E.w,h:E.h},dv=document.querySelector('.pmel[data-id="'+E.id+'"]');
+ const mv=ev=>{const dx=(ev.clientX-x0)/S.sc,dy=(ev.clientY-y0)/S.sc;if(rz){E.w=Math.max(30,o.w+dx);E.h=E.t==='img'&&!ev.shiftKey?Math.max(20,E.w*o.h/o.w):Math.max(20,o.h+dy)}else{E.x=o.x+dx;E.y=o.y+dy}Object.assign(dv.style,{left:E.x+'px',top:E.y+'px',width:E.w+'px',height:E.h+'px'})};
+ const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);S.mv=0;if(E.t==='table'&&rz)E.fs=fsOf(E.h,E.u||E.d.length);draw()};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
 function colDrag(E,j,e){const k=j+1<E.cw.length?j+1:j-1;if(k<0)return;chk();const x0=e.clientX,cw0=E.cw.slice(),cols=document.querySelectorAll('.pmel[data-id="'+E.id+'"] col');
  const mv=ev=>{const dx=(ev.clientX-x0)/S.sc/E.w;let a=cw0[j]+dx,b=cw0[k]-dx;const mn=.02;if(a<mn){b-=mn-a;a=mn}if(b<mn){a-=mn-b;b=mn}E.cw=cw0.slice();E.cw[j]=a;E.cw[k]=b;cols.forEach((c,i)=>c.style.width=E.cw[i]*100+'%')};
  const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);draw()};addEventListener('mousemove',mv);addEventListener('mouseup',up)}
@@ -1193,7 +1217,7 @@ function bind(){const v=$('pmView');
   paint()});
  v.addEventListener('mousemove',e=>{if(S.dn)return;const td=e.target.closest&&e.target.closest('td[data-r]');v.style.cursor=td&&!td.isContentEditable&&td.getBoundingClientRect().right-e.clientX<=4?'col-resize':''});
  v.addEventListener('mouseover',e=>{const td=e.target.closest&&e.target.closest('td[data-r]');if(S.dn&&td&&td.closest('.pmel').dataset.id==S.sel){setRg(+td.dataset.r,+td.dataset.c);paint()}});
- addEventListener('mouseup',()=>{S.dn=0});
+ addEventListener('mouseup',()=>{const w=S.dn;S.dn=0;if(w&&S.pick)pickDone();setTimeout(tb,0)});addEventListener('scroll',()=>tb(),true);
  v.addEventListener('dblclick',e=>{const f=e.target.closest('.stf');if(f&&!f.isContentEditable){editField(f);return}
   const td=e.target.closest('td[data-r]');if(td){td.contentEditable='true';td.focus();td.onblur=()=>{const el=find(S.sel);if(!el)return;const x=el.d[+td.dataset.r][+td.dataset.c];if(td.textContent!==x.v){chk();x.v=td.textContent;x.n=strN(x.v);relayout(el,true)}draw()};return}
   const d=e.target.closest('.pmel'),E=d&&find(d.dataset.id);if(E&&E.t==='text'){const t=prompt('Edit text:',E.txt);if(t!=null){chk();E.txt=t;draw()}}});
@@ -1308,7 +1332,7 @@ function al(a){fmt(x=>x.al=a)}
 /* ---------- graph dialog ---------- */
 const hdrName=(el,c)=>{const t=[];for(let r=0;r<el.hr;r++){let v=el.d[r][c].v;const g=el.m.find(([mr,mc,rs,cs])=>r>=mr&&r<mr+rs&&c>=mc&&c<mc+cs);if(g)v=el.d[g[0]][g[1]].v;if(v&&!t.includes(v))t.push(v)}return t.join(' – ')||cLab(el,c)};
 function openChart(){
- const el=curT();if(!el)return alert('Please open a slide that contains a table first.');
+ const el=curT();if(!el){S.cd=null;S.ce=null;S.mg=dm();$('gbox').innerHTML='<h3 style="margin:0 0 6px;color:#B3121B">Create graph (manual)</h3><div id="gMan">'+manHTML()+'</div>';$('gdlg').style.display='flex';return}
  const nc=el.d[0].length,ids=[...Array(nc).keys()];
  const filled=c=>{let a=0;for(let r=el.hr;r<el.d.length;r++)if(el.d[r][c].v!=='')a++;return a};
  const isNum=c=>{let a=0,b=0;for(let r=el.hr;r<el.d.length;r++){const x=el.d[r][c];if(x.v!==''){b++;if(x.n!=null)a++}}return b>0&&a/b>=.6};
@@ -1319,15 +1343,16 @@ function openChart(){
  if(!vals.length){const f=ids.find(c=>c!==lab&&isNum(c));if(f!=null)vals=[f]}
  const hasRows=S.rg&&S.sel===el.id&&S.rg.r2>=el.hr;
  const base=cur().title.replace(/ \(\d+\/\d+\)$/,'');
- S.cd=el.id;
+ S.cd=el.id;S.ce=null;S.mg=null;S.cr=hasRows?{...S.rg}:null;
  let h=`<h3 style="margin:0 0 6px;color:#B3121B">Create graph</h3>
+ <div class="row"><button class="b sm" id="gtA" onclick="PM.gtab(0)">From slide table</button><button class="b sm gray" id="gtM" onclick="PM.gtab(1)">Manual entry (type your own data)</button></div><div id="gAuto">
  <div class="gr"><label>Graph title</label><input type="text" id="gTitle" value="${esc(base)}"></div>
  <div class="gr"><label>Chart type</label><select id="gTy"><option value="col">Column (vertical bars)</option><option value="bar">Bar (horizontal bars)</option><option value="line">Line</option></select></div>
- <div class="gr"><label>Name (category) column – shown on the axis</label><select id="gLab">${ids.map(c=>`<option value="${c}" ${c===lab?'selected':''}>${esc(cLab(el,c)+' – '+hdrName(el,c).slice(0,50))}</option>`).join('')}</select></div>
- <div class="gr"><label>Value columns – tick one or more, rename and choose a colour for each series</label><div class="gcols">${ids.map((c,i)=>`<div class="gcol"><input type="checkbox" id="gk_${c}" ${vals.includes(c)?'checked':''}><span>${esc(cLab(el,c)+' – '+hdrName(el,c).slice(0,40))}</span><input type="text" id="gn_${c}" value="${esc(hdrName(el,c).slice(0,40))}"><input type="color" id="gc_${c}" value="#${PAL[i%PAL.length].toLowerCase()}"></div>`).join('')}</div></div>
+ <div class="gr"><label>Name (category) column – shown on the axis <button class="b sm alt" onclick="PM.pick('lab')">Pick from slide</button></label><select id="gLab">${ids.map(c=>`<option value="${c}" ${c===lab?'selected':''}>${esc(cLab(el,c)+' – '+hdrName(el,c).slice(0,50))}</option>`).join('')}</select></div>
+ <div class="gr"><label>Value columns – tick one or more, rename and choose a colour for each series <button class="b sm alt" onclick="PM.pick('val')">Pick from slide</button> <span style="font-weight:400">(click / drag columns on the slide; repeat to add more)</span></label><div class="gcols">${ids.map((c,i)=>`<div class="gcol"><input type="checkbox" id="gk_${c}" ${vals.includes(c)?'checked':''}><span>${esc(cLab(el,c)+' – '+hdrName(el,c).slice(0,40))}</span><input type="text" id="gn_${c}" value="${esc(hdrName(el,c).slice(0,40))}"><input type="color" id="gc_${c}" value="#${PAL[i%PAL.length].toLowerCase()}"></div>`).join('')}</div></div>
  <div class="gr"><label>Rows</label><label style="font-weight:400"><input type="radio" name="gR" value="all" ${hasRows?'':'checked'}> All data rows</label> &nbsp; <label style="font-weight:400"><input type="radio" name="gR" value="sel" ${hasRows?'checked':'disabled'}> Selected rows only</label></div>
- <div class="gr"><label style="font-weight:400"><input type="checkbox" id="gTot"> Include the "Total" row</label> &nbsp; <label style="font-weight:400"><input type="checkbox" id="gLbl" checked> Show data labels</label></div>
- <div class="row"><button class="b" onclick="PM.mkChart()">Create graph</button><button class="b gray" onclick="PM.closeChart()">Cancel</button></div>`;
+ <div class="gr"><label style="font-weight:400"><input type="checkbox" id="gTot"> Include the "Total" row</label> &nbsp; <label style="font-weight:400"><input type="checkbox" id="gLbl" checked> Show data labels</label> &nbsp; Bar thickness <input type="range" id="gBw" min="30" max="100" value="72" style="width:110px"></div>
+ <div class="row"><button class="b" onclick="PM.mkChart()">Create graph</button><button class="b gray" onclick="PM.closeChart()">Cancel</button></div></div><div id="gMan" style="display:none"></div>`;
  $('gbox').innerHTML=h;$('gdlg').style.display='flex'}
 function closeChart(){$('gdlg').style.display='none'}
 function mkChart(){
@@ -1335,18 +1360,76 @@ function mkChart(){
  const lc=+$('gLab').value,vc=[...Array(el.d[0].length).keys()].filter(c=>$('gk_'+c)&&$('gk_'+c).checked&&c!==lc);
  if(!vc.length)return alert('Please tick at least one value column.');
  let r1=el.hr,r2=el.d.length-1;const rsel=document.querySelector('input[name=gR]:checked');
- if(rsel&&rsel.value==='sel'&&S.rg){r1=Math.max(S.rg.r1,el.hr);r2=S.rg.r2}
+ const CR=S.cr||S.rg;if(rsel&&rsel.value==='sel'&&CR){r1=Math.max(CR.r1,el.hr);r2=CR.r2}
  const inclTot=$('gTot').checked,rows=[];
  for(let r=r1;r<=r2;r++){if(!inclTot&&isTot(el,r))continue;if(el.d[r][lc].v==='')continue;rows.push(r)}
  if(!rows.length)return alert('No rows with a name were found for the graph.');
  chk();
- const e={id:++S.id,t:'chart',ty:$('gTy').value,x:64,y:118,w:832,h:380,title:$('gTitle').value.trim(),lbl:$('gLbl').checked,
+ const e={id:++S.id,t:'chart',ty:$('gTy').value,x:64,y:118,w:832,h:380,title:$('gTitle').value.trim(),lbl:$('gLbl').checked,bw:+$('gBw').value,sep:rows.map((r,i)=>isTot(el,r)&&i>0?i:-1).filter(i=>i>0),
   labels:rows.map(r=>el.d[r][lc].v),
   series:vc.map(c=>({name:$('gn_'+c).value||hdrName(el,c),color:$('gc_'+c).value.slice(1).toUpperCase(),vals:rows.map(r=>el.d[r][c].n||0)}))};
  S.sl.splice(S.cur+1,0,{k:'content',title:cur().title.replace(/ \(\d+\/\d+\)$/,'')+' – Graph',sub:'',els:[e]});
  S.cur++;S.sel=e.id;S.rg=null;closeChart();draw();syncUI()}
 function slideFromSel(){const el=curT();if(!el||!S.rg)return false;chk();const tmp=JSON.parse(JSON.stringify(el));bakeRules(tmp);const R=S.rg,rows=[];for(let r=0;r<el.hr;r++)rows.push(r);for(let r=Math.max(R.r1,el.hr);r<=R.r2;r++)rows.push(r);
  const e=sub(tmp,rows,R.c1,R.c2);S.sl.splice(S.cur+1,0,{k:'content',title:cur().title+' – Selected',sub:'',els:[e]});S.cur++;S.sel=null;S.rg=null;draw();syncUI();return true}
+
+/* ---------- floating toolbar, picker, manual graph ---------- */
+function tb(){const b=$('pmTb');if(!b)return;const E=pptOpen()&&!S.dn&&!S.mv&&!S.pick?find(S.sel):null,d=E&&$('pmView').querySelector('.pmel[data-id="'+E.id+'"]');
+ let g=null;if(d)g=E.t==='table'?(S.rg?'cell':null):E.t==='text'?'txt':E.t==='chart'?'chart':'obj';
+ if(!g){b.style.display='none';return}
+ b.querySelectorAll('.tg').forEach(x=>x.style.display=(x.dataset.g===g||(x.dataset.g==='obj'&&g!=='cell'))?'':'none');
+ if(g==='txt'){$('tbTc').value=E.col||'#2b2b2b';$('tbTf').value=E.ff||'Arial';$('tbTs').value=E.fs}
+ if(g==='chart'){$('tbBw').value=E.bw||72;const sg=E.id+E.series.map(s=>s.color).join();if(b.dataset.sig!==sg){b.dataset.sig=sg;$('tbSer').innerHTML=E.series.map((s,j)=>`<input type="color" title="${esc(s.name)}" value="#${s.color||PAL[j%PAL.length]}" onchange="PM.sc(${j},this.value)">`).join('')}}
+ let rc=d.getBoundingClientRect();
+ if(g==='cell'){const a=[...d.querySelectorAll('td.sel')];if(a.length){const p=a[0].getBoundingClientRect(),q=a[a.length-1].getBoundingClientRect();rc={left:Math.min(p.left,q.left),top:Math.min(p.top,q.top),bottom:Math.max(p.bottom,q.bottom)}}}
+ b.style.display='flex';const w=b.offsetWidth,h=b.offsetHeight;let y=rc.top-h-8;if(y<4)y=Math.min(rc.bottom+8,innerHeight-h-4);
+ b.style.left=Math.max(4,Math.min(rc.left,innerWidth-w-4))+'px';b.style.top=y+'px'}
+const tbFill=(k,v)=>{$(k==='bg'?'pmBg':'pmFg').value=v;fill(k)};
+const tbSz=v=>{$('pmFs').value=v;fsz()};
+const tEl=()=>{const E=find(S.sel);return E&&E.t==='text'?E:null};
+function tx(k,v){const E=tEl();if(!E)return;chk('tx'+k+E.id);E[k]=k==='fs'?Math.max(6,Math.min(120,+v||18)):v;draw()}
+function txT(k){const E=tEl();if(!E)return;chk();E[k]=!E[k];draw()}
+function scl(f){const E=find(S.sel);if(!E)return;chk();E.w=Math.max(30,E.w*f);E.h=Math.max(20,E.h*f);if(E.t==='text')E.fs=Math.max(6,Math.round(E.fs*f));draw()}
+const cEl=()=>{const E=find(S.sel);return E&&E.t==='chart'?E:null};
+function bw(v){const E=cEl();if(!E)return;chk('bw'+E.id);E.bw=+v;draw()}
+function sc(j,v){const E=cEl();if(!E)return;chk();E.series[j].color=v.slice(1).toUpperCase();draw()}
+function lblT(){const E=cEl();if(!E)return;chk();E.lbl=E.lbl===false;draw()}
+function pick(k){const el=find(S.cd);if(!el)return;S.pick=k;$('gdlg').style.display='none';const p=$('pmPickBar');p.style.display='flex';
+ p.querySelector('span').textContent=k==='lab'?'Click a cell in the NAME / axis column of the slide table':'Click or drag over the VALUE column(s) in the slide table';S.sel=el.id;S.rg=null;paint()}
+function pickCancel(){S.pick=null;$('pmPickBar').style.display='none';$('gdlg').style.display='flex'}
+function pickDone(){const el=find(S.cd),R=S.rg,k=S.pick;if(!el||!R||S.sel!==el.id)return;S.pick=null;$('pmPickBar').style.display='none';$('gdlg').style.display='flex';
+ if(k==='lab')$('gLab').value=R.c1;else for(let c=R.c1;c<=R.c2;c++){const x=$('gk_'+c);if(x)x.checked=true}
+ if(R.r2>R.r1&&R.r2>=el.hr){S.cr={...R};const r=document.querySelector('input[name=gR][value=sel]');if(r){r.disabled=false;r.checked=true}}
+ toast(k==='lab'?'Name column set':'Value column(s) added – pick again to add more')}
+function gtab(i){const a=$('gAuto'),m=$('gMan');if(!m)return;a.style.display=i?'none':'';m.style.display=i?'':'none';$('gtA').classList.toggle('gray',!!i);$('gtM').classList.toggle('gray',!i);if(i){if(!S.mg)S.mg=dm();m.innerHTML=manHTML()}}
+const dm=()=>({ser:[{n:'Target',c:'B3121B'},{n:'Achievement',c:'FDB913'}],rows:[{c:'Ratlam Division',v:['',''],t:0},{c:'Ujjain Division',v:['',''],t:0}],ty:'col',bw:72,lbl:true,title:''});
+function calcTot(){const m=S.mg;m.rows.forEach((r,i)=>{if(!r.a)return;m.ser.forEach((s,j)=>{let a=0;for(let k=0;k<i;k++)if(!m.rows[k].a)a+=+m.rows[k].v[j]||0;r.v[j]=a;const x=$('gmv_'+i+'_'+j);if(x)x.value=a})})}
+function manHTML(){calcTot();const m=S.mg;
+ return `<div class="gr"><label>Graph title</label><input type="text" value="${esc(m.title)}" oninput="PM.mset('title',this.value)"></div>
+ <div class="gr row"><select onchange="PM.mset('ty',this.value)"><option value="col" ${m.ty==='col'?'selected':''}>Column (vertical)</option><option value="bar" ${m.ty==='bar'?'selected':''}>Bar (horizontal)</option><option value="line" ${m.ty==='line'?'selected':''}>Line</option></select>
+ <label style="font-weight:400">Bar thickness <input type="range" min="30" max="100" value="${m.bw}" style="width:110px" oninput="PM.mset('bw',this.value)"></label>
+ <label style="font-weight:400"><input type="checkbox" ${m.lbl?'checked':''} onchange="PM.mset('lbl',this.checked)"> Show values</label></div>
+ <div style="overflow:auto"><table class="gmt"><tr><th>Name (on axis)</th>${m.ser.map((s,j)=>`<th><input type="text" value="${esc(s.n)}" oninput="PM.msn(${j},this.value)"><input type="color" value="#${s.c}" onchange="PM.msc(${j},this.value)"> <button class="b sm gray" onclick="PM.mdelS(${j})">&#10005;</button></th>`).join('')}<th>Line above</th><th></th></tr>
+ ${m.rows.map((r,i)=>`<tr><td><input type="text" value="${esc(r.c)}" oninput="PM.mcat(${i},this.value)"></td>${m.ser.map((s,j)=>`<td><input type="number" id="gmv_${i}_${j}" value="${r.v[j]??''}" ${r.a?'disabled':''} oninput="PM.mval(${i},${j},this.value)"></td>`).join('')}<td style="text-align:center"><input type="checkbox" ${r.t?'checked':''} onchange="PM.mtot(${i},this.checked)">${r.a?' &Sigma;':''}</td><td><button class="b sm gray" onclick="PM.mdelR(${i})">&#10005;</button></td></tr>`).join('')}</table></div>
+ <div class="row"><button class="b sm alt" onclick="PM.madd()">+ Row</button><button class="b sm alt" onclick="PM.maddS()">+ Series</button><button class="b sm alt" onclick="PM.maddT()">+ Total row (sum of rows above, with a line)</button></div>
+ <div class="row"><button class="b" onclick="PM.mkMan()">${S.ce?'Update graph':'Create graph'}</button><button class="b gray" onclick="PM.closeChart()">Cancel</button></div>`}
+const mre=()=>{$('gMan').innerHTML=manHTML()};
+const mset=(k,v)=>{S.mg[k]=k==='bw'?+v:v};
+const msn=(j,v)=>{S.mg.ser[j].n=v},msc=(j,v)=>{S.mg.ser[j].c=v.slice(1).toUpperCase()},mcat=(i,v)=>{S.mg.rows[i].c=v};
+const mval=(i,j,v)=>{S.mg.rows[i].v[j]=v;calcTot()},mtot=(i,b)=>{S.mg.rows[i].t=b?1:0};
+function mdelS(j){const m=S.mg;if(m.ser.length<2)return;m.ser.splice(j,1);m.rows.forEach(r=>r.v.splice(j,1));mre()}
+function mdelR(i){S.mg.rows.splice(i,1);mre()}
+function madd(){S.mg.rows.push({c:'',v:S.mg.ser.map(()=>''),t:0});mre()}
+function maddS(){const m=S.mg,n=m.ser.length;m.ser.push({n:'Series '+(n+1),c:PAL[n%PAL.length]});m.rows.forEach(r=>r.v.push(''));mre()}
+function maddT(){const m=S.mg;m.rows.push({c:'Total',v:m.ser.map(()=>0),t:1,a:1});mre()}
+function mkMan(){const m=S.mg;if(!m.rows.length)return alert('Add at least one row.');calcTot();
+ const d={ty:m.ty,bw:m.bw,lbl:m.lbl,title:m.title,labels:m.rows.map(r=>r.c||(r.a?'Total':' ')),sep:m.rows.map((r,i)=>r.t&&i>0?i:-1).filter(i=>i>0),series:m.ser.map((s,j)=>({name:s.n,color:s.c,vals:m.rows.map(r=>+r.v[j]||0)}))};
+ chk();const old=S.ce&&find(S.ce);
+ if(old)Object.assign(old,d);else{const e={id:++S.id,t:'chart',x:64,y:118,w:832,h:380,...d};S.sl.splice(S.cur+1,0,{k:'content',title:m.title||'Graph',sub:'',els:[e]});S.cur++;S.sel=e.id;S.rg=null}
+ S.cd=null;S.ce=null;closeChart();draw();syncUI()}
+function editChart(){const E=cEl();if(!E)return;S.ce=E.id;S.cd=null;
+ S.mg={ser:E.series.map(s=>({n:s.name,c:s.color||'B3121B'})),rows:E.labels.map((l,i)=>({c:l,v:E.series.map(s=>String(s.vals[i])),t:(E.sep||[]).includes(i)?1:0})),ty:E.ty,bw:E.bw||72,lbl:E.lbl!==false,title:E.title||''};
+ $('gbox').innerHTML='<h3 style="margin:0 0 6px;color:#B3121B">Edit graph data</h3><div id="gMan">'+manHTML()+'</div>';$('gdlg').style.display='flex'}
 
 /* ---------- command assistant ---------- */
 function colorsIn(t){const o=[];t.toLowerCase().split(/[\s,.;:!?()"']+/).forEach(w=>{if(CN[w])o.push(CN[w])});return o}
@@ -1386,10 +1469,10 @@ function dl(){if(!window.PptxGenJS)return alert('The PptxGenJS library could not
    sd.addText('डाक सेवा जन सेवा',{x:7.4,y:6.87,w:4.5,h:.25,fontSize:12,color:RED,align:'right',fontFace:F,margin:0})}
   s.els.forEach(e=>{const g={x:I(e.x),y:I(e.y),w:I(e.w),h:I(e.h)};
    if(e.t==='img')sd.addImage({data:e.src,...g});
-   else if(e.t==='text')sd.addText(e.txt,{...g,fontSize:e.fs,color:'2B2B2B',fontFace:F,valign:'top',margin:0});
+   else if(e.t==='text')sd.addText(e.txt,{...g,fontSize:e.fs,color:(e.col||'#2B2B2B').replace('#','').toUpperCase(),fontFace:e.ff||F,bold:!!e.b,italic:!!e.i,valign:'top',margin:0});
    else if(e.t==='chart'){const bar=e.ty==='bar',line=e.ty==='line';
     sd.addChart(line?p.charts.LINE:p.charts.BAR,e.series.map(q=>({name:q.name,labels:e.labels,values:q.vals})),{...g,
-     barDir:bar?'bar':'col',barGrouping:'clustered',barGapWidthPct:60,chartColors:e.series.map((q,j)=>q.color||PAL[j%PAL.length]),
+     barDir:bar?'bar':'col',barGrouping:'clustered',barGapWidthPct:e.bw?Math.round((100/e.bw-1)*100):60,chartColors:e.series.map((q,j)=>q.color||PAL[j%PAL.length]),
      showTitle:!!e.title,title:e.title||'',titleFontSize:16,titleColor:RED,titleFontFace:F,
      showLegend:e.series.length>1,legendPos:'b',legendFontSize:11,legendFontFace:F,
      showValue:e.lbl!==false,dataLabelFontSize:10,dataLabelFontBold:true,dataLabelColor:'333333',dataLabelFormatCode:'#,##0',dataLabelPosition:line?'t':'outEnd',
@@ -1403,7 +1486,7 @@ function dl(){if(!window.PptxGenJS)return alert('The PptxGenJS library could not
  p.writeFile({fileName:'Indore_Region_PPT.pptx'})}
 
 bind();bindPrev();draw();syncUI();
-return{_S:S,start,applyPer,setPer,load,make,rebuild,add,txt,img,del,ti,su,og,bd,go,mvS,rmS,fill,ext,clr,rule,clrRules,openChart,closeChart,mkChart,chat,dl,draw,undo,redo,moveRows,mergeSel,unmergeSel,ff,fsz,fsd,bold,ital,al}
+return{_S:S,start,applyPer,setPer,load,make,rebuild,add,txt,img,del,ti,su,og,bd,go,mvS,rmS,fill,ext,clr,rule,clrRules,openChart,closeChart,mkChart,chat,dl,draw,undo,redo,moveRows,mergeSel,unmergeSel,ff,fsz,fsd,bold,ital,al,setOne,tbFill,tbSz,tx,txT,scl,bw,sc,lblT,pick,pickCancel,gtab,editChart,mset,msn,msc,mcat,mval,mtot,mdelS,mdelR,madd,maddS,maddT,mkMan}
 })();
 
 renderReport();
