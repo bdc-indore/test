@@ -386,7 +386,8 @@ const autoCat=n=>isIntl(n)?'IRGB':(DEF_MAP[n]||'');
 function divKey(name){
   const n=norm(name);
   if(!n)return null;
-  if(n.includes('moffusil')||n.includes('mfl'))return 'Indore Mfl';
+  if(/\bdhar/.test(n)||n.includes('dewas')||/mof+u?s+[ie]l/.test(n)||n.includes('moffusil')||n.includes('mofusil')||n.includes('mfl'))return 'Indore Mfl';
+  if(n.includes('khargone')||n.includes('khargon')||n.includes('khandwa'))return 'Khandwa';
   if(n.includes('indore')&&n.includes('city'))return 'Indore City';
   if(n.includes('id division')||n.includes('rms'))return 'Indore RMS';
   for(const d of DIVS){if(n.includes(d.toLowerCase()))return d}
@@ -551,8 +552,7 @@ function parseAadSheet(rows){
     for(let i=hi+1;i<rows.length;i++){
       const r=rows[i]||[],lab=r[0],dk=divKey(lab);
       if(dk){
-        if(out.vals[dk])continue;                      // if repeated, keep the first occurrence
-        const o=out.vals[dk]={};for(const c of cols)o[c.d]=toNum(r[c.j]);
+        const o=out.vals[dk]=out.vals[dk]||{};for(const c of cols)o[c.d]=(o[c.d]||0)+toNum(r[c.j]);
       }else if(!totalRow&&(lab==null||String(lab).trim()===''||/total/.test(norm(lab)))){
         const n=cols.filter(c=>typeof r[c.j]==='number').length;
         if(n>=cols.length/2&&Object.keys(out.vals).length)totalRow=r;
