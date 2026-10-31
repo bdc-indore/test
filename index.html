@@ -112,10 +112,11 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <body>
 <header>
   <h1>Day Wise Report – MO, Parcel &amp; CCS (Aadhaar) Verticals</h1>
-  <small>Indore Region • Division-wise • Daily CSV (division-wise or post-office-wise) and Aadhaar Excel upload • Excel / JPG / PDF export • Presentation Maker</small>
+  <small>Indore Region • Division-wise • Daily CSV (division-wise or post-office-wise), Target vs Achievement and Aadhaar Excel upload • Excel / JPG / PDF export • Presentation Maker</small>
 </header>
 <nav class="noprint">
   <button class="tabbtn on" id="t-report" onclick="showTab('report')">Report</button>
+  <button class="tabbtn" id="t-tgt" onclick="showTab('tgt')">Target vs Achievement</button>
   <button class="tabbtn" id="t-upload" onclick="showTab('upload')">Daily Upload</button>
   <button class="tabbtn" id="t-ppt" onclick="showTab('ppt')">Presentation Maker</button>
   <button class="tabbtn" id="t-settings" onclick="showTab('settings')">Settings</button>
@@ -152,6 +153,27 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   </div>
   <div id="pendBanner" class="noprint"></div>
   <div class="card wrap" id="reportBox"></div>
+</section>
+
+<!-- ============ TARGET vs ACHIEVEMENT ============ -->
+<section id="p-tgt" style="display:none">
+  <div class="card">
+    <h3>Target &amp; Achievement – Revenue and Article Count (division-wise, FY 2026-27)</h3>
+    <div class="hint" style="margin-bottom:8px">The month's article count and revenue (sum of <b>postage</b>) are filled automatically from the uploaded CSV (division-wise or post-office-wise), per division and per vertical. All % columns are calculated. Revenue: Parcel and MO in crore, IRGB in lakh. Download is enabled once the data is complete.</div>
+    <div class="row">
+      <b>Fill month:</b> <select id="tgtMonth" onchange="renderTgt()"></select>
+      <label class="b gray sm">Load Revenue CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'rev')"></label>
+      <label class="b gray sm">Load Count CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'cnt')"></label>
+      <button class="b gray sm" onclick="resetTgt()">Use built-in tables</button>
+    </div>
+    <div id="tgtStatus"></div>
+    <div class="row">
+      <button class="b alt" id="dlRevCsv" onclick="dlTgt('rev')">Download Revenue CSV</button>
+      <button class="b alt" id="dlCntCsv" onclick="dlTgt('cnt')">Download Count CSV</button>
+    </div>
+    <div class="tabs" style="margin-top:10px"><button id="tgtTabRev" onclick="tgtView='rev';renderTgt()">Revenue</button><button id="tgtTabCnt" onclick="tgtView='cnt';renderTgt()">Article Count</button></div>
+  </div>
+  <div id="tgtBox"></div>
 </section>
 
 <!-- ============ UPLOAD ============ -->
@@ -350,7 +372,7 @@ function normDB(d){
   d.days=d.days||{};            // legacy saved data
   d.raw=d.raw||{};              // division -> date -> product -> count
   d.csvDates=d.csvDates||{}; d.aad=d.aad||{}; d.aadDates=d.aadDates||{};
-  d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[]; d.offMap=d.offMap||{}; d.pend=d.pend||{};
+  d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[]; d.offMap=d.offMap||{}; d.pend=d.pend||{}; d.rev=d.rev||{}; d.revDates=d.revDates||{}; d.tgtText=d.tgtText||{};
   d.centres=Object.assign({},DEF_CENTRES,d.centres||{});
   d.soDef=Object.assign({},DEF_SO,d.soDef||{});
   return d;
@@ -436,12 +458,13 @@ function frontSheet(wb){const v=visSheets(wb),w=wb.Workbook&&wb.Workbook.WBView&
 
 /* ===================== TABS ===================== */
 function showTab(t){
-  ['report','upload','ppt','settings'].forEach(x=>{
+  ['report','tgt','upload','ppt','settings'].forEach(x=>{
     document.getElementById('p-'+x).style.display=x===t?'':'none';
     document.getElementById('t-'+x).classList.toggle('on',x===t);
   });
   if(t==='report')renderReport();
   if(t==='settings')renderSettings();
+  if(t==='tgt')renderTgt();
   if(t==='ppt'&&window.PM)PM.draw();
 }
 
@@ -470,7 +493,7 @@ async function handleCSV(file,mode){
     const wb=XLSX.read(buf,{type:'array',raw:true});
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});
     if(!rows.length)throw new Error('The file is empty.');
-    const agg={},pend={},unkDiv=new Set(),dates=new Set(),prods=new Set();
+    const agg={},ragg={},pend={},unkDiv=new Set(),dates=new Set(),prods=new Set();let hasPost=false;
     let used=0,skipped=0,pendRows=0,noId=0;
     for(const r0 of rows){
       const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];
@@ -478,6 +501,7 @@ async function handleCSV(file,mode){
       const pn=norm(r['product-name']);
       if(!dt||!pn){skipped++;continue}
       const cnt=toNum(r['article-count']);
+      const pst=toNum(r['postage']);if('postage' in r)hasPost=true;
       let dk=null;
       if(mode==='div'){
         dk=divKey(r['division-name']||r['office-name']);
@@ -488,23 +512,27 @@ async function handleCSV(file,mode){
         dk=officeDiv(oid);
         if(!dk){
           dates.add(dt);prods.add(pn);
-          const p=(pend[oid]=pend[oid]||{n:String(r['office-name']||''),d:{}});
-          const q=(p.d[dt]=p.d[dt]||{});q[pn]=(q[pn]||0)+cnt;pendRows++;
+          const p=(pend[oid]=pend[oid]||{n:String(r['office-name']||''),d:{},r:{}});
+          const q=(p.d[dt]=p.d[dt]||{});q[pn]=(q[pn]||0)+cnt;const q2=(p.r[dt]=p.r[dt]||{});q2[pn]=(q2[pn]||0)+pst;pendRows++;
           continue;
         }
       }
       dates.add(dt);prods.add(pn);
       const a=((agg[dk]=agg[dk]||{})[dt]=agg[dk][dt]||{});
       a[pn]=(a[pn]||0)+cnt;
+      const a2=((ragg[dk]=ragg[dk]||{})[dt]=ragg[dk][dt]||{});a2[pn]=(a2[pn]||0)+pst;
       used++;
     }
     if(!used&&!pendRows)throw new Error(mode==='off'?'No valid rows found. The columns office-id, booking-date, product-name and article-count are required.':'No valid rows found. The columns division-name, booking-date, product-name and article-count are required.');
     // remove the existing data of these dates (including earlier unassigned offices)
     for(const dv of Object.keys(DB.days))for(const dt of dates)delete DB.days[dv][dt];
     for(const dv of Object.keys(DB.raw))for(const dt of dates)delete DB.raw[dv][dt];
-    for(const id of Object.keys(DB.pend)){for(const dt of dates)delete DB.pend[id].d[dt];if(!Object.keys(DB.pend[id].d).length)delete DB.pend[id]}
+    for(const dv of Object.keys(DB.rev))for(const dt of dates)delete DB.rev[dv][dt];
+    for(const id of Object.keys(DB.pend)){for(const dt of dates){delete DB.pend[id].d[dt];if(DB.pend[id].r)delete DB.pend[id].r[dt]}if(!Object.keys(DB.pend[id].d).length)delete DB.pend[id]}
     for(const dv in agg){DB.raw[dv]=DB.raw[dv]||{};for(const dt in agg[dv])DB.raw[dv][dt]=agg[dv][dt]}
-    for(const id in pend){const p=DB.pend[id]=DB.pend[id]||{n:pend[id].n,d:{}};if(!p.n)p.n=pend[id].n;for(const dt in pend[id].d)p.d[dt]=pend[id].d[dt]}
+    for(const dv in ragg){DB.rev[dv]=DB.rev[dv]||{};for(const dt in ragg[dv])DB.rev[dv][dt]=ragg[dv][dt]}
+    dates.forEach(d=>{if(hasPost)DB.revDates[d]=1;else delete DB.revDates[d]});
+    for(const id in pend){const p=DB.pend[id]=DB.pend[id]||{n:pend[id].n,d:{},r:{}};if(!p.r)p.r={};if(!p.n)p.n=pend[id].n;for(const dt in pend[id].d)p.d[dt]=pend[id].d[dt];for(const dt in pend[id].r)p.r[dt]=pend[id].r[dt]}
     prods.forEach(p=>{if(!DB.seenProducts.includes(p))DB.seenProducts.push(p)});
     dates.forEach(d=>DB.csvDates[d]=1);
     save();updBadge();
@@ -551,13 +579,18 @@ async function loadOffMaster(file){
     for(const id of Object.keys(DB.pend)){
       const dv=officeDiv(id);if(!dv)continue;
       const p=DB.pend[id],R=(DB.raw[dv]=DB.raw[dv]||{});
-      for(const dt in p.d){const t=(R[dt]=R[dt]||{});for(const pn in p.d[dt])t[pn]=(t[pn]||0)+p.d[dt][pn]}
+      for(const dt in p.d){const t=(R[dt]=R[dt]||{});for(const pn in p.d[dt])t[pn]=(t[pn]||0)+p.d[dt][pn]}const RR=(DB.rev[dv]=DB.rev[dv]||{});for(const dt in (p.r||{})){const t=(RR[dt]=RR[dt]||{});for(const pn in p.r[dt])t[pn]=(t[pn]||0)+p.r[dt][pn]}
       delete DB.pend[id];moved++;
     }
     save();updBadge();renderSettings();
     box.innerHTML=`<div class="msg">${n} offices loaded${fix?` (${fix} differ from the built-in master and now use your sheet)`:''}${bad?` • ${bad} rows skipped`:''}${moved?` • ${moved} waiting offices resolved`:''}.<br>Note: data already uploaded is not recalculated – upload the post-office-wise CSV again for those dates.</div>`;
   }catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
   document.getElementById('offMasterFile').value='';
+}
+function dayRev(dv,date){
+  const rw=(DB.rev[dv]||{})[date],o={mo:0,parcel:0,irgb:0};
+  if(rw)for(const p in rw){const c=catOf(p);if(c==='MO')o.mo+=rw[p];else if(c==='Parcel')o.parcel+=rw[p];else if(c==='IRGB')o.irgb+=rw[p]}
+  return o;
 }
 function dayVals(dv,date){
   const rw=(DB.raw[dv]||{})[date];
@@ -808,6 +841,160 @@ function buildAOA(dv,month,irgb){
   return {head,rows:out};
 }
 const divTitle=dv=>dv==='Region Total'?'INDORE REGION (TOTAL)':dv.toUpperCase();
+/* ===================== TARGET vs ACHIEVEMENT (Revenue + Count) ===================== */
+const TGT_DEF={rev:"Target & Achievement FY 2026-27 (Vertical wise),,,,,,,,,,,,\nParcel Vertical,,,,,,,,,,,,\nName of Division,Total Target 2026-27,Total Target till this month,Achievement in April 26,Achivement in May-26,Achievement in June-26,Achievement in July-26,Total achievement in August-26,Total achievement in September-26,Total achievement in October-26,Total Achievemen till date,% of Achievement as compared to proportionate Target,% of Achievement as compared to Total Target\nIndore City,5.56,3.243,0.465,0.431,0.354,0.4600472,0.573875,0.5181,0.48,3.283,101.21%,59.04%\nIndore Mfl,1.25,0.729,0.063,0.036,0.03,0.0369934,0.0483,0.04924,0.094,0.357,48.98%,28.57%\nKhandwa,1.5,0.875,0.089,0.075,0.087,0.0779633,0.096146,0.105151,0.078,0.608,69.45%,40.51%\nMandsaur,1.5,0.875,0.055,0.073,0.049,0.0434511,0.041759,0.09178,0.079,0.433,49.47%,28.85%\nRatlam,1.25,0.729,0.042,0.044,0.048,0.0429275,0.060558,0.08796,0.049,0.374,51.32%,29.94%\nSehore,0.85,0.496,0.024,0.022,0.019,0.0210883,0.031165,0.031633,0.033,0.183,36.83%,21.48%\nUjjain,1.5,0.875,0.09,0.089,0.071,0.0825071,0.103779,0.103653,0.075,0.615,70.30%,41.01%\nRMS ID,0.65,0.379,0.026,0.03,0.036,0.0452448,0.054347,0.073949,0.076,0.342,90.10%,52.56%\nTotal,14.06,8.202,0.854,0.799,0.695,0.81,1.01,1.061,0.964,6.194,75.52%,44.05%\n,,,,,,,,,,,,\nMail Operation Vertical,,,,,,,,,,,,\nName of Division,Total Target 2026-27,Total Target till this month,Achievement in April 26,Achivement in May-26,Achievement in June-26,Achievement in July-26,Total achievement in August-26,Total achievement in September-26,Total achievement in October-26,Total Achievemen till date,% of Achievement as compared to proportionate Target,% of Achievement as compared to Total Target\nIndore City,14,8.167,0.598,0.638,0.484,0.52845,0.72963,0.64377,0.371,3.993,48.89%,28.52%\nIndore Mfl,2,1.167,0.087,0.087,0.097,0.10758,0.1215,0.10707,0.162,0.77,66.01%,38.51%\nKhandwa,3,1.75,0.127,0.132,0.112,0.13236,0.15164,0.13326,0.123,0.911,52.07%,30.37%\nMandsaur,1.5,0.875,0.079,0.086,0.075,0.09201,0.10813,0.08717,0.087,0.615,70.25%,40.98%\nRatlam,1.5,0.875,0.072,0.07,0.069,0.09336,0.09171,0.07662,0.088,0.56,64.03%,37.35%\nSehore,1.35,0.788,0.061,0.079,0.059,0.06866,0.06921,0.12678,0.079,0.543,68.90%,40.19%\nUjjain,3,1.75,0.125,0.134,0.119,0.13371,0.20971,0.14096,0.125,0.988,56.43%,32.92%\nRMS ID,2.5,1.458,0.045,0.044,0.045,0.04692,0.06279,0.05602,0.059,0.359,24.59%,14.35%\nTotal,28.85,16.829,1.195,1.27,1.061,1.203,1.544,1.372,1.093,8.738,51.92%,30.29%\n,,,,,,,,,,,,\nIRGB Vertical,,,,,,,,,,,,\nName of Division,Total Target 2026-27,Total Target till this month,Achievement up to April 26,Achivement in May-26,Achievement in June-26,Achievement in July-26,Total achievement in August-26,Total achievement in September-26,Total achievement in October-26,Total Achievemen till date,% of Achievement as compared to proportionate Target,% of Achievement as compared to Total Target\nIndore City,175,102.083,7.977,8.709,7.953,13.225,18.437,12.577,12.778,81.656,79.99%,46.66%\nIndore Mfl,30,17.5,0.354,0.468,0.378,0.918,1.433,1.045,3.318,7.912,45.21%,26.37%\nKhandwa,30,17.5,0.662,1.339,0.924,0.876,1.27,2.2,1.136,8.406,48.04%,28.02%\nMandsaur,50,29.167,2.581,1.824,2.152,1.936,3.748,2.381,2.431,17.053,58.47%,34.11%\nRatlam,30,17.5,0.904,0.883,0.416,1.399,0.883,1.213,1.101,6.799,38.85%,22.66%\nSehore,30,17.5,0.152,0.061,0.045,0.38,0.427,0.559,0.248,1.871,10.69%,6.24%\nUjjain,50,29.167,1.45,0.984,1.085,2.098,2.385,2.507,2.012,12.52,42.92%,25.04%\nRMS ID,30,17.5,0.261,0.18,0.395,0.287,0.368,0.544,0.185,2.219,12.68%,7.40%\nTotal,425,247.917,14.34,14.447,13.349,21.118,28.951,23.024,23.209,138.436,55.84%,32.57%",cnt:"Parcel Article Count,,,,,,,,,,,,,,,\nName of Divison,April-26 Target,April-26,may-26 target,May-26,june-26 Target,June-26,july-26 Target2,July-26,August-26 Target,August-26 article count,September-26 Target,September-26 article count,October-26 Target,October-26 Achievement,% of achievement\nIndore City Division,49059,40784,48941,38570,53019,42059,53019,51627,53019,53165,53019,53638,53019,60220,113.58%\nIndore Moffusil Division,7766,6260,7512,5775,8138,5822,8138,6779,8138,5119,8138,4363,8138,4828,59.33%\nKhandwa Division,7111,5712,6854,5967,7426,7474,7426,8071,7426,6420,7426,5774,7426,5256,70.78%\nMandsaur Division,5857,4316,5179,4501,5611,5039,5611,4965,5611,4739,5611,4870,5611,5271,93.94%\nRatlam Division,2803,2231,2677,2176,2900,2686,2900,3097,2900,2542,2900,2846,2900,2948,101.66%\nSehore Division,2156,1651,1981,1413,2146,1741,2146,2159,2146,1734,2146,2019,2146,2095,97.62%\nUjjain Division,7269,6666,7999,5631,8666,6218,8666,7159,8666,7120,8666,6323,8666,6748,77.87%\nID DIVISION INDORE,4079,2823,3388,2559,3670,3592,3670,5589,3670,6794,3670,4510,3670,4927,134.25%\nTotal,86100,70443,84531,66592,91576,74631,91576,89446,91576,87633,91576,84343,91576,92293,100.78%\nMO Article Count,,,,,,,,,,,,,,,\nName of Divison,April-26 Target,April-26,may-26 target,May-26,june-26 Target,June-26,July-26 Target,July-26,August-26 Target,August-26 article count,September-26 Target,September-26 article count,October-26 Target,October-26 Achievement,% of achievement\nIndore City Division,151842,122093,146511,119892,158721,104429,158721,219512,158721,175745,158721,123244,158721,90724,57.16%\nIndore Moffusil Division,45058,66233,79479,36781,86103,56707,86103,47396,86103,48068,86103,53150,86103,40823,47.41%\nKhandwa Division,49413,64801,77761,29650,84241,37539,84241,52722,84241,51847,84241,53863,84241,31766,37.71%\nMandsaur Division,22042,34413,41295,25600,44737,18407,44737,36179,44737,34814,44737,28072,44737,23222,51.91%\nRatlam Division,19536,44586,53503,19655,57962,20875,57962,55647,57962,30882,57962,33151,57962,23698,40.89%\nSehore Division,23299,46231,55477,19379,60100,23266,60100,37608,60100,20951,60100,33321,60100,20798,34.61%\nUjjain Division,55837,34289,41146,33840,44576,72383,44576,47276,44576,42640,44576,54245,44576,32187,72.21%\nID DIVISION INDORE,14305,11940,14328,12973,15522,17094,15522,17834,15522,19805,15522,25790,15522,22420,144.44%\nTotal,381332,424586,509500,297770,551962,350700,551962,514174,551962,424752,551962,404836,551962,285638,51.75%\n,,,,,,,,,,,,,,,\nIRGB Article Count,,,,,,,,,,,,,,,\nName of Divison,April-26 Target,April-26,May-26 target,May-26,june-26 target,June-26,july-26 target,July-26,August-26 Target,August-26 article count,September-26 Target,September-26 article count,October-26 Target,October-26 Achievement,% of achievement\nIndore City Division,610,376,489,395,489,394,489,815,1905,1626,1905,631,1905,597,31.34%\nIndore Moffusil Division,69,37,48,58,48,74,48,133,250,162,250,70,250,92,36.80%\nKhandwa Division,62,33,43,42,43,52,43,53,200,122,200,69,200,47,23.50%\nMandsaur Division,153,148,192,138,192,123,192,135,250,223,250,143,250,142,56.80%\nRatlam Division,20,26,34,42,34,18,34,52,80,59,80,40,80,29,36.25%\nSehore Division,10,8,10,4,10,6,10,20,30,46,30,21,30,8,26.67%\nUjjain Division,168,62,81,73,81,86,81,104,250,233,250,161,250,104,41.60%\nID DIVISION INDORE,0,5,7,6,7,10,7,18,35,53,35,14,35,13,37.14%\nTotal,1092,695,904,758,904,763,904,1330,3000,2524,3000,1149,3000,1032,34.40%"};
+const MON3=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+let tgtView='rev';
+const tgtText=k=>(DB.tgtText&&DB.tgtText[k])||TGT_DEF[k];
+function hdrMonth(h){
+  const m=String(h).toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s\-]+(\d{2})\b/);
+  return m?`${2000+(+m[2])}-${pad(MON3.indexOf(m[1])+1)}`:null;
+}
+function parseTgt(text){
+  const wb=XLSX.read(text,{type:'string',raw:true});
+  const g=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:true});
+  const W=Math.max(1,...g.map(r=>r.length));g.forEach(r=>{while(r.length<W)r.push('')});
+  const secs=[];
+  for(let i=0;i<g.length;i++){
+    const t=String(g[i][0]||'').trim();
+    if(!t||g[i].slice(1).some(x=>x!==''))continue;
+    const l=t.toLowerCase();
+    const key=/irgb/.test(l)?'IRGB':/parcel/.test(l)?'Parcel':/\bmail\b|\bmo\b/.test(l)?'MO':null;
+    if(!key)continue;
+    const hr=i+1;
+    if(!g[hr]||!/^name of/i.test(String(g[hr][0]).trim()))continue;
+    let tr=-1;
+    for(let r=hr+1;r<g.length;r++){const n=String(g[r][0]).trim().toLowerCase();if(n==='total'){tr=r;break}if(!n)break}
+    if(tr<0)continue;
+    secs.push({key,title:t,hr,tr});
+  }
+  return {g,secs};
+}
+function tgtMonths(){
+  const set=new Set();
+  ['rev','cnt'].forEach(k=>{try{const P=parseTgt(tgtText(k));P.secs.forEach(sc=>P.g[sc.hr].forEach(h=>{const mk=hdrMonth(h);if(mk&&!/target/i.test(h)&&!/%|till/i.test(h))set.add(mk)}))}catch(e){}});
+  const have=new Set(monthsAvail());
+  return [...set].filter(m=>have.has(m)).sort();
+}
+const tgtFM=()=>{const e=document.getElementById('tgtMonth');return e&&e.value?e.value:''};
+function monthDatesOf(fm){
+  const [y,m]=fm.split('-').map(Number),days=new Date(y,m,0).getDate(),a=[];
+  for(let i=1;i<=days;i++){const dt=`${fm}-${pad(i)}`;if(DB.csvDates[dt]&&!(DB.exclOn&&DB.exclDate===dt))a.push(dt)}
+  return a;
+}
+function computeTgt(k,fm){
+  const P=parseTgt(tgtText(k)),g=P.g,isRev=k==='rev';
+  const filled=new Set(),KK={Parcel:'parcel',MO:'mo',IRGB:'irgb'};
+  const dts=fm?monthDatesOf(fm):[];
+  for(const sc of P.secs){
+    const hd=g[sc.hr].map(x=>String(x));
+    const cols={};
+    hd.forEach((h,c)=>{const mk=hdrMonth(h);if(!mk)return;const l=h.toLowerCase();const o=(cols[mk]=cols[mk]||{});if(/target/.test(l))o.t=c;else if(!/%|till/.test(l))o.a=c});
+    const pctC=hd.map((h,c)=>/^%/.test(h.trim())?c:-1).filter(c=>c>=0);
+    const till=hd.findIndex(h=>/till date/i.test(h));
+    const pt=hd.findIndex(h=>/till this month/i.test(h));
+    const tt=hd.findIndex(h=>/total target\s+\d{4}/i.test(h));
+    const rows=[];for(let r=sc.hr+1;r<sc.tr;r++)rows.push(r);
+    const cm=fm?cols[fm]:null,unit=sc.key==='IRGB'?1e5:1e7;
+    const rd=v=>isRev?Math.round(v*1000)/1000:Math.round(v);
+    if(cm&&cm.a!=null&&dts.length){
+      let tot=0;
+      for(const r of rows){
+        const d=divKey(g[r][0]);if(!d)continue;
+        let v=0;dts.forEach(dt=>{v+=isRev?(dayRev(d,dt)[KK[sc.key]]||0):(dayVals(d,dt)[KK[sc.key]]||0)});
+        v=rd(isRev?v/unit:v);g[r][cm.a]=v;filled.add(r+','+cm.a);tot+=v;
+      }
+      g[sc.tr][cm.a]=rd(tot);filled.add(sc.tr+','+cm.a);
+    }
+    const all=rows.concat([sc.tr]);
+    const num=v=>typeof v==='number'?v:(v===''?0:toNum(v));
+    const pc=(a,b)=>(typeof b==='number'||b!=='')&&num(b)>0?((num(a)/num(b))*100).toFixed(2)+'%':'';
+    if(isRev){
+      for(const r of all){
+        if(till>=0){let t=0;for(const mk in cols)if(cols[mk].a!=null)t+=num(g[r][cols[mk].a]);g[r][till]=Math.round(t*1000)/1000;filled.add(r+','+till)}
+        pctC.forEach(c=>{
+          const prop=/proportionate/i.test(hd[c]);
+          const den=prop?(pt>=0?g[r][pt]:''):(tt>=0?g[r][tt]:'');
+          g[r][c]=pc(g[r][till],den);filled.add(r+','+c);
+        });
+      }
+    }else{
+      const mkp=(fm&&cols[fm])?fm:Object.keys(cols).filter(m=>cols[m].a!=null).sort().pop();
+      const c2=cols[mkp];
+      if(c2&&c2.t!=null&&c2.a!=null)for(const r of all){pctC.forEach(c=>{g[r][c]=pc(g[r][c2.a],g[r][c2.t]);filled.add(r+','+c)})}
+    }
+    sc.pctC=pctC;
+  }
+  return {g,secs:P.secs,filled,isRev};
+}
+function tgtStatusOf(fm){
+  const out={ok:false,revOk:false,cntOk:false,msgs:[]};
+  if(!fm){out.msgs.push(['warn','No uploaded data matches a month of the tables yet. Upload the post-office-wise (or division-wise) CSV in the Daily Upload tab.']);return out}
+  const dts=monthDatesOf(fm),n=pendCount();
+  if(!dts.length){out.msgs.push(['warn','No data uploaded for this month.']);return out}
+  const noPost=dts.filter(d=>!DB.revDates[d]);
+  if(n)out.msgs.push(['err',`${n} office(s) have no division – their data is NOT counted. Open Settings → Unknown offices and assign a division; downloads stay locked until then.`]);
+  if(noPost.length)out.msgs.push(['warn',`Postage is missing for ${noPost.length} uploaded day(s) (uploaded before this feature): ${noPost.slice(0,5).map(dmy).join(', ')}${noPost.length>5?' …':''}. Upload the CSV again for those dates to complete Revenue.`]);
+  out.cntOk=!n;out.revOk=!n&&!noPost.length;out.ok=out.cntOk&&out.revOk;
+  const last=dts[dts.length-1],[y,m]=fm.split('-').map(Number);
+  out.msgs.push([out.ok?'ok':'warn',`${monthLbl(fm)}: ${dts.length} day(s) of data, up to ${dmy(last)}${last<`${fm}-${pad(new Date(y,m,0).getDate())}`?' (month not complete yet)':''}.${out.ok?' Data complete – download enabled.':''}`]);
+  return out;
+}
+function tgtCell(v,isRev,r,c,X){
+  if(v===''||v==null)return '';
+  if(typeof v==='number')return isRev?v.toFixed(3):Math.round(v).toLocaleString('en-IN');
+  return esc(v);
+}
+function renderTgt(){
+  const ms=tgtMonths(),sel=document.getElementById('tgtMonth'),prev=sel.value;
+  sel.innerHTML=ms.map(m=>`<option value="${m}">${monthLbl(m)}</option>`).join('');
+  sel.value=ms.includes(prev)?prev:(ms[ms.length-1]||'');
+  const fm=tgtFM(),st=tgtStatusOf(fm);
+  document.getElementById('tgtStatus').innerHTML=st.msgs.map(([c,t])=>`<div class="msg${c==='ok'?'':c==='err'?' err':' warn'}">${esc(t)}</div>`).join('');
+  document.getElementById('dlRevCsv').disabled=!st.revOk;
+  document.getElementById('dlCntCsv').disabled=!st.cntOk;
+  document.getElementById('tgtTabRev').className=tgtView==='rev'?'on':'';
+  document.getElementById('tgtTabCnt').className=tgtView==='cnt'?'on':'';
+  let h='';
+  try{
+    const X=computeTgt(tgtView,fm);
+    for(const sc of X.secs){
+      const g=X.g,W=g[sc.hr].length;
+      h+=`<div class="card wrap"><table class="rep" style="min-width:900px"><tr><th class="title" colspan="${W}">${esc(sc.title)}</th></tr><tr>`+g[sc.hr].map(x=>`<th>${esc(x)}</th>`).join('')+'</tr>';
+      for(let r=sc.hr+1;r<=sc.tr;r++){
+        h+=`<tr class="${r===sc.tr?'tot':''}">`+g[r].map((v,c)=>`<td${c===0?' class="d" style="text-align:left"':''}${X.filled.has(r+','+c)&&r!==sc.tr?' style="background:#fff6cc"':''}>${tgtCell(v,X.isRev,r,c,X)}</td>`).join('')+'</tr>';
+      }
+      h+='</table></div>';
+    }
+    if(!X.secs.length)h='<div class="msg err">No Parcel / MO / IRGB tables were found in this CSV.</div>';
+  }catch(e){h=`<div class="msg err">${esc(e.message)}</div>`}
+  document.getElementById('tgtBox').innerHTML=h;
+}
+async function loadTgt(file,k){
+  if(!file)return;
+  try{
+    let text;
+    if(/\.csv$/i.test(file.name))text=await file.text();
+    else{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true});text=XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]],{blankrows:true})}
+    const P=parseTgt(text);
+    if(!P.secs.length)throw new Error('No Parcel / MO / IRGB tables found in this file.');
+    DB.tgtText[k]=text;save();renderTgt();toast((k==='rev'?'Revenue':'Count')+' table loaded');
+  }catch(e){alert('Unable to load: '+e.message)}
+}
+function resetTgt(){DB.tgtText={};save();renderTgt();toast('Built-in tables restored')}
+function csvCell(v){
+  if(v===''||v==null)return '';
+  if(typeof v==='number')return String(v);
+  const t=String(v);return /[",\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;
+}
+function dlTgt(k){
+  const fm=tgtFM(),st=tgtStatusOf(fm);
+  if(!(k==='rev'?st.revOk:st.cntOk)){alert('Data is not complete yet – see the message above.');return}
+  const X=computeTgt(k,fm);
+  const csv=X.g.map(r=>r.map(csvCell).join(',')).join('\r\n');
+  saveBlob(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),`${k==='rev'?'Revenue':'Count'}_Target_Achievement_${fm}.csv`);
+}
+
 /* ===================== COMPARISON PAGES: MO / Parcel / IRGB  (this month vs same month last year) ===================== */
 const CMP={MO:{k:'mo',i:0},Parcel:{k:'parcel',i:1},IRGB:{k:'irgb',i:2}};
 const CMP_TABS=['CMP_MO','CMP_Parcel','CMP_IRGB'];
@@ -925,7 +1112,7 @@ function savePend(){
     if(!dv||!p)return;
     DB.offMap[id]=dv;
     const R=(DB.raw[dv]=DB.raw[dv]||{});
-    for(const dt in p.d){const t=(R[dt]=R[dt]||{});for(const pn in p.d[dt])t[pn]=(t[pn]||0)+p.d[dt][pn]}
+    for(const dt in p.d){const t=(R[dt]=R[dt]||{});for(const pn in p.d[dt])t[pn]=(t[pn]||0)+p.d[dt][pn]}const RR=(DB.rev[dv]=DB.rev[dv]||{});for(const dt in (p.r||{})){const t=(RR[dt]=RR[dt]||{});for(const pn in p.r[dt])t[pn]=(t[pn]||0)+p.r[dt][pn]}
     delete DB.pend[id];n++;
   });
   if(!n)return toast('Select a division for at least one office');
