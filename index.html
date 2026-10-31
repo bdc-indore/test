@@ -157,12 +157,20 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <!-- ============ UPLOAD ============ -->
 <section id="p-upload" style="display:none">
   <div class="card">
-    <h3>1) Daily CSV upload (MO / Parcel / IRGB data) – Division-wise OR Post-office-wise</h3>
+    <h3>1A) Daily CSV upload – DIVISION-wise file (MO / Parcel / IRGB data)</h3>
     <div class="row">
-      <label class="b">Choose CSV file<input type="file" id="csvFile" accept=".csv,.xlsx,.xls" hidden onchange="handleCSV(this.files[0])"></label>
-      <span class="hint">Existing data for the dates contained in the file is replaced (no duplicates are created). Any product name containing "International" is counted as IRGB.<br>• <b>Division-wise file</b> (has division-name column): works as before and the Office IDs are learned automatically.<br>• <b>Post-office-wise file</b> (only office-id, no division): the division is found from the Office ID master. If an Office ID is unknown, an error is shown and it appears in <b>Settings → Unknown offices</b> where you write its division.</span>
+      <label class="b">Choose CSV file<input type="file" id="csvFile" accept=".csv,.xlsx,.xls" hidden onchange="handleCSV(this.files[0],'div')"></label>
+      <span class="hint">Existing data for the dates contained in the file is replaced (no duplicates are created). Any product name containing "International" is counted as IRGB.<br>This option reads only the <b>division-name</b> column of the file.</span>
     </div>
     <div id="csvMsg"></div>
+  </div>
+  <div class="card">
+    <h3>1B) Daily CSV upload – POST OFFICE-wise file (MO / Parcel / IRGB data)</h3>
+    <div class="row">
+      <label class="b alt">Choose post-office-wise CSV<input type="file" id="csvFileOff" accept=".csv,.xlsx,.xls" hidden onchange="handleCSV(this.files[0],'off')"></label>
+      <span class="hint">The division column of this file is <b>ignored</b>. Only the <b>office-id</b> is read and its division is taken from the Office ID master (built in; you can load your own master sheet in Settings). Data of the dates in the file is replaced. If an Office ID is not in the master, an error is shown and it appears in <b>Settings → Unknown offices</b> where you write its division.</span>
+    </div>
+    <div id="csvMsgOff"></div>
   </div>
   <div class="card">
     <h3>2) Aadhaar transactions – Excel upload</h3>
@@ -270,7 +278,9 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div class="card">
     <h3>Unknown offices (Office ID &rarr; Division)</h3>
     <div id="pendBox"></div>
-    <div class="hint" style="margin-top:6px">Used for the post-office-wise CSV. Office IDs of every division-wise upload are learned automatically; an office whose division cannot be found is listed here – write its division and save.</div>
+    <div class="row" style="margin-top:10px"><label class="b gray sm">Load Office ID &rarr; Division sheet (Excel / CSV)<input type="file" id="offMasterFile" accept=".csv,.xlsx,.xls" hidden onchange="loadOffMaster(this.files[0])"></label><span class="hint">Columns: office-id and division-name. These entries override the built-in master.</span></div>
+    <div id="offMasterMsg"></div>
+    <div class="hint" style="margin-top:6px">Used only for the post-office-wise CSV (1B). An office whose division cannot be found is listed here – write its division and save; it is remembered for the next uploads.</div>
   </div>
   <div class="card">
     <h3>Product → Category mapping</h3>
@@ -448,61 +458,66 @@ function updBadge(){
   const n=pendCount(),b=document.getElementById('t-settings');
   if(b)b.innerHTML='Settings'+(n?` <span style="background:#b3121b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px">&#9888; ${n}</span>`:'');
 }
-async function handleCSV(file){
+/* mode 'div' = Division-wise file: ONLY the division column is used.
+   mode 'off' = Post-office-wise file: the division column is IGNORED; the division is found from the Office ID master. */
+async function handleCSV(file,mode){
   if(!file)return;
-  const box=document.getElementById('csvMsg');
+  mode=mode==='off'?'off':'div';
+  const box=document.getElementById(mode==='off'?'csvMsgOff':'csvMsg');
+  const inp=document.getElementById(mode==='off'?'csvFileOff':'csvFile');
   try{
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:'array',raw:true});
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});
     if(!rows.length)throw new Error('The file is empty.');
-    const agg={},pend={},unkDiv=new Set(),dates=new Set(),prods=new Set(),learned={};
-    let used=0,skipped=0,viaOff=0,viaDiv=0,pendRows=0;
+    const agg={},pend={},unkDiv=new Set(),dates=new Set(),prods=new Set();
+    let used=0,skipped=0,pendRows=0,noId=0;
     for(const r0 of rows){
       const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];
       const dt=xlDate(r['booking-date']);
       const pn=norm(r['product-name']);
       if(!dt||!pn){skipped++;continue}
-      const oid=offId(r['office-id']);
-      const dvTxt=String(r['division-name']==null?'':r['division-name']).trim();
-      let dk=null;
-      if(dvTxt){dk=divKey(dvTxt);if(dk){viaDiv++;if(oid&&!officeDiv(oid))learned[oid]=dk}}   // division column present: used as before
-      if(!dk&&oid){dk=officeDiv(oid);if(dk)viaOff++}                                        // post-office-wise file: division from office-id
-      if(!dk&&!oid)dk=divKey(r['office-name']);                                             // old fallback (no office-id column at all)
       const cnt=toNum(r['article-count']);
-      dates.add(dt);prods.add(pn);
-      if(!dk){
-        if(!oid){unkDiv.add(dvTxt||r['office-name']);skipped++;continue}
-        const p=(pend[oid]=pend[oid]||{n:String(r['office-name']||''),d:{}});
-        const q=(p.d[dt]=p.d[dt]||{});q[pn]=(q[pn]||0)+cnt;pendRows++;
-        continue;
+      let dk=null;
+      if(mode==='div'){
+        dk=divKey(r['division-name']||r['office-name']);
+        if(!dk){unkDiv.add(r['division-name']||r['office-name']);skipped++;continue}
+      }else{
+        const oid=offId(r['office-id']);
+        if(!oid){noId++;skipped++;continue}
+        dk=officeDiv(oid);
+        if(!dk){
+          dates.add(dt);prods.add(pn);
+          const p=(pend[oid]=pend[oid]||{n:String(r['office-name']||''),d:{}});
+          const q=(p.d[dt]=p.d[dt]||{});q[pn]=(q[pn]||0)+cnt;pendRows++;
+          continue;
+        }
       }
+      dates.add(dt);prods.add(pn);
       const a=((agg[dk]=agg[dk]||{})[dt]=agg[dk][dt]||{});
       a[pn]=(a[pn]||0)+cnt;
       used++;
     }
-    if(!used&&!pendRows)throw new Error('No valid rows found. Required columns: booking-date, product-name, article-count and either division-name or office-id.');
+    if(!used&&!pendRows)throw new Error(mode==='off'?'No valid rows found. The columns office-id, booking-date, product-name and article-count are required.':'No valid rows found. The columns division-name, booking-date, product-name and article-count are required.');
     // remove the existing data of these dates (including earlier unassigned offices)
     for(const dv of Object.keys(DB.days))for(const dt of dates)delete DB.days[dv][dt];
     for(const dv of Object.keys(DB.raw))for(const dt of dates)delete DB.raw[dv][dt];
     for(const id of Object.keys(DB.pend)){for(const dt of dates)delete DB.pend[id].d[dt];if(!Object.keys(DB.pend[id].d).length)delete DB.pend[id]}
     for(const dv in agg){DB.raw[dv]=DB.raw[dv]||{};for(const dt in agg[dv])DB.raw[dv][dt]=agg[dv][dt]}
     for(const id in pend){const p=DB.pend[id]=DB.pend[id]||{n:pend[id].n,d:{}};if(!p.n)p.n=pend[id].n;for(const dt in pend[id].d)p.d[dt]=pend[id].d[dt]}
-    for(const id in learned)DB.offMap[id]=learned[id];
     prods.forEach(p=>{if(!DB.seenProducts.includes(p))DB.seenProducts.push(p)});
     dates.forEach(d=>DB.csvDates[d]=1);
     save();updBadge();
     const ds=[...dates].sort(),unmapped=[...prods].filter(p=>!catOf(p));
-    const nLearn=Object.keys(learned).length,nPend=Object.keys(pend).length;
-    let t=`${used+pendRows} rows processed • ${ds.length} days (${dmy(ds[0])} to ${dmy(ds[ds.length-1])}) • ${Object.keys(agg).length} divisions`;
-    if(viaOff)t+=`\n${viaOff} rows: division found from Office ID`;
-    if(nLearn)t+=`\n${nLearn} new Office IDs learned from the division column`;
+    const nPend=Object.keys(pend).length;
+    let t=`${used+pendRows} rows processed (${mode==='off'?'post-office-wise: division from Office ID, division column ignored':'division-wise: division column used'}) • ${ds.length} days (${dmy(ds[0])} to ${dmy(ds[ds.length-1])}) • ${Object.keys(agg).length} divisions`;
     let cls='msg';
     const intl=[...prods].filter(isIntl);
     if(intl.length)t+=`\nInternational products counted as IRGB: ${intl.join(', ')}`;
     if(unmapped.length){cls='msg warn';t+=`\nWarning: no category mapping found for these products (not included in the counts): ${unmapped.join(', ')}\n   Select a category in Settings – the report updates immediately, no need to upload the CSV again.`}
     if(unkDiv.size){cls='msg warn';t+=`\nWarning: division not recognised: ${[...unkDiv].join(', ')}`}
-    if(skipped)t+=`\n(${skipped} rows skipped)`;
+    if(noId){cls='msg warn';t+=`\nWarning: ${noId} rows have no office-id and were skipped`}
+    if(skipped&&!noId)t+=`\n(${skipped} rows skipped)`;
     let extra='';
     if(nPend){
       cls='msg err';
@@ -511,8 +526,38 @@ async function handleCSV(file){
       extra=`<div style="margin-top:8px"><button class="b sm" onclick="showTab('settings')">Open Settings &rarr; Unknown offices</button></div>`;
     }
     box.innerHTML=`<div class="${cls}">${esc(t)}${extra}</div>`;
-    document.getElementById('csvFile').value='';
+    if(inp)inp.value='';
   }catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
+}
+/* Settings: upload your own Office ID -> Division master sheet (overrides the built-in master) */
+async function loadOffMaster(file){
+  const box=document.getElementById('offMasterMsg');
+  if(!file)return;
+  try{
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});
+    let n=0,bad=0,fix=0;
+    for(const r0 of rows){
+      const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];
+      const id=offId(r['office-id']||r['office id']||r['officeid']);
+      const dk=divKey(r['division-name']||r['division']||r['division name']);
+      if(!id||!dk){bad++;continue}
+      if(officeDiv(id)&&officeDiv(id)!==dk)fix++;
+      DB.offMap[id]=dk;n++;
+    }
+    if(!n)throw new Error('No Office ID / Division pairs found. The sheet needs a column "office-id" and a column "division-name" (or "division").');
+    // offices that were waiting for a division are resolved now
+    let moved=0;
+    for(const id of Object.keys(DB.pend)){
+      const dv=officeDiv(id);if(!dv)continue;
+      const p=DB.pend[id],R=(DB.raw[dv]=DB.raw[dv]||{});
+      for(const dt in p.d){const t=(R[dt]=R[dt]||{});for(const pn in p.d[dt])t[pn]=(t[pn]||0)+p.d[dt][pn]}
+      delete DB.pend[id];moved++;
+    }
+    save();updBadge();renderSettings();
+    box.innerHTML=`<div class="msg">${n} offices loaded${fix?` (${fix} differ from the built-in master and now use your sheet)`:''}${bad?` • ${bad} rows skipped`:''}${moved?` • ${moved} waiting offices resolved`:''}.<br>Note: data already uploaded is not recalculated – upload the post-office-wise CSV again for those dates.</div>`;
+  }catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
+  document.getElementById('offMasterFile').value='';
 }
 function dayVals(dv,date){
   const rw=(DB.raw[dv]||{})[date];
@@ -855,7 +900,7 @@ function renderPend(){
   const ids=Object.keys(DB.pend);
   const known=Object.keys(DEF_OFFMAP).length,man=Object.keys(DB.offMap).length;
   let h='';
-  if(!ids.length)h+=`<div class="msg">No unknown offices &#10003; – ${known} Office IDs are built in${man?`, ${man} more learned / entered manually`:''}.</div>`;
+  if(!ids.length)h+=`<div class="msg">No unknown offices &#10003; – ${known} Office IDs are built in${man?`, ${man} more entered manually / from your sheet`:''}.</div>`;
   else{
     h+=`<div class="msg err">Division could not be found for ${ids.length} office(s). Their data is <b>not counted</b> in the report until you select a division below and save.</div>`;
     h+='<div class="row"><b>Set all to:</b><select id="pdAll"><option value="">—</option>'+DIVS.map(d=>`<option>${d}</option>`).join('')+'</select><button class="b sm gray" onclick="pendAll()">Apply to all</button></div>';
@@ -866,7 +911,7 @@ function renderPend(){
   }
   const mk=Object.keys(DB.offMap);
   if(mk.length){
-    h+=`<details style="margin-top:10px"><summary class="hint" style="cursor:pointer">Learned / manual Office IDs (${mk.length})</summary><div class="wrap" style="max-height:220px"><table class="s2"><tr><th>Office ID</th><th>Division</th><th></th></tr>`+
+    h+=`<details style="margin-top:10px"><summary class="hint" style="cursor:pointer">Manual / sheet Office IDs (${mk.length})</summary><div class="wrap" style="max-height:220px"><table class="s2"><tr><th>Office ID</th><th>Division</th><th></th></tr>`+
       mk.slice(0,500).map(id=>`<tr><td>${esc(id)}</td><td>${esc(DB.offMap[id])}</td><td><button class="b sm gray" onclick="delOff('${esc(id)}')">Remove</button></td></tr>`).join('')+
       `</table></div><div class="hint">Removing an entry affects future uploads only; data already counted stays as it is.</div></details>`;
   }
