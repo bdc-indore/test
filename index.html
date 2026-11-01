@@ -116,8 +116,8 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 </header>
 <nav class="noprint">
   <button class="tabbtn on" id="t-report" onclick="showTab('report')">Report</button>
-  <button class="tabbtn" id="t-tgt" onclick="showTab('tgt')">Target vs Achievement</button>
-  <button class="tabbtn" id="t-upload" onclick="showTab('upload')">Daily Upload</button>
+  <button class="tabbtn" id="t-tgt" style="display:none" onclick="showTab('tgt')">Target vs Achievement</button>
+  <button class="tabbtn" id="t-upload" onclick="showTab('upload')">Upload</button>
   <button class="tabbtn" id="t-ppt" onclick="showTab('ppt')">Presentation Maker</button>
   <button class="tabbtn" id="t-rp" onclick="showTab('rp')">Reports, PPT &amp; PDF</button>
   <button class="tabbtn" id="t-settings" onclick="showTab('settings')">Settings</button>
@@ -138,18 +138,6 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
       <button class="b sm gray" onclick="setExclToday()">Today</button>
       <button class="b gray" onclick="window.print()">Print</button>
     </div>
-    <div class="dl">
-      <b>Download – all pages (Region Total + 8 divisions + MO / Parcel / IRGB comparison):</b>
-      <button class="b alt" id="dlXls" onclick="exportExcel()">Excel</button>
-      <button class="b alt" id="dlJpgAll" onclick="exportJPG(true)">JPG (ZIP – one image per division)</button>
-      <button class="b alt" id="dlPdfAll" onclick="exportPDF(true)">Combined PDF (one page per division)</button>
-    </div>
-    <div class="dl" style="border-top:0;margin-top:0;padding-top:0">
-      <b>Current tab only (<span id="curDivName"></span>):</b>
-      <button class="b sm" id="dlJpgOne" onclick="exportJPG(false)">JPG</button>
-      <button class="b sm" id="dlPdfOne" onclick="exportPDF(false)">PDF</button>
-      <span id="dlMsg" class="hint"></span>
-    </div>
     <div class="tabs" id="divTabs"></div>
   </div>
   <div id="pendBanner" class="noprint"></div>
@@ -158,7 +146,6 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 
 <!-- ============ TARGET vs ACHIEVEMENT ============ -->
 <section id="p-tgt" style="display:none">
-  <div class="card"><b>All Post Office Report</b> <span class="hint">(built automatically from the post-office-wise CSV upload; office class, SD and division come from the built-in office master)</span> <select class="nbMs" onchange="nbStat()"></select> <button class="b sm" onclick="nbCSV(this.previousElementSibling.value)">Download All Post Office Report (CSV)</button><div id="nbStat"></div></div>
   <div class="card">
     <h3>Target &amp; Achievement – Revenue and Article Count (division-wise, FY 2026-27)</h3>
     <div class="hint" style="margin-bottom:8px">The month's article count and revenue (sum of <b>postage</b>) are filled automatically from the uploaded CSV (division-wise or post-office-wise), per division and per vertical. All % columns are calculated. Revenue: Parcel and MO in crore, IRGB in lakh. Download is enabled once the data is complete.</div>
@@ -200,7 +187,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
     <h3>2) Aadhaar transactions – Excel upload</h3>
     <div class="row">
       <label class="b">Choose Aadhaar Excel file<input type="file" id="aadFile" accept=".xlsx,.xls,.csv" hidden onchange="handleAadhaar(this.files[0])"></label>
-      <button class="b gray" onclick="downloadAadTemplate()">Download sample format</button>
+      
     </div>
     <div class="hint">Two formats are recognised automatically:<br>
       1. <b>Division × Date grid</b> – dates in the first row, division names in the first column, total transactions inside (for example the "VC 15 may 26" sheet).<br>
@@ -209,7 +196,8 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
     <div id="aadMsg"></div>
     <div id="aadPick"></div>
   </div>
-</section>
+<div class="card"><h3>3) SB / PLI / CCS revenue CSV</h3><div class="row"><label class="b">Choose CSV file<input type="file" id="rpSBf" accept=".csv" hidden onchange="rpSB(this.files[0])"></label> <button class="b gray" onclick="rpSBreset()">Restore built-in</button></div><div class="hint">Format: DIVISON, VERTICAL, TARGET (26-27), April-26, May-26 &hellip; (any number of months).</div><div id="rpMsg"></div></div>
+<div class="card"><h3>4) Target tables (optional)</h3><div class="row"><label class="b gray">Revenue target + achievement CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'rev')"></label><label class="b gray">Article count target CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'cnt')"></label><button class="b gray" onclick="resetTgt()">Restore built-in tables</button></div></div></section>
 
 <!-- ============ PRESENTATION MAKER ============ -->
 <section id="p-ppt" style="display:none">
@@ -288,13 +276,26 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 </section>
 
 <!-- ============ SETTINGS ============ -->
-<section id="p-rp" style="display:none"><div class="card"><h3>Target vs Achievement, Article Count, Nil Booking, PPT &amp; PDF</h3>
-<div class="hint" style="margin-bottom:6px">Everything is built from the post-office-wise CSV you upload in Daily Upload (Parcel / Mail / IRGB revenue + count, Nil Booking reports, All Post Office CSV). SB / PLI / CCS come from the CSV below (any number of months): DIVISON, VERTICAL, TARGET (26-27), April-26, May-26 &hellip;</div>
-<input type="file" id="rpSBf" accept=".csv" onchange="rpSB(this.files[0])"> <button class="b sm" onclick="rpSBreset()">Restore built-in SB/PLI/CCS</button>
-<div style="margin-top:8px"><select class="nbMs" onchange="nbStat()"></select> <button class="b sm" onclick="nbCSV(this.previousElementSibling.value)">Download All Post Office Report (CSV)</button></div><div id="rpMsg"></div><div id="rpInfo"></div></div>
-<div class="card"><h3>Preview &amp; download</h3>Nil Booking month: <select id="rpMonth" onchange="NB.S.month=this.value;NB.save();rpRender()"></select> <select id="rpSel" onchange="rpShow()" style="max-width:420px"></select>
+<section id="p-rp" style="display:none"><div class="card"><h3>Reports, PPT &amp; PDF - all downloads are here</h3>
+<div class="hint" style="margin-bottom:6px">Everything is built from what you upload in the <b>Upload</b> tab. Good-booking limits, office-id shifts, product mapping and the choice of pages for the mega PPT / PDF are in <b>Settings</b>.</div>
+<div><b>All Post Office report (CSV):</b> <select class="nbMs" onchange="nbStat()"></select> <button class="b sm" onclick="nbCSV(this.previousElementSibling.value)">Download All Post Office Report (CSV)</button><div id="nbStat"></div></div>
+<div style="margin-top:8px"><b>Daily report (all divisions):</b> <div class="dl">
+      <b>Download – all pages (Region Total + 8 divisions + MO / Parcel / IRGB comparison):</b>
+      <button class="b alt" id="dlXls" onclick="exportExcel()">Excel</button>
+      <button class="b alt" id="dlJpgAll" onclick="exportJPG(true)">JPG (ZIP – one image per division)</button>
+      <button class="b alt" id="dlPdfAll" onclick="exportPDF(true)">Combined PDF (one page per division)</button>
+    </div>
+    <div class="dl" style="border-top:0;margin-top:0;padding-top:0">
+      <b>Current tab only (<span id="curDivName"></span>):</b>
+      <button class="b sm" id="dlJpgOne" onclick="exportJPG(false)">JPG</button>
+      <button class="b sm" id="dlPdfOne" onclick="exportPDF(false)">PDF</button>
+      <span id="dlMsg" class="hint"></span>
+    </div>
+    </div>
+<div style="margin-top:8px"><b>Aadhaar upload format:</b> <button class="b sm" onclick="downloadAadTemplate()">Download sample format</button></div><div id="rpInfo"></div></div>
+<div class="card"><h3>Mega report - preview &amp; download</h3>Nil Booking month: <select id="rpMonth" onchange="NB.S.month=this.value;NB.save();rpRender()"></select> <select id="rpSel" onchange="rpShow()" style="max-width:420px"></select>
 <button class="b sm" onclick="rpJPG()">JPG</button><button class="b sm" onclick="rpXLSX()">Excel</button>
-<button class="b sm" onclick="rpPPT()">Download mega PPT</button><button class="b sm" onclick="rpPDF()">Download mega PDF</button>
+<button class="b" onclick="rpPPT()">Download mega PPT</button><button class="b" onclick="rpPDF()">Download mega PDF</button>
 <div style="overflow:auto;margin-top:10px;border:1px solid #ddd" id="rpView"></div></div></section>
 <section id="p-settings" style="display:none">
   <div class="card"><h3>Nil Booking / office-wise settings and Mega PPT / PDF</h3><div id="nbSetBody"></div></div>
@@ -1933,6 +1934,8 @@ NB.db=()=>new Promise((res,rej)=>{if(!window.indexedDB)return rej();const r=inde
 NB.load=async()=>{try{const db=await NB.db(),g=k=>new Promise(r=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r()});const d=await g('offD'),m=await g('offM');if(d)NB.S.offD=d;if(m)NB.S.offM=m}catch(e){}nbFillMs()};
 NB.save=()=>{const o=Object.assign({},NB.S);delete o.offD;delete o.offM;try{localStorage.setItem(NB.K,JSON.stringify(o))}catch(e){}NB.db().then(db=>{const t=db.transaction('kv','readwrite').objectStore('kv');t.put(NB.S.offD,'offD');t.put(NB.S.offM,'offM')}).catch(()=>{})};
 NB.catOf=p=>{const n=norm(p);if(n.includes('international'))return'IRGB';if(NB.S.pm[n])return NB.S.pm[n];if(NB.DEFPM[n])return NB.DEFPM[n];const c=catOf(p);return c==='MO'?'Other':c||null};
+NB.act=id=>!NB.S.alias[id];
+NB.DEF_ALIAS={'23107683':'23109287','23107460':'23109288','23107098':'23660998','23106778':'23660997','23660882':'23660999','23107359':'23109292','23106779':'23660994'};
 NB.res=id=>NB.S.alias[id]||id;
 NB.vals=(ym)=>{const o={},add=(id,a)=>{id=NB.res(id);const t=o[id]=o[id]||[0,0,0,0,0,0,0,0];for(let i=0;i<8;i++)t[i]+=a[i]};
  const ds=Object.keys(NB.S.offD).filter(d=>d.slice(0,7)===ym);
@@ -1942,7 +1945,7 @@ NB.months=()=>[...new Set([...Object.keys(NB.S.offD).map(d=>d.slice(0,7)),...Obj
 NB.unk=ym=>{const v=NB.vals(ym);return Object.keys(v).filter(id=>!NB_OFF[id])};
 NB.ci=c=>NB.CATS.indexOf(c)*2;
 function nbBuild(key,ym){const R=NB.REP[key],th=+NB.S.th[key],V=NB.vals(ym),L=[];
- for(const id in NB_OFF){const [nm,cl,sd,dv]=NB_OFF[id];if(cl!==R.cls||dv==='ID DIVISION')continue;const v=V[id]||[0,0,0,0,0,0,0,0];
+ for(const id in NB_OFF){const [nm,cl,sd,dv]=NB_OFF[id];if(cl!==R.cls||dv==='ID DIVISION'||!NB.act(id))continue;const v=V[id]||[0,0,0,0,0,0,0,0];
   const cnt=R.all?v[0]+v[2]+v[4]+v[6]:v[4];L.push({dv,sd,cnt})}
  const G={};L.forEach(o=>{const s=((G[o.dv]=G[o.dv]||{})[o.sd]=G[o.dv][o.sd]||{t:0,n:0,l:0,g:0});s.t++;if(o.cnt<=0)s.n++;else if(o.cnt<=th)s.l++;else s.g++});return{G,th}}
 function nbHTML(key,ym){const {G,th}=nbBuild(key,ym),R=NB.REP[key];const pc=(a,b)=>b?Math.round(a*100/b)+'%':'0%';
@@ -1975,18 +1978,22 @@ async function nbIngest(file){const box=document.getElementById('csvMsgOff');let
  if(box)box.insertAdjacentHTML('beforeend',`<div class="${cls}">${esc(note)}</div>`)}
 const _hc=handleCSV;handleCSV=async function(file,mode){await _hc(file,mode);if(mode==='off'&&file)await nbIngest(file)};
 function nbCSV(ym){if(!ym)return alert('No post-office-wise data uploaded yet');const V=NB.vals(ym),L=['office-id,OFFICE NAME,CLASS,SD,DIVISION,CATEGORY,Booking_Count,Revenue'],q=s=>'"'+String(s).replace(/"/g,'""')+'"';
- for(const id in NB_OFF){const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,q(nm),cl,q(sd),dv,c,v[i*2],Math.round(v[i*2+1])].join(',')))}
+ for(const id in NB_OFF){if(!NB.act(id))continue;const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,q(nm),cl,q(sd),dv,c,v[i*2],Math.round(v[i*2+1])].join(',')))}
  Object.keys(V).filter(id=>!NB_OFF[id]).forEach(id=>NB.CATS.forEach((c,i)=>L.push([id,'""','','""','NOT IN MASTER',c,V[id][i*2],Math.round(V[id][i*2+1])].join(','))));
  saveBlob(new Blob(['\ufeff'+L.join('\r\n')],{type:'text/csv'}),`All_Post_Office_Report_${ym}.csv`)}
 function nbFillMs(){document.querySelectorAll('.nbMs').forEach(s=>{s.innerHTML=NB.months().map(m=>`<option ${m===NB.S.month?'selected':''}>${m}</option>`).join('')||'<option value="">no data</option>'});nbStat()}
-function nbStat(){const e=document.getElementById('nbStat');if(!e)return;const s=document.querySelector('#p-tgt .nbMs'),ym=s&&s.value;if(!ym){e.innerHTML='<div class="hint">Upload a post-office-wise CSV (Daily Upload tab) - the All Post Office report is created automatically.</div>';return}
+function nbStat(){const e=document.getElementById('nbStat');if(!e)return;const AO=Object.keys(NB_OFF).filter(NB.act),s=document.querySelector('#p-rp .nbMs'),ym=s&&s.value;if(!ym){e.innerHTML='<div class="hint">Upload a post-office-wise CSV (Daily Upload tab) - the All Post Office report is created automatically.</div>';return}
  const V=NB.vals(ym),ids=Object.keys(V),inM=ids.filter(i=>NB_OFF[i]),act=inM.filter(i=>V[i][0]+V[i][2]+V[i][4]+V[i][6]>0).length,ds=Object.keys(NB.S.offD).filter(d=>d.slice(0,7)===ym).sort(),cl={};
  inM.forEach(i=>{const c=NB_OFF[i][1];cl[c]=(cl[c]||0)+1});
- e.innerHTML=`<div class="msg">Ready for ${ym}${ds.length?` - ${ds.length} day(s) uploaded (${dmy(ds[0])} to ${dmy(ds[ds.length-1])})`:' (monthly totals)'}\nOffices in master: ${Object.keys(NB_OFF).length} (BO ${Object.values(NB_OFF).filter(x=>x[1]==='BO').length}, SO ${Object.values(NB_OFF).filter(x=>x[1]==='SO').length}) - offices with booking: ${act}\nOffice-id not in master: ${ids.length-inM.length}${ids.length-inM.length?' (listed at the end of the CSV as NOT IN MASTER; fix in Settings)':''}</div>`}
+ e.innerHTML=`<div class="msg">Ready for ${ym}${ds.length?` - ${ds.length} day(s) uploaded (${dmy(ds[0])} to ${dmy(ds[ds.length-1])})`:' (monthly totals)'}\nOffices in master: ${AO.length} (BO ${AO.filter(i=>NB_OFF[i][1]==='BO').length}, SO ${AO.filter(i=>NB_OFF[i][1]==='SO').length}) - offices with booking: ${act}\nOffice-id not in master: ${ids.length-inM.length}${ids.length-inM.length?' (listed at the end of the CSV as NOT IN MASTER; fix in Settings)':''}</div>`}
 
+if(!NB.S.seeded){for(const k in NB.DEF_ALIAS)if(!(k in NB.S.alias))NB.S.alias[k]=NB.DEF_ALIAS[k];NB.S.seeded=1;NB.save()}
+const _od=officeDiv;officeDiv=id=>_od(NB.S.alias[id]||id);
 NB.load();
 
 /* ===== REPORTS + PPT + PDF add-on ===== */
+const NB_LIBS={PptxGenJS:['https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js','https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js','https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js'],html2canvas:['https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js','https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js','https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'],jspdf:['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js']};
+async function needLib2(n){const ok=()=>n==='jspdf'?window.jspdf:window[n];if(ok())return true;setBusy(true,'Loading '+n+'…');for(const u of NB_LIBS[n]){await new Promise(r=>{const s=document.createElement('script');s.src=u;s.onload=s.onerror=r;document.head.appendChild(s)});if(ok()){setBusy(false,'');return true}}setBusy(false,'');alert(n+' could not be loaded from the internet (tried 3 sources). Check the internet connection / ad-blocker / firewall and try again.');return false}
 const RP={VS:['PARCEL','MAIL','IRGB','SB','PLI','CCS'],DV:['Indore City','Indore Mfl','Khandwa','Mandsaur','Ratlam','Sehore','Ujjain','Indore RMS'],
  DMAP:{'INDORE CITY':'Indore City','INDORE MFL':'Indore Mfl','KHANDWA':'Khandwa','MANDSAUR':'Mandsaur','RATLAM':'Ratlam','SEHORE':'Sehore','UJJAIN':'Ujjain','ID DIVISION':'Indore RMS'},
  FY:['2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12','2027-01','2027-02','2027-03'],
@@ -2062,7 +2069,7 @@ function rpRender(){if(!rpInit())return;try{if(!document.getElementById('monthSe
  document.getElementById('rpInfo').innerHTML=`<div class="msg">Last month with data: ${RP.VS.map(v=>rpVn(v)+' '+(RP.last[v]?rpMn(RP.last[v]):'-')).join(' | ')}\nCombined TOTAL is shown up to <b>${rpMn(RP.common)}</b>. Article count shown up to ${rpMn(RP.CML[RP.CML.length-1]||'2026-04')}.\nWhich pages go into the mega PPT / PDF, the cover title and the good-booking limits: Settings tab.</div>`;rpShow()}
 function rpShow(){const P=RP.pages(),p=P[+document.getElementById('rpSel').value||0],v=document.getElementById('rpView');v.innerHTML='';if(!p)return;if(p.canvas){const c=p.canvas();c.style.maxWidth='100%';v.appendChild(c)}else v.innerHTML=p.html()}
 async function rpCv(p,host){if(p.canvas)return p.canvas();host.innerHTML=p.html();return html2canvas(host.firstChild,{scale:1.4,backgroundColor:'#fff'})}
-async function rpJPG(){const p=RP.pages()[+document.getElementById('rpSel').value||0];if(!p)return;if(!p.canvas&&!window.html2canvas)return alert('html2canvas not loaded');const h=document.createElement('div');h.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(h);const c=await rpCv(p,h);h.remove();c.toBlob(b=>saveBlob(b,p.t.replace(/[^\w]+/g,'_')+'.jpg'),'image/jpeg',.95)}
+async function rpJPG(p,fn){p=p||RP.pages()[+document.getElementById('rpSel').value||0];if(!p)return;if(!p.canvas&&!(await needLib2('html2canvas')))return;const h=document.createElement('div');h.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(h);const c=await rpCv(p,h);h.remove();c.toBlob(b=>saveBlob(b,(fn||p.t).replace(/[^\w]+/g,'_')+'.jpg'),'image/jpeg',.95)}
 function rpXLSX(){const t=document.querySelector('#rpView table');if(!t)return alert('This page has no table');const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.table_to_sheet(t),'Report');XLSX.writeFile(wb,'Report.xlsx')}
 function rpSaveCover(){const c=rpCfg();c.title=document.getElementById('rpT').value;c.sub=document.getElementById('rpS').value;c.badge=document.getElementById('rpB').value;NB.save();toast('Saved')}
 function rpGrp(g,on){const c=rpCfg();RP.PL.filter(p=>p.g===g).forEach(p=>{if(on)delete c.ex[RP.pid(p)];else c.ex[RP.pid(p)]=1});NB.save();nbSettingsRender()}
@@ -2071,6 +2078,15 @@ function nbSaveTh(){for(const k in NB.REP)NB.S.th[k]=+document.getElementById('n
 function nbSavePm(){document.querySelectorAll('.nbP:not(:disabled)').forEach(s=>{const n=norm(s.dataset.p);if(s.value){NB.S.pm[n]=s.value;DB.customMap[n]=(s.value==='Other'||s.value==='SPEED POST')?'MO':s.value}else{delete NB.S.pm[n]}});NB.save();save();nbSettingsRender();toast('Saved')}
 function nbSyncPend(){for(const id in NB.S.alias){const e=NB_OFF[NB.S.alias[id]],d=e&&RP.DMAP[e[3]];if(d&&!DB.offMap[id]&&!DEF_OFFMAP[id])DB.offMap[id]=d}
  for(const id of Object.keys(DB.pend)){const dv=officeDiv(id);if(!dv)continue;const p=DB.pend[id],Rw=(DB.raw[dv]=DB.raw[dv]||{}),RR=(DB.rev[dv]=DB.rev[dv]||{});for(const dt in p.d){const t=(Rw[dt]=Rw[dt]||{});for(const pn in p.d[dt])t[pn]=(t[pn]||0)+p.d[dt][pn]}for(const dt in(p.r||{})){const t=(RR[dt]=RR[dt]||{});for(const pn in p.r[dt])t[pn]=(t[pn]||0)+p.r[dt][pn]}delete DB.pend[id]}save();updBadge()}
+async function rpDlP(k,i){const p=RP.PL[i];if(k==='ppt')return rpPPT([p],p.t.replace(/[^\w]+/g,'_'));if(k==='pdf')return rpPDF([p],p.t.replace(/[^\w]+/g,'_'));return rpJPG(p)}
+async function rpDlG(k,g){const l=RP.PL.filter(p=>p.g===g),n=RP.G[g].replace(/[^\w]+/g,'_').slice(0,40);return k==='ppt'?rpPPT(l,n):rpPDF(l,n)}
+const nbVals=o=>Object.values(NB_OFF).map(x=>x[o]);
+function nbChooser(p,label){const dvs=[...new Set(nbVals(3))].sort(),cl=[...new Set(nbVals(1))].sort(),sd=[...new Set(nbVals(2))].sort();
+ return `<div style="margin:6px 0"><b>${label}</b><br><select id="nbc_${p}_dv" onchange="nbSdFill('${p}');nbFilt('${p}')"><option value="">All divisions</option>${dvs.map(x=>`<option>${esc(x)}</option>`).join('')}</select> <select id="nbc_${p}_sd" onchange="nbFilt('${p}')"><option value="">All sub divisions</option>${sd.map(x=>`<option>${esc(x)}</option>`).join('')}</select> <select id="nbc_${p}_cl" onchange="nbFilt('${p}')"><option value="">All classes</option>${cl.map(x=>`<option>${esc(x)}</option>`).join('')}</select> <input id="nbc_${p}_q" placeholder="search name / id" oninput="nbFilt('${p}')"><br><select id="nbc_${p}_l" size="6" style="min-width:460px"></select></div>`}
+function nbSdFill(p){const dv=document.getElementById('nbc_'+p+'_dv').value,s=document.getElementById('nbc_'+p+'_sd');s.innerHTML='<option value="">All sub divisions</option>'+[...new Set(Object.values(NB_OFF).filter(x=>!dv||x[3]===dv).map(x=>x[2]))].sort().map(x=>`<option>${esc(x)}</option>`).join('')}
+function nbFilt(p){const g=k=>document.getElementById('nbc_'+p+'_'+k).value,q=g('q').toLowerCase();document.getElementById('nbc_'+p+'_l').innerHTML=Object.keys(NB_OFF).filter(id=>{const [nm,cl,sd,dv]=NB_OFF[id];return(!g('dv')||dv===g('dv'))&&(!g('sd')||sd===g('sd'))&&(!g('cl')||cl===g('cl'))&&(!q||(nm+' '+id).toLowerCase().includes(q))}).slice(0,400).map(id=>`<option value="${id}">${id} - ${esc(NB_OFF[id][0])} (${NB_OFF[id][1]}, ${esc(NB_OFF[id][2])})</option>`).join('')}
+function nbAddAlias(){const v=i=>document.getElementById(i).value;const o=offId(v('nbMo'))||v('nbc_src_l'),n=offId(v('nbMn'))||v('nbc_dst_l');if(!o||!n)return alert('Choose / write both the old and the new office-id');if(o===n)return alert('Old and new office-id are the same');if(!NB_OFF[n])return alert('New office-id '+n+' is not in the office master');NB.S.alias[o]=n;NB.save();nbSyncPend();nbSettingsRender();toast('Added')}
+function nbDelAlias(o){delete NB.S.alias[o];NB.save();nbSettingsRender()}
 function nbSaveAlias(){document.querySelectorAll('.nbA').forEach(i=>{const v=offId(i.value);if(v&&NB_OFF[v])NB.S.alias[i.dataset.id]=v;else if(v)toast('Office-id '+v+' not in master');else delete NB.S.alias[i.dataset.id]});NB.save();nbSyncPend();nbSettingsRender();try{renderPend()}catch(e){}}
 function nbSettingsRender(){const el=document.getElementById('nbSetBody');if(!el)return;if(!rpInit())return;const c=rpCfg(),cnt={};
  NB.months().forEach(m=>{const v=NB.vals(m);for(const id in v)if(!NB_OFF[id])cnt[id]=(cnt[id]||0)+v[id][0]+v[id][2]+v[id][4]+v[id][6]});const u=Object.keys(cnt);RP.PL=RP.pages();
@@ -2078,23 +2094,25 @@ function nbSettingsRender(){const el=document.getElementById('nbSetBody');if(!el
  el.innerHTML=`<h4>1. Good booking limit (separate for each report)</h4>`+Object.keys(NB.REP).map(k=>`<label style="margin-right:14px">${NB.REP[k].t}: good booking &gt; <input type="number" id="nbT_${k}" value="${NB.S.th[k]}" style="width:60px"></label>`).join('')+` <button class="b sm" onclick="nbSaveTh()">Save</button>
  <div class="hint">NIL = office with no booking in the category(ies) of that report (All = IRGB + MO + Parcel together; Parcel = only Parcel). Low = 1 to the limit.</div>
  <h4>2. Office-ids not in the office master</h4>${u.length?`<table class="s2"><tr><th>Office-id</th><th>Articles</th><th>Count in office-id</th></tr>${u.map(id=>`<tr><td>${esc(id)}</td><td>${cnt[id]}</td><td><input class="nbA" data-id="${esc(id)}" value="${esc(NB.S.alias[id]||'')}" placeholder="office-id"></td></tr>`).join('')}</table><button class="b sm" onclick="nbSaveAlias()">Save</button>`:'<div class="hint">None.</div>'}
- <h4>3. Product -> category (IRGB / Other / Parcel / SPEED POST; MO = Other + Speed Post)</h4><table class="s2"><tr><th>Product name</th><th>Category</th></tr>${pr.map(p=>{const k=NB.catOf(p)||'',lk=p.includes('international');return`<tr><td>${esc(p)}</td><td><select class="nbP" data-p="${esc(p)}" ${lk?'disabled':''}><option value="">-</option>${NB.CATS.map(x=>`<option ${k===x?'selected':''}>${x}</option>`).join('')}</select></td></tr>`}).join('')}</table><button class="b sm" onclick="nbSavePm()">Save mapping</button>
- <h4>4. Mega PPT / PDF</h4><div style="display:flex;gap:10px;flex-wrap:wrap"><label>First slide title <input id="rpT" value="${esc(c.title)}" style="width:200px"></label><label>Subtitle <input id="rpS" value="${esc(c.sub)}" style="width:300px"></label><label>Badge <input id="rpB" value="${esc(c.badge)}" style="width:150px"></label> <button class="b sm" onclick="rpSaveCover()">Save</button></div>
- <div style="margin-top:8px"><b>Pages included (tick = included; open a group to choose single pages):</b></div>`+Object.keys(RP.G).map(g=>{const ps=RP.PL.map((p,i)=>[p,i]).filter(x=>x[0].g===g);if(!ps.length)return'';const all=ps.every(x=>!c.ex[RP.pid(x[0])]);return`<details style="margin:4px 0"><summary><label><input type="checkbox" ${all?'checked':''} onclick="event.stopPropagation()" onchange="rpGrp('${g}',this.checked)"> <b>${RP.G[g]}</b> (${ps.length})</label></summary><div style="columns:2;padding-left:22px">${ps.map(([p,i])=>`<label style="display:block"><input type="checkbox" ${c.ex[RP.pid(p)]?'':'checked'} onchange="rpTog(${i},this.checked)"> ${esc(p.t)}</label>`).join('')}</div></details>`}).join('')}
-const _rs=renderSettings;renderSettings=function(){_rs();nbSettingsRender()};
+ <h4>3. Office-id shifts (old office-id -> new office-id)</h4><div class="hint">Data of the old office-id is counted in the new office-id (division report, Nil Booking reports and the All Post Office CSV). The old office-id is no longer counted as an office.</div>${Object.keys(NB.S.alias).length?`<table class="s2"><tr><th>Old office-id</th><th>Old office</th><th>New office-id</th><th>New office</th><th></th></tr>${Object.keys(NB.S.alias).map(o=>`<tr><td>${esc(o)}</td><td>${NB_OFF[o]?esc(NB_OFF[o][0]):'-'}</td><td>${esc(NB.S.alias[o])}</td><td>${NB_OFF[NB.S.alias[o]]?esc(NB_OFF[NB.S.alias[o]][0]):'-'}</td><td><button class="b sm gray" onclick="nbDelAlias('${esc(o)}')">&#10006;</button></td></tr>`).join('')}</table>`:''}<div style="margin-top:6px">Add: old office-id <input id="nbMo" style="width:100px"> &rarr; new office-id <input id="nbMn" style="width:100px"> <span class="hint">(or pick from the lists below)</span></div>${nbChooser('src','Old office (data to move FROM)')}${nbChooser('dst','New office (count the data IN)')}<button class="b sm" onclick="nbAddAlias()">Add</button>
+ <h4>4. Product -> category (IRGB / Other / Parcel / SPEED POST; MO = Other + Speed Post)</h4><table class="s2"><tr><th>Product name</th><th>Category</th></tr>${pr.map(p=>{const k=NB.catOf(p)||'',lk=p.includes('international');return`<tr><td>${esc(p)}</td><td><select class="nbP" data-p="${esc(p)}" ${lk?'disabled':''}><option value="">-</option>${NB.CATS.map(x=>`<option ${k===x?'selected':''}>${x}</option>`).join('')}</select></td></tr>`}).join('')}</table><button class="b sm" onclick="nbSavePm()">Save mapping</button>
+ <h4>5. Mega PPT / PDF</h4><div style="display:flex;gap:10px;flex-wrap:wrap"><label>First slide title <input id="rpT" value="${esc(c.title)}" style="width:200px"></label><label>Subtitle <input id="rpS" value="${esc(c.sub)}" style="width:300px"></label><label>Badge <input id="rpB" value="${esc(c.badge)}" style="width:150px"></label> <button class="b sm" onclick="rpSaveCover()">Save</button></div>
+ <div style="margin-top:8px"><b>Pages included (tick = included; open a group to choose single pages):</b></div>`+Object.keys(RP.G).map(g=>{const ps=RP.PL.map((p,i)=>[p,i]).filter(x=>x[0].g===g);if(!ps.length)return'';const all=ps.every(x=>!c.ex[RP.pid(x[0])]);return`<details style="margin:4px 0"><summary><label><input type="checkbox" ${all?'checked':''} onclick="event.stopPropagation()" onchange="rpGrp('${g}',this.checked)"> <b>${RP.G[g]}</b> (${ps.length})</label> <button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpDlG('ppt','${g}')">PPT</button><button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpDlG('pdf','${g}')">PDF</button></summary><div style="padding-left:22px">${ps.map(([p,i])=>`<div style="display:flex;align-items:center;gap:8px;padding:2px 0"><label style="min-width:320px"><input type="checkbox" ${c.ex[RP.pid(p)]?'':'checked'} onchange="rpTog(${i},this.checked)"> ${esc(p.t)}</label><button class="b sm" onclick="rpDlP('ppt',${i})">PPT</button><button class="b sm" onclick="rpDlP('pdf',${i})">PDF</button><button class="b sm" onclick="rpDlP('jpg',${i})">JPG</button></div>`).join('')}</div></details>`}).join('')}
+function nbInitCh(){['src','dst'].forEach(p=>{if(document.getElementById('nbc_'+p+'_l'))nbFilt(p)})}
+const _rs=renderSettings;renderSettings=function(){_rs();nbSettingsRender();nbInitCh()};
 async function rpSB(file){if(!file)return;const t=await file.text();NB.S.sbText=t;NB.save();document.getElementById('rpSBf').value='';rpRender();toast('SB / PLI / CCS file loaded')}
 function rpSBreset(){delete NB.S.sbText;NB.save();rpRender()}
 function rpCover(){const c=rpCfg();return `<div class="rpPg" style="width:1100px;height:620px;background:#b3121b;color:#fff;font-family:Arial;padding:90px 80px;box-sizing:border-box"><div style="font:700 20px Arial;color:#fdb913;letter-spacing:3px">INDIA POST</div><div style="font:700 44px Arial;margin:24px 0">${esc(c.title)}</div><div style="font:20px Arial">${esc(c.sub)}</div><div style="display:inline-block;background:#fdb913;color:#222;font:700 16px Arial;padding:12px 24px;margin-top:60px">${esc(c.badge)}</div></div>`}
-async function rpPDF(){if(!rpInit())return;if(!window.html2canvas||!window.jspdf)return alert('Libraries (html2canvas / jsPDF) not loaded - check internet and refresh.');
- const L=[{html:rpCover},...RP.sel()],host=document.createElement('div');host.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(host);let doc=null;
+async function rpPDF(sel,fn){if(!rpInit())return;if(!(await needLib2('html2canvas'))||!(await needLib2('jspdf')))return;
+ const L=(sel?[]:[{html:rpCover}]).concat(sel||RP.sel()),host=document.createElement('div');host.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(host);let doc=null;
  try{for(let i=0;i<L.length;i++){setBusy(true,`PDF page ${i+1}/${L.length}…`);const cv=await rpCv(L[i],host),w=cv.width,h=cv.height,im=cv.toDataURL('image/jpeg',.88);
   if(!doc)doc=new window.jspdf.jsPDF({orientation:w>h?'l':'p',unit:'px',format:[w,h],hotfixes:['px_scaling']});else doc.addPage([w,h],w>h?'l':'p');doc.addImage(im,'JPEG',0,0,w,h);await new Promise(r=>setTimeout(r,0))}
-  saveBlob(doc.output('blob'),'Indore_Region_Mega_Report.pdf');setBusy(false,'Done')}catch(e){setBusy(false,'');alert('PDF error: '+e.message)}host.remove()}
-function rpPPT(){if(!rpInit())return;if(!window.PptxGenJS)return alert('PptxGenJS not loaded - check internet.');const c=rpCfg(),p=new PptxGenJS();p.layout='LAYOUT_WIDE';p.title=c.title;
+  saveBlob(doc.output('blob'),(fn||'Indore_Region_Mega_Report')+'.pdf');setBusy(false,'Done')}catch(e){setBusy(false,'');alert('PDF error: '+e.message)}host.remove()}
+async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS')))return;const full=!sel,Lp=sel||RP.sel(),c=rpCfg(),p=new PptxGenJS();p.layout='LAYOUT_WIDE';p.title=c.title;
  const cell=(t,o={})=>({text:String(t),options:Object.assign({fontFace:'Arial',fontSize:10,align:'right',valign:'middle',border:{type:'solid',color:'CCCCDD',pt:.5}},o)}),H=(t,col)=>cell(t,{bold:true,color:col||'FFFFFF',fill:{color:'0F1A2E'},align:'center',fontSize:9});
- const s0=p.addSlide();s0.background={color:'B3121B'};s0.addText('INDIA POST',{x:.9,y:1.4,w:8,h:.4,fontSize:18,bold:true,color:'FDB913',charSpacing:4,fontFace:'Arial'});s0.addText(c.title,{x:.9,y:2,w:11,h:1.2,fontSize:40,bold:true,color:'FFFFFF',fontFace:'Arial'});s0.addText(c.sub,{x:.9,y:3.3,w:11,h:.5,fontSize:20,color:'FFFFFF',fontFace:'Arial'});s0.addShape(p.ShapeType.rect,{x:.9,y:4.8,w:4.6,h:.55,fill:{color:'FDB913'}});s0.addText(c.badge,{x:.9,y:4.8,w:4.6,h:.55,fontSize:15,bold:true,color:'222222',align:'center',fontFace:'Arial'});
+ const s0=full?p.addSlide():{addText(){},addShape(){},background:{}};s0.background={color:'B3121B'};s0.addText('INDIA POST',{x:.9,y:1.4,w:8,h:.4,fontSize:18,bold:true,color:'FDB913',charSpacing:4,fontFace:'Arial'});s0.addText(c.title,{x:.9,y:2,w:11,h:1.2,fontSize:40,bold:true,color:'FFFFFF',fontFace:'Arial'});s0.addText(c.sub,{x:.9,y:3.3,w:11,h:.5,fontSize:20,color:'FFFFFF',fontFace:'Arial'});s0.addShape(p.ShapeType.rect,{x:.9,y:4.8,w:4.6,h:.55,fill:{color:'FDB913'}});s0.addText(c.badge,{x:.9,y:4.8,w:4.6,h:.55,fontSize:15,bold:true,color:'222222',align:'center',fontFace:'Arial'});
  const sl=(t,sub)=>{const s=p.addSlide();s.addText(t,{x:.5,y:.3,w:12.3,h:.5,fontSize:22,bold:true,color:'B3121B',fontFace:'Arial'});s.addText(sub,{x:.5,y:.8,w:12.3,h:.3,fontSize:11,color:'555555',fontFace:'Arial'});s.addShape(p.ShapeType.rect,{x:.5,y:1.12,w:12.3,h:.05,fill:{color:'FDB913'}});return s};
- for(const pg of RP.sel()){
+ for(const pg of Lp){
   if(pg.canvas){const c=pg.canvas(),s=p.addSlide(),k=Math.min(12.9/c.width,7.1/c.height);s.addImage({data:c.toDataURL('image/jpeg',.92),x:(13.33-c.width*k)/2,y:(7.5-c.height*k)/2,w:c.width*k,h:c.height*k});continue}
   if(pg.g==='sum'){const r=RP.sumData(pg.d),s=sl(rpNm(pg.d)+' - Target vs Achievement (Rs. crore)',RP.sub()),rows=[[H('VERTICAL'),H('YEARLY TGT'),H('MONTHLY TGT'),H('CUM. TARGET','FDB913'),...RP.ML.map(m=>H(rpMn(m))),H('TOTAL ACH','6EE7A0'),H('% PROP.','F5A623'),H('% TOTAL','6EE7A0')]];
    r.forEach(x=>{const f=x.tot_?{fill:{color:'BDD7EE'},bold:true}:{};rows.push([cell(x.n,Object.assign({align:'left',bold:true},f)),cell(f3(x.t),f),cell(f3(x.mt),f),cell(f3(x.cum),Object.assign({color:'B45309',bold:true},f)),...x.m.map(v=>cell(v==null?'-':f3(v),f)),cell(f3(x.tot),Object.assign({color:'157A3C',bold:true},f)),cell(x.pp,Object.assign({color:'B45309',bold:true},f)),cell(x.pt,Object.assign({color:'157A3C',bold:true},f))])});
@@ -2113,7 +2131,7 @@ function rpPPT(){if(!rpInit())return;if(!window.PptxGenJS)return alert('PptxGenJ
     rows.push(['',dv+' Total','',Tt.t,Tt.n,Tt.l,Tt.g,pc(Tt.n,Tt.t),pc(Tt.g,Tt.t)].map(v=>cell(v,{fontSize:6.5,bold:true,align:'center',fill:{color:'FDE4D6'}})))});
    rows.push(['','Grand Total','',GT.t,GT.n,GT.l,GT.g,pc(GT.n,GT.t),pc(GT.g,GT.t)].map(v=>cell(v,{fontSize:7,bold:true,align:'center',fill:{color:'BDD7EE'}})));s.addTable(rows,{x:.5,y:1.3,w:12.3,rowH:.125,colW:[.6,1.6,2.6,1.3,1.1,1.2,1.2,1.3,1.4]})}
  }
- p.writeFile({fileName:'Indore_Region_Mega_Report.pptx'})}
+ p.writeFile({fileName:(fn||'Indore_Region_Mega_Report')+'.pptx'})}
 
 </script>
 </body>
