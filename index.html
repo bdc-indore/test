@@ -149,17 +149,6 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div class="card">
     <h3>Target &amp; Achievement – Revenue and Article Count (division-wise, FY 2026-27)</h3>
     <div class="hint" style="margin-bottom:8px">The month's article count and revenue (sum of <b>postage</b>) are filled automatically from the uploaded CSV (division-wise or post-office-wise), per division and per vertical. All % columns are calculated. Revenue: Parcel and MO in crore, IRGB in lakh. Download is enabled once the data is complete.</div>
-    <div class="row">
-      <b>Fill month:</b> <select id="tgtMonth" onchange="renderTgt()"></select>
-      <label class="b gray sm">Load Revenue CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'rev')"></label>
-      <label class="b gray sm">Load Count CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'cnt')"></label>
-      <button class="b gray sm" onclick="resetTgt()">Use built-in tables</button>
-    </div>
-    <div id="tgtStatus"></div>
-    <div class="row">
-      <button class="b alt" id="dlRevCsv" onclick="dlTgt('rev')">Download Revenue CSV</button>
-      <button class="b alt" id="dlCntCsv" onclick="dlTgt('cnt')">Download Count CSV</button>
-    </div>
     <div class="tabs" style="margin-top:10px"><button id="tgtTabRev" onclick="tgtView='rev';renderTgt()">Revenue</button><button id="tgtTabCnt" onclick="tgtView='cnt';renderTgt()">Article Count</button></div>
   </div>
   <div id="tgtBox"></div>
@@ -279,6 +268,9 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <section id="p-rp" style="display:none"><div class="card"><h3>Reports, PPT &amp; PDF - all downloads are here</h3>
 <div class="hint" style="margin-bottom:6px">Everything is built from what you upload in the <b>Upload</b> tab. Good-booking limits, office-id shifts, product mapping and the choice of pages for the mega PPT / PDF are in <b>Settings</b>.</div>
 <div><b>All Post Office report (CSV):</b> <select class="nbMs" onchange="nbStat()"></select> <button class="b sm" onclick="nbCSV(this.previousElementSibling.value)">Download All Post Office Report (CSV)</button><div id="nbStat"></div></div>
+<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e3e3e3"><b>Target vs Achievement CSV (Revenue &amp; Article Count):</b> month <select id="tgtMonth" onchange="renderTgt()"></select>
+ <button class="b alt sm" id="dlRevCsv" onclick="dlTgt('rev')">Download Revenue CSV</button> <button class="b alt sm" id="dlCntCsv" onclick="dlTgt('cnt')">Download Article Count CSV</button>
+ <div class="hint" style="margin-top:4px">Division-wise Parcel / MO / IRGB target, achievement and % (Revenue: Parcel and MO in crore, IRGB in lakh). Buttons are enabled once the month's data is complete. Target tables can be replaced in the <b>Upload</b> tab.</div><div id="tgtStatus"></div></div>
 <div style="margin-top:8px"><b>Daily report (all divisions):</b> <div class="dl">
       <b>Download – all pages (Region Total + 8 divisions + MO / Parcel / IRGB comparison):</b>
       <button class="b alt" id="dlXls" onclick="exportExcel()">Excel</button>
@@ -2065,7 +2057,7 @@ RP.pid=p=>p.g+'|'+p.t;RP.sel=()=>{const c=rpCfg();return RP.pages().filter(p=>!c
 function rpInit(){try{RP.build()}catch(e){document.getElementById('rpMsg').innerHTML=`<div class="msg err">${esc(e.message)}</div>`;return false}return true}
 function rpRender(){if(!rpInit())return;try{if(!document.getElementById('monthSel').value)renderReport()}catch(e){}
  const P=RP.pages(),sel=document.getElementById('rpSel'),keep=sel.value;sel.innerHTML=P.map((p,i)=>`<option value="${i}">${esc(p.t)}</option>`).join('');if(keep&&+keep<P.length)sel.value=keep;
- const ms=document.getElementById('rpMonth');ms.innerHTML=NB.months().map(m=>`<option ${m===NB.S.month?'selected':''}>${m}</option>`).join('')||'<option value="">no data</option>';nbFillMs();
+ const ms=document.getElementById('rpMonth');ms.innerHTML=NB.months().map(m=>`<option ${m===NB.S.month?'selected':''}>${m}</option>`).join('')||'<option value="">no data</option>';nbFillMs();try{renderTgt()}catch(e){}
  document.getElementById('rpInfo').innerHTML=`<div class="msg">Last month with data: ${RP.VS.map(v=>rpVn(v)+' '+(RP.last[v]?rpMn(RP.last[v]):'-')).join(' | ')}\nCombined TOTAL is shown up to <b>${rpMn(RP.common)}</b>. Article count shown up to ${rpMn(RP.CML[RP.CML.length-1]||'2026-04')}.\nWhich pages go into the mega PPT / PDF, the cover title and the good-booking limits: Settings tab.</div>`;rpShow()}
 function rpShow(){const P=RP.pages(),p=P[+document.getElementById('rpSel').value||0],v=document.getElementById('rpView');v.innerHTML='';if(!p)return;if(p.canvas){const c=p.canvas();c.style.maxWidth='100%';v.appendChild(c)}else v.innerHTML=p.html()}
 async function rpCv(p,host){if(p.canvas)return p.canvas();host.innerHTML=p.html();return html2canvas(host.firstChild,{scale:1.4,backgroundColor:'#fff'})}
@@ -2109,27 +2101,66 @@ async function rpPDF(sel,fn){if(!rpInit())return;if(!(await needLib2('html2canva
   if(!doc)doc=new window.jspdf.jsPDF({orientation:w>h?'l':'p',unit:'px',format:[w,h],hotfixes:['px_scaling']});else doc.addPage([w,h],w>h?'l':'p');doc.addImage(im,'JPEG',0,0,w,h);await new Promise(r=>setTimeout(r,0))}
   saveBlob(doc.output('blob'),(fn||'Indore_Region_Mega_Report')+'.pdf');setBusy(false,'Done')}catch(e){setBusy(false,'');alert('PDF error: '+e.message)}host.remove()}
 async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS')))return;const full=!sel,Lp=sel||RP.sel(),c=rpCfg(),p=new PptxGenJS();p.layout='LAYOUT_WIDE';p.title=c.title;
- const cell=(t,o={})=>({text:String(t),options:Object.assign({fontFace:'Arial',fontSize:10,align:'right',valign:'middle',border:{type:'solid',color:'CCCCDD',pt:.5}},o)}),H=(t,col)=>cell(t,{bold:true,color:col||'FFFFFF',fill:{color:'0F1A2E'},align:'center',fontSize:9});
+ /* ---- theme (same as the Presentation Maker slides): red header, zebra rows, light-yellow total rows, green / orange / red % cells ---- */
+ const RED='B3121B',YEL='FDB913',INK='2B2B2B',LN='D0D0D0',ZEB='F6F6F6',TOT='FFF0C2',F='Arial',TW=12.1,TX=.6;
+ const BAND={g:{fill:'DCEFD9',color:'1B6B2E'},o:{fill:'FFE5CC',color:'C25500'},r:{fill:'FDE0E0',color:'C00000'}};
+ const HI=80,LO=60,NHI=20,NLO=40; /* % achievement: green >= HI, orange LO-HI, red < LO | % NIL offices (lower is better): green <= NHI, orange NHI-NLO, red > NLO */
+ const bandHi=v=>isNaN(v)?null:v>=HI?BAND.g:v>=LO?BAND.o:BAND.r, bandNil=v=>isNaN(v)?null:v<=NHI?BAND.g:v<=NLO?BAND.o:BAND.r;
+ const cell=(t,o={})=>({text:t,options:Object.assign({fontFace:F,fontSize:10,color:INK,align:'center',valign:'middle',margin:[0,.05,0,.05],border:{type:'solid',color:LN,pt:.5}},o)});
+ const hd=(t,fs)=>cell(String(t),{bold:true,color:'FFFFFF',fill:{color:RED},fontSize:fs||10});
+ const bd=(t,i,o={})=>cell(String(t),Object.assign({fill:{color:i%2?ZEB:'FFFFFF'}},o));
+ const tt=(t,o={})=>cell(String(t),Object.assign({fill:{color:TOT},bold:true},o));
+ const bandO=b=>b?{fill:{color:b.fill},color:b.color,bold:true}:{};
  const s0=full?p.addSlide():{addText(){},addShape(){},background:{}};s0.background={color:'B3121B'};s0.addText('INDIA POST',{x:.9,y:1.4,w:8,h:.4,fontSize:18,bold:true,color:'FDB913',charSpacing:4,fontFace:'Arial'});s0.addText(c.title,{x:.9,y:2,w:11,h:1.2,fontSize:40,bold:true,color:'FFFFFF',fontFace:'Arial'});s0.addText(c.sub,{x:.9,y:3.3,w:11,h:.5,fontSize:20,color:'FFFFFF',fontFace:'Arial'});s0.addShape(p.ShapeType.rect,{x:.9,y:4.8,w:4.6,h:.55,fill:{color:'FDB913'}});s0.addText(c.badge,{x:.9,y:4.8,w:4.6,h:.55,fontSize:15,bold:true,color:'222222',align:'center',fontFace:'Arial'});
- const sl=(t,sub)=>{const s=p.addSlide();s.addText(t,{x:.5,y:.3,w:12.3,h:.5,fontSize:22,bold:true,color:'B3121B',fontFace:'Arial'});s.addText(sub,{x:.5,y:.8,w:12.3,h:.3,fontSize:11,color:'555555',fontFace:'Arial'});s.addShape(p.ShapeType.rect,{x:.5,y:1.12,w:12.3,h:.05,fill:{color:'FDB913'}});return s};
+ const sl=(t,sub)=>{const s=p.addSlide();s.background={color:'FFFFFF'};s.addText(t,{x:TX,y:.3,w:TW,h:.65,fontSize:t.length>58?22:26,bold:true,color:RED,fontFace:F,valign:'middle',margin:0});s.addShape(p.ShapeType.rect,{x:TX,y:.98,w:1.3,h:.06,fill:{color:YEL},line:{color:YEL,width:0}});if(sub)s.addText(sub,{x:TX,y:1.1,w:TW,h:.28,fontSize:11,color:'777777',fontFace:F,margin:0,valign:'middle'});s.slideNumber={x:12.1,y:7.0,w:.6,h:.3,fontSize:10,color:'777777',fontFace:F,align:'right'};return s};
+ const note=(s,y,t)=>s.addText(t,{x:TX,y,w:TW,h:.28,fontSize:10,color:'777777',fontFace:F,margin:0,valign:'middle'});
+ const grid=(s,rows,colW,hH,rH,y)=>{s.addTable(rows,{x:TX,y,w:colW.reduce((a,b)=>a+b,0),colW,rowH:rows.map((r,i)=>i?rH:hH)});return y+hH+(rows.length-1)*rH};
  for(const pg of Lp){
   if(pg.canvas){const c=pg.canvas(),s=p.addSlide(),k=Math.min(12.9/c.width,7.1/c.height);s.addImage({data:c.toDataURL('image/jpeg',.92),x:(13.33-c.width*k)/2,y:(7.5-c.height*k)/2,w:c.width*k,h:c.height*k});continue}
-  if(pg.g==='sum'){const r=RP.sumData(pg.d),s=sl(rpNm(pg.d)+' - Target vs Achievement (Rs. crore)',RP.sub()),rows=[[H('VERTICAL'),H('YEARLY TGT'),H('MONTHLY TGT'),H('CUM. TARGET','FDB913'),...RP.ML.map(m=>H(rpMn(m))),H('TOTAL ACH','6EE7A0'),H('% PROP.','F5A623'),H('% TOTAL','6EE7A0')]];
-   r.forEach(x=>{const f=x.tot_?{fill:{color:'BDD7EE'},bold:true}:{};rows.push([cell(x.n,Object.assign({align:'left',bold:true},f)),cell(f3(x.t),f),cell(f3(x.mt),f),cell(f3(x.cum),Object.assign({color:'B45309',bold:true},f)),...x.m.map(v=>cell(v==null?'-':f3(v),f)),cell(f3(x.tot),Object.assign({color:'157A3C',bold:true},f)),cell(x.pp,Object.assign({color:'B45309',bold:true},f)),cell(x.pt,Object.assign({color:'157A3C',bold:true},f))])});
-   s.addTable(rows,{x:.5,y:1.5,w:12.3,rowH:.5})}
-  else if(pg.g==='mon'){const R=RP.D.rev[pg.v],L=RP.ML.filter(m=>m<=(RP.last[pg.v]||'')),s=sl('Month-wise Division Revenue - '+rpVn(pg.v)+' (Rs. crore)','Each month: Achievement (% of monthly target) | '+RP.sub()),rows=[[H('DIVISION'),...L.map(m=>H(rpMn(m))),H('TOTAL TGT'),H('TOTAL ACH'),H('%')]];
-   [...RP.DV,'Region'].forEach(d=>{const o=R[d],mt=o.t/12,f=d==='Region'?{fill:{color:'DDE3FB'},bold:true}:{};let ta=0;rows.push([cell(rpNm(d),Object.assign({align:'left',bold:true},f)),...L.map(m=>{const a=o.m[m]||0;ta+=a;return cell(f3(a)+' ('+pc(a,mt).replace('.0','')+')',Object.assign({fontSize:8},f))}),cell(f3(mt*L.length),f),cell(f3(ta),f),cell(pc(ta,mt*L.length),Object.assign({bold:true,color:'B45309'},f))])});
-   s.addTable(rows,{x:.5,y:1.5,w:12.3,rowH:.45})}
+  if(pg.g==='sum'){const r=RP.sumData(pg.d),s=sl(rpNm(pg.d)+' - Target vs Achievement (Rs. crore)',RP.sub()),nc=7+RP.ML.length,fs=nc>17?8:nc>14?9:10,
+    rows=[[hd('Vertical',fs),hd('Yearly Target',fs),hd('Monthly Target',fs),hd('Cumulative Target',fs),...RP.ML.map(m=>hd(rpMn(m),fs)),hd('Total Achievement',fs),hd('% Ach (Prop.)',fs),hd('% Ach (Total)',fs)]];
+   r.forEach((x,i)=>{const mk=(v,o={})=>x.tot_?tt(v,Object.assign({fontSize:fs},o)):bd(v,i,Object.assign({fontSize:fs},o)),vk=RP.VS[i];
+    rows.push([mk(x.n,{align:'left',bold:true}),mk(f3(x.t)),mk(f3(x.mt)),mk(f3(x.cum)),...x.m.map((v,k)=>mk(v==null||(vk&&RP.ML[k]>(RP.last[vk]||''))?'-':f3(v))),mk(f3(x.tot),{bold:true}),mk(x.pp,bandO(bandHi(parseFloat(x.pp)))),mk(x.pt,{bold:true})])});
+   const nm=RP.ML.length,fx=[1.3,1,1,1.15,1.2,.95,.95],fsum=fx.reduce((a,b)=>a+b,0),sc=Math.min(1,(TW-.55*nm)/fsum),mw=(TW-fsum*sc)/nm,f=fx.map(v=>v*sc),
+    y=grid(s,rows,[f[0],f[1],f[2],f[3],...Array(nm).fill(mw),f[4],f[5],f[6]],.6,.46,1.5);
+   note(s,y+.12,'% Ach (Prop.) = achievement vs target up to date:  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%')}
+  else if(pg.g==='mon'){const R=RP.D.rev[pg.v],L=RP.ML.filter(m=>m<=(RP.last[pg.v]||'')),s=sl('Month-wise Division Revenue - '+rpVn(pg.v)+' (Rs. crore)','Each month: Achievement and % of monthly target | '+RP.sub()),n=L.length,fs=n>8?8:n>6?9:10,
+    rows=[[hd('Division',fs),...L.map(m=>hd(rpMn(m),fs)),hd('Total Target',fs),hd('Total Achievement',fs),hd('% Ach',fs)]];
+   [...RP.DV,'Region'].forEach((d,i)=>{const o=R[d],mt=o.t/12,reg=d==='Region',mk=(v,o2={})=>reg?tt(v,Object.assign({fontSize:fs},o2)):bd(v,i,Object.assign({fontSize:fs},o2));let ta=0;
+    const mc=L.map(m=>{const a=o.m[m]||0;ta+=a;const b=bandHi(mt>0?a*100/mt:NaN);return cell([{text:f3(a),options:{breakLine:true}},{text:pc(a,mt),options:{bold:true}}],Object.assign({fontSize:fs},reg?{fill:{color:TOT}}:{fill:{color:i%2?ZEB:'FFFFFF'}},b?{fill:{color:b.fill},color:b.color}:{}))});
+    const tp=mt*L.length;rows.push([mk(rpNm(d),{align:'left',bold:true}),...mc,mk(f3(tp)),mk(f3(ta),{bold:true}),mk(pc(ta,tp),bandO(bandHi(tp>0?ta*100/tp:NaN)))])});
+   const w0=1.8,wt=1.15,w=(TW-w0-3*wt)/n,y=grid(s,rows,[w0,...Array(n).fill(w),wt,wt,wt],.5,.5,1.5);
+   note(s,y+.12,'% of monthly target:  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%')}
   else if(pg.g==='cnt'){const k=RP.cntK(pg.v,pg.d),s=sl(rpVn(pg.v).replace(' (MO)','')+' Article Count: '+rpNm(pg.d),'Month-wise Target vs Achievement | '+RP.sub());
    s.addChart(p.charts.BAR,[{name:'Target',labels:k.L.map(rpMn),values:k.T},{name:'Achievement',labels:k.L.map(rpMn),values:k.A}],{x:.5,y:1.4,w:8.4,h:5.6,barDir:'col',barGrouping:'clustered',chartColors:['B3121B','FDB913'],showLegend:true,legendPos:'b',showValue:true,dataLabelFontSize:8,dataLabelFormatCode:'#,##0',valAxisLabelFontSize:9,catAxisLabelFontSize:10});
    [['Total Target',f0(k.tt),'B3121B'],['Total Achievement',f0(k.ta),'FDB913'],['Achievement % of Target',pc(k.ta,k.tt),'1B6B2F'],['Shortfall (Target - Achievement)',f0(k.tt-k.ta),'B3121B']].forEach((x,i)=>{const y=1.5+i*1.35;s.addShape(p.ShapeType.rect,{x:9.2,y,w:3.6,h:1.15,fill:{color:'F5F5F5'}});s.addShape(p.ShapeType.rect,{x:9.2,y,w:3.6,h:.07,fill:{color:x[2]}});s.addText(x[0],{x:9.3,y:y+.12,w:3.4,h:.3,fontSize:11,color:'555555',fontFace:'Arial'});s.addText(x[1],{x:9.3,y:y+.45,w:3.4,h:.55,fontSize:24,bold:true,fontFace:'Arial'})})}
-  else if(pg.g==='q'){const s=sl('Article Count Q1 vs Q2: '+rpVn(pg.v).replace(' (MO)',''),'Q1 = Apr-Jun, Q2 = Jul-Sep | '+RP.sub()),rows=[['DIVISION','Q1 TGT','Q1 ACH','Q1 %','Q2 TGT','Q2 ACH','Q2 %','Q2 vs Q1'].map(x=>H(x))];
-   RP.qData(pg.v).forEach(x=>{const f=x.d==='Region'?{fill:{color:'DDE3FB'},bold:true}:{},g=x.a1?((x.a2-x.a1)*100/x.a1).toFixed(1)+'%':'-';rows.push([cell(rpNm(x.d),Object.assign({align:'left',bold:true},f)),cell(f0(x.t1),f),cell(f0(x.a1),f),cell(pc(x.a1,x.t1),f),cell(f0(x.t2),f),cell(f0(x.a2),f),cell(pc(x.a2,x.t2),f),cell(g,Object.assign({color:x.a2>=x.a1?'157A3C':'B3121B',bold:true},f))])});
-   s.addTable(rows,{x:.5,y:1.5,w:12.3,rowH:.45})}
-  else if(pg.g==='bo'){const {G,th:T}=nbBuild(pg.k,pg.ym),s=sl('Indore Region - '+NB.REP[pg.k].t+' ('+pg.ym+')','Good booking > '+T),rows=[['S.No.','Division','Sub Dn','Total Offices','NIL (0)','Low (1-'+T+')','Good (>'+T+')','% NIL','% Good'].map(x=>H(x))];let n=0;const GT={t:0,n:0,l:0,g:0};
-   NB.DIVO.forEach(dv=>{const sd=G[dv];if(!sd)return;const Tt={t:0,n:0,l:0,g:0};Object.keys(sd).sort().forEach(k=>{const x=sd[k];n++;for(const q in Tt){Tt[q]+=x[q];GT[q]+=x[q]}rows.push([n,dv,k,x.t,x.n,x.l,x.g,pc(x.n,x.t),pc(x.g,x.t)].map((v,i)=>cell(v,{fontSize:6.5,align:i==1||i==2?'left':'center'})))});
-    rows.push(['',dv+' Total','',Tt.t,Tt.n,Tt.l,Tt.g,pc(Tt.n,Tt.t),pc(Tt.g,Tt.t)].map(v=>cell(v,{fontSize:6.5,bold:true,align:'center',fill:{color:'FDE4D6'}})))});
-   rows.push(['','Grand Total','',GT.t,GT.n,GT.l,GT.g,pc(GT.n,GT.t),pc(GT.g,GT.t)].map(v=>cell(v,{fontSize:7,bold:true,align:'center',fill:{color:'BDD7EE'}})));s.addTable(rows,{x:.5,y:1.3,w:12.3,rowH:.125,colW:[.6,1.6,2.6,1.3,1.1,1.2,1.2,1.3,1.4]})}
+  else if(pg.g==='q'){const s=sl('Article Count Q1 vs Q2: '+rpVn(pg.v).replace(' (MO)',''),'Q1 = Apr-Jun, Q2 = Jul-Sep | '+RP.sub()),rows=[['Division','Q1 Target','Q1 Achievement','Q1 %','Q2 Target','Q2 Achievement','Q2 %','Q2 vs Q1 (Ach.)'].map(x=>hd(x))];
+   RP.qData(pg.v).forEach((x,i)=>{const reg=x.d==='Region',mk=(v,o={})=>reg?tt(v,o):bd(v,i,o),gr=x.a1?(x.a2-x.a1)*100/x.a1:NaN;
+    rows.push([mk(rpNm(x.d),{align:'left',bold:true}),mk(f0(x.t1)),mk(f0(x.a1)),mk(pc(x.a1,x.t1),bandO(bandHi(x.t1>0?x.a1*100/x.t1:NaN))),mk(f0(x.t2)),mk(f0(x.a2)),mk(pc(x.a2,x.t2),bandO(bandHi(x.t2>0?x.a2*100/x.t2:NaN))),mk(isNaN(gr)?'-':gr.toFixed(1)+'%',bandO(isNaN(gr)?null:gr>=0?BAND.g:BAND.r))])});
+   const w0=2,w=(TW-w0)/7,y=grid(s,rows,[w0,...Array(7).fill(w)],.55,.46,1.5);
+   note(s,y+.12,'Q1 % / Q2 %:  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%     Q2 vs Q1:  Green = increase  |  Red = decrease')}
+  else if(pg.g==='bo'){const {G,th:T}=nbBuild(pg.k,pg.ym),ttl='Indore Region - '+NB.REP[pg.k].t+' ('+pg.ym+')',sub='Good booking > '+T+' articles | NIL = no booking | Low = 1 to '+T,pct=(a,b)=>b?Math.round(a*100/b):0;
+   const GT={t:0,n:0,l:0,g:0},groups=[];
+   NB.DIVO.forEach(dv=>{const sd=G[dv];if(!sd)return;const Tt={t:0,n:0,l:0,g:0},rr=Object.keys(sd).sort().map(k=>{const x=sd[k];for(const q in Tt){Tt[q]+=x[q];GT[q]+=x[q]}return{sd:k,x}});groups.push({dv,rr,Tt})});
+   /* ---- pagination: a division is never cut if it fits on one slide; it moves to the next slide together with its heading. Only a division longer than a whole slide is split (heading repeated). ---- */
+   const CAP=14,pages=[];let cur={it:[],used:0};const nw=()=>{if(cur.it.length)pages.push(cur);cur={it:[],used:0}};
+   groups.forEach(g=>{let rest=g.rr.slice();
+    if(rest.length+1>CAP-cur.used&&rest.length+1<=CAP)nw();
+    while(rest.length){const room=CAP-cur.used;if(room<2){nw();continue}
+     if(rest.length+1<=room){cur.it.push({dv:g.dv,rr:rest,tot:g.Tt});cur.used+=rest.length+1;rest=[]}
+     else{const take=Math.min(rest.length,room);cur.it.push({dv:g.dv,rr:rest.slice(0,take),tot:null});cur.used+=take;rest=rest.slice(take);nw()}}});
+   if(cur.used+1>CAP&&cur.it.length){const last=cur.it.pop();cur.used-=last.rr.length+(last.tot?1:0);if(cur.it.length)pages.push(cur);cur={it:[last],used:last.rr.length+(last.tot?1:0)}}
+   if(cur.it.length)pages.push(cur);
+   const cw=[1.9,2.6,...Array(6).fill((TW-4.5)/6)],hdr=['Division','Sub-Division','Total Offices','NIL (0) Offices','Low Booking (1-'+T+')','Good Booking (>'+T+')','% NIL Offices','% Offices with >'+T+' Booking'];
+   pages.forEach((pgx,pi)=>{const s=sl(ttl+(pages.length>1?' ('+(pi+1)+'/'+pages.length+')':''),sub),rows=[hdr.map(x=>hd(x))];
+    const last=pi===pages.length-1;
+    pgx.it.forEach(it=>{it.rr.forEach((e,j)=>{const x=e.x,r=[];
+      if(j===0)r.push(cell(it.dv,{bold:true,fill:{color:'FFFFFF'},rowspan:it.rr.length}));
+      r.push(bd(e.sd,j,{align:'left'}),bd(x.t,j),bd(x.n,j),bd(x.l,j),bd(x.g,j),bd(pct(x.n,x.t)+'%',j,bandO(bandNil(pct(x.n,x.t)))),bd(pct(x.g,x.t)+'%',j,bandO(bandHi(pct(x.g,x.t)))));rows.push(r)});
+     if(it.tot){const t=it.tot;rows.push([tt('Total',{colspan:2}),tt(t.t),tt(t.n),tt(t.l),tt(t.g),tt(pct(t.n,t.t)+'%',bandO(bandNil(pct(t.n,t.t)))),tt(pct(t.g,t.t)+'%',bandO(bandHi(pct(t.g,t.t))))])}});
+    if(last)rows.push([tt('Grand Total',{colspan:2,fill:{color:'FFE08A'}}),...[GT.t,GT.n,GT.l,GT.g].map(v=>tt(v,{fill:{color:'FFE08A'}})),tt(pct(GT.n,GT.t)+'%',Object.assign(bandO(bandNil(pct(GT.n,GT.t))),{})),tt(pct(GT.g,GT.t)+'%',bandO(bandHi(pct(GT.g,GT.t))))]);
+    const y=grid(s,rows,cw,.62,.31,1.5);
+    note(s,Math.min(y+.1,6.68),'% NIL Offices:  Green ≤ '+NHI+'%  |  Orange '+NHI+'–'+NLO+'%  |  Red > '+NLO+'%      % Offices with good booking:  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%')})}
  }
  p.writeFile({fileName:(fn||'Indore_Region_Mega_Report')+'.pptx'})}
 
