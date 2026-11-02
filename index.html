@@ -186,7 +186,8 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
     <div id="aadPick"></div>
   </div>
 <div class="card"><h3>3) SB / PLI / CCS revenue CSV</h3><div class="row"><label class="b">Choose CSV file<input type="file" id="rpSBf" accept=".csv" hidden onchange="rpSB(this.files[0])"></label> <button class="b gray" onclick="rpSBreset()">Restore built-in</button></div><div class="hint">Format: DIVISON, VERTICAL, TARGET (26-27), April-26, May-26 &hellip; (any number of months).</div><div id="rpMsg"></div></div>
-<div class="card"><h3>4) Target tables (optional)</h3><div class="row"><label class="b gray">Revenue target + achievement CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'rev')"></label><label class="b gray">Article count target CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'cnt')"></label><button class="b gray" onclick="resetTgt()">Restore built-in tables</button></div></div></section>
+<div class="card"><h3>4) Target tables (optional)</h3><div class="row"><label class="b gray">Revenue target + achievement CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'rev')"></label><label class="b gray">Article count target CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'cnt')"></label><button class="b gray" onclick="resetTgt()">Restore built-in tables</button></div></div>
+<div class="card"><h3>5) Last year data (Apr-25 to Mar-26) &ndash; for this year vs last year comparison</h3><div class="row"><label class="b">Last year REVENUE file (xlsx / csv)<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="lyUpload(this.files[0],'rev');this.value=''"></label><label class="b alt">Last year ARTICLE COUNT file (xlsx / csv)<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="lyUpload(this.files[0],'cnt');this.value=''"></label><button class="b gray" onclick="lyReset()">Restore built-in</button></div><div class="hint">The month of every column is read from its heading (e.g. "Achievement in april 25", or a date such as 01-Jan-2026), so the files can be uploaded as they are. Revenue file: Division, Vertical (MO, Parcel, IRGB, POSB, PLI/RPLI), monthly revenue in crore. Count file: Division, Vertical (MO, PARCEL, IRGB), monthly article count. Last-year data is already built in; upload only to replace it.</div><div id="lyMsg"></div></div></section>
 
 <!-- ============ PRESENTATION MAKER ============ -->
 <section id="p-ppt" style="display:none">
@@ -368,6 +369,8 @@ const pad=n=>String(n).padStart(2,'0');
 const toNum=v=>{const n=Number(String(v==null?'':v).replace(/,/g,'').trim());return isFinite(n)?n:0};
 const norm=s=>String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim();
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const FULLM=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const mFull=ym=>FULLM[+String(ym).slice(5,7)-1]+'-'+String(ym).slice(0,4);   /* 2026-10 -> October-2026 */
 const dmy=d=>d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(0,4);
 let toastT=null;
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1800)}
@@ -377,7 +380,7 @@ function normDB(d){
   d.days=d.days||{};            // legacy saved data
   d.raw=d.raw||{};              // division -> date -> product -> count
   d.csvDates=d.csvDates||{}; d.aad=d.aad||{}; d.aadDates=d.aadDates||{};
-  d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[]; d.offMap=d.offMap||{}; d.pend=d.pend||{}; d.rev=d.rev||{}; d.revDates=d.revDates||{}; d.tgtText=d.tgtText||{};
+  d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[]; d.offMap=d.offMap||{}; d.pend=d.pend||{}; d.rev=d.rev||{}; d.revDates=d.revDates||{}; d.tgtText=d.tgtText||{}; d.lyRev=d.lyRev||null; d.lyCnt=d.lyCnt||null;
   d.centres=Object.assign({},DEF_CENTRES,d.centres||{});
   d.soDef=Object.assign({},DEF_SO,d.soDef||{});
   return d;
@@ -1007,7 +1010,7 @@ const CMP_TABS=['CMP_MO','CMP_Parcel','CMP_IRGB'];
 const isCmp=t=>String(t).indexOf('CMP_')===0;
 const cmpCat=t=>t.slice(4);
 const cmpName=t=>cmpCat(t)+' Comparison';
-const monthLbl=m=>MONTHS[+m.slice(5,7)-1]+'-'+m.slice(0,4);
+const monthLbl=m=>mFull(m);
 function buildCmp(tab,month){
   const cat=cmpCat(tab),c=CMP[cat];
   const mm=+month.slice(5,7),py=+month.slice(0,4)-1;
@@ -1049,7 +1052,7 @@ function renderCmp(tab,month){
   if(!x.lyOk)h+='<p class="hint">Previous-year data is available only for Apr-25 to Mar-26, so no comparison is shown for this month.</p>';
   return h;
 }
-function drawCmp(tab,month){
+function drawCmp(tab,month,T){
   const x=buildCmp(tab,month),S=2,F='"Segoe UI",Arial,sans-serif',RH=28,TH=38;
   const mc=document.createElement('canvas').getContext('2d');
   const fit=(t,f)=>{mc.font=f;return Math.ceil(mc.measureText(String(t)).width)};
@@ -1066,15 +1069,15 @@ function drawCmp(tab,month){
     g.fillStyle=o.bg||'#fff';g.fillRect(px,py,w,h);g.strokeStyle='#222';g.lineWidth=1;g.strokeRect(px+.5,py+.5,w-1,h-1);
     if(t!==''&&t!=null){g.fillStyle=o.color||'#222';g.font=`${o.bold?'bold':'600'} ${o.size||13}px ${F}`;g.textAlign=o.left?'left':'center';g.fillText(String(t),o.left?px+10:px+w/2,py+h/2+1)}
   };
-  const HB='#dce6f1';
-  cell(0,0,W,TH,x.title,{bg:HB,bold:true,size:17});
+  const HB=T?'#b3121b':'#dce6f1',HC=T?'#ffffff':'#222',TB=T?'#fdb913':'#92d050';
+  cell(0,0,W,TH,x.title,{bg:HB,color:HC,bold:true,size:17});
   if(x.sub)cell(0,TH,W,subH,x.sub,{bg:'#fff8dc',size:12});
-  let px=0;x.head.forEach((h,j)=>{cell(px,TH+subH,widths[j],RH,h,{bg:HB,bold:true});px+=widths[j]});
+  let px=0;x.head.forEach((h,j)=>{cell(px,TH+subH,widths[j],RH,h,{bg:HB,color:HC,bold:true});px+=widths[j]});
   body.forEach((r,i)=>{
     const py=TH+subH+RH*(i+1),tot=x.rows[i].cls==='tot',gr=x.rows[i].cells[3];px=0;
     r.forEach((v,j)=>{
       const o={left:j===0};
-      if(tot){o.bg='#92d050';o.bold=true}
+      if(tot){o.bg=TB;o.bold=true}
       if(j===3&&gr!=null&&gr<0)o.color='#bb0000';
       cell(px,py,widths[j],RH,v,o);px+=widths[j];
     });
@@ -1129,7 +1132,7 @@ function delOff(id){delete DB.offMap[id];save();renderPend();toast('Removed')}
 function renderReport(){
   const ms=monthsAvail(),sel=document.getElementById('monthSel');
   const prev=sel.value;
-  sel.innerHTML=ms.map(m=>`<option value="${m}">${MONTHS[+m.slice(5,7)-1]} ${m.slice(0,4)}</option>`).join('');
+  sel.innerHTML=ms.map(m=>`<option value="${m}">${mFull(m)}</option>`).join('');
   document.getElementById('curDivName').textContent=isCmp(curDiv)?cmpName(curDiv):curDiv;
   updBadge();
   {const n=pendCount(),pb=document.getElementById('pendBanner');if(pb)pb.innerHTML=n?`<div class="msg err" style="margin:0 0 12px">&#9888; ${n} office(s) have no division, so their data is NOT counted in this report. <button class="b sm" onclick="showTab('settings')">Open Settings &rarr; Unknown offices</button></div>`:''}
@@ -1208,8 +1211,8 @@ function exportExcel(){
 }
 
 /* draws the report on a canvas (used by both JPG and PDF export) */
-function drawReport(dv,month,irgb){
-  if(isCmp(dv))return drawCmp(dv,month);
+function drawReport(dv,month,irgb,T){
+  if(isCmp(dv))return drawCmp(dv,month,T);
   const {head,rows}=buildAOA(dv,month,irgb);
   const n=head.length,S=2,F='"Segoe UI",Arial,sans-serif';
   const RH=26,TH=36;
@@ -1232,18 +1235,18 @@ function drawReport(dv,month,irgb){
     x.strokeStyle='#222';x.lineWidth=1;x.strokeRect(px+.5,py+.5,w-1,h-1);
     if(txt!==''&&txt!=null){x.fillStyle=o.color||'#222';x.font=`${o.bold?'bold':(o.semi?'600':'400')} ${o.size||13}px ${F}`;x.fillText(String(txt),px+w/2,py+h/2+1)}
   };
-  const HB='#dce6f1';
-  cell(0,0,W,TH,'Day wise report for the MO, Parcel and CCS Verticals',{bg:HB,bold:true,size:17});
+  const HB=T?'#b3121b':'#dce6f1',HC=T?'#ffffff':'#222',TB=T?'#fdb913':'#92d050';
+  cell(0,0,W,TH,'Day wise report for the MO, Parcel and CCS Verticals',{bg:HB,color:HC,bold:true,size:17});
   const wl=widths.slice(0,n-3).reduce((a,b)=>a+b,0);
-  cell(0,TH,wl,RH,'NAME OF DIVISION: '+divTitle(dv),{bg:HB,bold:true});
-  cell(wl,TH,W-wl,RH,'ADHAR',{bg:HB,bold:true});
-  let px=0;head.forEach((h,j)=>{cell(px,TH+RH,widths[j],RH,h,{bg:HB,bold:true});px+=widths[j]});
+  cell(0,TH,wl,RH,'NAME OF DIVISION: '+divTitle(dv),{bg:HB,color:HC,bold:true});
+  cell(wl,TH,W-wl,RH,'ADHAR',{bg:HB,color:HC,bold:true});
+  let px=0;head.forEach((h,j)=>{cell(px,TH+RH,widths[j],RH,h,{bg:HB,color:HC,bold:true});px+=widths[j]});
   rows.forEach((r,i)=>{
     const py=TH+RH*(i+2);px=0;
     r.cells.forEach((v,j)=>{
       const o={};
       if(r.cls==='base')o.bg='#fffbe6';
-      if(r.cls==='tot'){o.bg='#92d050';o.bold=true}
+      if(r.cls==='tot'){o.bg=TB;o.bold=true}
       if(r.cls==='off')o.color='#bb0000';
       if(j===0&&r.cls!=='tot')o.semi=true;
       cell(px,py,widths[j],RH,v==null?'':v,o);px+=widths[j];
@@ -1941,7 +1944,7 @@ function nbBuild(key,ym){const R=NB.REP[key],th=+NB.S.th[key],V=NB.vals(ym),L=[]
   const cnt=R.all?v[0]+v[2]+v[4]+v[6]:v[4];L.push({dv,sd,cnt})}
  const G={};L.forEach(o=>{const s=((G[o.dv]=G[o.dv]||{})[o.sd]=G[o.dv][o.sd]||{t:0,n:0,l:0,g:0});s.t++;if(o.cnt<=0)s.n++;else if(o.cnt<=th)s.l++;else s.g++});return{G,th}}
 function nbHTML(key,ym){const {G,th}=nbBuild(key,ym),R=NB.REP[key];const pc=(a,b)=>b?Math.round(a*100/b)+'%':'0%';
- let h=`<div id="nbRep" style="background:#fff;padding:10px"><div style="text-align:center;font:700 18px Arial;margin:6px">Indore Region - ${R.t} (${ym})</div><table style="border-collapse:collapse;font:13px Arial;width:100%"><tr style="background:#b8cce4;font-weight:700;text-align:center">${['S.No.','Name of Division','Name of Sub Dn','Total Offices in Sub Dn','NIL (0) Offices','Low Booking (1-'+th+')*','Good Booking (>'+th+')','% NIL Offices in Sub Dn','% Offices with >'+th+' Booking'].map(x=>`<td style="border:1px solid #888;padding:6px">${x}</td>`).join('')}</tr>`;
+ let h=`<div id="nbRep" style="background:#fff;padding:10px"><div style="text-align:center;font:700 18px Arial;margin:6px">Indore Region - ${R.t} (${mFull(ym)})</div><table style="border-collapse:collapse;font:13px Arial;width:100%"><tr style="background:#b8cce4;font-weight:700;text-align:center">${['S.No.','Name of Division','Name of Sub Dn','Total Offices in Sub Dn','NIL (0) Offices','Low Booking (1-'+th+')*','Good Booking (>'+th+')','% NIL Offices in Sub Dn','% Offices with >'+th+' Booking'].map(x=>`<td style="border:1px solid #888;padding:6px">${x}</td>`).join('')}</tr>`;
  let n=0;const GT={t:0,n:0,l:0,g:0};
  const row=(c,bg)=>`<td style="border:1px solid #888;padding:4px;text-align:center;background:${bg||'#fff'}">${c}</td>`;
  NB.DIVO.forEach(dv=>{const sds=G[dv];if(!sds)return;const T={t:0,n:0,l:0,g:0};
@@ -1973,11 +1976,11 @@ function nbCSV(ym){if(!ym)return alert('No post-office-wise data uploaded yet');
  for(const id in NB_OFF){if(!NB.act(id))continue;const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,q(nm),cl,q(sd),dv,c,v[i*2],Math.round(v[i*2+1])].join(',')))}
  Object.keys(V).filter(id=>!NB_OFF[id]).forEach(id=>NB.CATS.forEach((c,i)=>L.push([id,'""','','""','NOT IN MASTER',c,V[id][i*2],Math.round(V[id][i*2+1])].join(','))));
  saveBlob(new Blob(['\ufeff'+L.join('\r\n')],{type:'text/csv'}),`All_Post_Office_Report_${ym}.csv`)}
-function nbFillMs(){document.querySelectorAll('.nbMs').forEach(s=>{s.innerHTML=NB.months().map(m=>`<option ${m===NB.S.month?'selected':''}>${m}</option>`).join('')||'<option value="">no data</option>'});nbStat()}
+function nbFillMs(){document.querySelectorAll('.nbMs').forEach(s=>{s.innerHTML=NB.months().map(m=>`<option value="${m}" ${m===NB.S.month?'selected':''}>${mFull(m)}</option>`).join('')||'<option value="">no data</option>'});nbStat()}
 function nbStat(){const e=document.getElementById('nbStat');if(!e)return;const AO=Object.keys(NB_OFF).filter(NB.act),s=document.querySelector('#p-rp .nbMs'),ym=s&&s.value;if(!ym){e.innerHTML='<div class="hint">Upload a post-office-wise CSV (Daily Upload tab) - the All Post Office report is created automatically.</div>';return}
  const V=NB.vals(ym),ids=Object.keys(V),inM=ids.filter(i=>NB_OFF[i]),act=inM.filter(i=>V[i][0]+V[i][2]+V[i][4]+V[i][6]>0).length,ds=Object.keys(NB.S.offD).filter(d=>d.slice(0,7)===ym).sort(),cl={};
  inM.forEach(i=>{const c=NB_OFF[i][1];cl[c]=(cl[c]||0)+1});
- e.innerHTML=`<div class="msg">Ready for ${ym}${ds.length?` - ${ds.length} day(s) uploaded (${dmy(ds[0])} to ${dmy(ds[ds.length-1])})`:' (monthly totals)'}\nOffices in master: ${AO.length} (BO ${AO.filter(i=>NB_OFF[i][1]==='BO').length}, SO ${AO.filter(i=>NB_OFF[i][1]==='SO').length}) - offices with booking: ${act}\nOffice-id not in master: ${ids.length-inM.length}${ids.length-inM.length?' (listed at the end of the CSV as NOT IN MASTER; fix in Settings)':''}</div>`}
+ e.innerHTML=`<div class="msg">Ready for ${mFull(ym)}${ds.length?` - ${ds.length} day(s) uploaded (${dmy(ds[0])} to ${dmy(ds[ds.length-1])})`:' (monthly totals)'}\nOffices in master: ${AO.length} (BO ${AO.filter(i=>NB_OFF[i][1]==='BO').length}, SO ${AO.filter(i=>NB_OFF[i][1]==='SO').length}) - offices with booking: ${act}\nOffice-id not in master: ${ids.length-inM.length}${ids.length-inM.length?' (listed at the end of the CSV as NOT IN MASTER; fix in Settings)':''}</div>`}
 
 if(!NB.S.seeded){for(const k in NB.DEF_ALIAS)if(!(k in NB.S.alias))NB.S.alias[k]=NB.DEF_ALIAS[k];NB.S.seeded=1;NB.save()}
 const _od=officeDiv;officeDiv=id=>_od(NB.S.alias[id]||id);
@@ -1989,7 +1992,7 @@ async function needLib2(n){const ok=()=>n==='jspdf'?window.jspdf:window[n];if(ok
 const RP={VS:['PARCEL','MAIL','IRGB','SB','PLI','CCS'],DV:['Indore City','Indore Mfl','Khandwa','Mandsaur','Ratlam','Sehore','Ujjain','Indore RMS'],
  DMAP:{'INDORE CITY':'Indore City','INDORE MFL':'Indore Mfl','KHANDWA':'Khandwa','MANDSAUR':'Mandsaur','RATLAM':'Ratlam','SEHORE':'Sehore','UJJAIN':'Ujjain','ID DIVISION':'Indore RMS'},
  FY:['2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12','2027-01','2027-02','2027-03'],
- G:{day:'Daily reports (division day-wise report + comparison pages)',sum:'Division summary (all verticals, Target vs Achievement)',mon:'Month-wise revenue (division wise, per vertical)',cnt:'Article count - month-wise charts (Parcel, Mail, IRGB)',q:'Article count - Q1 vs Q2',bo:'Nil Booking reports (BO / SO)'},D:null};
+ G:{day:'Daily reports (division day-wise report + comparison pages)',sum:'Division summary (all verticals, Target vs Achievement)',mon:'Division-wise revenue (target, month-wise revenue, % achievement) per vertical',yoy:'Revenue - this year vs last year (division wise)',cnt:'Article count - month-wise charts (Parcel, Mail, IRGB)',q:'Article count - Q1 vs Q2',yoyc:'Article count - this year vs last year (division wise)',bo:'Nil Booking reports (BO / SO)'},D:null};
 const rpCfg=()=>{const s=NB.S;s.cfg=Object.assign({title:'Indore Region',sub:'Revenue & Article Count Performance Review',badge:'FY 2026-27',ex:{}},s.cfg||{});return s.cfg};
 const rpMn=ym=>MONTHS[+ym.slice(5)-1]+'-'+ym.slice(2,4);
 const rpNm=d=>d==='Region'?'Indore Region':d==='Indore RMS'?'RMS ID':d+' Division';
@@ -2023,16 +2026,17 @@ RP.sumData=d=>{const R=RP.D.rev,L=RP.ML,out=[];let T={t:0,mt:0,cum:0,m:{},tot:0}
   T.t+=o.t;T.mt+=mt;T.cum+=mt*nc;L.forEach(m=>{if(m<=RP.common)T.m[m]=(T.m[m]||0)+(o.m[m]||0)});});
  T.tot=L.reduce((a,m)=>a+(T.m[m]||0),0);out.push({n:'TOTAL',tot_:1,t:T.t,mt:T.mt,cum:T.cum,m:L.map(m=>m<=RP.common?T.m[m]||0:null),tot:T.tot,pp:pc(T.tot,T.cum),pt:pc(T.tot,T.t)});return out};
 RP.wrap=(t,sub,b)=>`<div class="rpPg" style="width:1100px;background:#fff;padding:16px 20px;font-family:Arial;box-sizing:border-box"><div style="border-bottom:4px solid #fdb913;margin-bottom:10px"><div style="font:700 22px Arial;color:#b3121b">${esc(t)}</div><div style="font:12px Arial;color:#555;padding-bottom:6px">${esc(sub)}</div></div>${b}</div>`;
-RP.sub=()=>{const c=rpCfg();return `${c.title} | ${c.badge} | Apr-26 to ${rpMn(RP.maxM)}`};
+RP.sub=()=>{const c=rpCfg();return `${c.title} | ${c.badge} | April-2026 to ${mFull(RP.maxM)}`};
 const td=(x,o={})=>`<td style="border:1px solid #ccd;padding:5px 7px;text-align:${o.l?'left':'right'};font:${o.b?'700 ':''}12px Arial;background:${o.bg||'#fff'};color:${o.c||'#111'}">${x}</td>`;
-const th=(x,bg,c)=>`<td style="padding:7px;background:${bg||'#0f1a2e'};color:${c||'#fff'};font:700 11px Arial;text-align:center;border:1px solid #334">${x}</td>`;
-RP.sumHTML=d=>{const r=RP.sumData(d);let h='<table style="border-collapse:collapse;width:100%"><tr>'+th('VERTICAL NAME')+th('YEARLY TARGET')+th('MONTHLY TARGET')+th('TARGET (CUMULATIVE)','#0f1a2e','#fdb913')+RP.ML.map(m=>th(rpMn(m).toUpperCase())).join('')+th('TOTAL ACH.','#0f1a2e','#6ee7a0')+th('% ACH (PROP.)','#0f1a2e','#f5a623')+th('% ACH (TOTAL)','#0f1a2e','#6ee7a0')+'</tr>';
- r.forEach(x=>{const bg=x.tot_?'#bdd7ee':'#fff';h+='<tr>'+td(x.n,{l:1,b:1,bg})+td(f3(x.t),{bg})+td(f3(x.mt),{bg})+td(f3(x.cum),{bg:x.tot_?bg:'#fffbe6',c:'#b45309',b:1})+x.m.map(v=>td(v==null?'-':f3(v),{bg,b:x.tot_})).join('')+td(f3(x.tot),{bg:x.tot_?bg:'#e8faf0',c:'#157a3c',b:1})+td(x.pp,{bg,c:'#b45309',b:1})+td(x.pt,{bg,c:'#157a3c',b:1})+'</tr>'});
+const th=(x,bg,c)=>`<td style="padding:7px;background:${bg||'#b3121b'};color:${c||'#fff'};font:700 11px Arial;text-align:center;border:1px solid #8f0e15">${x}</td>`;
+RP.sumHTML=d=>{const r=RP.sumData(d);let h='<table style="border-collapse:collapse;width:100%"><tr>'+th('VERTICAL NAME')+th('YEARLY TARGET')+th('MONTHLY TARGET')+th('TARGET (CUMULATIVE)','#b3121b','#fdb913')+RP.ML.map(m=>th(rpMn(m).toUpperCase())).join('')+th('TOTAL ACH.','#b3121b','#ffffff')+th('% ACH (PROP.)','#b3121b','#f5a623')+th('% ACH (TOTAL)','#b3121b','#ffffff')+'</tr>';
+ r.forEach(x=>{const bg=x.tot_?'#fff0c2':'#fff';h+='<tr>'+td(x.n,{l:1,b:1,bg})+td(f3(x.t),{bg})+td(f3(x.mt),{bg})+td(f3(x.cum),{bg:x.tot_?bg:'#fffbe6',c:'#b45309',b:1})+x.m.map(v=>td(v==null?'-':f3(v),{bg,b:x.tot_})).join('')+td(f3(x.tot),{bg:x.tot_?bg:'#e8faf0',c:'#157a3c',b:1})+td(x.pp,{bg,c:'#b45309',b:1})+td(x.pt,{bg,c:'#157a3c',b:1})+'</tr>'});
  return RP.wrap(rpNm(d)+' - Target vs Achievement (Rs. crore)',RP.sub()+(RP.common<RP.maxM?'  |  TOTAL row up to '+rpMn(RP.common)+' (SB/PLI/CCS data available till then)':''),h+'</table>')};
-RP.monHTML=v=>{const R=RP.D.rev[v],L=RP.ML.filter(m=>m<=(RP.last[v]||''));let h='<table style="border-collapse:collapse;width:100%"><tr>'+th('DIVISION')+L.map(m=>th(rpMn(m)+' TGT')+th('ACH')+th('%','#0f1a2e','#fdb913')).join('')+th('TOTAL TGT','#2d2a6e')+th('TOTAL ACH','#146c43')+th('%','#b45309')+'</tr>';
- [...RP.DV,'Region'].forEach(d=>{const o=R[d],mt=o.t/12,reg=d==='Region',bg=reg?'#dde3fb':'#fff';let ta=0;
-  h+='<tr>'+td(rpNm(d),{l:1,b:1,bg})+L.map(m=>{const a=o.m[m]||0;ta+=a;return td(f3(mt),{bg})+td(f3(a),{bg,c:'#1d4ed8'})+td(pc(a,mt),{bg,c:'#b45309',b:1})}).join('')+td(f3(mt*L.length),{bg:'#eceafb'})+td(f3(ta),{bg:'#e8faf0',b:1})+td(pc(ta,mt*L.length),{bg:'#fff3cd',b:1})+'</tr>'});
- return RP.wrap('Month-wise Division Revenue - '+rpVn(v)+' (Rs. crore)',RP.sub(),h+'</table>')};
+RP.monHTML=v=>{const R=RP.D.rev[v],L=RP.ML.filter(m=>m<=(RP.last[v]||'')),n=L.length;let h='<table style="border-collapse:collapse;width:100%"><tr>'+th('DIVISION')+th('YEARLY TARGET')+th('MONTHLY TARGET')+th('CUMULATIVE TARGET','#b3121b','#fdb913')+L.map(m=>th(rpMn(m).toUpperCase())).join('')+th('TOTAL REVENUE')+th('% ACH (CUMULATIVE TARGET)','#b3121b','#fdb913')+th('% ACH (YEARLY TARGET)')+'</tr>';
+ [...RP.DV,'Region'].forEach(d=>{const o=R[d],mt=o.t/12,cum=mt*n,reg=d==='Region',bg=reg?'#fff0c2':'#fff';let ta=0;
+  const mc=L.map(m=>{const a=o.m[m]||0;ta+=a;return td(f3(a),{bg})}).join('');const p1=cum>0?ta*100/cum:NaN;
+  h+='<tr>'+td(rpNm(d),{l:1,b:1,bg})+td(f3(o.t),{bg})+td(f3(mt),{bg})+td(f3(cum),{bg,b:1})+mc+td(f3(ta),{bg,b:1})+td(pc(ta,cum),{bg:isNaN(p1)?bg:p1>=80?'#dcefd9':p1>=60?'#ffe5cc':'#fde0e0',b:1,c:isNaN(p1)?'#111':p1>=80?'#1b6b2e':p1>=60?'#c25500':'#c00000'})+td(pc(ta,o.t),{bg,b:1})+'</tr>'});
+ return RP.wrap('Division-wise Revenue - '+rpVn(v)+' (Rs. crore)','Yearly, monthly & cumulative target, month-wise revenue and % achievement | '+RP.sub(),h+'</table>')};
 RP.svg=(L,T,A)=>{const W=720,H=320,m=30,mx=Math.max(1,...T,...A),bw=(W-2*m)/L.length,ht=v=>(v/mx)*(H-80);let s=`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="font:11px Arial">`;
  L.forEach((l,i)=>{const x=m+i*bw,b=(v,c,dx)=>`<rect x="${x+bw*.1+dx}" y="${H-30-ht(v)}" width="${bw*.36}" height="${ht(v)}" fill="${c}"/><text x="${x+bw*.1+dx+bw*.18}" y="${H-34-ht(v)}" text-anchor="middle" font-size="9">${f0(v)}</text>`;s+=b(T[i],'#b3121b',0)+b(A[i],'#fdb913',bw*.4)+`<text x="${x+bw/2}" y="${H-12}" text-anchor="middle">${l}</text>`});
  return s+`<line x1="${m}" y1="${H-30}" x2="${W-m}" y2="${H-30}" stroke="#999"/><rect x="${W-190}" y="6" width="12" height="12" fill="#b3121b"/><text x="${W-174}" y="16">Target</text><rect x="${W-110}" y="6" width="12" height="12" fill="#fdb913"/><text x="${W-94}" y="16">Achievement</text></svg>`};
@@ -2042,23 +2046,74 @@ RP.cntHTML=(v,d)=>{const k=RP.cntK(v,d),card=(l,x,c)=>`<div style="background:#f
 RP.Q=[['2026-04','2026-05','2026-06'],['2026-07','2026-08','2026-09']];
 RP.qData=v=>[...RP.DV,'Region'].map(d=>{const o=RP.D.cnt[v][d].m,s=(q,k)=>q.reduce((a,m)=>a+((o[m]||{})[k]||0),0);return{d,t1:s(RP.Q[0],'t'),a1:s(RP.Q[0],'a'),t2:s(RP.Q[1],'t'),a2:s(RP.Q[1],'a')}});
 RP.qHTML=v=>{let h='<table style="border-collapse:collapse;width:100%"><tr>'+th('DIVISION')+th('Q1 TGT')+th('Q1 ACH')+th('Q1 %')+th('Q2 TGT')+th('Q2 ACH')+th('Q2 %')+th('Q2 vs Q1 (ACH)')+'</tr>';
- RP.qData(v).forEach(x=>{const bg=x.d==='Region'?'#dde3fb':'#fff',g=x.a1?((x.a2-x.a1)*100/x.a1).toFixed(1)+'%':'-';h+='<tr>'+td(rpNm(x.d),{l:1,b:1,bg})+td(f0(x.t1),{bg})+td(f0(x.a1),{bg})+td(pc(x.a1,x.t1),{bg,b:1,c:'#b45309'})+td(f0(x.t2),{bg})+td(f0(x.a2),{bg})+td(pc(x.a2,x.t2),{bg,b:1,c:'#b45309'})+td(g,{bg,b:1,c:x.a2>=x.a1?'#157a3c':'#b3121b'})+'</tr>'});
+ RP.qData(v).forEach(x=>{const bg=x.d==='Region'?'#fff0c2':'#fff',g=x.a1?((x.a2-x.a1)*100/x.a1).toFixed(1)+'%':'-';h+='<tr>'+td(rpNm(x.d),{l:1,b:1,bg})+td(f0(x.t1),{bg})+td(f0(x.a1),{bg})+td(pc(x.a1,x.t1),{bg,b:1,c:'#b45309'})+td(f0(x.t2),{bg})+td(f0(x.a2),{bg})+td(pc(x.a2,x.t2),{bg,b:1,c:'#b45309'})+td(g,{bg,b:1,c:x.a2>=x.a1?'#157a3c':'#b3121b'})+'</tr>'});
  return RP.wrap('Article Count Q1 vs Q2: '+rpVn(v).replace(' (MO)',''),'Q1 = Apr-Jun, Q2 = Jul-Sep | '+RP.sub(),h+'</table>')};
+/* ===== LAST-YEAR DATA (Apr-25 .. Mar-26): built-in + upload, year-on-year pages ===== */
+const LYR_DEF={"MAIL":{"Indore City":{"2025-04":0.61469,"2025-05":0.41836,"2025-06":0.44971,"2025-07":0.19702,"2025-08":0.09903,"2025-09":-0.10451,"2025-10":2.19676,"2025-11":2.8556,"2025-12":0.55302,"2026-01":0.56136,"2026-02":0.80477,"2026-03":0.8931},"Indore Mfl":{"2025-04":0.19331,"2025-05":0.06309,"2025-06":0.05715,"2025-07":0.04353,"2025-08":0.03507,"2025-09":0.01691,"2025-10":0.21172,"2025-11":0.09502,"2025-12":0.10203,"2026-01":0.09623,"2026-02":0.09203,"2026-03":0.11689},"Khandwa":{"2025-04":0.31991,"2025-05":0.08498,"2025-06":0.07853,"2025-07":0.04924,"2025-08":0.02965,"2025-09":0.05575,"2025-10":0.26249,"2025-11":0.11686,"2025-12":0.14419,"2026-01":0.1208,"2026-02":0.13364,"2026-03":0.14266},"Mandsaur":{"2025-04":0.05008,"2025-05":0.06249,"2025-06":0.04404,"2025-07":0.02852,"2025-08":0.0157,"2025-09":0.09712,"2025-10":0.1004,"2025-11":0.07013,"2025-12":0.08303,"2026-01":0.07556,"2026-02":0.0714,"2026-03":0.10182},"Ratlam":{"2025-04":0.04779,"2025-05":0.05183,"2025-06":0.05089,"2025-07":0.04859,"2025-08":0.00653,"2025-09":0.03339,"2025-10":0.1383,"2025-11":0.08279,"2025-12":0.07318,"2026-01":0.07202,"2026-02":0.06034,"2026-03":0.11182},"Sehore":{"2025-04":0.06226,"2025-05":0.04131,"2025-06":0.03171,"2025-07":0.02303,"2025-08":0.00095,"2025-09":0.05318,"2025-10":0.11909,"2025-11":0.06337,"2025-12":0.08234,"2026-01":0.06765,"2026-02":0.06598,"2026-03":0.07473},"Ujjain":{"2025-04":0.19115,"2025-05":0.11926,"2025-06":0.10694,"2025-07":0.07097,"2025-08":0.01176,"2025-09":0.03769,"2025-10":0.34967,"2025-11":0.15396,"2025-12":0.1642,"2026-01":0.14349,"2026-02":0.11999,"2026-03":0.12438},"Indore RMS":{"2025-04":0.02686,"2025-05":0.0262,"2025-06":0.02572,"2025-07":0.02323,"2025-08":0.01696,"2025-09":0.0562,"2025-10":0.03229,"2025-11":0.0376,"2025-12":0.04371,"2026-01":0.03547,"2026-02":0.03583,"2026-03":0.043}},"PARCEL":{"Indore City":{"2025-04":0.29812,"2025-05":0.33176,"2025-06":0.29194,"2025-07":0.24261,"2025-08":0.06736,"2025-09":-0.07554,"2025-10":1.06986,"2025-11":0.34262,"2025-12":0.47034,"2026-01":0.56208,"2026-02":0.58324,"2026-03":0.45842},"Indore Mfl":{"2025-04":0.03381,"2025-05":0.02698,"2025-06":0.03407,"2025-07":0.02098,"2025-08":-0.0003,"2025-09":0.01475,"2025-10":0.13494,"2025-11":0.0372,"2025-12":0.05608,"2026-01":0.05653,"2026-02":0.06313,"2026-03":0.06288},"Khandwa":{"2025-04":0.06,"2025-05":0.05835,"2025-06":0.06585,"2025-07":0.04823,"2025-08":0.0128,"2025-09":0.03645,"2025-10":0.19838,"2025-11":0.09485,"2025-12":0.10198,"2026-01":0.09424,"2026-02":0.10162,"2026-03":0.1125},"Mandsaur":{"2025-04":0.04861,"2025-05":0.06051,"2025-06":0.06228,"2025-07":0.04024,"2025-08":0.00488,"2025-09":0.12181,"2025-10":0.13752,"2025-11":0.07172,"2025-12":0.07709,"2026-01":0.07403,"2026-02":0.07117,"2026-03":0.08465},"Ratlam":{"2025-04":0.03599,"2025-05":0.02749,"2025-06":0.03869,"2025-07":0.01727,"2025-08":0.00237,"2025-09":0.02492,"2025-10":0.13717,"2025-11":0.04717,"2025-12":0.04385,"2026-01":0.04412,"2026-02":0.0587,"2026-03":0.06393},"Sehore":{"2025-04":0.02627,"2025-05":0.01948,"2025-06":0.02288,"2025-07":0.01488,"2025-08":-9e-05,"2025-09":0.01612,"2025-10":0.06119,"2025-11":0.02983,"2025-12":0.03426,"2026-01":0.02667,"2026-02":0.02761,"2026-03":0.03805},"Ujjain":{"2025-04":0.06576,"2025-05":0.06666,"2025-06":0.07039,"2025-07":0.03916,"2025-08":0.00409,"2025-09":0.02724,"2025-10":0.23109,"2025-11":0.07079,"2025-12":0.08451,"2026-01":0.08535,"2026-02":0.09527,"2026-03":0.10174},"Indore RMS":{"2025-04":0.01415,"2025-05":0.01988,"2025-06":0.01657,"2025-07":0.00904,"2025-08":0.00616,"2025-09":0.02847,"2025-10":0.01208,"2025-11":0.01621,"2025-12":0.01608,"2026-01":0.02323,"2026-02":0.022,"2026-03":0.03164}},"IRGB":{"Indore City":{"2025-04":0.08594,"2025-05":0.08632,"2025-06":0.10223,"2025-07":0.09464,"2025-08":0.0304,"2025-09":-0.03034,"2025-10":0.28113,"2025-11":0.08517,"2025-12":0.07508,"2026-01":0.10672,"2026-02":0.14766,"2026-03":0.0847},"Indore Mfl":{"2025-04":0.00621,"2025-05":0.00415,"2025-06":0.00539,"2025-07":0.00614,"2025-08":0.00208,"2025-09":0.00142,"2025-10":0.0122,"2025-11":0.0008,"2025-12":0.00702,"2026-01":0.00778,"2026-02":0.00267,"2026-03":0.0035},"Khandwa":{"2025-04":0.0141,"2025-05":0.005,"2025-06":0.00577,"2025-07":0.00368,"2025-08":0.00364,"2025-09":0.00222,"2025-10":0.01035,"2025-11":0.00463,"2025-12":0.00607,"2026-01":0.00545,"2026-02":0.00691,"2026-03":0.01133},"Mandsaur":{"2025-04":0.02441,"2025-05":0.0176,"2025-06":0.0113,"2025-07":0.00894,"2025-08":0.00678,"2025-09":0.02441,"2025-10":0.01112,"2025-11":0.01517,"2025-12":0.01937,"2026-01":0.01766,"2026-02":0.01617,"2026-03":0.01002},"Ratlam":{"2025-04":0.00676,"2025-05":0.00623,"2025-06":0.00328,"2025-07":0.00349,"2025-08":0.00054,"2025-09":0.00315,"2025-10":0.01527,"2025-11":0.00607,"2025-12":0.00338,"2026-01":0.0075,"2026-02":0.00728,"2026-03":0.00448},"Sehore":{"2025-04":0.00103,"2025-05":0.00352,"2025-06":0.0027,"2025-07":0.00049,"2025-08":2e-05,"2025-09":0.00275,"2025-10":0.00311,"2025-11":0.00063,"2025-12":0.00044,"2026-01":0.003,"2026-02":0.0019,"2026-03":0.00069},"Ujjain":{"2025-04":0.01683,"2025-05":0.01498,"2025-06":0.01186,"2025-07":0.01222,"2025-08":0.0014,"2025-09":0.00516,"2025-10":0.01768,"2025-11":0.0103,"2025-12":0.00995,"2026-01":0.0097,"2026-02":0.05977,"2026-03":0.01041},"Indore RMS":{"2025-04":0.0,"2025-05":0.0,"2025-06":0.0,"2025-07":0.0,"2025-08":0.0,"2025-09":0.0,"2025-10":0.0,"2025-11":0.0,"2025-12":0.0,"2026-01":0.0,"2026-02":0.0,"2026-03":0.00228}},"SB":{"Indore City":{"2025-04":1.0655,"2025-05":0.7132,"2025-06":0.7229,"2025-07":0.7312,"2025-08":0.738,"2025-09":0.7423,"2025-10":0.7373,"2025-11":0.8186,"2025-12":0.78,"2026-01":0.838,"2026-02":0.8716,"2026-03":0.8681},"Indore Mfl":{"2025-04":2.4903,"2025-05":1.8014,"2025-06":1.8225,"2025-07":1.8585,"2025-08":1.8949,"2025-09":1.9535,"2025-10":1.9601,"2025-11":1.9968,"2025-12":2.0339,"2026-01":2.0897,"2026-02":1.9953,"2026-03":2.2186},"Khandwa":{"2025-04":2.3897,"2025-05":1.5569,"2025-06":1.5766,"2025-07":1.5773,"2025-08":1.6085,"2025-09":1.6546,"2025-10":1.6489,"2025-11":1.7319,"2025-12":1.7325,"2026-01":1.7765,"2026-02":1.7679,"2026-03":1.8822},"Mandsaur":{"2025-04":2.1598,"2025-05":1.3059,"2025-06":1.3271,"2025-07":1.3857,"2025-08":1.3509,"2025-09":1.4012,"2025-10":1.4275,"2025-11":1.4322,"2025-12":1.5314,"2026-01":1.5108,"2026-02":1.4963,"2026-03":1.5559},"Ratlam":{"2025-04":1.9086,"2025-05":1.2346,"2025-06":1.2792,"2025-07":1.271,"2025-08":1.2718,"2025-09":1.3205,"2025-10":1.2984,"2025-11":1.344,"2025-12":1.4074,"2026-01":1.4011,"2026-02":1.4998,"2026-03":1.6084},"Sehore":{"2025-04":2.0708,"2025-05":1.2536,"2025-06":1.2833,"2025-07":1.297,"2025-08":1.3334,"2025-09":1.3638,"2025-10":1.3546,"2025-11":1.4113,"2025-12":1.4482,"2026-01":1.4616,"2026-02":1.4334,"2026-03":1.4763},"Ujjain":{"2025-04":2.1108,"2025-05":1.3035,"2025-06":1.3149,"2025-07":1.3192,"2025-08":1.3346,"2025-09":1.3682,"2025-10":1.4537,"2025-11":1.4207,"2025-12":1.468,"2026-01":1.5422,"2026-02":1.4206,"2026-03":1.706},"Indore RMS":{"2025-04":0.0,"2025-05":0.0,"2025-06":0.0,"2025-07":0.0,"2025-08":0.0,"2025-09":0.0,"2025-10":0.0,"2025-11":0.0,"2025-12":0.0,"2026-01":0.0,"2026-02":0.0,"2026-03":0.0}},"PLI":{"Indore City":{"2025-04":0.0881,"2025-05":0.0702,"2025-06":0.0759,"2025-07":0.0613,"2025-08":0.0416,"2025-09":0.0169,"2025-10":0.1896,"2025-11":0.075,"2025-12":0.0461,"2026-01":0.0589,"2026-02":0.0587,"2026-03":0.1223},"Indore Mfl":{"2025-04":0.0678,"2025-05":0.0704,"2025-06":0.0573,"2025-07":0.0688,"2025-08":0.0418,"2025-09":0.0284,"2025-10":0.1704,"2025-11":0.0714,"2025-12":0.0527,"2026-01":0.0616,"2026-02":0.0616,"2026-03":0.1261},"Khandwa":{"2025-04":0.0928,"2025-05":0.0911,"2025-06":0.0956,"2025-07":0.0749,"2025-08":0.0497,"2025-09":0.0549,"2025-10":0.2088,"2025-11":0.0917,"2025-12":0.0855,"2026-01":0.0857,"2026-02":0.0872,"2026-03":0.2114},"Mandsaur":{"2025-04":0.1526,"2025-05":0.1573,"2025-06":0.1796,"2025-07":0.1072,"2025-08":0.0288,"2025-09":0.2474,"2025-10":0.2466,"2025-11":0.149,"2025-12":0.1553,"2026-01":0.1701,"2026-02":0.173,"2026-03":0.2819},"Ratlam":{"2025-04":0.1796,"2025-05":0.1696,"2025-06":0.1972,"2025-07":0.1326,"2025-08":0.0407,"2025-09":0.1399,"2025-10":0.368,"2025-11":0.1502,"2025-12":0.1378,"2026-01":0.1514,"2026-02":0.1623,"2026-03":0.2044},"Sehore":{"2025-04":0.0771,"2025-05":0.0812,"2025-06":0.0834,"2025-07":0.0524,"2025-08":0.0173,"2025-09":0.0735,"2025-10":0.1666,"2025-11":0.0752,"2025-12":0.0731,"2026-01":0.0728,"2026-02":0.0841,"2026-03":0.161},"Ujjain":{"2025-04":0.1378,"2025-05":0.13,"2025-06":0.1284,"2025-07":0.092,"2025-08":0.0325,"2025-09":0.0431,"2025-10":0.2573,"2025-11":0.1178,"2025-12":0.1185,"2026-01":0.1194,"2026-02":0.133,"2026-03":0.2052}},"CCS":{"Indore City":{"2025-04":0.09489,"2025-05":0.328,"2025-06":0.10382,"2025-07":0.04421,"2025-08":0.02369,"2025-09":-0.02554,"2025-10":0.79443,"2025-11":0.2967,"2025-12":0.09307,"2026-01":0.10794,"2026-02":0.10741,"2026-03":0.08125},"Indore Mfl":{"2025-04":0.02052,"2025-05":0.01953,"2025-06":0.02337,"2025-07":0.01577,"2025-08":0.00283,"2025-09":0.005,"2025-10":0.06389,"2025-11":0.02276,"2025-12":0.02043,"2026-01":0.02529,"2026-02":0.02738,"2026-03":0.01473},"Khandwa":{"2025-04":0.06786,"2025-05":0.05119,"2025-06":0.04654,"2025-07":0.04435,"2025-08":0.00807,"2025-09":0.02219,"2025-10":0.10883,"2025-11":0.03811,"2025-12":0.03881,"2026-01":0.04165,"2026-02":0.03328,"2026-03":0.01542},"Mandsaur":{"2025-04":0.07056,"2025-05":0.06528,"2025-06":0.0621,"2025-07":0.03774,"2025-08":0.00806,"2025-09":0.0756,"2025-10":0.09549,"2025-11":0.04381,"2025-12":0.04968,"2026-01":0.05404,"2026-02":0.04737,"2026-03":0.0069},"Ratlam":{"2025-04":0.04094,"2025-05":0.04235,"2025-06":0.06627,"2025-07":0.057,"2025-08":0.01216,"2025-09":0.04924,"2025-10":0.19203,"2025-11":0.09336,"2025-12":0.07932,"2026-01":0.07074,"2026-02":0.05674,"2026-03":0.05372},"Sehore":{"2025-04":0.02797,"2025-05":0.02028,"2025-06":0.01446,"2025-07":0.01234,"2025-08":8e-05,"2025-09":0.00845,"2025-10":0.03082,"2025-11":0.01534,"2025-12":0.01518,"2026-01":0.01706,"2026-02":0.01676,"2026-03":0.00895},"Ujjain":{"2025-04":0.0457,"2025-05":0.04671,"2025-06":0.0466,"2025-07":0.03064,"2025-08":0.00815,"2025-09":0.01208,"2025-10":0.13646,"2025-11":0.04556,"2025-12":0.04821,"2026-01":0.05962,"2026-02":0.04577,"2026-03":0.06395},"Indore RMS":{"2025-04":0.00213,"2025-05":0.00031,"2025-06":0.00038,"2025-07":-0.00015,"2025-08":2e-05,"2025-09":0.00097,"2025-10":0.00025,"2025-11":0.0014,"2025-12":0.0036,"2026-01":0.00658,"2026-02":0.00358,"2026-03":0.00585}}};
+const LYC_DEF={"MAIL":{"Sehore":{"2025-04":19949,"2025-05":26268,"2025-06":14525,"2025-07":16813,"2025-08":26201,"2025-09":23737,"2025-10":26865,"2025-11":28771,"2025-12":26036,"2026-01":16638,"2026-02":18691,"2026-03":19416},"Ratlam":{"2025-04":22988,"2025-05":21838,"2025-06":15746,"2025-07":23240,"2025-08":33089,"2025-09":35722,"2025-10":23249,"2025-11":29817,"2025-12":32594,"2026-01":18833,"2026-02":17535,"2026-03":16280},"Khandwa":{"2025-04":37998,"2025-05":47241,"2025-06":34991,"2025-07":41064,"2025-08":51110,"2025-09":39531,"2025-10":31297,"2025-11":40438,"2025-12":44998,"2026-01":34629,"2026-02":30230,"2026-03":41178},"Indore Mfl":{"2025-04":69036,"2025-05":55602,"2025-06":37982,"2025-07":46643,"2025-08":51477,"2025-09":38563,"2025-10":38194,"2025-11":40042,"2025-12":39114,"2026-01":32917,"2026-02":36183,"2026-03":37549},"Mandsaur":{"2025-04":23530,"2025-05":21228,"2025-06":20925,"2025-07":23188,"2025-08":26633,"2025-09":25212,"2025-10":19510,"2025-11":18406,"2025-12":24745,"2026-01":17959,"2026-02":18737,"2026-03":18369},"Indore RMS":{"2025-04":8805,"2025-05":8785,"2025-06":8895,"2025-07":8705,"2025-08":11250,"2025-09":9390,"2025-10":7528,"2025-11":9070,"2025-12":9162,"2026-01":8475,"2026-02":8779,"2026-03":11921},"Indore City":{"2025-04":123387,"2025-05":136438,"2025-06":99138,"2025-07":952130,"2025-08":245668,"2025-09":143493,"2025-10":97116,"2025-11":128409,"2025-12":147538,"2026-01":112957,"2026-02":148067,"2026-03":126535},"Ujjain":{"2025-04":34360,"2025-05":44643,"2025-06":41903,"2025-07":39419,"2025-08":53131,"2025-09":45146,"2025-10":38312,"2025-11":35520,"2025-12":48898,"2026-01":42585,"2026-02":31818,"2026-03":46531}},"PARCEL":{"Ujjain":{"2025-04":6583,"2025-05":6929,"2025-06":7121,"2025-07":7410,"2025-08":4694,"2025-09":5699,"2025-10":5847,"2025-11":5714,"2025-12":6615,"2026-01":6880,"2026-02":6777,"2026-03":6058},"Indore City":{"2025-04":42276,"2025-05":44031,"2025-06":38498,"2025-07":38756,"2025-08":27854,"2025-09":30244,"2025-10":32308,"2025-11":39332,"2025-12":48374,"2026-01":50253,"2026-02":37320,"2026-03":40883},"Indore Mfl":{"2025-04":7304,"2025-05":5694,"2025-06":6210,"2025-07":6024,"2025-08":4182,"2025-09":4664,"2025-10":5402,"2025-11":6012,"2025-12":7732,"2026-01":7347,"2026-02":8230,"2026-03":6472},"Ratlam":{"2025-04":2187,"2025-05":2174,"2025-06":2379,"2025-07":2509,"2025-08":1965,"2025-09":2136,"2025-10":2176,"2025-11":2172,"2025-12":2894,"2026-01":2665,"2026-02":2511,"2026-03":2336},"Khandwa":{"2025-04":5420,"2025-05":6887,"2025-06":6775,"2025-07":6556,"2025-08":4961,"2025-09":5530,"2025-10":6014,"2025-11":6167,"2025-12":7136,"2026-01":7003,"2026-02":6168,"2026-03":5926},"Mandsaur":{"2025-04":4172,"2025-05":4843,"2025-06":4832,"2025-07":5372,"2025-08":4173,"2025-09":5406,"2025-10":6354,"2025-11":5871,"2025-12":5317,"2026-01":4999,"2026-02":4248,"2026-03":4881},"Sehore":{"2025-04":1909,"2025-05":2047,"2025-06":2131,"2025-07":2392,"2025-08":1557,"2025-09":1290,"2025-10":1407,"2025-11":1491,"2025-12":1736,"2026-01":1622,"2026-02":1721,"2026-03":1797},"Indore RMS":{"2025-04":1347,"2025-05":1648,"2025-06":1463,"2025-07":1082,"2025-08":1205,"2025-09":1198,"2025-10":1144,"2025-11":1248,"2025-12":1304,"2026-01":1495,"2026-02":1789,"2026-03":3399}},"IRGB":{"Indore RMS":{"2025-04":0,"2025-05":0,"2025-06":0,"2025-07":27,"2025-08":59,"2025-09":19,"2025-10":0,"2025-11":0,"2025-12":0,"2026-01":1,"2026-02":0,"2026-03":5},"Indore City":{"2025-04":509,"2025-05":624,"2025-06":559,"2025-07":757,"2025-08":390,"2025-09":274,"2025-10":337,"2025-11":310,"2025-12":343,"2026-01":459,"2026-02":392,"2026-03":329},"Indore Mfl":{"2025-04":58,"2025-05":78,"2025-06":98,"2025-07":168,"2025-08":175,"2025-09":67,"2025-10":73,"2025-11":67,"2025-12":65,"2026-01":39,"2026-02":89,"2026-03":60},"Khandwa":{"2025-04":52,"2025-05":43,"2025-06":45,"2025-07":60,"2025-08":52,"2025-09":13,"2025-10":23,"2025-11":18,"2025-12":23,"2026-01":27,"2026-02":33,"2026-03":24},"Mandsaur":{"2025-04":128,"2025-05":116,"2025-06":75,"2025-07":63,"2025-08":81,"2025-09":60,"2025-10":64,"2025-11":72,"2025-12":106,"2026-01":85,"2026-02":66,"2026-03":68},"Ratlam":{"2025-04":17,"2025-05":16,"2025-06":16,"2025-07":36,"2025-08":29,"2025-09":19,"2025-10":22,"2025-11":19,"2025-12":20,"2026-01":28,"2026-02":23,"2026-03":17},"Sehore":{"2025-04":9,"2025-05":7,"2025-06":9,"2025-07":16,"2025-08":15,"2025-09":5,"2025-10":6,"2025-11":3,"2025-12":4,"2026-01":9,"2026-02":11,"2026-03":5},"Ujjain":{"2025-04":140,"2025-05":144,"2025-06":118,"2025-07":37,"2025-08":42,"2025-09":50,"2025-10":32,"2025-11":72,"2025-12":130,"2026-01":135,"2026-02":135,"2026-03":87}}};
+const lyR=()=>(DB.lyRev&&DB.lyRev.data)||LYR_DEF, lyC=()=>(DB.lyCnt&&DB.lyCnt.data)||LYC_DEF;
+const lyKey=ym=>(+ym.slice(0,4)-1)+ym.slice(4);
+function applyLyCnt(){const c=lyC();[['MAIL',0],['PARCEL',1],['IRGB',2]].forEach(([v,i])=>{const S=c[v]||{};for(const d in S)for(const ym in S[d]){const mm=+ym.slice(5,7);if(ym>='2025-04'&&ym<='2026-03'&&LY[d]&&LY[d][mm])LY[d][mm][i]=S[d][ym]}})}
+applyLyCnt();
+function lyV(s){const u=String(s==null?'':s).trim().toUpperCase();if(/^MO\b/.test(u)||u.includes('MAIL'))return 'MAIL';if(u.includes('PARCEL'))return 'PARCEL';if(u.includes('IRGB')||u.includes('INTERNATIONAL'))return 'IRGB';if(u.includes('POSB')||/^SB\b/.test(u))return 'SB';if(u.includes('PLI'))return 'PLI';if(u.includes('CCS'))return 'CCS';return null}
+function lyHdr(h){
+ if(h instanceof Date&&!isNaN(h))return `${h.getFullYear()}-${pad(h.getMonth()+1)}`;
+ if(typeof h==='number'){if(h>36000&&h<80000){const o=XLSX.SSF.parse_date_code(h);return o?`${o.y}-${pad(o.m)}`:null}return null}
+ const t=String(h==null?'':h).toLowerCase(),m=t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s\-\/,]*(20\d{2}|\d{2})\b/);
+ if(m){const y=m[2].length===2?2000+(+m[2]):+m[2];return `${y}-${pad(MON3.indexOf(m[1])+1)}`}
+ const d=parseDate(t);return d?d.slice(0,7):null}
+function lyParse(wb){
+ const ws=wb.Sheets[frontSheet(wb)],rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+ let hi=-1,hy=[];for(let i=0;i<Math.min(rows.length,12);i++){const y=rows[i].map(lyHdr);if(y.filter(Boolean).length>=3){hi=i;hy=y;break}}
+ if(hi<0)throw new Error('Month columns not found. The heading row must contain the months (e.g. "Achievement in april 25" or a date like 01-01-2026).');
+ const H=rows[hi].map(x=>String(x).toLowerCase());let ci=H.findIndex(x=>/division/.test(x)),vi=H.findIndex(x=>/vertical/.test(x));if(ci<0)ci=0;if(vi<0)vi=1;
+ const out={},sk=new Set();let n=0;
+ for(const r of rows.slice(hi+1)){const d=divKey(r[ci]),v=lyV(r[vi]);if(!d||!v){if(String(r[ci]).trim())sk.add(String(r[ci]).trim()+' / '+String(r[vi]).trim());continue}
+  n++;hy.forEach((ym,j)=>{if(!ym||r[j]===''||r[j]==null)return;const x=Number(String(r[j]).replace(/,/g,''));if(!isFinite(x))return;out[v]=out[v]||{};out[v][d]=out[v][d]||{};out[v][d][ym]=(out[v][d][ym]||0)+x})}
+ return {data:out,months:[...new Set(hy.filter(Boolean))].sort(),rows:n,skipped:[...sk]}}
+function lyWarnList(){const out=[];[['rev',lyR()],['cnt',lyC()]].forEach(([k,S])=>{for(const v in S)for(const d in S[v]){const e=Object.entries(S[v][d]),pos=e.map(x=>x[1]).filter(x=>x>0).sort((a,b)=>a-b);if(pos.length<4)continue;const med=pos[Math.floor(pos.length/2)];
+ e.forEach(([ym,x])=>{if(x>(k==='rev'?15:6)*med)out.push(`${k==='rev'?'Revenue':'Article count'} - ${rpVn(v)} - ${rpNm(d)} - ${mFull(ym)} = ${k==='rev'?x.toFixed(3):x}  (other months about ${k==='rev'?med.toFixed(3):med})`)})}});return out}
+const lyWarnHTML=()=>{const w=lyWarnList();return w.length?'<div class="msg warn">&#9888; Last-year data: this value looks far too high - please check it in your file (extra digit?):\n'+w.slice(0,6).map(esc).join('\n')+'</div>':''};
+async function lyUpload(file,kind){if(!file)return;const box=document.getElementById('lyMsg');
+ try{const r=lyParse(XLSX.read(await file.arrayBuffer(),{type:'array'}));if(!r.months.length||!r.rows)throw new Error('No usable rows found (need Division and Vertical columns).');
+  DB[kind==='rev'?'lyRev':'lyCnt']={data:r.data,months:r.months,file:file.name};save();if(kind==='cnt')applyLyCnt();
+  box.innerHTML=`<div class="msg">${esc(file.name)} (${kind==='rev'?'revenue':'article count'}): ${r.rows} rows read.\nMonths found: ${r.months.map(mFull).join(', ')}${r.skipped.length?'\nIgnored rows: '+esc(r.skipped.slice(0,6).join('; ')):''}</div>`+lyWarnHTML();
+  try{rpRender()}catch(e){}}catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}}
+function lyReset(){DB.lyRev=null;DB.lyCnt=null;save();applyLyCnt();document.getElementById('lyMsg').innerHTML='<div class="msg">Built-in last-year data restored.</div>';try{rpRender()}catch(e){}}
+RP.cLast=v=>{const m=RP.CML.filter(x=>((RP.D.cnt[v].Region.m[x]||{a:0}).a>0));return m.length?m[m.length-1]:null};
+RP.lyVal=(kind,v,d,ym)=>{const S=(kind==='rev'?lyR():lyC())[v];if(!S)return null;if(d==='Region'){let t=0,a=false;RP.DV.forEach(x=>{const z=(S[x]||{})[ym];if(z!=null){t+=z;a=true}});return a?t:null}const z=(S[d]||{})[ym];return z==null?null:z};
+RP.yoyTbl=(kind,v)=>{const rev=kind==='rev',gr=(c,l)=>(l!=null&&l>0)?(c-l)*100/l:NaN,gp=g=>isNaN(g)?'-':(g>=0?'+':'')+g.toFixed(1)+'%',fxv=vv=>rev?(vv==='IRGB'?x=>(+x).toFixed(4):f3):f0;
+ const cyv=(vv,d,m)=>{const o=RP.D[rev?'rev':'cnt'][vv][d];return rev?(o.m[m]||0):((o.m[m]||{}).a||0)},lastOf=vv=>rev?RP.last[vv]:RP.cLast(vv);
+ const calc=(vv,d)=>{const lm=lastOf(vv);if(!lm)return null;let c2=0,l2=0,la=false;RP.FY.filter(m=>m<=lm).forEach(m=>{c2+=cyv(vv,d,m);const x=RP.lyVal(kind,vv,d,lyKey(m));if(x!=null){l2+=x;la=true}});return{lm,c1:cyv(vv,d,lm),l1:RP.lyVal(kind,vv,d,lyKey(lm)),c2,l2:la?l2:null}};
+ const note='Growth %:  Green = increase over last year  |  Red = decrease   |   Last-year figures from the Apr-25 to Mar-26 data (Upload tab, section 5)';
+ if(v==='ALL'){const rows=[];['PARCEL','MAIL','IRGB','SB','PLI','CCS'].forEach(vv=>{const x=calc(vv,'Region');if(!x)return;const fx=fxv(vv),g1=gr(x.c1,x.l1),g2=gr(x.c2,x.l2);rows.push({cells:[rpVn(vv).replace(' (MO)',''),mFull(x.lm),x.l1==null?'NA':fx(x.l1),fx(x.c1),gp(g1),x.l2==null?'NA':fx(x.l2),fx(x.c2),gp(g2)],g:{4:g1,7:g2}})});
+  return{title:'Indore Region - Revenue: This Year vs Last Year (Rs. crore)',sub:'Latest month of each vertical and cumulative (April to latest month) | '+RP.sub(),head:['Vertical','Latest month','Last year (month)','This year (month)','Growth %','Last year (Apr to month)','This year (Apr to month)','Growth %'],rows,note:note}}
+ const lm=lastOf(v),nm=rpVn(v).replace(' (MO)',''),ttl=nm+(rev?' - Revenue: This Year vs Last Year (Rs. crore)':' - Article Count: This Year vs Last Year');
+ if(!lm)return{title:ttl,sub:RP.sub(),head:['Division'],rows:[],note:'No data for this vertical yet'};
+ const fx=fxv(v),rows=[...RP.DV,'Region'].map(d=>{const x=calc(v,d),g1=gr(x.c1,x.l1),g2=gr(x.c2,x.l2),reg=d==='Region';return{reg,cells:[reg?'Indore Region':rpNm(d),x.l1==null?'NA':fx(x.l1),fx(x.c1),gp(g1),x.l2==null?'NA':fx(x.l2),fx(x.c2),gp(g2)],g:{3:g1,6:g2}}});
+ return{title:ttl,sub:mFull(lm)+' vs '+mFull(lyKey(lm))+' and cumulative | '+RP.sub(),head:['Division',mFull(lyKey(lm))+' (Last year)',mFull(lm)+' (This year)','Growth %',rpMn(lyKey('2026-04'))+' to '+rpMn(lyKey(lm))+' (Last year)',rpMn('2026-04')+' to '+rpMn(lm)+' (This year)','Growth %'],rows,note}};
+RP.yoyHTML=(kind,v)=>{const X=RP.yoyTbl(kind,v);let h='<table style="border-collapse:collapse;width:100%"><tr>'+X.head.map(t=>th(t)).join('')+'</tr>';
+ X.rows.forEach(r=>{const bg=r.reg?'#fff0c2':'#fff';h+='<tr>'+r.cells.map((c,j)=>{if(j===0)return td(c,{l:1,b:1,bg});const g=r.g[j];return(g!==undefined&&!isNaN(g))?td(c,{bg:g>=0?'#dcefd9':'#fde0e0',b:1,c:g>=0?'#1b6b2e':'#c00000'}):td(c,{bg})}).join('')+'</tr>'});
+ return RP.wrap(X.title,X.sub,h+'</table><div style="font:11px Arial;color:#777;padding-top:6px">'+esc(X.note)+'</div>')};
 RP.boYM=()=>NB.S.month||NB.months().pop();
 RP.pages=()=>{const P=[],ym=RP.boYM(),mo=(document.getElementById('monthSel')||{}).value;
- if(mo&&typeof ALL_TABS==='function')ALL_TABS().forEach(dv=>P.push({g:'day',t:dv==='Region Total'?'Indore Region (Total)':dv,canvas:()=>drawReport(dv,mo,irgbOn())}));
+ if(mo&&typeof ALL_TABS==='function')ALL_TABS().forEach(dv=>P.push({g:'day',t:dv==='Region Total'?'Indore Region (Total)':dv,dv,mo,canvas:()=>drawReport(dv,mo,irgbOn(),true)}));
  [...RP.DV,'Region'].forEach(d=>P.push({g:'sum',t:rpNm(d)+' - Summary',html:()=>RP.sumHTML(d),d}));
- RP.VS.forEach(v=>P.push({g:'mon',t:'Month-wise revenue: '+rpVn(v),html:()=>RP.monHTML(v),v}));
+ RP.VS.forEach(v=>P.push({g:'mon',t:'Revenue vs target: '+rpVn(v),html:()=>RP.monHTML(v),v}));
+ P.push({g:'yoy',t:'Revenue vs last year: all verticals',html:()=>RP.yoyHTML('rev','ALL'),v:'ALL'});
+ ['PARCEL','MAIL','IRGB','SB','PLI','CCS'].forEach(v=>P.push({g:'yoy',t:'Revenue vs last year: '+rpVn(v),html:()=>RP.yoyHTML('rev',v),v}));
  ['PARCEL','MAIL','IRGB'].forEach(v=>['Region',...RP.DV].forEach(d=>P.push({g:'cnt',t:rpVn(v)+' count: '+rpNm(d),html:()=>RP.cntHTML(v,d),v,d})));
  ['PARCEL','MAIL','IRGB'].forEach(v=>P.push({g:'q',t:'Q1 vs Q2: '+rpVn(v),html:()=>RP.qHTML(v),v}));
- if(ym)Object.keys(NB.REP).forEach(k=>P.push({g:'bo',t:NB.REP[k].t,html:()=>RP.wrap('Indore Region - '+NB.REP[k].t+' ('+ym+')','',nbHTML(k,ym).replace(/id="nbRep"/,'')),k,ym}));
+ ['PARCEL','MAIL','IRGB'].forEach(v=>P.push({g:'yoyc',t:'Article count vs last year: '+rpVn(v),html:()=>RP.yoyHTML('cnt',v),v}));
+ if(ym)Object.keys(NB.REP).forEach(k=>P.push({g:'bo',t:NB.REP[k].t,html:()=>RP.wrap('Indore Region - '+NB.REP[k].t+' ('+mFull(ym)+')','',nbHTML(k,ym).replace(/id="nbRep"/,'')),k,ym}));
  return P};
 RP.pid=p=>p.g+'|'+p.t;RP.sel=()=>{const c=rpCfg();return RP.pages().filter(p=>!c.ex[RP.pid(p)])};
-function rpInit(){try{RP.build()}catch(e){document.getElementById('rpMsg').innerHTML=`<div class="msg err">${esc(e.message)}</div>`;return false}return true}
+function rpInit(){try{const ms=document.getElementById('monthSel');if(ms&&!ms.value)renderReport()}catch(e){}
+ try{RP.build()}catch(e){document.getElementById('rpMsg').innerHTML=`<div class="msg err">${esc(e.message)}</div>`;return false}return true}
 function rpRender(){if(!rpInit())return;try{if(!document.getElementById('monthSel').value)renderReport()}catch(e){}
  const P=RP.pages(),sel=document.getElementById('rpSel'),keep=sel.value;sel.innerHTML=P.map((p,i)=>`<option value="${i}">${esc(p.t)}</option>`).join('');if(keep&&+keep<P.length)sel.value=keep;
- const ms=document.getElementById('rpMonth');ms.innerHTML=NB.months().map(m=>`<option ${m===NB.S.month?'selected':''}>${m}</option>`).join('')||'<option value="">no data</option>';nbFillMs();try{renderTgt()}catch(e){}
- document.getElementById('rpInfo').innerHTML=`<div class="msg">Last month with data: ${RP.VS.map(v=>rpVn(v)+' '+(RP.last[v]?rpMn(RP.last[v]):'-')).join(' | ')}\nCombined TOTAL is shown up to <b>${rpMn(RP.common)}</b>. Article count shown up to ${rpMn(RP.CML[RP.CML.length-1]||'2026-04')}.\nWhich pages go into the mega PPT / PDF, the cover title and the good-booking limits: Settings tab.</div>`;rpShow()}
+ const ms=document.getElementById('rpMonth');ms.innerHTML=NB.months().map(m=>`<option value="${m}" ${m===NB.S.month?'selected':''}>${mFull(m)}</option>`).join('')||'<option value="">no data</option>';nbFillMs();try{renderTgt()}catch(e){}
+ document.getElementById('rpInfo').innerHTML=`<div class="msg">Last month with data: ${RP.VS.map(v=>rpVn(v)+' '+(RP.last[v]?rpMn(RP.last[v]):'-')).join(' | ')}\nCombined TOTAL is shown up to <b>${rpMn(RP.common)}</b>. Article count shown up to ${rpMn(RP.CML[RP.CML.length-1]||'2026-04')}.\nWhich pages go into the mega PPT / PDF, the cover title and the good-booking limits: Settings tab.</div>${lyWarnHTML()}`;rpShow()}
 function rpShow(){const P=RP.pages(),p=P[+document.getElementById('rpSel').value||0],v=document.getElementById('rpView');v.innerHTML='';if(!p)return;if(p.canvas){const c=p.canvas();c.style.maxWidth='100%';v.appendChild(c)}else v.innerHTML=p.html()}
 async function rpCv(p,host){if(p.canvas)return p.canvas();host.innerHTML=p.html();return html2canvas(host.firstChild,{scale:1.4,backgroundColor:'#fff'})}
 async function rpJPG(p,fn){p=p||RP.pages()[+document.getElementById('rpSel').value||0];if(!p)return;if(!p.canvas&&!(await needLib2('html2canvas')))return;const h=document.createElement('div');h.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(h);const c=await rpCv(p,h);h.remove();c.toBlob(b=>saveBlob(b,(fn||p.t).replace(/[^\w]+/g,'_')+'.jpg'),'image/jpeg',.95)}
@@ -2116,6 +2171,29 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
  const note=(s,y,t)=>s.addText(t,{x:TX,y,w:TW,h:.28,fontSize:10,color:'777777',fontFace:F,margin:0,valign:'middle'});
  const grid=(s,rows,colW,hH,rH,y)=>{s.addTable(rows,{x:TX,y,w:colW.reduce((a,b)=>a+b,0),colW,rowH:rows.map((r,i)=>i?rH:hH)});return y+hH+(rows.length-1)*rH};
  for(const pg of Lp){
+  if(pg.g==='day'){
+   if(isCmp(pg.dv)){
+    const X=buildCmp(pg.dv,pg.mo),s=sl(X.title,X.sub||RP.sub()),rows=[X.head.map(h=>hd(h,11))],labs=[],cv=[],lv=[];
+    X.rows.forEach((r,i)=>{const [d,cur,ly,gr]=r.cells,reg=r.cls==='tot',mk=(v,o={})=>reg?tt(v,Object.assign({fontSize:11},o)):bd(v,i,Object.assign({fontSize:11},o));
+     rows.push([mk(reg?'Indore Region':rpNm(d),{align:'left',bold:true}),mk(f0(cur)),mk(ly==null?'NA':f0(ly)),mk(gr==null?'NA':(gr>=0?'+':'')+gr.toFixed(2)+'%',bandO(gr==null?null:gr>=0?BAND.g:BAND.r))]);
+     if(!reg){labs.push(rpNm(d));cv.push(+cur||0);lv.push(ly==null?0:ly)}});
+    const y=grid(s,rows,[2.3,1.75,1.75,1.5],.62,.46,1.5);
+    note(s,y+.12,X.lyOk?'Growth %:  Green = increase over last year  |  Red = decrease':'Last-year data is available only for Apr-25 to Mar-26, so no comparison is shown for this month.');
+    s.addChart(p.charts.BAR,[{name:X.head[1],labels:labs,values:cv},{name:X.head[2],labels:labs,values:lv}],{x:8.0,y:1.45,w:4.8,h:5.4,barDir:'bar',barGrouping:'clustered',catAxisOrientation:'maxMin',valAxisHidden:true,valGridLine:{style:'none'},chartColors:['B3121B','FDB913'],showLegend:true,legendPos:'b',legendFontSize:9,showValue:true,dataLabelFontSize:8,dataLabelFormatCode:'#,##0',catAxisLabelFontSize:9});
+   }else{
+    const irg=irgbOn(),A=buildAOA(pg.dv,pg.mo,irg),head=A.head,n=head.length,nm=pg.dv==='Region Total'?'Indore Region':rpNm(pg.dv);let R_=A.rows.slice(),lastD=-1;
+    R_.forEach((r,i)=>{if(r.cls!=='base'&&r.cls!=='tot'&&r.cells.slice(1).some(x=>x!==''&&x!=null))lastD=i});
+    R_=R_.filter((r,i)=>r.cls==='base'||r.cls==='tot'||i<=lastD);
+    const hasBase=R_.some(r=>r.cls==='base'),s=sl(nm+' - Day-wise Report ('+mFull(pg.mo)+')','Articles booked (MO, Parcel'+(irg?', IRGB':'')+') and Aadhaar transactions | '+RP.sub());
+    const fv=v=>v===''||v==null?'':(typeof v==='number'?f0(v):String(v));
+    const two=R_.length>19,per=two?Math.ceil(R_.length/2):R_.length,parts=[R_.slice(0,per),R_.slice(per)].filter(a=>a.length),gap=.3,tw=two?(TW-gap)/2:Math.min(TW,10),fs=two?9:10,rH=Math.min(.3,(6.95-1.5-.72)/per);
+    parts.forEach((pt,k)=>{const x0=two?TX+k*(tw+gap):TX+(TW-tw)/2,cw=[.95,...Array(n-1).fill((tw-.95)/(n-1))];
+     const g1=[cell('NAME OF DIVISION: '+nm.toUpperCase(),{bold:true,color:'FFFFFF',fill:{color:'8F0E15'},fontSize:9,colspan:n-3,align:'left'}),cell('AADHAAR',{bold:true,color:'222222',fill:{color:YEL},fontSize:9,colspan:3})];
+     const g2=head.map((h,j)=>j>=n-3?cell(String(h),{bold:true,color:'222222',fill:{color:YEL},fontSize:8}):hd(h,8));
+     const body=pt.map((r,i)=>r.cells.map((v,j)=>{const o={fontSize:fs};if(r.cls==='base'){o.fill={color:'FFF8E1'};o.bold=true}else if(r.cls==='tot'){o.fill={color:'FFE08A'};o.bold=true}else{o.fill={color:i%2?ZEB:'FFFFFF'};if(r.cls==='off')o.color='BB0000';if(j===0)o.bold=true}return cell(fv(v),o)}));
+     s.addTable([g1,g2,...body],{x:x0,y:1.5,w:tw,colW:cw,rowH:[.3,.42,...body.map(()=>rH)]})});
+    note(s,7.02,(hasBase?'Yellow row = same month last year  |  ':'')+'Red date = very few SOs reported that day  |  Per day average = Total transactions ÷ Machines ÷ days')}
+   continue}
   if(pg.canvas){const c=pg.canvas(),s=p.addSlide(),k=Math.min(12.9/c.width,7.1/c.height);s.addImage({data:c.toDataURL('image/jpeg',.92),x:(13.33-c.width*k)/2,y:(7.5-c.height*k)/2,w:c.width*k,h:c.height*k});continue}
   if(pg.g==='sum'){const r=RP.sumData(pg.d),s=sl(rpNm(pg.d)+' - Target vs Achievement (Rs. crore)',RP.sub()),nc=7+RP.ML.length,fs=nc>17?8:nc>14?9:10,
     rows=[[hd('Vertical',fs),hd('Yearly Target',fs),hd('Monthly Target',fs),hd('Cumulative Target',fs),...RP.ML.map(m=>hd(rpMn(m),fs)),hd('Total Achievement',fs),hd('% Ach (Prop.)',fs),hd('% Ach (Total)',fs)]];
@@ -2124,13 +2202,14 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
    const nm=RP.ML.length,fx=[1.3,1,1,1.15,1.2,.95,.95],fsum=fx.reduce((a,b)=>a+b,0),sc=Math.min(1,(TW-.55*nm)/fsum),mw=(TW-fsum*sc)/nm,f=fx.map(v=>v*sc),
     y=grid(s,rows,[f[0],f[1],f[2],f[3],...Array(nm).fill(mw),f[4],f[5],f[6]],.6,.46,1.5);
    note(s,y+.12,'% Ach (Prop.) = achievement vs target up to date:  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%')}
-  else if(pg.g==='mon'){const R=RP.D.rev[pg.v],L=RP.ML.filter(m=>m<=(RP.last[pg.v]||'')),s=sl('Month-wise Division Revenue - '+rpVn(pg.v)+' (Rs. crore)','Each month: Achievement and % of monthly target | '+RP.sub()),n=L.length,fs=n>8?8:n>6?9:10,
-    rows=[[hd('Division',fs),...L.map(m=>hd(rpMn(m),fs)),hd('Total Target',fs),hd('Total Achievement',fs),hd('% Ach',fs)]];
-   [...RP.DV,'Region'].forEach((d,i)=>{const o=R[d],mt=o.t/12,reg=d==='Region',mk=(v,o2={})=>reg?tt(v,Object.assign({fontSize:fs},o2)):bd(v,i,Object.assign({fontSize:fs},o2));let ta=0;
-    const mc=L.map(m=>{const a=o.m[m]||0;ta+=a;const b=bandHi(mt>0?a*100/mt:NaN);return cell([{text:f3(a),options:{breakLine:true}},{text:pc(a,mt),options:{bold:true}}],Object.assign({fontSize:fs},reg?{fill:{color:TOT}}:{fill:{color:i%2?ZEB:'FFFFFF'}},b?{fill:{color:b.fill},color:b.color}:{}))});
-    const tp=mt*L.length;rows.push([mk(rpNm(d),{align:'left',bold:true}),...mc,mk(f3(tp)),mk(f3(ta),{bold:true}),mk(pc(ta,tp),bandO(bandHi(tp>0?ta*100/tp:NaN)))])});
-   const w0=1.8,wt=1.15,w=(TW-w0-3*wt)/n,y=grid(s,rows,[w0,...Array(n).fill(w),wt,wt,wt],.5,.5,1.5);
-   note(s,y+.12,'% of monthly target:  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%')}
+  else if(pg.g==='mon'){const R=RP.D.rev[pg.v],L=RP.ML.filter(m=>m<=(RP.last[pg.v]||'')),n=L.length,lmn=RP.last[pg.v]?mFull(RP.last[pg.v]):'',s=sl('Division-wise Revenue - '+rpVn(pg.v)+' (Rs. crore)','Yearly, monthly & cumulative target, month-wise revenue and % achievement | '+RP.sub()),fs=n>8?8:n>6?9:10,
+    rows=[[hd('Division',fs),hd('Yearly Target',fs),hd('Monthly Target',fs),hd('Cumulative Target',fs),...L.map(m=>hd(rpMn(m),fs)),hd('Total Revenue',fs),hd('% Ach (Cumulative Target)',fs),hd('% Ach (Yearly Target)',fs)]];
+   [...RP.DV,'Region'].forEach((d,i)=>{const o=R[d],mt=o.t/12,cum=mt*n,reg=d==='Region',mk=(v,o2={})=>reg?tt(v,Object.assign({fontSize:fs},o2)):bd(v,i,Object.assign({fontSize:fs},o2));let ta=0;
+    const mc=L.map(m=>{const a=o.m[m]||0;ta+=a;return mk(f3(a))});
+    rows.push([mk(rpNm(d),{align:'left',bold:true}),mk(f3(o.t)),mk(f3(mt)),mk(f3(cum)),...mc,mk(f3(ta),{bold:true}),mk(pc(ta,cum),bandO(bandHi(cum>0?ta*100/cum:NaN))),mk(pc(ta,o.t),{bold:true})])});
+   const fx=[1.55,.95,.95,1.05,1.1,1.05,1.05],fsum=fx.reduce((a,b)=>a+b,0),sc=Math.min(1,(TW-.55*n)/fsum),mw=(TW-fsum*sc)/n,f=fx.map(v=>v*sc),
+    y=grid(s,rows,[f[0],f[1],f[2],f[3],...Array(n).fill(mw),f[4],f[5],f[6]],.62,.46,1.5);
+   note(s,y+.12,'Monthly target = Yearly target ÷ 12  |  Cumulative target = Monthly target × months up to '+lmn+'  |  % Ach (Cumulative):  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%')}
   else if(pg.g==='cnt'){const k=RP.cntK(pg.v,pg.d),s=sl(rpVn(pg.v).replace(' (MO)','')+' Article Count: '+rpNm(pg.d),'Month-wise Target vs Achievement | '+RP.sub());
    s.addChart(p.charts.BAR,[{name:'Target',labels:k.L.map(rpMn),values:k.T},{name:'Achievement',labels:k.L.map(rpMn),values:k.A}],{x:.5,y:1.4,w:8.4,h:5.6,barDir:'col',barGrouping:'clustered',chartColors:['B3121B','FDB913'],showLegend:true,legendPos:'b',showValue:true,dataLabelFontSize:8,dataLabelFormatCode:'#,##0',valAxisLabelFontSize:9,catAxisLabelFontSize:10});
    [['Total Target',f0(k.tt),'B3121B'],['Total Achievement',f0(k.ta),'FDB913'],['Achievement % of Target',pc(k.ta,k.tt),'1B6B2F'],['Shortfall (Target - Achievement)',f0(k.tt-k.ta),'B3121B']].forEach((x,i)=>{const y=1.5+i*1.35;s.addShape(p.ShapeType.rect,{x:9.2,y,w:3.6,h:1.15,fill:{color:'F5F5F5'}});s.addShape(p.ShapeType.rect,{x:9.2,y,w:3.6,h:.07,fill:{color:x[2]}});s.addText(x[0],{x:9.3,y:y+.12,w:3.4,h:.3,fontSize:11,color:'555555',fontFace:'Arial'});s.addText(x[1],{x:9.3,y:y+.45,w:3.4,h:.55,fontSize:24,bold:true,fontFace:'Arial'})})}
@@ -2139,7 +2218,13 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
     rows.push([mk(rpNm(x.d),{align:'left',bold:true}),mk(f0(x.t1)),mk(f0(x.a1)),mk(pc(x.a1,x.t1),bandO(bandHi(x.t1>0?x.a1*100/x.t1:NaN))),mk(f0(x.t2)),mk(f0(x.a2)),mk(pc(x.a2,x.t2),bandO(bandHi(x.t2>0?x.a2*100/x.t2:NaN))),mk(isNaN(gr)?'-':gr.toFixed(1)+'%',bandO(isNaN(gr)?null:gr>=0?BAND.g:BAND.r))])});
    const w0=2,w=(TW-w0)/7,y=grid(s,rows,[w0,...Array(7).fill(w)],.55,.46,1.5);
    note(s,y+.12,'Q1 % / Q2 %:  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%     Q2 vs Q1:  Green = increase  |  Red = decrease')}
-  else if(pg.g==='bo'){const {G,th:T}=nbBuild(pg.k,pg.ym),ttl='Indore Region - '+NB.REP[pg.k].t+' ('+pg.ym+')',sub='Good booking > '+T+' articles | NIL = no booking | Low = 1 to '+T,pct=(a,b)=>b?Math.round(a*100/b):0;
+  else if(pg.g==='yoy'||pg.g==='yoyc'){const X=RP.yoyTbl(pg.g==='yoy'?'rev':'cnt',pg.v),s=sl(X.title,X.sub),bandG=g=>isNaN(g)?null:g>=0?BAND.g:BAND.r,nc=X.head.length;
+   if(!X.rows.length){note(s,1.6,X.note);continue}
+   const rows=[X.head.map(h=>hd(h,10))];
+   X.rows.forEach((r,i)=>{const mk=(v,o={})=>r.reg?tt(v,o):bd(v,i,o);rows.push(r.cells.map((v,j)=>j===0?mk(v,{align:'left',bold:true}):(r.g[j]!==undefined?mk(v,Object.assign({bold:true},bandO(bandG(r.g[j])))):mk(v))))});
+   const w0=pg.v==='ALL'?1.6:2,w=(TW-w0)/(nc-1),y=grid(s,rows,[w0,...Array(nc-1).fill(w)],.7,.46,1.5);
+   note(s,y+.12,X.note)}
+  else if(pg.g==='bo'){const {G,th:T}=nbBuild(pg.k,pg.ym),ttl='Indore Region - '+NB.REP[pg.k].t+' ('+mFull(pg.ym)+')',sub='Good booking > '+T+' articles | NIL = no booking | Low = 1 to '+T,pct=(a,b)=>b?Math.round(a*100/b):0;
    const GT={t:0,n:0,l:0,g:0},groups=[];
    NB.DIVO.forEach(dv=>{const sd=G[dv];if(!sd)return;const Tt={t:0,n:0,l:0,g:0},rr=Object.keys(sd).sort().map(k=>{const x=sd[k];for(const q in Tt){Tt[q]+=x[q];GT[q]+=x[q]}return{sd:k,x}});groups.push({dv,rr,Tt})});
    /* ---- pagination: a division is never cut if it fits on one slide; it moves to the next slide together with its heading. Only a division longer than a whole slide is split (heading repeated). ---- */
