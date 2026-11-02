@@ -2351,8 +2351,8 @@ function calc(){if(!S.ok)return;const s=sb(),offs={};
  S.recs=Object.values(offs);S.months=[...new Set([...S.dat.months,...(up?[up]:[])])].sort();
  if(!S.months.includes(s.selM))s.selM='';}
 const selM=()=>sb().selM||S.months[S.months.length-1]||'';
-function agg(by){const G={};S.recs.forEach(r=>{if(!SDT[r.div])return;const k=by==='div'?r.div:r.div+'|'+r.sd;const g=G[k]=G[k]||{div:r.div,sd:by==='sd'?r.sd:'',n:0,m:{}};g.n++;S.months.forEach(y=>{const v=r.m[y];if(!v)return;const a=g.m[y]=g.m[y]||{o:0,c:0,n:0};a.o+=v.o;a.c+=v.c;a.n+=v.n})});return G}
-function sumG(gs){const m={};S.months.forEach(y=>{let a=null;gs.forEach(g=>{const v=g&&g.m[y];if(v){a=a||{o:0,c:0,n:0};a.o+=v.o;a.c+=v.c;a.n+=v.n}});if(a)m[y]=a});return{m}}
+function agg(by){const G={};S.recs.forEach(r=>{if(!SDT[r.div])return;const k=by==='div'?r.div:r.div+'|'+r.sd;const g=G[k]=G[k]||{div:r.div,sd:by==='sd'?r.sd:'',n:0,m:{}};g.n++;S.months.forEach(y=>{const v=r.m[y];if(!v)return;const a=g.m[y]=g.m[y]||{o:0,c:0,n:0};a.o+=v.o;a.c+=v.c;a.n+=v.n;a.hi=(a.hi||0)+(v.o>10?1:0);a.nil=(a.nil||0)+(v.o===0?1:0)})});return G}
+function sumG(gs){const m={};S.months.forEach(y=>{let a=null;gs.forEach(g=>{const v=g&&g.m[y];if(v){a=a||{o:0,c:0,n:0};a.o+=v.o;a.c+=v.c;a.n+=v.n;a.hi=(a.hi||0)+(v.hi||0);a.nil=(a.nil||0)+(v.nil||0)}});if(a)m[y]=a});return{m}}
 const pctOf=(a,b)=>(a==null||!(b>0))?null:a*100/b;
 const FYI=y=>RP.FY.indexOf(y)+1;
 function cells(kind,items,sel){const ms=S.months.filter(m=>m<=sel),k=FYI(sel),pick=f=>ms.map(m=>{let s=null;items.forEach(it=>{const v=it.g&&it.g.m[m];if(v)s=(s||0)+v[f]});return s});
@@ -2441,20 +2441,21 @@ function revT(d,vs,Lend){const R=RP.D.rev,L=RP.FY.filter(m=>m<=Lend),k=RP.idx(Le
  vs.forEach(v=>{const o=R[v][d],mt=o.t/12,ms=L.map(m=>o.m[m]||0),tot=ms.reduce((a,b)=>a+b,0),cum=mt*k;A.t+=o.t;A.mt+=mt;A.cum+=cum;ms.forEach((x,i)=>A.m[i]+=x);rows.push({c:[rpVn(v).replace(' (MO)','').toUpperCase(),o.t,mt,cum,...ms,tot,pctOf(tot,cum),pctOf(tot,o.t)]})});
  const tot=A.m.reduce((a,b)=>a+b,0);rows.push({k:'tot',c:['TOTAL',A.t,A.mt,A.cum,...A.m,tot,pctOf(tot,A.cum),pctOf(tot,A.t)]});
  return{title:rpNm(d)+' - Target vs Achievement till '+mFull(Lend)+' (Rs. crore)',sub:rpCfg().title+' | '+rpCfg().badge+' | '+vs.map(v=>rpVn(v).replace(' (MO)','')).join(', ')+' | April-2026 to '+mFull(Lend),head:['VERTICAL','YEARLY TARGET','MONTHLY TARGET','CUMULATIVE TARGET',...L.map(rpMn),'TOTAL ACH.','% ACH (CUMULATIVE)','% ACH (YEARLY)'],pc:[4+n+1,4+n+2],neg:[],dec:3,g:80,o:60,fw:[1.5],rows,note:'Cumulative target = yearly target x '+k+'/12  |  % Ach (cumulative): Green >= 80%, Orange 60-80%, Red < 60%'}}
-function revPages(P){if(!RP.D||!RP.common)return;const ds=[...RP.DV,'Region'],mk=(d,vs,Le,all)=>{const b=()=>revT(d,vs,Le);P.push({g:'rv',t:(all?'Revenue till '+rpMn(Le)+' - all verticals: ':'Revenue till '+rpMn(Le)+' - '+vs.map(v=>rpVn(v).replace(' (MO)','')).join(', ')+': ')+rpNm(d),sb:'tbl',build:b,html:()=>tblHTML(b())})};
+function revPages(P){if(!RP.D||!RP.common)return;const ds=[...RP.DV,'Region'],mk=(d,vs,Le,all)=>{const b=()=>revT(d,vs,Le);P.push({g:'rv',pd:d,t:(all?'Revenue till '+rpMn(Le)+' - all verticals: ':'Revenue till '+rpMn(Le)+' - '+vs.map(v=>rpVn(v).replace(' (MO)','')).join(', ')+': ')+rpNm(d),sb:'tbl',build:b,html:()=>tblHTML(b())})};
  ds.forEach(d=>mk(d,RP.VS,RP.common,1));const lv=RP.VS.filter(v=>RP.last[v]===RP.maxM);if(RP.maxM>RP.common&&lv.length)ds.forEach(d=>mk(d,lv,RP.maxM,0))}
 function pages(){const P=[];try{revPages(P)}catch(e){console.error(e)}if(!S.ok||!S.months.length)return P;const sel=selM(),m=rpMn(sel);
- const T=(t,g,b)=>P.push({g,t,sb:'tbl',sel,build:b,html:()=>tblHTML(b())});
+ const T=(t,g,b,pd)=>P.push({g,t,sb:'tbl',sel,build:b,pd,html:()=>tblHTML(b())});
  T('POSB: Sub-Division wise A/c opened, closed & net status ('+m+')','sb',()=>stBuild('sd',sel,0));T('POSB: Division wise A/c opened, closed & net status ('+m+')','sb',()=>stBuild('div',sel,0));
  T('POSB: Sub-Division wise status of net addition ('+m+')','sb',()=>stBuild('sd',sel,1));T('POSB: Division wise status of net addition ('+m+')','sb',()=>stBuild('div',sel,1));
  T('POSB: Division wise target vs achievement ('+m+')','sb',()=>build('month','div',sel));T('POSB: Sub-Division wise target vs achievement ('+m+')','sb',()=>build('month','sd',sel));
  T('POSB: Division wise progressive (Apr to '+m+')','sb',()=>build('prog','div',sel));T('POSB: Sub-Division wise progressive (Apr to '+m+')','sb',()=>build('prog','sd',sel));
  T('POSB: Accounts opened - division wise, month-wise','sb',()=>build('open','div',sel));T('POSB: This year vs last year (division wise)','sb',()=>yoy(sel));
  if(S.months.includes('2026-07')){T('POSB: Division wise Q1 vs Q2','sbq',()=>qBuild('div',sel));T('POSB: Sub-Division wise Q1 vs Q2','sbq',()=>qBuild('sd',sel))}
- DK.forEach(d=>['BO','SOHO'].forEach(c=>['m','o'].forEach(md=>T('POSB: '+LBL[d]+' - '+(c==='BO'?'BO':'SO/HO')+' top & bottom 10 ('+(md==='m'?m:'Apr to '+m)+')','sbr',()=>rankT(d,c,md,sel,10,10)))));
+ DK.forEach(d=>['BO','SOHO'].forEach(c=>['m','o'].forEach(md=>T('POSB: '+LBL[d]+' - '+(c==='BO'?'BO':'SO/HO')+' top & bottom 10 ('+(md==='m'?m:'Apr to '+m)+')','sbr',()=>rankT(d,c,md,sel,10,10),LBL[d]))));
  ['BO','SOHO'].forEach(c=>['m','o'].forEach(md=>T('POSB: Indore Region - '+(c==='BO'?'BO':'SO/HO')+' bottom 20 ('+(md==='m'?m:'Apr to '+m)+')','sbr',()=>rankT('REGION',c,md,sel,0,20))));
  ['m','o'].forEach(md=>T('POSB: Sub-Division top & bottom 10 ('+(md==='m'?m:'Apr to '+m)+')','sbr',()=>rankT('REGION','SD',md,sel,10,10)));
- ['REGION',...DK].forEach(d=>P.push({g:'sbc',t:'POSB net addition chart: '+(d==='REGION'?'Indore Region':LBL[d]),sb:'chart',d,sel,html:()=>chartHTML(d,sel)}));return P}
+ ['REGION',...DK].forEach(d=>P.push({g:'sbc',t:'POSB net addition chart: '+(d==='REGION'?'Indore Region':LBL[d]),sb:'chart',d,sel,pd:d==='REGION'?'Region':LBL[d],html:()=>chartHTML(d,sel)}));
+ S.months.forEach(y=>T('POSB: Offices >10 opening, NIL & net addition - Sub Division wise ('+rpMn(y)+')','sbm',()=>posbOff(y)));return P}
 function tblPPT(X,s,T,rows,x,y,tw,hH,rH,fs){const {cell,bd,tt}=X,th=T.th||{},hb=(th.hbg||'#b3121b').slice(1).toUpperCase(),hf=(th.hfg||'#ffffff').slice(1).toUpperCase(),tbc=(th.tot||'#fff0c2').slice(1).toUpperCase(),gbc=(th.grand||'#ffe08a').slice(1).toUpperCase();
  const nc=T.head.length,fw=T.fw,rest=nc-fw.length,w=(tw-fw.reduce((a,b)=>a+b,0))/rest,colW=[...fw,...Array(rest).fill(w)],lead=T.span?2:1;
  const HR=(T.heads||[T.head.map(t=>({t}))]).map(r=>r.map(h=>{const o={bold:true,color:hf,fill:{color:hb},fontSize:fs};if(h.cs)o.colspan=h.cs;if(h.rs)o.rowspan=h.rs;return cell(String(h.t),o)}));
@@ -2476,6 +2477,17 @@ function ppt(pg,X){const {p,sl,note,TW,TX}=X;
  if(T.span){let cur=[];const CAP=13,grp=[];T.rows.forEach(r=>{if(r.k==='grand'){grp.push({rows:[r],grand:1});return}const l=grp[grp.length-1];if(l&&!l.grand&&l.g===r.g)l.rows.push(r);else grp.push({g:r.g,rows:[r]})});
   grp.forEach(x=>{if(cur.length&&cur.length+x.rows.length>CAP){chunks.push(cur);cur=[]}cur=cur.concat(x.rows)});if(cur.length)chunks.push(cur)}else chunks.push(T.rows);
  chunks.forEach((ch,ci)=>{const s=sl(T.title+(chunks.length>1?' ('+(ci+1)+'/'+chunks.length+')':''),T.sub),y=tblPPT(X,s,T,ch,TX,1.5,TW,T.heads?.8:.62,ch.length>10?.34:.46,fs);note(s,Math.min(y+.12,6.78),T.note)})}
+/* POSB: offices opening >10 accounts, NIL offices, open/close/net, shortfall - Sub Division wise, one report per month */
+function posbOff(y){const k=FYI(y),ms=S.months.filter(m=>m<=y);
+ const rows=rowsFor('sd',its=>{let hi=null,nl=null,o=null,c=null,n=null;
+  its.forEach(it=>{const v=it.g&&it.g.m[y];if(v){hi=(hi||0)+(v.hi||0);nl=(nl||0)+(v.nil||0);o=(o||0)+v.o;c=(c||0)+v.c;n=(n||0)+v.n}});
+  const t=its.reduce((a,i)=>a+Math.round(i.fy/12),0),ct=its.reduce((a,i)=>a+Math.round(i.fy*k/12),0);let cn=0;
+  ms.forEach(m=>its.forEach(it=>{const v=it.g&&it.g.m[m];if(v)cn+=v.n}));
+  return[hi,nl,o,c,n,t,n==null?null:Math.max(t-n,0),cn,ct,Math.max(ct-cn,0)]},{sd:sdn});
+ return{title:'POSB - Offices opening >10 accounts, NIL offices, Account Open / Close / Net Addition - Sub Division wise ('+mFull(y)+')',sub:subT(y)+partialTxt(y),
+  head:['Division','Sub-Division','Offices opening >10 POSB A/c','NIL A/c opening offices','Total A/c Opened (month)','Total A/c Closed (month)','Net Addition (month)','Monthly Target','Monthly Shortfall','Cumulative Net Addition','Cumulative Target','Cumulative Shortfall'],
+  pc:[],neg:[6,9],fw:[1.3,1.9],span:true,rows,
+  note:'Offices opening >10 = offices that opened MORE than 10 POSB accounts in the month (gross opening, not net addition)  |  NIL = offices with 0 accounts opened  |  Net = Opened - Closed  |  Monthly target = FY target / 12, Shortfall = Target - Net (0 if achieved)  |  Cumulative = April to '+mFull(y)+', cumulative target = FY target x '+k+'/12'}}
 /* ---------- Excel (5 sheets) ---------- */
 function xlsx(){if(!S.months.length||!sb().files.length)return alert('Pehle POSB open / close files upload karein.');const sel=selM(),wb=XLSX.utils.book_new(),r1=x=>Math.round(x*10)/10,v=g=>(g&&g.m[sel])||null;
  const mkSheet=(by)=>{const G=agg(by),L=[];const addRow=(d,sd,g,fy)=>{const x=v(g),t=Math.round(fy/12);L.push(by==='sd'?[LBL[d],cap(sd),g?g.n:0,t,x?x.o:'',x?x.c:'',x?x.n:'',x&&t?r1(x.n*100/t):'',x?Math.max(t-x.n,0):'']:[LBL[d],g?g.n:0,t,x?x.o:'',x?x.c:'',x?x.n:'',x&&t?r1(x.n*100/t):'',x?Math.max(t-x.n,0):''])};
@@ -2488,7 +2500,7 @@ function xlsx(){if(!S.months.length||!sb().files.length)return alert('Pehle POSB
  [['prog','div','Division_Progressive'],['prog','sd','SD_Progressive']].forEach(([k,b,n])=>{const T=build(k,b,sel);XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([T.head,...T.rows.map(r=>r.c.map((x,i)=>x==null?'':(T.pc.includes(i)?r1(x):x)))]),n)});
  XLSX.writeFile(wb,'POSB_Combined_Report_5_Sheets_'+rpMn(sel)+'.xlsx')}
 /* ---------- UI ---------- */
-const VIEWS=[['dm','Division (month)'],['sm','Sub-Division (month)'],['dp','Division progressive'],['sp','Sub-Division progressive'],['op','Accounts opened'],['yoy','vs Last year'],['ch','Graph']];
+const VIEWS=[['dm','Division (month)'],['sm','Sub-Division (month)'],['dp','Division progressive'],['sp','Sub-Division progressive'],['op','Accounts opened'],['om','Offices >10 / NIL'],['yoy','vs Last year'],['ch','Graph']];
 function render(){const el=$('sbStat');if(!el)return;const s=sb();
  el.innerHTML=S.ok?`<div class="msg">Mapping: ${Object.keys(S.mst.byOff).length} offices | FY data: ${S.dat.months.map(rpMn).join(', ')||'-'}${S.dat.day?' (till '+S.dat.day+')':''} | Last year: ${Object.keys(S.ly).length?'loaded':'not loaded'} | Uploads: ${s.files.filter(f=>f.side==='open').length} open, ${s.files.filter(f=>f.side==='close').length} close</div>`:`<div class="msg ${S.err?'err':'warn'}">${S.err?esc(S.err):'Google sheets load ho rahi hain...'}</div>`;
  const ud=$('sbUpD');if(ud)ud.value=s.upDay||'';const um=$('sbUpM');if(um){const cur=s.upMonth||S.up||RP.FY[Math.min(11,Math.max(0,...S.dat.months.map(m=>RP.FY.indexOf(m)))+1)];um.innerHTML=RP.FY.map(y=>`<option value="${y}" ${y===cur?'selected':''}>${mFull(y)}</option>`).join('')}
@@ -2496,7 +2508,7 @@ function render(){const el=$('sbStat');if(!el)return;const s=sb();
  const ms=$('sbMonth');if(ms){ms.innerHTML=S.months.map(y=>`<option value="${y}" ${y===selM()?'selected':''}>${mFull(y)}</option>`).join('')}
  const vt=$('sbTabs');if(vt)vt.innerHTML=VIEWS.map(([k,l])=>`<button class="${S.view===k?'on':''}" onclick="SBX.setView('${k}')">${l}</button>`).join('');
  const vw=$('sbView');if(!vw)return;if(!S.ok||!S.months.length){vw.innerHTML='<div class="hint">Data load hone ke baad reports yahan dikhengi.</div>';return}
- const sel=selM(),w=S.view,h=w==='dm'?tblHTML(build('month','div',sel)):w==='sm'?tblHTML(build('month','sd',sel)):w==='dp'?tblHTML(build('prog','div',sel)):w==='sp'?tblHTML(build('prog','sd',sel)):w==='op'?tblHTML(build('open','div',sel)):w==='yoy'?tblHTML(yoy(sel)):'<div class="row noprint"><b>Division:</b> <select onchange="SBX.setCh(this.value)">'+['REGION',...DK].map(d=>`<option value="${d}" ${S.chDiv===d?'selected':''}>${d==='REGION'?'Indore Region':LBL[d]}</option>`).join('')+'</select></div>'+chartHTML(S.chDiv,sel);
+ const sel=selM(),w=S.view,h=w==='dm'?tblHTML(build('month','div',sel)):w==='sm'?tblHTML(build('month','sd',sel)):w==='dp'?tblHTML(build('prog','div',sel)):w==='sp'?tblHTML(build('prog','sd',sel)):w==='op'?tblHTML(build('open','div',sel)):w==='om'?tblHTML(posbOff(sel)):w==='yoy'?tblHTML(yoy(sel)):'<div class="row noprint"><b>Division:</b> <select onchange="SBX.setCh(this.value)">'+['REGION',...DK].map(d=>`<option value="${d}" ${S.chDiv===d?'selected':''}>${d==='REGION'?'Indore Region':LBL[d]}</option>`).join('')+'</select></div>'+chartHTML(S.chDiv,sel);
  vw.innerHTML=h;setRender()}
 function setRender(){const el=$('sbMapBox');if(!el)return;const s=sb();
  let h=S.unm.length?'<table class="s2"><tr><th>BO ID / SOL ID</th><th>Division (file)</th><th>Name in file</th><th>Open</th><th>Close</th><th>Add as new office (name / class / sub division)</th><th>OR add its numbers to another ID</th></tr>'+S.unm.map((u,i)=>`<tr><td><b>${esc(u.id)}</b></td><td><b>${esc(LBL[u.div]||u.div)}</b></td><td>${esc(u.name)}</td><td>${u.o}</td><td>${u.c}</td><td><input id="sbn_${i}" value="${esc(u.name)}" style="width:130px"> <select id="sbc_${i}"><option>BO</option><option>SO</option><option>HO</option></select> <select id="sbs_${i}">${(SDT[u.div]||[]).map(x=>`<option>${x[0]}</option>`).join('')}</select> <button class="b sm" onclick="SBX.addOff(${i})">Add</button></td><td><input id="sbi_${i}" placeholder="BO ID / SOL ID" style="width:110px"> <button class="b sm alt" onclick="SBX.merge(${i})">Add numbers</button></td></tr>`).join('')+'</table>':'<div class="hint">No unmapped office in the uploaded files.</div>';
@@ -2509,7 +2521,7 @@ async function add(list){try{await S.ready}catch(e){}if(!S.ok)return alert('Mapp
 function rpRefresh(){try{if($('p-rp').style.display!=='none')rpRender()}catch(e){}}
 const upd=()=>{save();calc();render();rpRefresh()};
 async function init(){S.ready=(async()=>{try{const [m,d,l]=await Promise.all([fetchTxt(U_MAP,'Office mapping'),fetchTxt(U_DAT,'FY data'),fetchTxt(U_LY,'Last year').catch(()=>'')]);S.mst=parseMap(m);S.dat=parseDat(d);S.ly=l?parseLY(l):{};S.ok=true;S.err='';calc()}catch(e){S.ok=false;S.err=e.message}render()})();return S.ready}
-return{init,render,add,xlsx,pages,ppt,calc,
+return{init,render,add,xlsx,pages,ppt,calc,tblHTML,posbOff,
  setSide:(i,v)=>{sb().files[i].side=v;upd()},setDiv:(i,v)=>{sb().files[i].fdiv=v;upd()},del:i=>{sb().files.splice(i,1);upd()},
  reset:()=>{if(!confirm('Saari uploaded POSB files hata dein?'))return;sb().files=[];upd()},
  setView:v=>{S.view=v;render()},setCh:v=>{S.chDiv=v;render()},setM:v=>{sb().selM=v;save();render()},setDay:v=>{sb().upDay=v?String(Math.min(31,Math.max(1,+v))):'';upd()},setUp:v=>{sb().upMonth=v;upd()},
@@ -2524,22 +2536,68 @@ RP.G.rv='Revenue - till the month where ALL verticals have data, and till latest
 {const _rs2=renderSettings;renderSettings=function(){_rs2();SBX.render()}}
 
 /* ===================== Reports tab: section-wise selection for mega PPT / PDF ===================== */
-const RPSEC=[['Daily Reports',['day']],['Revenue Reports',['rv','sum','mon','yoy']],['Article Count Reports',['cnt','yoyc']],['Q1 Vs Q2 Reports (Article Count)',['q']],['POSB Reports',['sb','sbq','sbr','sbc']],['Nil Booking Reports',['bo']]];
+const RPSEC=[['Daily Reports',['day']],['Revenue Reports',['rv','sum','mon','yoy']],['Article Count Reports',['cnt','cnt2','yoyc']],['Q1 Vs Q2 Reports (Article Count)',['q']],['POSB Reports',['sb','sbm','sbq','sbr','sbc']],['Nil Booking Reports',['bo']]];
 function rpSecList(si){return RP.PL.map((p,i)=>[p,i]).filter(x=>RPSEC[si][1].includes(x[0].g))}
-function rpSecRender(){const el=document.getElementById('rpSecCard');if(!el)return;const open=[...el.querySelectorAll('details[open]')].map(d=>d.dataset.k);RP.PL=RP.pages();const c=rpCfg();
- let h='<h3>Mega PPT / PDF - choose sections</h3><div class="hint">Tick the sections you want (open a section to choose single groups or pages). Then press <b>Download selected PPT</b> / <b>PDF</b> - one complete file with the cover and all ticked sections.</div><div class="row"><button class="b sm gray" onclick="rpSecAll(true)">Select all</button><button class="b sm gray" onclick="rpSecAll(false)">Clear all</button><button class="b" onclick="rpPPT()">Download selected PPT</button><button class="b" onclick="rpPDF()">Download selected PDF</button><span class="hint">'+RP.sel().length+' of '+RP.PL.length+' pages selected</span></div>';
- RPSEC.forEach(([nm,gs],si)=>{const ps=rpSecList(si);if(!ps.length)return;const on=ps.filter(x=>!c.ex[RP.pid(x[0])]).length;
-  h+=`<details data-k="s${si}" style="margin:6px 0;border:1px solid #e3e3e3;border-radius:8px;padding:6px 10px"><summary style="cursor:pointer"><label onclick="event.stopPropagation()"><input type="checkbox" ${on===ps.length?'checked':''} onchange="rpSecTog(${si},this.checked)"> <b>${esc(nm)}</b></label> <span class="hint">(${on}/${ps.length} pages)</span> <button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpSecDl('ppt',${si})">PPT</button><button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpSecDl('pdf',${si})">PDF</button></summary>`;
-  gs.forEach(g=>{const gp=ps.filter(x=>x[0].g===g);if(!gp.length)return;const all=gp.every(x=>!c.ex[RP.pid(x[0])]);
-   h+=`<details data-k="g${g}" style="margin:4px 0 4px 18px"><summary style="cursor:pointer"><label onclick="event.stopPropagation()"><input type="checkbox" ${all?'checked':''} onchange="rpGrp2('${g}',this.checked)"> ${esc(RP.G[g]||g)}</label> <span class="hint">(${gp.length})</span> <button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpDlG('ppt','${g}')">PPT</button><button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpDlG('pdf','${g}')">PDF</button></summary><div style="padding-left:22px">`+gp.map(([p,i])=>`<div style="display:flex;align-items:center;gap:8px;padding:2px 0"><label style="min-width:380px"><input type="checkbox" ${c.ex[RP.pid(p)]?'':'checked'} onchange="rpTog(${i},this.checked)"> ${esc(p.t)}</label><button class="b sm" onclick="rpDlP('ppt',${i})">PPT</button><button class="b sm" onclick="rpDlP('pdf',${i})">PDF</button><button class="b sm" onclick="rpDlP('jpg',${i})">JPG</button></div>`).join('')+'</div></details>'});
-  h+='</details>'});
- el.innerHTML=h;open.forEach(k=>{const d=el.querySelector(`details[data-k="${k}"]`);if(d)d.open=true})}
+/* a "division-wise" page = one report per division (Region + each division). Those are bunched into ONE tick box. */
+function pageDiv(p){if(p.pd)return p.pd;if(p.g==='day'&&p.dv&&!/^CMP_/.test(p.dv))return p.dv==='Region Total'?'Region':p.dv;if((p.g==='sum'||p.g==='cnt')&&p.d)return p.d;return null}
+function pageTpl(p){const dv=pageDiv(p);if(!dv)return null;const cand=dv==='Region'?['Indore Region (Total)','Indore Region']:[rpNm(dv),dv];for(const c of cand)if(p.t.includes(c))return p.t.replace(c,'@');return null}
+const rpScope=()=>{const c=rpCfg();return(!c.scope||c.scope==='REGION')?'REGION':c.scope};
+function scopeF(l){const sc=rpScope();return sc==='REGION'?l:l.filter(p=>pageDiv(p)===sc)}
+let RPB=[];
+function rpSecRender(){const el=document.getElementById('rpSecCard');if(!el)return;RP.PL=RP.pages();const c=rpCfg(),sc=rpScope();RPB=[];
+ const th='padding:8px 10px;background:#b3121b;color:#fff;text-align:left;border:1px solid #8c0e15;font-weight:700';
+ let h='<h3>Mega PPT / PDF - select reports section-wise</h3><div style="border:1px solid #e0b000;background:#fffbe6;border-radius:8px;padding:8px 12px;margin:6px 0"><b>1. Which file do you want?</b><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION" '+(sc==='REGION'?'checked':'')+' onchange="rpScopeSet(\'REGION\')"> <b>Region</b> - complete Indore Region file (all ticked reports: Region + all divisions)</label></div><div><label><input type="radio" name="rsScope" value="DIV" '+(sc!=='REGION'?'checked':'')+' onchange="rpScopeSet(document.getElementById(\'rsDiv\').value)"> <b>Specific division</b> - only that division\'s reports: </label><select id="rsDiv" onchange="rpScopeSet(this.value)">'+RP.DV.map(d=>`<option value="${d}" ${sc===d?'selected':''}>${esc(d)}</option>`).join('')+'</select></div><div class="hint" style="margin-top:4px">In a division file only the division-wise reports of that division are included (cover shows the division name). Region-wide tables that list all divisions together are left out.</div></div>'+
+ '<b>2. Tick the reports</b><div class="hint">Division-wise reports (one report for every division) are bunched in one tick - tick it to take that report for all divisions (or only for the chosen division), untick to leave it out.</div><div class="row" style="margin:8px 0"><button class="b sm gray" onclick="rpSecAll(true)">Select all</button><button class="b sm gray" onclick="rpSecAll(false)">Clear all</button><button class="b" onclick="rpPPT()">Download selected PPT</button><button class="b" onclick="rpPDF()">Download selected PDF</button><b id="rsAll" style="margin-left:8px"></b></div>';
+ h+='<table style="border-collapse:collapse;width:100%;font:13px Arial"><tr><td style="'+th+';width:230px">Section</td><td style="'+th+'">Reports in the section (tick = included)</td></tr>';
+ RPSEC.forEach(([nm,gs],si)=>{const ps=rpSecList(si);if(!ps.length)return;
+  h+=`<tr style="vertical-align:top"><td style="border:1px solid #bbb;padding:8px 10px;background:#fff7e0"><label style="font-weight:700;font-size:14px"><input type="checkbox" id="rsk${si}" onchange="rpSecTog(${si},this.checked)"> ${esc(nm)}</label><div class="hint" id="rsc${si}" style="margin:4px 0"></div><div style="display:flex;flex-wrap:wrap;gap:4px"><button class="b sm gray" onclick="rpSecTog(${si},true)">Select all</button><button class="b sm gray" onclick="rpSecTog(${si},false)">Clear all</button><button class="b sm" onclick="rpSecDl('ppt',${si})">PPT</button><button class="b sm" onclick="rpSecDl('pdf',${si})">PDF</button></div></td><td style="border:1px solid #bbb;padding:8px 10px"><div style="max-height:360px;overflow:auto">`;
+  gs.forEach(g=>{const gp=ps.filter(x=>x[0].g===g);if(!gp.length)return;const items=[],byT={};
+   gp.forEach(([p,i])=>{const t=pageTpl(p);if(t){const k=g+'|'+t;if(!byT[k]){byT[k]={tpl:t,idx:[],names:[]};items.push(byT[k])}byT[k].idx.push(i);byT[k].names.push(p.t)}else items.push({tpl:null,idx:[i],names:[p.t],one:p})});
+   h+=`<div style="margin:2px 0 4px;padding:3px 6px;background:#f3f3f3;border-left:4px solid #fdb913"><label><input type="checkbox" id="rgk_${g}" onchange="rpGrp2('${g}',this.checked)"> <b>${esc(RP.G[g]||g)}</b></label></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:3px 14px;margin:0 0 8px 14px">`+items.map(it=>{const k=RPB.push(it.idx)-1,lbl=it.tpl?(it.tpl==='@'?'Day-wise report of each division':esc(it.tpl).replace('@','&lt;each division&gt;'))+` <span class="hint">(division wise - ${it.idx.length} reports)</span>`:esc(it.one.t)+' <span class="hint rsReg" style="display:none">(region-wide table - not in a division file)</span>';
+    return `<label title="${esc(it.names.join(' | '))}" style="display:flex;gap:6px;align-items:flex-start"><input type="checkbox" id="rb${k}" ${it.idx.every(i=>!c.ex[RP.pid(RP.PL[i])])?'checked':''} onchange="rpTogB(${k},this.checked)"> <span>${lbl}</span></label>`}).join('')+'</div>'});
+  h+='</div></td></tr>'});
+ el.innerHTML=h+'</table>';rpSecCnt()}
+function rpSecCnt(){const c=rpCfg(),sc=rpScope();let tot=0,on=0;
+ RPSEC.forEach(([nm,gs],si)=>{const ps=rpSecList(si),n=ps.filter(x=>!c.ex[RP.pid(x[0])]).length;tot+=ps.length;on+=n;
+  const e=document.getElementById('rsc'+si);if(e)e.textContent=n+' of '+ps.length+' reports ticked';
+  const k=document.getElementById('rsk'+si);if(k){k.checked=ps.length>0&&n===ps.length;k.indeterminate=n>0&&n<ps.length}
+  gs.forEach(g=>{const gp=ps.filter(x=>x[0].g===g),m=gp.filter(x=>!c.ex[RP.pid(x[0])]).length,q=document.getElementById('rgk_'+g);if(q){q.checked=gp.length>0&&m===gp.length;q.indeterminate=m>0&&m<gp.length}})});
+ RPB.forEach((idx,k)=>{const q=document.getElementById('rb'+k);if(!q)return;const m=idx.filter(i=>!c.ex[RP.pid(RP.PL[i])]).length;q.checked=m===idx.length;q.indeterminate=m>0&&m<idx.length});
+ document.querySelectorAll('.rsReg').forEach(x=>x.style.display=sc==='REGION'?'none':'inline');
+ const a=document.getElementById('rsAll');if(a)a.textContent=RP.sel().length+' reports will go in the '+(sc==='REGION'?'Region':sc+' division')+' file ('+on+' of '+tot+' ticked)'}
+function rpTogB(k,on){const c=rpCfg();RPB[k].forEach(i=>{const id=RP.pid(RP.PL[i]);if(on)delete c.ex[id];else c.ex[id]=1});NB.save();rpSecCnt()}
+function rpScopeSet(v){const c=rpCfg();c.scope=v||'REGION';NB.save();const r=document.querySelector('input[name=rsScope][value='+(c.scope==='REGION'?'REGION':'DIV')+']');if(r)r.checked=true;rpSecCnt()}
 function rpSecTog(si,on){const c=rpCfg();rpSecList(si).forEach(x=>{if(on)delete c.ex[RP.pid(x[0])];else c.ex[RP.pid(x[0])]=1});NB.save();rpSecRender()}
 function rpGrp2(g,on){const c=rpCfg();RP.PL.filter(p=>p.g===g).forEach(p=>{if(on)delete c.ex[RP.pid(p)];else c.ex[RP.pid(p)]=1});NB.save();rpSecRender()}
 function rpSecAll(on){const c=rpCfg();RP.PL.forEach(p=>{if(on)delete c.ex[RP.pid(p)];else c.ex[RP.pid(p)]=1});NB.save();rpSecRender()}
-function rpSecDl(k,si){const c=rpCfg(),l=rpSecList(si).map(x=>x[0]).filter(p=>!c.ex[RP.pid(p)]);if(!l.length)return alert('No page is ticked in this section');const n=RPSEC[si][0].replace(/[^\w]+/g,'_');return k==='ppt'?rpPPT(l,n):rpPDF(l,n)}
+function rpSecDl(k,si){const sc=rpScope(),l=scopeF(rpSecList(si).map(x=>x[0]).filter(p=>!rpCfg().ex[RP.pid(p)]));if(!l.length)return alert('No report is ticked in this section for the chosen '+(sc==='REGION'?'Region':sc+' division'));const n=RPSEC[si][0].replace(/[^\w]+/g,'_')+(sc==='REGION'?'':'_'+sc.replace(/\W+/g,'_'));return k==='ppt'?rpPPT(l,n):rpPDF(l,n)}
 {const _rr=rpRender;rpRender=function(){_rr.apply(this,arguments);try{rpSecRender()}catch(e){console.error(e)}}}
 
+
+/* ===== Article count: per BO / per office average reports (Sub Division wise) + page ordering by section ===== */
+RP.G.cnt2='Article count - per BO / per office average (Sub Division wise)';
+RP.G.sbm='POSB - offices >10 opening, NIL offices, open / close / net (Sub Division wise, month-wise)';
+const CNT_AVG={boA:['Per BO Article Count (average)',['BO'],0],boP:['Per BO Parcel Count (average)',['BO'],1],ofA:['Per Office Article Count (average)',['BO','SO','HO'],0],ofP:['Per Office Parcel Count (average)',['BO','SO','HO'],1]};
+function cntAvgMonths(){return NB.months().filter(m=>RP.FY.includes(m))}
+function cntAvgBuild(kind){const [ttl,cls,par]=CNT_AVG[kind],ms=cntAvgMonths(),V={};ms.forEach(m=>V[m]=NB.vals(m));
+ const G={};for(const id in NB_OFF){const [nm,cl,sd,dv]=NB_OFF[id];if(!cls.includes(cl)||dv==='ID DIVISION'||!NB.act(id))continue;
+  const g=((G[dv]=G[dv]||{})[sd]=G[dv][sd]||{n:0,m:{}});g.n++;ms.forEach(m=>{const v=V[m][id];g.m[m]=(g.m[m]||0)+(v?(par?v[4]:v[0]+v[2]+v[4]+v[6]):0)})}
+ const tc=x=>String(x).toLowerCase().replace(/(^|[\s.])\S/g,c=>c.toUpperCase()),dvn=d=>RP.DMAP[d]||tc(d);
+ const line=(lead,n,m,k,g)=>{const a=ms.map(x=>n?(m[x]||0)/n:null),cum=n?ms.reduce((t,x)=>t+(m[x]||0),0)/n:null;return{k,g,c:[...lead,...a,cum]}};
+ const rows=[],RT={n:0,m:{}};
+ NB.DIVO.forEach(dv=>{const sds=G[dv];if(!sds)return;const DT_={n:0,m:{}};
+  Object.keys(sds).sort().forEach(sd=>{const g=sds[sd];DT_.n+=g.n;ms.forEach(x=>DT_.m[x]=(DT_.m[x]||0)+(g.m[x]||0));rows.push(line([dvn(dv),tc(sd)],g.n,g.m,undefined,dv))});
+  RT.n+=DT_.n;ms.forEach(x=>RT.m[x]=(RT.m[x]||0)+(DT_.m[x]||0));rows.push(line(['Total '+dvn(dv),''],DT_.n,DT_.m,'tot',dv))});
+ rows.push(line(['Indore Region',''],RT.n,RT.m,'grand'));
+ const c=rpCfg(),last=ms[ms.length-1],what=par?'parcels':'articles',unit=cls.length===1?'BOs':'offices (BO + SO + HO)';
+ return{title:ttl+' - Sub Division wise',sub:`${c.title} | ${c.badge} | April-2026 to ${last?mFull(last):'-'}`,head:['Division','Sub-Division',...ms.map(rpMn),'Cumulative Average'],pc:[],neg:[],dec:2,fw:[1.3,1.9],span:true,rows,
+  note:`Monthly average = total ${what} booked in the month / number of ${unit} in the Sub Division  |  Cumulative average = total ${what} from April to ${last?mFull(last):'-'} / number of ${unit} (= sum of the monthly averages)  |  Source: office-wise data (Nil Booking upload)`}}
+function cntAvgPages(){if(!cntAvgMonths().length)return[];return Object.keys(CNT_AVG).map(k=>({g:'cnt2',t:CNT_AVG[k][0]+' - Sub Division wise',sb:'tbl',build:()=>cntAvgBuild(k),html:()=>SBX.tblHTML(cntAvgBuild(k))}))}
+{const _pg=RP.pages;RP.pages=function(){const P=_pg.apply(this,arguments);try{cntAvgPages().forEach(x=>P.push(x))}catch(e){console.error(e)}
+ const ord=g=>{const i=RPSEC.findIndex(x=>x[1].includes(g));return i<0?99:i};return P.map((p,i)=>[p,i]).sort((a,b)=>ord(a[0].g)-ord(b[0].g)||a[1]-b[1]).map(x=>x[0])}}
+
+{const _s=RP.sel;RP.sel=()=>scopeF(_s())}
+{const wrap=n=>{const o=window[n];window[n]=async function(sel,fn){const c=rpCfg(),sc=rpScope();if(sc==='REGION'||sel)return o.call(this,sel,fn);const t=c.title;c.title=rpNm(sc);try{return await o.call(this,sel,fn)}finally{c.title=t}}};wrap('rpPPT');wrap('rpPDF')}
 </script>
 </body>
 </html>
