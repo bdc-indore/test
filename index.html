@@ -107,6 +107,17 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 .gmt{border-collapse:collapse;font-size:12.5px;width:100%}.gmt th,.gmt td{border:1px solid #e1e4ea;padding:3px;vertical-align:middle}.gmt input[type=text],.gmt input[type=number]{width:100%;min-width:70px}.gmt input[type=color]{width:28px;height:22px;padding:0}
 #gdlg .box{width:760px}
 .pmel .rz{width:16px;height:16px;right:-9px;bottom:-9px}
+
+.d0w{overflow-x:auto;max-width:100%}
+.d0t{border-collapse:collapse;font-size:12.5px;background:#fff;min-width:100%}
+.d0t th,.d0t td{border:1px solid #dfe3ea;padding:5px 8px;white-space:nowrap}
+.d0t th{background:#b3121b;color:#fff;font-weight:600;text-align:center;position:sticky;top:0}
+.d0t td.n{text-align:right;font-variant-numeric:tabular-nums}
+.d0t tr.tot td{background:#fdf1d0;font-weight:700}
+.d0t tr.grand td{background:#fdb913}
+.d0t .ov{border-left:2px solid #b3121b}
+.d0t td.hl{background:#fde8e8;font-weight:700}
+.d0h{margin:16px 0 6px;color:#8f0e15;font-size:14px}
 </style>
 </head>
 <body>
@@ -118,6 +129,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <button class="tabbtn on" id="t-report" onclick="showTab('report')">Report</button>
   <button class="tabbtn" id="t-tgt" style="display:none" onclick="showTab('tgt')">Target vs Achievement</button>
   <button class="tabbtn" id="t-upload" onclick="showTab('upload')">Upload</button>
+  <button class="tabbtn" id="t-d0" onclick="showTab('d0')">D+0 Reports</button>
   <button class="tabbtn" id="t-sb" onclick="showTab('sb')">POSB Upload</button>
   <button class="tabbtn" id="t-ppt" onclick="showTab('ppt')">Presentation Maker</button>
   <button class="tabbtn" id="t-rp" onclick="showTab('rp')">Reports, PPT &amp; PDF</button>
@@ -155,6 +167,32 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div id="tgtBox"></div>
 </section>
 
+
+<!-- ============ D+0 REPORTS ============ -->
+<section id="p-d0" style="display:none">
+  <div class="card noprint">
+    <h3>D+0 Reports – Division / SO / HO / BO</h3>
+    <div class="row" id="d0Views">
+      <button class="b sm gray" data-v="div" onclick="D0.view('div')">Division monthly</button>
+      <button class="b sm gray" data-v="so_rts" onclick="D0.view('so_rts')">SO / HO – highest %(RTS+Return)</button>
+      <button class="b sm gray" data-v="so_act" onclick="D0.view('so_act')">SO / HO – lowest % Total Actioned</button>
+      <button class="b sm gray" data-v="bo_rts" onclick="D0.view('bo_rts')">BO – highest %(RTS+Return)</button>
+      <button class="b sm gray" data-v="bo_act" onclick="D0.view('bo_act')">BO – lowest % Total Actioned</button>
+    </div>
+    <div class="row" id="d0Basis"><b>Basis:</b>
+      <button class="b sm gray" data-b="all" onclick="D0.basis('all')">All (Parcel + Mail Ops)</button>
+      <button class="b sm gray" data-b="p" onclick="D0.basis('p')">Parcel</button>
+      <button class="b sm gray" data-b="m" onclick="D0.basis('m')">Mail Ops</button>
+      <span class="hint">Min received (RTS lists): <input type="number" id="d0MinR" value="10" min="0" style="width:60px" onchange="D0.draw()"> (Actioned lists): <input type="number" id="d0MinA" value="1" min="0" style="width:60px" onchange="D0.draw()"></span>
+    </div>
+    <div class="row"><button class="b sm" onclick="D0.xl()">Download Excel (this view)</button><button class="b sm alt" onclick="D0.csv()">Download D+0 CSV (Ind - D format)</button><button class="b sm gray" onclick="window.print()">Print</button>
+      <label class="b sm gray">Load month CSV manually<input type="file" id="d0Man" accept=".csv,.xlsx" hidden onchange="D0.manual(this.files[0])"></label>
+      <select id="d0ManMonth"></select><button class="b sm gray" onclick="D0.fetchMonths()">Reload monthly CSVs</button>
+      <span class="hint" id="d0Status"></span></div>
+  </div>
+  <div class="card" id="d0Out"></div>
+</section>
+
 <!-- ============ UPLOAD ============ -->
 <section id="p-upload" style="display:none">
   <div class="card">
@@ -188,7 +226,11 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   </div>
 <div class="card"><h3>3) SB / PLI / CCS revenue CSV</h3><div class="row"><label class="b">Choose CSV file<input type="file" id="rpSBf" accept=".csv" hidden onchange="rpSB(this.files[0])"></label> <button class="b gray" onclick="rpSBreset()">Restore built-in</button></div><div class="hint">Format: DIVISON, VERTICAL, TARGET (26-27), April-26, May-26 &hellip; (any number of months).</div><div id="rpMsg"></div></div>
 <div class="card"><h3>4) Target tables (optional)</h3><div class="row"><label class="b gray">Revenue target + achievement CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'rev')"></label><label class="b gray">Article count target CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'cnt')"></label><button class="b gray" onclick="resetTgt()">Restore built-in tables</button></div></div>
-<div class="card"><h3>5) Last year data (Apr-25 to Mar-26) &ndash; for this year vs last year comparison</h3><div class="row"><label class="b">Last year REVENUE file (xlsx / csv)<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="lyUpload(this.files[0],'rev');this.value=''"></label><label class="b alt">Last year ARTICLE COUNT file (xlsx / csv)<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="lyUpload(this.files[0],'cnt');this.value=''"></label><button class="b gray" onclick="lyReset()">Restore built-in</button></div><div class="hint">The month of every column is read from its heading (e.g. "Achievement in april 25", or a date such as 01-Jan-2026), so the files can be uploaded as they are. Revenue file: Division, Vertical (MO, Parcel, IRGB, POSB, PLI/RPLI), monthly revenue in crore. Count file: Division, Vertical (MO, PARCEL, IRGB), monthly article count. Last-year data is already built in; upload only to replace it.</div><div id="lyMsg"></div></div></section>
+<div class="card"><h3>5) Last year data (Apr-25 to Mar-26) &ndash; for this year vs last year comparison</h3><div class="row"><label class="b">Last year REVENUE file (xlsx / csv)<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="lyUpload(this.files[0],'rev');this.value=''"></label><label class="b alt">Last year ARTICLE COUNT file (xlsx / csv)<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="lyUpload(this.files[0],'cnt');this.value=''"></label><button class="b gray" onclick="lyReset()">Restore built-in</button></div><div class="hint">The month of every column is read from its heading (e.g. "Achievement in april 25", or a date such as 01-Jan-2026), so the files can be uploaded as they are. Revenue file: Division, Vertical (MO, Parcel, IRGB, POSB, PLI/RPLI), monthly revenue in crore. Count file: Division, Vertical (MO, PARCEL, IRGB), monthly article count. Last-year data is already built in; upload only to replace it.</div><div id="lyMsg"></div></div><div class="card"><h3>5) D+0 report upload (table file)</h3>
+  <div class="row"><label class="b">Choose "table" file (.xlsx / .csv)<input type="file" id="d0File" accept=".xlsx,.xls,.csv" hidden onchange="D0.pick(this.files[0])"></label>
+  <span class="hint">Office-wise D+0 file (Received, Same Day Invoiced, D0 Delivered / Redirected / Returned by product category). Parcel categories come from the mapping, everything else is counted as Mail Ops. Class / Sub Division / Division come from the office master. After upload you are asked the date, then a CSV in the "Ind - D" format can be downloaded and the D+0 Reports tab is filled.</span></div>
+  <div id="d0UpMsg"></div></div>
+</section>
 
 <!-- ============ POSB (SB) ============ -->
 <section id="p-sb" style="display:none">
@@ -492,7 +534,7 @@ function frontSheet(wb){const v=visSheets(wb),w=wb.Workbook&&wb.Workbook.WBView&
 
 /* ===================== TABS ===================== */
 function showTab(t){
-  ['report','tgt','upload','sb','ppt','rp','settings'].forEach(x=>{
+  ['report','tgt','upload','d0','sb','ppt','rp','settings'].forEach(x=>{
     document.getElementById('p-'+x).style.display=x===t?'':'none';
     document.getElementById('t-'+x).classList.toggle('on',x===t);
   });
@@ -500,6 +542,7 @@ function showTab(t){
   if(t==='settings')renderSettings();
   if(t==='tgt'){renderTgt();nbFillMs()}
   if(t==='rp')rpRender();
+  if(t==='d0'&&window.D0)D0.open();
   if(t==='sb'&&window.SBX)SBX.render();
   if(t==='ppt'&&window.PM)PM.draw();
 }
@@ -2213,7 +2256,7 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
     R_=R_.filter((r,i)=>r.cls==='base'||r.cls==='tot'||i<=lastD);
     const hasBase=R_.some(r=>r.cls==='base'),s=sl(nm+' - Day-wise Report ('+mFull(pg.mo)+')','Articles booked (MO, Parcel'+(irg?', IRGB':'')+') and Aadhaar transactions | '+RP.sub());
     const fv=v=>v===''||v==null?'':(typeof v==='number'?f0(v):String(v));
-    const two=R_.length>19,per=two?Math.ceil(R_.length/2):R_.length,parts=[R_.slice(0,per),R_.slice(per)].filter(a=>a.length),gap=.3,tw=two?(TW-gap)/2:Math.min(TW,10),fs=two?9:10,rH=Math.min(.3,(6.95-1.5-.72)/per);
+    const two=R_.length>19,per=two?Math.ceil(R_.length/2):R_.length,parts=[R_.slice(0,per),R_.slice(per)].filter(a=>a.length),gap=.3,tw=two?(TW-gap)/2:Math.min(TW,10),fs=two?10:11,rH=Math.min(.3,(6.95-1.5-.72)/per);
     parts.forEach((pt,k)=>{const x0=two?TX+k*(tw+gap):TX+(TW-tw)/2,cw=[.95,...Array(n-1).fill((tw-.95)/(n-1))];
      const g1=[cell('NAME OF DIVISION: '+nm.toUpperCase(),{bold:true,color:'FFFFFF',fill:{color:'8F0E15'},fontSize:9,colspan:n-3,align:'left'}),cell('AADHAAR',{bold:true,color:'222222',fill:{color:YEL},fontSize:9,colspan:3})];
      const g2=head.map((h,j)=>j>=n-3?cell(String(h),{bold:true,color:'222222',fill:{color:YEL},fontSize:8}):hd(h,8));
@@ -2222,14 +2265,14 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
     note(s,7.02,(hasBase?'Yellow row = same month last year  |  ':'')+'Red date = very few SOs reported that day  |  Per day average = Total transactions ÷ Machines ÷ days')}
    continue}
   if(pg.canvas){const c=pg.canvas(),s=p.addSlide(),k=Math.min(12.9/c.width,7.1/c.height);s.addImage({data:c.toDataURL('image/jpeg',.92),x:(13.33-c.width*k)/2,y:(7.5-c.height*k)/2,w:c.width*k,h:c.height*k});continue}
-  if(pg.g==='sum'){const r=RP.sumData(pg.d),s=sl(rpNm(pg.d)+' - Target vs Achievement (Rs. crore)',RP.sub()),nc=7+RP.ML.length,fs=nc>17?8:nc>14?9:10,
+  if(pg.g==='sum'){const r=RP.sumData(pg.d),s=sl(rpNm(pg.d)+' - Target vs Achievement (Rs. crore)',RP.sub()),nc=7+RP.ML.length,fs=nc>17?10:nc>14?11:12,
     rows=[[hd('Vertical',fs),hd('Yearly Target',fs),hd('Monthly Target',fs),hd('Cumulative Target',fs),...RP.ML.map(m=>hd(rpMn(m),fs)),hd('Total Achievement',fs),hd('% Ach (Prop.)',fs),hd('% Ach (Total)',fs)]];
    r.forEach((x,i)=>{const mk=(v,o={})=>x.tot_?tt(v,Object.assign({fontSize:fs},o)):bd(v,i,Object.assign({fontSize:fs},o)),vk=RP.VS[i];
     rows.push([mk(x.n,{align:'left',bold:true}),mk(f3(x.t)),mk(f3(x.mt)),mk(f3(x.cum)),...x.m.map((v,k)=>mk(v==null||(vk&&RP.ML[k]>(RP.last[vk]||''))?'-':f3(v))),mk(f3(x.tot),{bold:true}),mk(x.pp,bandO(bandHi(parseFloat(x.pp)))),mk(x.pt,{bold:true})])});
    const nm=RP.ML.length,fx=[1.3,1,1,1.15,1.2,.95,.95],fsum=fx.reduce((a,b)=>a+b,0),sc=Math.min(1,(TW-.55*nm)/fsum),mw=(TW-fsum*sc)/nm,f=fx.map(v=>v*sc),
     y=grid(s,rows,[f[0],f[1],f[2],f[3],...Array(nm).fill(mw),f[4],f[5],f[6]],.6,.46,1.5);
    note(s,y+.12,'% Ach (Prop.) = achievement vs target up to date:  Green ≥ '+HI+'%  |  Orange '+LO+'–'+HI+'%  |  Red < '+LO+'%')}
-  else if(pg.g==='mon'){const R=RP.D.rev[pg.v],L=RP.ML.filter(m=>m<=(RP.last[pg.v]||'')),n=L.length,lmn=RP.last[pg.v]?mFull(RP.last[pg.v]):'',s=sl('Division-wise Revenue - '+rpVn(pg.v)+' (Rs. crore)','Yearly, monthly & cumulative target, month-wise revenue and % achievement | '+RP.sub()),fs=n>8?8:n>6?9:10,
+  else if(pg.g==='mon'){const R=RP.D.rev[pg.v],L=RP.ML.filter(m=>m<=(RP.last[pg.v]||'')),n=L.length,lmn=RP.last[pg.v]?mFull(RP.last[pg.v]):'',s=sl('Division-wise Revenue - '+rpVn(pg.v)+' (Rs. crore)','Yearly, monthly & cumulative target, month-wise revenue and % achievement | '+RP.sub()),fs=n>8?10:n>6?11:12,
     rows=[[hd('Division',fs),hd('Yearly Target',fs),hd('Monthly Target',fs),hd('Cumulative Target',fs),...L.map(m=>hd(rpMn(m),fs)),hd('Total Revenue',fs),hd('% Ach (Cumulative Target)',fs),hd('% Ach (Yearly Target)',fs)]];
    [...RP.DV,'Region'].forEach((d,i)=>{const o=R[d],mt=o.t/12,cum=mt*n,reg=d==='Region',mk=(v,o2={})=>reg?tt(v,Object.assign({fontSize:fs},o2)):bd(v,i,Object.assign({fontSize:fs},o2));let ta=0;
     const mc=L.map(m=>{const a=o.m[m]||0;ta+=a;return mk(f3(a))});
@@ -2351,8 +2394,8 @@ function calc(){if(!S.ok)return;const s=sb(),offs={};
  S.recs=Object.values(offs);S.months=[...new Set([...S.dat.months,...(up?[up]:[])])].sort();
  if(!S.months.includes(s.selM))s.selM='';}
 const selM=()=>sb().selM||S.months[S.months.length-1]||'';
-function agg(by){const G={};S.recs.forEach(r=>{if(!SDT[r.div])return;const k=by==='div'?r.div:r.div+'|'+r.sd;const g=G[k]=G[k]||{div:r.div,sd:by==='sd'?r.sd:'',n:0,m:{}};g.n++;S.months.forEach(y=>{const v=r.m[y];if(!v)return;const a=g.m[y]=g.m[y]||{o:0,c:0,n:0};a.o+=v.o;a.c+=v.c;a.n+=v.n;a.hi=(a.hi||0)+(v.o>10?1:0);a.nil=(a.nil||0)+(v.o===0?1:0)})});return G}
-function sumG(gs){const m={};S.months.forEach(y=>{let a=null;gs.forEach(g=>{const v=g&&g.m[y];if(v){a=a||{o:0,c:0,n:0};a.o+=v.o;a.c+=v.c;a.n+=v.n;a.hi=(a.hi||0)+(v.hi||0);a.nil=(a.nil||0)+(v.nil||0)}});if(a)m[y]=a});return{m}}
+function agg(by){const G={};S.recs.forEach(r=>{if(!SDT[r.div])return;const k=by==='div'?r.div:r.div+'|'+r.sd;const g=G[k]=G[k]||{div:r.div,sd:by==='sd'?r.sd:'',n:0,m:{}};g.n++;const isBO=r.cls==='BO';if(isBO)g.nb=(g.nb||0)+1;S.months.forEach(y=>{const v=r.m[y];if(!v)return;const a=g.m[y]=g.m[y]||{o:0,c:0,n:0};a.o+=v.o;a.c+=v.c;a.n+=v.n;a.hi=(a.hi||0)+(isBO&&v.o>10?1:0);a.nil=(a.nil||0)+(isBO&&v.o===0?1:0)})});return G}
+function sumG(gs){const m={};S.months.forEach(y=>{let a=null;gs.forEach(g=>{const v=g&&g.m[y];if(v){a=a||{o:0,c:0,n:0};a.o+=v.o;a.c+=v.c;a.n+=v.n;a.hi=(a.hi||0)+(v.hi||0);a.nil=(a.nil||0)+(v.nil||0)}});if(a)m[y]=a});return{m,nb:gs.reduce((t,g)=>t+((g&&g.nb)||0),0)}}
 const pctOf=(a,b)=>(a==null||!(b>0))?null:a*100/b;
 const FYI=y=>RP.FY.indexOf(y)+1;
 function cells(kind,items,sel){const ms=S.months.filter(m=>m<=sel),k=FYI(sel),pick=f=>ms.map(m=>{let s=null;items.forEach(it=>{const v=it.g&&it.g.m[m];if(v)s=(s||0)+v[f]});return s});
@@ -2470,24 +2513,24 @@ function ppt(pg,X){const {p,sl,note,TW,TX}=X;
   [['Total Target (till '+rpMn(pg.sel)+')',f0(k.tt),'B3121B'],['Total Net Addition',f0(k.ta),'FDB913'],['Achievement % of Target',k.pct==null?'-':k.pct.toFixed(1)+'%','1B6B2F'],['Shortfall (Target - Achievement)',f0(k.sh),'B3121B']].forEach((x,i)=>{const y=1.5+i*1.35;s.addShape(p.ShapeType.rect,{x:9.2,y,w:3.6,h:1.15,fill:{color:'F5F5F5'}});s.addShape(p.ShapeType.rect,{x:9.2,y,w:3.6,h:.07,fill:{color:x[2]}});s.addText(x[0],{x:9.3,y:y+.12,w:3.4,h:.3,fontSize:11,color:'555555',fontFace:'Arial'});s.addText(x[1],{x:9.3,y:y+.45,w:3.4,h:.55,fontSize:24,bold:true,fontFace:'Arial'})});return}
  const T=pg.build();
  if(T.parts){const s=sl(T.title,T.sub),tw=T.chart?7.7:TW;let y=1.35;const rH=T.parts.length===1?.24:.22;
-  T.parts.forEach(pt=>{s.addText(pt.label,{x:TX,y,w:tw,h:.22,fontSize:10,bold:true,color:'B3121B',fontFace:'Arial',margin:0});y=tblPPT(X,s,Object.assign({span:0},pt),pt.rows,TX,y+.24,tw,.26,rH,pt.head.length>12?7:8)+.06});
+  T.parts.forEach(pt=>{s.addText(pt.label,{x:TX,y,w:tw,h:.22,fontSize:10,bold:true,color:'B3121B',fontFace:'Arial',margin:0});y=tblPPT(X,s,Object.assign({span:0},pt),pt.rows,TX,y+.24,tw,.26,rH,pt.head.length>12?9:10)+.06});
   note(s,Math.min(y+.04,7.05),T.note);
   if(T.chart)s.addChart(p.charts.BAR,[{name:'Net addition',labels:T.chart.labels,values:T.chart.values}],{x:8.5,y:1.35,w:4.4,h:5.6,barDir:'bar',catAxisOrientation:'maxMin',chartColors:T.chart.colors,showLegend:false,showValue:true,dataLabelFontSize:7,catAxisLabelFontSize:7,valAxisHidden:true,valGridLine:{style:'none'}});return}
- const nc=T.head.length,fs=nc>18?7:nc>14?8:nc>10?9:10,chunks=[];
- if(T.span){let cur=[];const CAP=13,grp=[];T.rows.forEach(r=>{if(r.k==='grand'){grp.push({rows:[r],grand:1});return}const l=grp[grp.length-1];if(l&&!l.grand&&l.g===r.g)l.rows.push(r);else grp.push({g:r.g,rows:[r]})});
+ const nc=T.head.length,fs=nc>14?10:nc>10?11:12,chunks=[];
+ if(T.span){let cur=[];const CAP=10,grp=[];T.rows.forEach(r=>{if(r.k==='grand'){grp.push({rows:[r],grand:1});return}const l=grp[grp.length-1];if(l&&!l.grand&&l.g===r.g)l.rows.push(r);else grp.push({g:r.g,rows:[r]})});
   grp.forEach(x=>{if(cur.length&&cur.length+x.rows.length>CAP){chunks.push(cur);cur=[]}cur=cur.concat(x.rows)});if(cur.length)chunks.push(cur)}else chunks.push(T.rows);
- chunks.forEach((ch,ci)=>{const s=sl(T.title+(chunks.length>1?' ('+(ci+1)+'/'+chunks.length+')':''),T.sub),y=tblPPT(X,s,T,ch,TX,1.5,TW,T.heads?.8:.62,ch.length>10?.34:.46,fs);note(s,Math.min(y+.12,6.78),T.note)})}
+ chunks.forEach((ch,ci)=>{const s=sl(T.title+(chunks.length>1?' ('+(ci+1)+'/'+chunks.length+')':''),T.sub),y=tblPPT(X,s,T,ch,TX,1.5,TW,T.heads?.9:(nc>12?.85:.62),ch.length>8?.4:.5,fs);note(s,Math.min(y+.12,6.78),T.note)})}
 /* POSB: offices opening >10 accounts, NIL offices, open/close/net, shortfall - Sub Division wise, one report per month */
 function posbOff(y){const k=FYI(y),ms=S.months.filter(m=>m<=y);
  const rows=rowsFor('sd',its=>{let hi=null,nl=null,o=null,c=null,n=null;
   its.forEach(it=>{const v=it.g&&it.g.m[y];if(v){hi=(hi||0)+(v.hi||0);nl=(nl||0)+(v.nil||0);o=(o||0)+v.o;c=(c||0)+v.c;n=(n||0)+v.n}});
   const t=its.reduce((a,i)=>a+Math.round(i.fy/12),0),ct=its.reduce((a,i)=>a+Math.round(i.fy*k/12),0);let cn=0;
   ms.forEach(m=>its.forEach(it=>{const v=it.g&&it.g.m[m];if(v)cn+=v.n}));
-  return[hi,nl,o,c,n,t,n==null?null:Math.max(t-n,0),cn,ct,Math.max(ct-cn,0)]},{sd:sdn});
- return{title:'POSB - Offices opening >10 accounts, NIL offices, Account Open / Close / Net Addition - Sub Division wise ('+mFull(y)+')',sub:subT(y)+partialTxt(y),
-  head:['Division','Sub-Division','Offices opening >10 POSB A/c','NIL A/c opening offices','Total A/c Opened (month)','Total A/c Closed (month)','Net Addition (month)','Monthly Target','Monthly Shortfall','Cumulative Net Addition','Cumulative Target','Cumulative Shortfall'],
-  pc:[],neg:[6,9],fw:[1.3,1.9],span:true,rows,
-  note:'Offices opening >10 = offices that opened MORE than 10 POSB accounts in the month (gross opening, not net addition)  |  NIL = offices with 0 accounts opened  |  Net = Opened - Closed  |  Monthly target = FY target / 12, Shortfall = Target - Net (0 if achieved)  |  Cumulative = April to '+mFull(y)+', cumulative target = FY target x '+k+'/12'}}
+  const nbo=its.reduce((q,i)=>q+((i.g&&i.g.nb)||0),0);return[nbo,hi,nl,o,c,n,t,n==null?null:Math.max(t-n,0),cn,ct,Math.max(ct-cn,0)]},{sd:sdn});
+ return{title:'POSB - BOs opening >10 accounts, NIL BOs, Account Open / Close / Net Addition - Sub Division wise ('+mFull(y)+')',sub:subT(y)+partialTxt(y),
+  head:['Division','Sub-Division','Total BO','BOs opening >10 POSB A/c','NIL A/c opening BOs','Total A/c Opened (month)','Total A/c Closed (month)','Net Addition (month)','Monthly Target','Monthly Shortfall','Cumulative Net Addition','Cumulative Target','Cumulative Shortfall'],
+  pc:[],neg:[7,10],fw:[1.3,1.9],span:true,rows,
+  note:'Total BO = number of Branch Offices  |  BOs opening >10 = BOs that opened MORE than 10 POSB accounts in the month (gross opening)  |  NIL = BOs with 0 accounts opened (only BOs counted in these 3 columns)  |  Net = Opened - Closed  |  Monthly target = FY target / 12, Shortfall = Target - Net (0 if achieved)  |  Cumulative = April to '+mFull(y)+', cumulative target = FY target x '+k+'/12'}}
 /* ---------- Excel (5 sheets) ---------- */
 function xlsx(){if(!S.months.length||!sb().files.length)return alert('Pehle POSB open / close files upload karein.');const sel=selM(),wb=XLSX.utils.book_new(),r1=x=>Math.round(x*10)/10,v=g=>(g&&g.m[sel])||null;
  const mkSheet=(by)=>{const G=agg(by),L=[];const addRow=(d,sd,g,fy)=>{const x=v(g),t=Math.round(fy/12);L.push(by==='sd'?[LBL[d],cap(sd),g?g.n:0,t,x?x.o:'',x?x.c:'',x?x.n:'',x&&t?r1(x.n*100/t):'',x?Math.max(t-x.n,0):'']:[LBL[d],g?g.n:0,t,x?x.o:'',x?x.c:'',x?x.n:'',x&&t?r1(x.n*100/t):'',x?Math.max(t-x.n,0):''])};
@@ -2583,21 +2626,184 @@ function cntAvgBuild(kind){const [ttl,cls,par]=CNT_AVG[kind],ms=cntAvgMonths(),V
  const G={};for(const id in NB_OFF){const [nm,cl,sd,dv]=NB_OFF[id];if(!cls.includes(cl)||dv==='ID DIVISION'||!NB.act(id))continue;
   const g=((G[dv]=G[dv]||{})[sd]=G[dv][sd]||{n:0,m:{}});g.n++;ms.forEach(m=>{const v=V[m][id];g.m[m]=(g.m[m]||0)+(v?(par?v[4]:v[0]+v[2]+v[4]+v[6]):0)})}
  const tc=x=>String(x).toLowerCase().replace(/(^|[\s.])\S/g,c=>c.toUpperCase()),dvn=d=>RP.DMAP[d]||tc(d);
- const line=(lead,n,m,k,g)=>{const a=ms.map(x=>n?(m[x]||0)/n:null),cum=n?ms.reduce((t,x)=>t+(m[x]||0),0)/n:null;return{k,g,c:[...lead,...a,cum]}};
+ const line=(lead,n,m,k,g)=>{const a=ms.map(x=>n?(m[x]||0)/n:null),cum=n&&ms.length?ms.reduce((t,x)=>t+(m[x]||0),0)/n/ms.length:null;return{k,g,c:[...lead,String(n),...a,cum]}};
  const rows=[],RT={n:0,m:{}};
  NB.DIVO.forEach(dv=>{const sds=G[dv];if(!sds)return;const DT_={n:0,m:{}};
   Object.keys(sds).sort().forEach(sd=>{const g=sds[sd];DT_.n+=g.n;ms.forEach(x=>DT_.m[x]=(DT_.m[x]||0)+(g.m[x]||0));rows.push(line([dvn(dv),tc(sd)],g.n,g.m,undefined,dv))});
   RT.n+=DT_.n;ms.forEach(x=>RT.m[x]=(RT.m[x]||0)+(DT_.m[x]||0));rows.push(line(['Total '+dvn(dv),''],DT_.n,DT_.m,'tot',dv))});
  rows.push(line(['Indore Region',''],RT.n,RT.m,'grand'));
  const c=rpCfg(),last=ms[ms.length-1],what=par?'parcels':'articles',unit=cls.length===1?'BOs':'offices (BO + SO + HO)';
- return{title:ttl+' - Sub Division wise',sub:`${c.title} | ${c.badge} | April-2026 to ${last?mFull(last):'-'}`,head:['Division','Sub-Division',...ms.map(rpMn),'Cumulative Average'],pc:[],neg:[],dec:2,fw:[1.3,1.9],span:true,rows,
-  note:`Monthly average = total ${what} booked in the month / number of ${unit} in the Sub Division  |  Cumulative average = total ${what} from April to ${last?mFull(last):'-'} / number of ${unit} (= sum of the monthly averages)  |  Source: office-wise data (Nil Booking upload)`}}
+ return{title:ttl+' - Sub Division wise',sub:`${c.title} | ${c.badge} | April-2026 to ${last?mFull(last):'-'}`,head:['Division','Sub-Division',cls.length===1?'No. of BO':'No. of Offices',...ms.map(rpMn),'Cumulative Average'],pc:[],neg:[],dec:2,fw:[1.3,1.9],span:true,rows,
+  note:`Monthly average = total ${what} booked in the month / number of ${unit} in the Sub Division  |  Cumulative average = total ${what} from April to ${last?mFull(last):'-'} / number of ${unit} / number of months (${ms.length})  |  Source: office-wise data (Nil Booking upload)`}}
 function cntAvgPages(){if(!cntAvgMonths().length)return[];return Object.keys(CNT_AVG).map(k=>({g:'cnt2',t:CNT_AVG[k][0]+' - Sub Division wise',sb:'tbl',build:()=>cntAvgBuild(k),html:()=>SBX.tblHTML(cntAvgBuild(k))}))}
 {const _pg=RP.pages;RP.pages=function(){const P=_pg.apply(this,arguments);try{cntAvgPages().forEach(x=>P.push(x))}catch(e){console.error(e)}
  const ord=g=>{const i=RPSEC.findIndex(x=>x[1].includes(g));return i<0?99:i};return P.map((p,i)=>[p,i]).sort((a,b)=>ord(a[0].g)-ord(b[0].g)||a[1]-b[1]).map(x=>x[0])}}
 
 {const _s=RP.sel;RP.sel=()=>scopeF(_s())}
 {const wrap=n=>{const o=window[n];window[n]=async function(sel,fn){const c=rpCfg(),sc=rpScope();if(sc==='REGION'||sel)return o.call(this,sel,fn);const t=c.title;c.title=rpNm(sc);try{return await o.call(this,sel,fn)}finally{c.title=t}}};wrap('rpPPT');wrap('rpPDF')}
+</script>
+<script>
+/* ===================== D+0 REPORTS add-on ===================== */
+const D0=(()=>{
+const DIVO=['INDORE CITY','INDORE MFL','KHANDWA','MANDSAUR','RATLAM','SEHORE','UJJAIN','ID DIVISION'];
+const G='https://docs.google.com/spreadsheets/d/1ZWqCZifDA1acmTNGpWBfE9_GX-DqM_OyGjOkSFoixps/pub?single=true&output=csv&gid=';
+const GM=[['Apr-26','1585395821'],['May-26','1940610450'],['Jun-26','97263548'],['Jul-26','64552426'],['Aug-26','1714320452'],['Sep-26','2001829717'],['Oct-26','1174364599']];
+const MK='d0MapV1',SK='d0DataV1';
+const S={months:{},meta:{},cur:'',curDate:'',raw:null,view:'div',basis:'all',fetched:false,rawCats:{}};
+const $=id=>document.getElementById(id);
+const key=h=>String(h==null?'':h).toLowerCase().replace(/[^a-z0-9]/g,'');
+const f2=n=>(Math.round(n*100)/100).toFixed(2);
+const pc=(a,b)=>b>0?Math.round(a*10000/b)/100:0;
+const N=v=>{const n=Number(String(v==null?'':v).replace(/,/g,'').trim());return isFinite(n)?n:0};
+function normDiv(s){const k=typeof divKey==='function'?divKey(s):null;const m={'Indore City':'INDORE CITY','Indore Mfl':'INDORE MFL','Indore RMS':'ID DIVISION'};if(k)return m[k]||k.toUpperCase();return String(s||'').toUpperCase().replace(/\s*DIVISION\s*$/,'').trim()||'UNKNOWN'}
+function clsOf(n){n=String(n||'');if(/delivery\s*cent/i.test(n))return'NODAL DELIVERY CENTER';if(/\bh\.?\s?o\.?\s*$/i.test(n)||/\bg\.?p\.?o\.?\b/i.test(n))return'HO';if(/\bs\.?\s?o\.?\s*$/i.test(n))return'SO';if(/\bb\.?\s?o\.?\s*$/i.test(n))return'BO';return'OTHER'}
+const clsRank=c=>({HO:0,SO:1,BO:2}[c]??3);
+function metaFor(id,name,cls,sd,div){const o=NB_OFF[id];if(o)return{name:o[0],cls:o[1],sd:o[2],div:o[3],map:1};return{name:name,cls:cls,sd:sd,div:div,map:0}}
+/* category mapping: Parcel / Mail Ops (everything not mapped to Parcel = Mail Ops) */
+function loadMap(){try{return JSON.parse(localStorage.getItem(MK)||'{}')}catch(e){return{}}}
+function isParcel(cat,map){const n=norm(cat);if(Object.prototype.hasOwnProperty.call(map,n))return map[n]==='P';let c=null;try{c=catOf(n)}catch(e){}return c==='Parcel'||n==='parcel'||n==='speed parcel'}
+/* ---------- parse D+0 table ---------- */
+async function readRows(file){const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];return XLSX.utils.sheet_to_json(ws,{defval:'',raw:true})}
+async function pick(file){
+  const box=$('d0UpMsg');if(!file)return;
+  try{
+    const rows=await readRows(file);if(!rows.length)throw new Error('File is empty');
+    const r0={};Object.keys(rows[0]).forEach(k=>r0[key(k)]=k);
+    const need=['officeid','productcategory','received','d0delivered','d0redirected','d0returned'];
+    const miss=need.filter(k=>!(k in r0));if(miss.length)throw new Error('Columns not found: '+miss.join(', ')+'. This file does not look like the "table" file.');
+    S.raw={rows:rows,c:r0};
+    const cats={};rows.forEach(r=>{const c=String(r[r0.productcategory]||'').trim();cats[c]=(cats[c]||0)+1});S.rawCats=cats;
+    const map=loadMap();
+    let h='<div class="hint" style="margin-top:8px"><b>Product category &rarr; Parcel / Mail Ops</b> (Parcel selected from the mapping; everything else is Mail Ops):</div><div class="row">';
+    Object.keys(cats).forEach(c=>{const p=isParcel(c,map);h+=`<label class="hint" style="border:1px solid #dfe3ea;border-radius:6px;padding:4px 8px">${esc(c)} <small>(${cats[c]})</small> <select data-cat="${esc(c)}" onchange="D0.setCat(this)"><option value="P"${p?' selected':''}>Parcel</option><option value="M"${p?'':' selected'}>Mail Ops</option></select></label>`});
+    h+=`</div><div class="row"><b>Report is up to date:</b> <input type="date" id="d0Date" value="${new Date().toISOString().slice(0,10)}"> <button class="b" onclick="D0.generate()">Generate D+0 report</button></div><div class="msg">${rows.length} rows • ${new Set(rows.map(r=>r[r0.officeid])).size} offices read. Choose the date, then press Generate.</div>`;
+    box.innerHTML=h;
+  }catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
+  $('d0File').value='';
+}
+function setCat(sel){const m=loadMap();m[norm(sel.dataset.cat)]=sel.value;try{localStorage.setItem(MK,JSON.stringify(m))}catch(e){}}
+function generate(){
+  const d=$('d0Date').value;if(!d){toast('Please select the report date');return}
+  const {rows,c}=S.raw,map=loadMap(),by={},meta={};
+  const unm=[];
+  rows.forEach(r=>{
+    const id=offId(r[c.officeid]);if(!id)return;
+    const par=isParcel(r[c.productcategory],map),o=par?0:5;
+    const v=by[id]=by[id]||[0,0,0,0,0,0,0,0,0,0];
+    v[o]+=N(r[c.received]);v[o+1]+=N(r[c.samedayinvoiced]);v[o+2]+=N(r[c.d0delivered]);v[o+3]+=N(r[c.d0redirected]);v[o+4]+=N(r[c.d0returned]);
+    if(!meta[id]){const nm=String(r[c.officename]||'').trim();const m=metaFor(id,nm,clsOf(nm),String(r[c.subdivisionname]||'').trim().toUpperCase(),normDiv(r[c.divisionname]));meta[id]=m;if(!m.map)unm.push(id)}
+  });
+  const dt=new Date(d+'T00:00:00'),lab=MONTHS[dt.getMonth()]+'-'+String(dt.getFullYear()).slice(2);
+  S.cur=lab;S.curDate=d;S.months[lab]=by;Object.assign(S.meta,meta);
+  persist();
+  $('d0UpMsg').innerHTML=`<div class="msg${unm.length?' warn':''}">${Object.keys(by).length} offices • period: ${lab} (till ${dmy(d)})${unm.length?`\nOffice ID not in master (class guessed from name / sub-division from file): ${unm.slice(0,10).join(', ')}${unm.length>10?' …':''}`:''}</div><div class="row"><button class="b alt" onclick="D0.csv()">&#11015; Download CSV (Ind - D format)</button><button class="b gray" onclick="showTab('d0')">Open D+0 Reports</button></div>`;
+  toast('D+0 report generated');
+}
+function persist(){try{const by=S.months[S.cur];if(!by)return;const rows=Object.keys(by).map(id=>[id,S.meta[id].name,S.meta[id].cls,S.meta[id].sd,S.meta[id].div,S.meta[id].map].concat(by[id]));localStorage.setItem(SK,JSON.stringify({cur:S.cur,date:S.curDate,rows}))}catch(e){}}
+function restore(){try{const s=JSON.parse(localStorage.getItem(SK)||'null');if(!s||!s.rows)return;const by={};s.rows.forEach(r=>{by[r[0]]=r.slice(6);S.meta[r[0]]={name:r[1],cls:r[2],sd:r[3],div:r[4],map:r[5]}});S.cur=s.cur;S.curDate=s.date;S.months[s.cur]=by}catch(e){}}
+/* ---------- CSV in "Ind - D" format ---------- */
+const HDR=['S.No','Office ID','Office Name','Class','Name of Sub Division','Name of Division'];
+const BLK=['Received','Invoiced','D+0 Delivered','% D+0 Delivered','D+0 Redirected','% D+0 Redirected','D+0 Returned','% D+0 Returned','% of D+0 (RTS+Redirect)','Total D+0 Actioned','% Total Actioned'];
+const sortIds=ids=>ids.sort((a,b)=>{const x=S.meta[a],y=S.meta[b];const da=DIVO.indexOf(x.div),db=DIVO.indexOf(y.div);return (da<0?99:da)-(db<0?99:db)||String(x.sd).localeCompare(y.sd)||clsRank(x.cls)-clsRank(y.cls)||String(x.name).localeCompare(y.name)});
+function blk(v){const [r,i,d,rd,rt]=v;return[r,i,d,f2(pc(d,r)),rd,f2(pc(rd,r)),rt,f2(pc(rt,r)),f2(pc(rd+rt,r)),d+rd+rt,f2(pc(d+rd+rt,r))]}
+function csv(){
+  const by=S.months[S.cur];if(!by){toast('Upload the D+0 file and generate first');return}
+  const head=HDR.concat(BLK.map(x=>'Parcel '+x),BLK.map(x=>'Mail Ops '+x));
+  const out=[head];sortIds(Object.keys(by)).forEach((id,k)=>{const m=S.meta[id],v=by[id];out.push([k+1,id,m.name,m.cls,m.sd,m.div].concat(blk(v.slice(0,5)),blk(v.slice(5))))});
+  const q=x=>{x=String(x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x};
+  const txt='\ufeff'+out.map(r=>r.map(q).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
+  a.download='Ind - D-'+S.cur.slice(0,3).toUpperCase()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+/* ---------- monthly CSVs (Google Sheets) ---------- */
+function parseMonth(grid){
+  let hi=grid.findIndex(r=>r.some(c=>key(c)==='officeid'));if(hi<0)throw new Error('Office ID column not found');
+  const ix={};grid[hi].forEach((c,i)=>{if(!(key(c) in ix))ix[key(c)]=i});
+  const g=(r,k)=>ix[k]==null?0:N(r[ix[k]]);const by={};
+  for(let i=hi+1;i<grid.length;i++){const r=grid[i];const id=offId(r[ix.officeid]);if(!id||!/^\d+$/.test(id))continue;
+    const nm=String(r[ix.officename]||'');
+    if(!S.meta[id])S.meta[id]=metaFor(id,nm,String(r[ix.class]||clsOf(nm)).toUpperCase(),String(r[ix.nameofsubdivision]||'').toUpperCase(),normDiv(r[ix.nameofdivision]));
+    const v=[];['parcel','mailops'].forEach(p=>{v.push(g(r,p+'received'),g(r,p+'invoiced'),g(r,p+'d0delivered'),g(r,p+'d0redirected'),g(r,p+'d0returned'))});
+    by[id]=v}
+  return by;
+}
+async function fetchMonths(){
+  const box=$('d0Status');let ok=0,fail=[];box.textContent='Loading monthly CSVs…';
+  await Promise.all(GM.map(async([lab,gid])=>{
+    if(S.months[lab]&&lab!==S.cur){ok++;return}
+    try{const res=await fetch(G+gid);if(!res.ok)throw new Error(res.status);const wb=XLSX.read(await res.text(),{type:'string'});
+      const by=parseMonth(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''}));
+      if(lab!==S.cur)S.months[lab]=by;ok++}catch(e){fail.push(lab)}}));
+  S.fetched=true;
+  box.innerHTML=`${ok} month(s) loaded`+(fail.length?` • <span style="color:#b3121b">could not fetch: ${fail.join(', ')}</span> (use manual upload below)`:'');
+  draw();
+}
+async function manual(file){
+  if(!file)return;const lab=$('d0ManMonth').value;
+  try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});S.months[lab]=parseMonth(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''}));$('d0Status').textContent=lab+' loaded manually';draw()}
+  catch(e){$('d0Status').innerHTML='<span style="color:#b3121b">'+esc(e.message)+'</span>'}
+  $('d0Man').value='';
+}
+/* ---------- calculations ---------- */
+function st(v,b){if(!v)return{r:0,a:0,x:0};const t=b==='p'?v.slice(0,5):b==='m'?v.slice(5):v.slice(0,5).map((x,i)=>x+v[i+5]);return{r:t[0],a:t[2]+t[3]+t[4],x:t[3]+t[4]}}
+const add=(a,b)=>({r:a.r+b.r,a:a.a+b.a,x:a.x+b.x});
+function labels(){const all=GM.map(g=>g[0]);Object.keys(S.months).forEach(l=>{if(!all.includes(l))all.push(l)});return all.filter(l=>S.months[l])}
+function grp(ids,labs){const t={};let o={r:0,a:0,x:0};labs.forEach(l=>{let s={r:0,a:0,x:0};ids.forEach(id=>{s=add(s,st(S.months[l][id],S.basis))});t[l]=s;o=add(o,s)});t.__all=o;return t}
+const cell=s=>`<td class="n">${s.r?f2(pc(s.a,s.r)):'–'}</td><td class="n">${s.r?f2(pc(s.x,s.r)):'–'}</td>`;
+/* ---------- rendering ---------- */
+function viewDiv(){
+  const labs=labels();if(!labs.length)return'<div class="msg warn">No month data loaded yet.</div>';
+  const ids=new Set();labs.forEach(l=>Object.keys(S.months[l]).forEach(i=>ids.add(i)));
+  const tree={};[...ids].forEach(id=>{const m=S.meta[id];if(!m)return;((tree[m.div]=tree[m.div]||{})[m.sd]=tree[m.div][m.sd]||[]).push(id)});
+  let h=`<div class="d0w"><table class="d0t" data-title="Division Monthly"><thead><tr><th rowspan="2">Division</th><th rowspan="2">Sub Division</th>${labs.map(l=>`<th colspan="2">${l}${l===S.cur?' <small>(till '+S.curDate.slice(8)+'.'+S.curDate.slice(5,7)+')</small>':''}</th>`).join('')}<th colspan="2" class="ov">Overall</th></tr><tr>${labs.map(()=>'<th>% Total Actioned</th><th>% RTS+Return</th>').join('')}<th class="ov">% Total Actioned</th><th class="ov">% RTS+Return</th></tr></thead><tbody>`;
+  const row=(d,s,t,cls)=>`<tr class="${cls}"><td>${esc(d)}</td><td>${esc(s)}</td>${labs.map(l=>cell(t[l])).join('')}<td class="n ov">${t.__all.r?f2(pc(t.__all.a,t.__all.r)):'–'}</td><td class="n ov">${t.__all.r?f2(pc(t.__all.x,t.__all.r)):'–'}</td></tr>`;
+  Object.keys(tree).sort((a,b)=>(DIVO.indexOf(a)<0?99:DIVO.indexOf(a))-(DIVO.indexOf(b)<0?99:DIVO.indexOf(b))).forEach(d=>{
+    const all=[].concat(...Object.values(tree[d]));h+=row(d,'DIVISION TOTAL',grp(all,labs),'tot');
+    Object.keys(tree[d]).sort().forEach(sd=>{h+=row(d,sd,grp(tree[d][sd],labs),'')})});
+  h+=row('REGION','TOTAL',grp([...ids],labs),'tot grand');
+  return h+'</tbody></table></div><div class="hint" style="margin-top:6px">% Total Actioned = (D+0 Delivered + Redirected + Returned) ÷ Received. % RTS+Return = (Redirected + Returned) ÷ Received. Overall = sum of all months shown.</div>';
+}
+function lists(){
+  const by=S.months[S.cur];if(!by)return null;const out=[];
+  Object.keys(by).forEach(id=>{const m=S.meta[id],s=st(by[id],S.basis);out.push(Object.assign({id},m,s,{pa:pc(s.a,s.r),px:pc(s.x,s.r)}))});return out;
+}
+function rank(list,title,sortKey,dir,limit){
+  list=list.slice().sort((a,b)=>dir*(a[sortKey]-b[sortKey])||b.r-a.r);if(limit)list=list.slice(0,limit);
+  let h=`<h4 class="d0h">${esc(title)}</h4><div class="d0w"><table class="d0t" data-title="${esc(title).slice(0,28)}"><thead><tr><th>#</th><th>Office</th><th>Class</th><th>Sub Division</th><th>Division</th><th>Received</th><th>Actioned</th><th>RTS+Return</th><th>% Total Actioned</th><th>% RTS+Return</th></tr></thead><tbody>`;
+  list.forEach((o,i)=>{h+=`<tr><td>${i+1}</td><td>${esc(o.name)}</td><td>${o.cls}</td><td>${esc(o.sd)}</td><td>${esc(o.div)}</td><td class="n">${o.r}</td><td class="n">${o.a}</td><td class="n">${o.x}</td><td class="n${sortKey==='pa'?' hl':''}">${f2(o.pa)}</td><td class="n${sortKey==='px'?' hl':''}">${f2(o.px)}</td></tr>`});
+  return h+(list.length?'':'<tr><td colspan="10">No offices</td></tr>')+'</tbody></table></div>';
+}
+function viewRank(){
+  const L=lists();if(!L)return'<div class="msg warn">Upload the D+0 file (Upload tab → D+0) and generate first.</div>';
+  const v=S.view,cls=v.slice(0,2)==='so'?'SO':'BO',by=v.endsWith('rts')?'px':'pa',dir=by==='px'?-1:1;
+  const min=Math.max(0,+$('d0Min'+(by==='px'?'R':'A')).value||0);
+  const what=by==='px'?'highest % (RTS+Return)':'lowest % Total Actioned';
+  let h=`<div class="hint">Showing ${what} • D+0 data ${S.cur} (till ${dmy(S.curDate)}) • offices with received &lt; ${min} are skipped.</div>`;
+  const divs=[...new Set(L.map(o=>o.div))].sort((a,b)=>(DIVO.indexOf(a)<0?99:DIVO.indexOf(a))-(DIVO.indexOf(b)<0?99:DIVO.indexOf(b)));
+  divs.forEach(d=>{const l=L.filter(o=>o.div===d&&o.cls===cls&&o.r>=Math.max(min,1));if(l.length)h+=rank(l,`${d} – ${cls} ${by==='px'?'top':'bottom'} 10`,by,dir,10)});
+  if(cls==='SO'){const ho=L.filter(o=>o.cls==='HO'&&o.r>=1);h+=rank(ho,`All HO (${ho.length}) – ${by==='px'?'highest % RTS+Return':'lowest % Total Actioned'}`,by,dir,0)}
+  return h;
+}
+function draw(){
+  if(!$('d0Out'))return;
+  document.querySelectorAll('#d0Views button').forEach(b=>b.classList.toggle('alt',b.dataset.v===S.view));
+  document.querySelectorAll('#d0Basis button').forEach(b=>b.classList.toggle('alt',b.dataset.b===S.basis));
+  $('d0Out').innerHTML=S.view==='div'?viewDiv():viewRank();
+}
+function view(v){S.view=v;draw()}
+function basis(b){S.basis=b;draw()}
+function xl(){
+  const ts=[...$('d0Out').querySelectorAll('table')];if(!ts.length){toast('Nothing to export');return}
+  const wb=XLSX.utils.book_new(),used=new Set();
+  ts.forEach((t,i)=>{let n=(t.dataset.title||'Sheet'+(i+1)).replace(/[\\\/\?\*\[\]:]/g,'').slice(0,28);while(used.has(n))n=n.slice(0,25)+'_'+i;used.add(n);XLSX.utils.book_append_sheet(wb,XLSX.utils.table_to_sheet(t),n)});
+  XLSX.writeFile(wb,'D0_'+S.view+'_'+S.basis+'.xlsx');
+}
+function open(){if(!S.cur&&!Object.keys(S.months).length)restore();if(!S.fetched)fetchMonths();else draw()}
+restore();
+return{pick,setCat,generate,csv,open,view,basis,xl,manual,fetchMonths,draw,GM};
+})();
+
+window.D0=D0;(function(){const s=document.getElementById('d0ManMonth');if(s)s.innerHTML=D0.GM.map(g=>'<option>'+g[0]+'</option>').join('')+'<option>Nov-26</option>'})();
 </script>
 </body>
 </html>
