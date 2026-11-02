@@ -2540,7 +2540,7 @@ const RPSEC=[['Daily Reports',['day']],['Revenue Reports',['rv','sum','mon','yoy
 function rpSecList(si){return RP.PL.map((p,i)=>[p,i]).filter(x=>RPSEC[si][1].includes(x[0].g))}
 /* a "division-wise" page = one report per division (Region + each division). Those are bunched into ONE tick box. */
 function pageDiv(p){if(p.pd)return p.pd;if(p.g==='day'&&p.dv&&!/^CMP_/.test(p.dv))return p.dv==='Region Total'?'Region':p.dv;if((p.g==='sum'||p.g==='cnt')&&p.d)return p.d;return null}
-function pageTpl(p){const dv=pageDiv(p);if(!dv)return null;const cand=dv==='Region'?['Indore Region (Total)','Indore Region']:[rpNm(dv),dv];for(const c of cand)if(p.t.includes(c))return p.t.replace(c,'@');return null}
+function pageTpl(p){const dv=pageDiv(p);if(!dv||dv==='Region')return null;const cand=dv==='Region'?['Indore Region (Total)','Indore Region']:[rpNm(dv),dv];for(const c of cand)if(p.t.includes(c))return p.t.replace(c,'@');return null}
 const rpScope=()=>{const c=rpCfg();return(!c.scope||c.scope==='REGION')?'REGION':c.scope};
 function scopeF(l){const sc=rpScope();return sc==='REGION'?l:l.filter(p=>pageDiv(p)===sc)}
 let RPB=[];
