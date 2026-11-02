@@ -201,7 +201,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
       <input type="file" multiple accept=".xlsx,.xls,.csv" hidden onchange="SBX.add(this.files);this.value=''">
     </label>
     <div id="sbFiles2"></div>
-    <div class="row">Uploaded data is for month: <select id="sbUpM" onchange="SBX.setUp(this.value)"></select>
+    <div class="row">Uploaded data is for month: <select id="sbUpM" onchange="SBX.setUp(this.value)"></select> data up to date (day): <input type="number" id="sbUpD" min="1" max="31" style="width:60px" onchange="SBX.setDay(this.value)" title="e.g. 15 = data till 15th of the month">
       <button class="b gray sm" onclick="SBX.reset()">Clear uploads</button>
       <button class="b alt sm" onclick="SBX.refresh()">Reload Google sheets</button>
       <button class="b" onclick="SBX.xlsx()">Combined POSB Excel (5 sheets)</button></div>
@@ -309,6 +309,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
     </div>
 <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e3e3e3"><b>POSB (SB) net addition:</b> <button class="b alt" onclick="SBX.xlsx()">Combined POSB Excel (5 sheets)</button> <span class="hint">Division, Sub-Division, Office, Division progressive and SD progressive sheets. All POSB report pages are also in the mega PPT / PDF below.</span></div>
 <div style="margin-top:8px"><b>Aadhaar upload format:</b> <button class="b sm" onclick="downloadAadTemplate()">Download sample format</button></div><div id="rpInfo"></div></div>
+<div class="card" id="rpSecCard"></div>
 <div class="card"><h3>Mega report - preview &amp; download</h3>Nil Booking month: <select id="rpMonth" onchange="NB.S.month=this.value;NB.save();rpRender()"></select> <select id="rpSel" onchange="rpShow()" style="max-width:420px"></select>
 <button class="b sm" onclick="rpJPG()">JPG</button><button class="b sm" onclick="rpXLSX()">Excel</button>
 <button class="b" onclick="rpPPT()">Download mega PPT</button><button class="b" onclick="rpPDF()">Download mega PDF</button>
@@ -2250,7 +2251,7 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
    X.rows.forEach((r,i)=>{const mk=(v,o={})=>r.reg?tt(v,o):bd(v,i,o);rows.push(r.cells.map((v,j)=>j===0?mk(v,{align:'left',bold:true}):(r.g[j]!==undefined?mk(v,Object.assign({bold:true},bandO(bandG(r.g[j])))):mk(v))))});
    const w0=pg.v==='ALL'?1.6:2,w=(TW-w0)/(nc-1),y=grid(s,rows,[w0,...Array(nc-1).fill(w)],.7,.46,1.5);
    note(s,y+.12,X.note)}
-  else if(pg.g==='sb'){SBX.ppt(pg,{p,sl,hd,bd,tt,cell,grid,note,TW,TX})}
+  else if(pg.build||pg.sb){SBX.ppt(pg,{p,sl,hd,bd,tt,cell,grid,note,TW,TX})}
   else if(pg.g==='bo'){const {G,th:T}=nbBuild(pg.k,pg.ym),ttl='Indore Region - '+NB.REP[pg.k].t+' ('+mFull(pg.ym)+')',sub='Good booking > '+T+' articles | NIL = no booking | Low = 1 to '+T,pct=(a,b)=>b?Math.round(a*100/b):0;
    const GT={t:0,n:0,l:0,g:0},groups=[];
    NB.DIVO.forEach(dv=>{const sd=G[dv];if(!sd)return;const Tt={t:0,n:0,l:0,g:0},rr=Object.keys(sd).sort().map(k=>{const x=sd[k];for(const q in Tt){Tt[q]+=x[q];GT[q]+=x[q]}return{sd:k,x}});groups.push({dv,rr,Tt})});
@@ -2292,7 +2293,7 @@ const S={ok:false,err:'',mst:{byId:{},byOff:{}},dat:{rows:[],months:[],day:''},l
 const $=i=>document.getElementById(i);
 const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/,/g,''));return isNaN(n)?0:n};
 const cid=v=>String(v==null?'':v).trim().toUpperCase().replace(/\.0$/,'');
-const sb=()=>{DB.sb=DB.sb||{};const s=DB.sb;s.files=s.files||[];s.extra=s.extra||{};s.alias=s.alias||{};s.upMonth=s.upMonth||'';s.selM=s.selM||'';return s};
+const sb=()=>{DB.sb=DB.sb||{};const s=DB.sb;s.files=s.files||[];s.extra=s.extra||{};s.alias=s.alias||{};s.upMonth=s.upMonth||'';s.upDay=s.upDay||'';s.selM=s.selM||'';return s};
 const dk=d=>{d=String(d||'').toUpperCase().trim();if(/CITY/.test(d))return'INDORE CITY';if(/MFL|MOF/.test(d))return'INDORE MFL';return DK.find(k=>d.includes(k))||d||'UNKNOWN'};
 const STOP=new Set(['SD','SUB','DN','DIV','DIVN','DIVISION','SUBDIV','SUBDIVISION','SUBDN','S','D']);
 const nSD=s=>String(s==null?'':s).toUpperCase().replace(/\./g,'').split(/[^A-Z0-9]+/).filter(t=>t&&!STOP.has(t)).join(' ');
@@ -2362,18 +2363,56 @@ function cells(kind,items,sel){const ms=S.months.filter(m=>m<=sel),k=FYI(sel),pi
  const tot=n.reduce((a,b)=>a+(b||0),0);return[fy,t,cum,...n,tot,pctOf(tot,cum),pctOf(tot,fy),Math.max(cum-tot,0)]}
 const subT=sel=>{const c=rpCfg();return `${c.title} | ${c.badge} | April-2026 to ${mFull(sel)}`+(S.up===sel?' (current month = uploaded data, month to date)':'')};
 const partial=sel=>S.up===sel?DK.filter(d=>!S.covered.has(d)).map(d=>LBL[d]):[];
-function build(kind,by,sel){const G=agg(by),rows=[],reg=[],ms=S.months.filter(m=>m<=sel),span=by==='sd';
- if(!span){DK.forEach(d=>{const it={g:G[d],fy:DT[d]};reg.push(it);rows.push({c:[LBL[d],...cells(kind,[it],sel)]})});rows.push({k:'tot',c:['Indore Region',...cells(kind,reg,sel)]})}
+const SDN={"EAST":"INDORE EAST SD","WEST":"INDORE WEST SD","BARWAHA":"BARWAHA S.D.","BURHANPUR":"BURHANPUR SUB DN.","KHANDWA NORTH":"KHANDWA NORTH S.D.","KHANDWA SOUTH":"KHANDWA SOUTH S.D.","KHARGONE EAST":"KHARGONE EAST S.D.","GAROTH":"GAROTH SD","MANDSAUR":"MANDSAUR SD","NEEMUCH":"NEEMUCH SD","PIPLIA":"PIPLIA SD","RATLAM":"RATLAM SD","JAORA":"JAORA SD","PETLAWAD":"PETLAWAD SD","JHABUA":"JHABUA SD","ALIRAJPUR":"ALIRAJPUR SD","ASHTA":"AASHTA SD","BIAORA":"BIAORA SD","RAJGARH":"RAJGARH SD","SEHORE":"SEHORE SD","AGAR MALWA":"AGAR MALWA SD","SHAJAPUR":"ASP SHAJAPUR","SHUJALPUR MANDI":"SHUJALPUR SD","UJJAIN EAST":"UJJAIN EAST SD","UJJAIN WEST":"UJJAIN WEST SD"};
+const sdn=n=>SDN[n]||n,dl=d=>d==='INDORE MFL'?'Indore Moffusil':LBL[d];
+const dim=y=>new Date(+y.slice(0,4),+y.slice(5),0).getDate();
+function dayOf(sel){const s=sb();if(S.up===sel&&s.upDay)return Math.min(+s.upDay,dim(sel));const lm=S.dat.months[S.dat.months.length-1];if(sel===lm&&S.up!==sel&&S.dat.day&&+S.dat.day<=dim(sel))return +S.dat.day;return dim(sel)}
+const dmy=(y,d,f)=>pad(d)+'.'+y.slice(5,7)+'.'+(f?y.slice(0,4):y.slice(2,4));
+function rowsFor(by,fn,nm){nm=nm||{};const G=agg(by),rows=[],reg=[],span=by==='sd',ld=span?2:1;
+ const mk=(lead,its,k,g)=>{const a=fn(its),r={k,g,c:[...lead,...a]};if(a.cc){r.cc={};for(const i in a.cc)if(a.cc[i])r.cc[+i+ld]=a.cc[i]}rows.push(r)};
+ if(!span){DK.forEach(d=>{const it={g:G[d],fy:DT[d]};reg.push(it);mk([(nm.dv||(x=>LBL[x]))(d)],[it])});mk([nm.gl||'Indore Region'],reg,'tot')}
  else{DK.forEach(d=>{const L=SDT[d].map(x=>x[0]);Object.values(G).filter(g=>g.div===d&&!L.includes(g.sd)).forEach(g=>L.push(g.sd));const its=[];
-   L.forEach(sd=>{const g=G[d+'|'+sd];if(!g)return;const fy=(SDT[d].find(x=>x[0]===sd)||[0,0])[1];const it={g,fy};its.push(it);rows.push({g:d,c:[LBL[d],cap(sd),...cells(kind,[it],sel)]})});
-   const it={g:sumG(its.map(i=>i.g)),fy:DT[d]};reg.push(it);rows.push({k:'tot',g:d,c:['Total '+LBL[d],'',...cells(kind,[it],sel)]})});
-   rows.push({k:'grand',c:['Indore Region','',...cells(kind,reg,sel)]})}
- const b=span?2:1,lead=span?['Division','Sub-Division']:['Division'],mn=ms.map(rpMn),n=ms.length;let T;
- const wn=partial(sel).length?'  |  NOT uploaded yet for: '+partial(sel).join(', ')+' (shown as -)':'';
+   L.forEach(sd=>{const g=G[d+'|'+sd];if(!g)return;const fy=(SDT[d].find(x=>x[0]===sd)||[0,0])[1];const it={g,fy};its.push(it);mk([(nm.dv||(x=>LBL[x]))(d),(nm.sd||cap)(sd)],[it],undefined,d)});
+   const it={g:sumG(its.map(i=>i.g)),fy:DT[d]};reg.push(it);mk([nm.tl?nm.tl(d):'Total '+LBL[d],''],[it],'tot',d)});mk([nm.gl||'Indore Region',''],reg,'grand')}
+ return rows}
+const partialTxt=sel=>partial(sel).length?'  |  NOT uploaded yet for: '+partial(sel).join(', ')+' (shown as -)':'';
+function build(kind,by,sel){const span=by==='sd',ms=S.months.filter(m=>m<=sel),rows=rowsFor(by,its=>cells(kind,its,sel)),b=span?2:1,lead=span?['Division','Sub-Division']:['Division'],mn=ms.map(rpMn),n=ms.length,wn=partialTxt(sel);let T;
  if(kind==='month')T={title:`POSB Net Addition - ${span?'Sub-Division':'Division'} wise: Target vs Achievement (${mFull(sel)})`,head:[...lead,'Monthly Target (FY target / 12)','Net Addition (Achievement)','% Achievement','Shortfall'],pc:[b+2],neg:[b+1],fw:span?[1.7,2.2]:[2.6],note:`Net Addition = Accounts opened - Accounts closed. % Achievement:  Green >= ${GREEN}%  |  Orange ${ORANGE}-${GREEN}%  |  Red < ${ORANGE}%`+wn};
  else if(kind==='prog')T={title:`POSB Net Addition - ${span?'Sub-Division':'Division'} wise Progressive (April to ${mFull(sel)})`,head:[...lead,'FY Target 2026-27','Monthly Target','Cumulative Target',...mn,'Total Net Addition','% Ach (Cumulative)','% Ach (FY Target)','Shortfall'],pc:[b+3+n+1,b+3+n+2],neg:Array.from({length:n+1},(_,i)=>b+3+i),fw:span?[1.4,1.6]:[1.7],note:`Cumulative target = FY target x ${FYI(sel)}/12  |  Shortfall = Cumulative target - Total net addition  |  % colours: Green >= ${GREEN}%, Orange ${ORANGE}-${GREEN}%, Red < ${ORANGE}%`+wn};
  else T={title:`POSB Accounts Opened - Division wise, month-wise (April to ${mFull(sel)})`,head:['Division',...mn,'Total Opened'],pc:[],neg:[],fw:[1.9],note:'Number of POSB accounts opened in each month (gross, before closures).'+wn};
  T.rows=rows;T.sub=subT(sel);T.span=span;T.kind=kind;return T}
+const mcol=v=>v==null?null:v>=100?{bg:'#c6e0b4',c:'#111',b:0}:{bg:'#ff0000',c:'#ffffff',b:1};
+const pcol=v=>v==null?null:v>=100?{bg:'#c6e0b4',c:'#111',b:0}:v>=75?{bg:'#92d050',c:'#111',b:0}:v>=70.9?{bg:'#c6e0b4',c:'#111',b:0}:{bg:'#ff0000',c:'#ffff00',b:1};
+const smx=(its,ms)=>{let o=0,c=0,n=0;ms.forEach(m=>its.forEach(it=>{const v=it.g&&it.g.m[m];if(v){o+=v.o;c+=v.c;n+=v.n}}));return[o,c,n]};
+/* the 4 formats of the WhatsApp images: A/c opened-closed-net status and net addition status */
+function stBuild(by,sel,net){const span=by==='sd',pre=S.months.filter(m=>m<sel),k=FYI(sel),dd=dayOf(sel),mm=sel.slice(5,7),rs=pad(1)+'.'+mm+'-'+pad(dd)+'.'+mm,end=pad(dd)+'.'+mm,b=span?2:1,lead=span?['Division','Sub Division']:['Division'];
+ const sum=(its,f)=>its.reduce((a,i)=>a+f(i),0),nm={sd:sdn,dv:dl};let T;
+ if(net){nm.tl=()=>'Total';const rows=rowsFor(by,its=>{const fy=sum(its,i=>i.fy),t=sum(its,i=>Math.round(i.fy/12)),prop=sum(its,i=>Math.round(i.fy*k/12)),o=smx(its,[sel]),cum=smx(its,[...pre,sel])[2],pm=pctOf(o[2],t),pp=pctOf(cum,prop),a=[t,o[0],o[1],o[2],pm,o[2]-t,prop,cum,pp,cum-prop,fy,cum,pctOf(cum,fy)];a.cc={4:mcol(pm),8:pcol(pp)};return a},nm);
+  T={title:'Status of Net addition of POSB accounts from '+dmy(S.months[0],1,1)+' to '+dmy(sel,dd,1),head:[...lead,'Target '+rpMn(sel),'A/c Opened '+rs,'A/c Closed '+rs,'Net '+rs,'% monthly','Shortfall monthly','Prop Target '+end,'Prop Ach '+end,'% Prop Ach','Shortfall Prop','Target FY 2026-27','Net 01.04-'+end,'% total FY'],pc:[b+4,b+8,b+12],nb:[b+12],p2:1,plain:1,neg:[],th:{hbg:'#1f3864',hfg:'#ffffff',tot:'#fce4d6',grand:'#fce4d6'},fw:span?[1.2,1.6]:[1.5],rows,
+   note:'Target = FY target / 12 | Prop Target = FY target x '+k+'/12 | % monthly: green >= 100, else red | % Prop Ach: >=100 light green, 75-100 green, 70.9-75 light green, below 70.9 red | Shortfall = Achievement - Target (negative = short)'}}
+ else{nm.tl=()=>'Total';nm.gl='Grand Total';const rows=rowsFor(by,its=>{const fy=sum(its,i=>i.fy),prop=sum(its,i=>Math.round(i.fy*k/12)),a=smx(its,pre),o=smx(its,[sel]);return[fy,prop,...a,...o,prop-(a[2]+o[2])]},nm);
+  const left=pre.length?'Total '+dmy(S.months[0],1)+' to '+dmy(pre[pre.length-1],dim(pre[pre.length-1])):'Previous months',right=dmy(sel,1)+' to '+dmy(sel,dd),H=(t,r)=>({t,rs:r});
+  T={title:(span?'Sub Division':'Division')+' Wise POSB A/c Opened, Closed and Net addition Status',head:[...lead,'FY Target','Prop Target','Opened','Closed','Net','Opened','Closed','Net','Shortfall'],heads:[[...lead.map(x=>H(x==='Sub Division'?'Sub-Division Name':'Division Name',2)),H('Total Target Net addition 26-27',2),H('Proportionate Target Net addition upto '+rpMn(sel),2),{t:left,cs:3},{t:right,cs:3},H('Total Shortfall upto '+rpMn(sel)+' in Net addition',2)],['A/c Opened','A/c Closed','Net addition','A/c Opened','A/c Closed','Net addition'].map(t=>({t}))],pc:[],neg:[],plain:1,th:{hbg:'#f9bf8f',hfg:'#000000',tot:'#f9bf8f',grand:'#f9bf8f'},fw:span?[1.3,1.9]:[2.0],rows,note:'Shortfall = Proportionate target (FY target x '+k+'/12) - total net addition till date (negative = target exceeded)'}}
+ T.sub=subT(sel)+(partial(sel).length?'  |  NOT uploaded yet for: '+partial(sel).join(', '):'');T.span=span;return T}
+function qBuild(by,sel){const Q=[['2026-04','2026-05','2026-06'],['2026-07','2026-08','2026-09']],span=by==='sd',b=span?2:1;
+ const rows=rowsFor(by,its=>{const t=its.reduce((a,i)=>a+Math.round(i.fy*3/12),0),s=qm=>{let a=null;qm.forEach(m=>its.forEach(it=>{const v=it.g&&it.g.m[m];if(v)a=(a||0)+v.n}));return a},a1=s(Q[0]),a2=s(Q[1]);return[t,a1,pctOf(a1,t),t,a2,pctOf(a2,t),a1>0&&a2!=null?(a2-a1)*100/a1:null]},{sd:sdn});
+ return{title:`POSB Net Addition - ${span?'Sub-Division':'Division'} wise Q1 vs Q2`,sub:subT(selM())+'  |  Q1 = Apr-Jun, Q2 = Jul-Sep',head:[span?'Division':'Division',...(span?['Sub-Division']:[]),'Q1 Target','Q1 Net Addition','Q1 %','Q2 Target','Q2 Net Addition','Q2 %','Q2 vs Q1 (Net)'],pc:[b+2,b+5],gi:[b+6],neg:[b+1,b+4],fw:span?[1.4,1.9]:[2.2],span,rows,note:`Quarter target = FY target x 3/12  |  Q2 vs Q1: Green = increase, Red = decrease  |  % colours: Green >= ${GREEN}%, Orange ${ORANGE}-${GREEN}%, Red < ${ORANGE}%`}}
+/* BO / SO-HO / Sub-Division rankings */
+function rankT(div,grp,mode,sel,top,bot){const ms=S.months.filter(m=>m<=sel);let it;
+ if(grp==='SD')it=Object.values(agg('sd')).filter(g=>SDT[g.div]&&g.sd!==OTHER_SD&&g.m[sel]).map(g=>({name:sdn(g.sd),sd:LBL[g.div],div:LBL[g.div],m:g.m}));
+ else it=S.recs.filter(r=>SDT[r.div]&&(div==='REGION'||r.div===div)&&(grp==='BO'?r.cls==='BO':(r.cls==='SO'||r.cls==='HO'))&&r.m[sel]).map(r=>({name:r.name,sd:cap(r.sd),div:LBL[r.div],m:r.m}));
+ it.forEach(x=>{x.v=mode==='m'?x.m[sel].n:ms.reduce((a,m)=>a+(x.m[m]?x.m[m].n:0),0)});
+ const cmp=(a,b)=>a.name.localeCompare(b.name),desc=it.slice().sort((a,b)=>b.v-a.v||cmp(a,b)),asc=it.slice().sort((a,b)=>a.v-b.v||cmp(a,b));
+ const R=div==='REGION',nmL=grp==='SD'?'Sub-Division':'Office',lbl=grp==='BO'?'BO':grp==='SOHO'?'SO / HO':'Sub-Division';
+ const mkPart=(list,label)=>{let head,rows;
+  if(mode==='m'){head=['#',nmL,...(grp==='SD'?['Division']:['Sub-Division',...(R?['Division']:[])]),'A/c Opened','A/c Closed','Net Addition'];rows=list.map((x,i)=>({c:[i+1,x.name,...(grp==='SD'?[x.div]:[x.sd,...(R?[x.div]:[])]),x.m[sel].o,x.m[sel].c,x.v]}))}
+  else{head=['#',nmL,...(grp==='SD'?['Division']:['Sub-Division',...(R?['Division']:[])]),...ms.map(rpMn),'Total'];rows=list.map((x,i)=>({c:[i+1,x.name,...(grp==='SD'?[x.div]:[x.sd,...(R?[x.div]:[])]),...ms.map(m=>x.m[m]?x.m[m].n:0),x.v]}))}
+  const nl=head.length-(mode==='m'?3:ms.length+1),wide=mode==='m';return{label,head,rows,pc:[],neg:Array.from({length:head.length-nl},(_,i)=>nl+i),plain:0,fw:wide?(nl===3?[.4,2.5,1.5]:nl===4?[.4,2.2,1.4,1.1]:[.4,2.6,1.6]).slice(0,nl):(nl===3?[.4,2.4,1.6]:nl===4?[.4,2.2,1.5,1.2]:[.4,2.6,1.6]).slice(0,nl),lead:nl}};
+ const dvn=R?'Indore Region':LBL[div]||div,per=mode==='m'?rpMn(sel):'Apr to '+rpMn(sel);
+ const parts=[];if(top)parts.push(mkPart(desc.slice(0,top),'Top '+top+' '+lbl+' - highest net addition ('+per+')'));parts.push(mkPart(asc.slice(0,bot),'Bottom '+bot+' '+lbl+' - lowest net addition ('+per+')'));
+ const T={title:`POSB ${lbl} wise ${top?'Top '+top+' & ':''}Bottom ${bot} Net Addition - ${dvn} (${per})`,sub:subT(sel)+partialTxt(sel),parts,note:'Net addition = accounts opened - accounts closed'+(mode==='m'?'':' | month-wise net addition and total from April'),lead:parts[0].lead};
+ if(mode==='m'){const L=[...(top?desc.slice(0,top):[]),...asc.slice(0,bot)];T.chart={labels:L.map(x=>x.name),values:L.map(x=>x.v),colors:L.map((x,i)=>top&&i<top?'70AD47':'C00000')}}
+ return T}
 function yoy(sel){const G=agg('div'),ym=y=>(+y.slice(0,4)-1)+y.slice(4),ms=RP.FY.filter(m=>m<=sel&&S.months.includes(m)),gr=(c,l)=>(l!=null&&l>0&&c!=null)?(c-l)*100/l:null;
  const lyv=(d,y)=>{if(d==='REGION'){let s=0,a=false;DK.forEach(x=>{const v=(S.ly[x]||{})[y];if(v){s+=v.n;a=true}});return a?s:null}const v=(S.ly[d]||{})[y];return v?v.n:null};
  const tyv=(d,y)=>{const g=d==='REGION'?sumG(DK.map(x=>G[x])):G[d];const v=g&&g.m[y];return v?v.n:null};
@@ -2381,40 +2420,62 @@ function yoy(sel){const G=agg('div'),ym=y=>(+y.slice(0,4)-1)+y.slice(4),ms=RP.FY
  return{title:'POSB Net Addition - This Year vs Last Year (Division wise)',sub:subT(sel),head:['Division',rpMn(ym(sel))+' (Last year)',rpMn(sel)+' (This year)','Growth %',rpMn(ym(ms[0]||sel))+' to '+rpMn(ym(sel))+' (Last year)',rpMn(ms[0]||sel)+' to '+rpMn(sel)+' (This year)','Growth %'],gi:[3,6],pc:[],neg:[],fw:[2.2],rows,note:'Growth %:  Green = increase over last year  |  Red = decrease. Last-year data is taken from the division-wise sheet.'}}
 function chartD(d,sel){const G=agg('div'),ms=S.months.filter(m=>m<=sel),its=d==='REGION'?DK:[d],t=its.reduce((a,x)=>a+Math.round(DT[x]/12),0);const A=ms.map(m=>its.reduce((a,x)=>a+((G[x]&&G[x].m[m])?G[x].m[m].n:0),0));const T=ms.map(()=>t),tt=t*ms.length,ta=A.reduce((a,b)=>a+b,0);return{L:ms.map(rpMn),T,A,tt,ta,pct:pctOf(ta,tt),sh:Math.max(tt-ta,0),fy:its.reduce((a,x)=>a+DT[x],0)}}
 /* ---------- renderers ---------- */
-const bandOf=v=>v==null?null:v>=GREEN?{bg:'#dcefd9',c:'#1b6b2e'}:v>=ORANGE?{bg:'#ffe5cc',c:'#c25500'}:{bg:'#fde0e0',c:'#c00000'};
-const fm=(T,v,i)=>v==null?'-':typeof v==='string'?esc(v):(T.pc.includes(i)?v.toFixed(1)+'%':(T.gi||[]).includes(i)?(v>=0?'+':'')+v.toFixed(1)+'%':f0(v));
-function sty(T,r,v,i){let bg=r.k==='grand'?'#ffe08a':r.k==='tot'?'#fff0c2':'#fff',c='#111';if(v!=null&&typeof v==='number'){if(T.pc.includes(i)){const b=bandOf(v);if(b){bg=b.bg;c=b.c}}else if((T.gi||[]).includes(i)){bg=v>=0?'#dcefd9':'#fde0e0';c=v>=0?'#1b6b2e':'#c00000'}else if(T.neg.includes(i)&&v<0){bg='#fde0e0';c='#c00000'}}return{bg,c,b:!!(r.k||T.pc.includes(i)||(T.gi||[]).includes(i))}}
-const tdh=(x,o={})=>`<td${o.rs?` rowspan="${o.rs}"`:''}${o.cs?` colspan="${o.cs}"`:''} style="border:1px solid #ccd;padding:5px 7px;text-align:${o.l?'left':'right'};font:${o.b?'700 ':''}${o.fs||12}px Arial;background:${o.bg||'#fff'};color:${o.c||'#111'}">${x}</td>`;
-function tblHTML(T){const fs=T.head.length>16?10:T.head.length>12?11:12;let h='<table style="border-collapse:collapse;width:100%"><tr>'+T.head.map(x=>`<td style="padding:7px;background:#b3121b;color:#fff;font:700 ${fs-1}px Arial;text-align:center;border:1px solid #8f0e15">${esc(x)}</td>`).join('')+'</tr>';
- const cnt={};T.rows.forEach(r=>{if(r.g&&!r.k)cnt[r.g]=(cnt[r.g]||0)+1});const seen={};
- T.rows.forEach(r=>{h+='<tr>';r.c.forEach((v,i)=>{if(T.span){if(i===0){if(r.k==='tot'){h+=tdh(esc(v),{l:1,b:1,bg:'#fff0c2',cs:2,fs});return}if(r.k==='grand'){h+=tdh(esc(v),{l:1,b:1,bg:'#ffe08a',cs:2,fs});return}if(!seen[r.g]){seen[r.g]=1;h+=tdh(esc(v),{l:1,b:1,rs:cnt[r.g],fs})}return}if(i===1&&(r.k==='tot'||r.k==='grand'))return}
-  if(i<(T.span?2:1)){h+=tdh(esc(v),{l:1,b:1,bg:r.k==='grand'?'#ffe08a':r.k==='tot'?'#fff0c2':'#fff',fs});return}
-  const s=sty(T,r,v,i);h+=tdh(fm(T,v,i),{bg:s.bg,c:s.c,b:s.b,fs})});h+='</tr>'});
- return RP.wrap(T.title,T.sub,h+`</table><div style="font:11px Arial;color:#777;padding-top:6px">${esc(T.note)}</div>`)}
+const bandOf=(v,T)=>v==null?null:v>=((T&&T.g)||GREEN)?{bg:'#dcefd9',c:'#1b6b2e'}:v>=((T&&T.o)||ORANGE)?{bg:'#ffe5cc',c:'#c25500'}:{bg:'#fde0e0',c:'#c00000'};
+const fm=(T,v,i)=>{if(v==null)return'-';if(typeof v==='string')return esc(v);if(T.pc.includes(i))return v.toFixed(T.p2?2:1)+(T.p2?'':'%');if((T.gi||[]).includes(i))return(v>=0?'+':'')+v.toFixed(1)+'%';if(T.dec!=null)return(+v).toFixed(T.dec);return T.plain?String(Math.round(v)):f0(v)};
+const rowBg=(T,r)=>{const t=T.th||{};return r.k==='grand'?(t.grand||'#ffe08a'):r.k==='tot'?(t.tot||'#fff0c2'):'#fff'};
+function sty(T,r,v,i){let bg=rowBg(T,r),c='#111',b=!!r.k;if(r.cc&&r.cc[i]){const x=r.cc[i];return{bg:x.bg,c:x.c,b:!!(x.b||r.k)}}if(v!=null&&typeof v==='number'){if(T.pc.includes(i)&&!(T.nb||[]).includes(i)){const x=bandOf(v,T);if(x){bg=x.bg;c=x.c}b=true}else if((T.gi||[]).includes(i)){bg=v>=0?'#dcefd9':'#fde0e0';c=v>=0?'#1b6b2e':'#c00000';b=true}else if(T.neg.includes(i)&&v<0){bg='#fde0e0';c='#c00000'}}return{bg,c,b}}
+const tdh=(x,o={})=>`<td${o.rs?` rowspan="${o.rs}"`:''}${o.cs?` colspan="${o.cs}"`:''} style="border:1px solid #333;padding:5px 7px;text-align:${o.l?'left':'right'};font:${o.b?'700 ':''}${o.fs||12}px Arial;background:${o.bg||'#fff'};color:${o.c||'#111'}">${x}</td>`;
+function tblCore(T){const th=T.th||{},fs=T.head.length>16?10:T.head.length>12?11:12,HR=T.heads||[T.head.map(t=>({t}))];
+ let h='<table style="border-collapse:collapse;width:100%">'+HR.map(r=>'<tr>'+r.map(x=>`<td${x.cs?` colspan="${x.cs}"`:''}${x.rs?` rowspan="${x.rs}"`:''} style="padding:7px;background:${th.hbg||'#b3121b'};color:${th.hfg||'#fff'};font:700 ${fs-1}px Arial;text-align:center;border:1px solid #333">${esc(x.t)}</td>`).join('')+'</tr>').join('');
+ const lead=T.span?2:1,cnt={},seen={};T.rows.forEach(r=>{if(r.g&&!r.k)cnt[r.g]=(cnt[r.g]||0)+1});
+ T.rows.forEach(r=>{h+='<tr>';r.c.forEach((v,i)=>{if(T.span){if(i===0){if(r.k){h+=tdh(esc(v),{l:1,b:1,bg:rowBg(T,r),cs:2,fs});return}if(!seen[r.g]){seen[r.g]=1;h+=tdh(esc(v),{l:1,b:1,rs:cnt[r.g],fs})}return}if(i===1&&r.k)return}
+  if(i<lead){h+=tdh(esc(v),{l:1,b:1,bg:rowBg(T,r),fs});return}
+  const s=sty(T,r,v,i);h+=tdh(fm(T,v,i),{bg:s.bg,c:s.c,b:s.b,fs})});h+='</tr>'});return h+'</table>'}
+function hbar(c){const n=c.values.length,H=n*18+10,mx=Math.max(1,...c.values.map(Math.abs));let s=`<svg width="380" height="${H}" xmlns="http://www.w3.org/2000/svg" style="font:10px Arial">`;c.values.forEach((v,i)=>{const w=Math.abs(v)/mx*150,y=5+i*18;s+=`<text x="2" y="${y+11}">${esc(String(c.labels[i]).slice(0,22))}</text><rect x="150" y="${y}" width="${w}" height="13" fill="#${c.colors[i]}"/><text x="${154+w}" y="${y+11}">${v}</text>`});return s+'</svg>'}
+function tblHTML(T){if(T.parts){const p=T.parts.map(x=>`<div style="font:700 12px Arial;color:#b3121b;margin:8px 0 3px">${esc(x.label)}</div>`+tblCore(Object.assign({span:0},x))).join('');return RP.wrap(T.title,T.sub,(T.chart?`<div style="display:flex;gap:14px"><div style="flex:1">${p}</div><div style="width:380px">${hbar(T.chart)}</div></div>`:p)+`<div style="font:11px Arial;color:#777;padding-top:6px">${esc(T.note)}</div>`)}
+ return RP.wrap(T.title,T.sub,tblCore(T)+`<div style="font:11px Arial;color:#777;padding-top:6px">${esc(T.note)}</div>`)}
 function chartHTML(d,sel){const k=chartD(d,sel),card=(l,x,c)=>`<div style="background:#f5f5f5;border-top:4px solid ${c};padding:10px 12px;margin-bottom:12px"><div style="font:12px Arial;color:#555">${l}</div><div style="font:700 24px Arial">${x}</div></div>`;
  return RP.wrap('POSB Net Addition: '+(d==='REGION'?'Indore Region':LBL[d]+' Division'),'Month-wise Target vs Achievement | '+subT(sel),`<div style="display:flex;gap:16px"><div style="flex:1">${RP.svg(k.L,k.T,k.A)}</div><div style="width:270px">${card('Total Target (till '+rpMn(sel)+')',f0(k.tt),'#b3121b')}${card('Total Net Addition',f0(k.ta),'#fdb913')}${card('Achievement % of Target',k.pct==null?'-':k.pct.toFixed(1)+'%','#1b6b2f')}${card('Shortfall (Target - Achievement)',f0(k.sh),'#b3121b')}</div></div>`)}
 /* ---------- pages for the mega PPT / PDF ---------- */
-function pages(){if(!S.ok||!S.months.length)return[];const sel=selM(),P=[];const m=rpMn(sel);
- const add=(t,kind,by)=>P.push({g:'sb',t,sb:'tbl',kind,by,sel,build:()=>build(kind,by,sel),html:()=>tblHTML(build(kind,by,sel))});
- add('POSB: Division wise target vs achievement ('+m+')','month','div');add('POSB: Sub-Division wise target vs achievement ('+m+')','month','sd');
- add('POSB: Division wise progressive (Apr to '+m+')','prog','div');add('POSB: Sub-Division wise progressive (Apr to '+m+')','prog','sd');
- add('POSB: Accounts opened - division wise, month-wise','open','div');
- P.push({g:'sb',t:'POSB: This year vs last year (division wise)',sb:'tbl',build:()=>yoy(sel),html:()=>tblHTML(yoy(sel))});
- ['REGION',...DK].forEach(d=>P.push({g:'sb',t:'POSB net addition chart: '+(d==='REGION'?'Indore Region':LBL[d]),sb:'chart',d,sel,html:()=>chartHTML(d,sel)}));return P}
-function ppt(pg,X){const {p,sl,hd,bd,tt,cell,grid,note,TW,TX}=X;
+function revT(d,vs,Lend){const R=RP.D.rev,L=RP.FY.filter(m=>m<=Lend),k=RP.idx(Lend),rows=[],A={t:0,mt:0,cum:0,m:L.map(()=>0)},n=L.length;
+ vs.forEach(v=>{const o=R[v][d],mt=o.t/12,ms=L.map(m=>o.m[m]||0),tot=ms.reduce((a,b)=>a+b,0),cum=mt*k;A.t+=o.t;A.mt+=mt;A.cum+=cum;ms.forEach((x,i)=>A.m[i]+=x);rows.push({c:[rpVn(v).replace(' (MO)','').toUpperCase(),o.t,mt,cum,...ms,tot,pctOf(tot,cum),pctOf(tot,o.t)]})});
+ const tot=A.m.reduce((a,b)=>a+b,0);rows.push({k:'tot',c:['TOTAL',A.t,A.mt,A.cum,...A.m,tot,pctOf(tot,A.cum),pctOf(tot,A.t)]});
+ return{title:rpNm(d)+' - Target vs Achievement till '+mFull(Lend)+' (Rs. crore)',sub:rpCfg().title+' | '+rpCfg().badge+' | '+vs.map(v=>rpVn(v).replace(' (MO)','')).join(', ')+' | April-2026 to '+mFull(Lend),head:['VERTICAL','YEARLY TARGET','MONTHLY TARGET','CUMULATIVE TARGET',...L.map(rpMn),'TOTAL ACH.','% ACH (CUMULATIVE)','% ACH (YEARLY)'],pc:[4+n+1,4+n+2],neg:[],dec:3,g:80,o:60,fw:[1.5],rows,note:'Cumulative target = yearly target x '+k+'/12  |  % Ach (cumulative): Green >= 80%, Orange 60-80%, Red < 60%'}}
+function revPages(P){if(!RP.D||!RP.common)return;const ds=[...RP.DV,'Region'],mk=(d,vs,Le,all)=>{const b=()=>revT(d,vs,Le);P.push({g:'rv',t:(all?'Revenue till '+rpMn(Le)+' - all verticals: ':'Revenue till '+rpMn(Le)+' - '+vs.map(v=>rpVn(v).replace(' (MO)','')).join(', ')+': ')+rpNm(d),sb:'tbl',build:b,html:()=>tblHTML(b())})};
+ ds.forEach(d=>mk(d,RP.VS,RP.common,1));const lv=RP.VS.filter(v=>RP.last[v]===RP.maxM);if(RP.maxM>RP.common&&lv.length)ds.forEach(d=>mk(d,lv,RP.maxM,0))}
+function pages(){const P=[];try{revPages(P)}catch(e){console.error(e)}if(!S.ok||!S.months.length)return P;const sel=selM(),m=rpMn(sel);
+ const T=(t,g,b)=>P.push({g,t,sb:'tbl',sel,build:b,html:()=>tblHTML(b())});
+ T('POSB: Sub-Division wise A/c opened, closed & net status ('+m+')','sb',()=>stBuild('sd',sel,0));T('POSB: Division wise A/c opened, closed & net status ('+m+')','sb',()=>stBuild('div',sel,0));
+ T('POSB: Sub-Division wise status of net addition ('+m+')','sb',()=>stBuild('sd',sel,1));T('POSB: Division wise status of net addition ('+m+')','sb',()=>stBuild('div',sel,1));
+ T('POSB: Division wise target vs achievement ('+m+')','sb',()=>build('month','div',sel));T('POSB: Sub-Division wise target vs achievement ('+m+')','sb',()=>build('month','sd',sel));
+ T('POSB: Division wise progressive (Apr to '+m+')','sb',()=>build('prog','div',sel));T('POSB: Sub-Division wise progressive (Apr to '+m+')','sb',()=>build('prog','sd',sel));
+ T('POSB: Accounts opened - division wise, month-wise','sb',()=>build('open','div',sel));T('POSB: This year vs last year (division wise)','sb',()=>yoy(sel));
+ if(S.months.includes('2026-07')){T('POSB: Division wise Q1 vs Q2','sbq',()=>qBuild('div',sel));T('POSB: Sub-Division wise Q1 vs Q2','sbq',()=>qBuild('sd',sel))}
+ DK.forEach(d=>['BO','SOHO'].forEach(c=>['m','o'].forEach(md=>T('POSB: '+LBL[d]+' - '+(c==='BO'?'BO':'SO/HO')+' top & bottom 10 ('+(md==='m'?m:'Apr to '+m)+')','sbr',()=>rankT(d,c,md,sel,10,10)))));
+ ['BO','SOHO'].forEach(c=>['m','o'].forEach(md=>T('POSB: Indore Region - '+(c==='BO'?'BO':'SO/HO')+' bottom 20 ('+(md==='m'?m:'Apr to '+m)+')','sbr',()=>rankT('REGION',c,md,sel,0,20))));
+ ['m','o'].forEach(md=>T('POSB: Sub-Division top & bottom 10 ('+(md==='m'?m:'Apr to '+m)+')','sbr',()=>rankT('REGION','SD',md,sel,10,10)));
+ ['REGION',...DK].forEach(d=>P.push({g:'sbc',t:'POSB net addition chart: '+(d==='REGION'?'Indore Region':LBL[d]),sb:'chart',d,sel,html:()=>chartHTML(d,sel)}));return P}
+function tblPPT(X,s,T,rows,x,y,tw,hH,rH,fs){const {cell,bd,tt}=X,th=T.th||{},hb=(th.hbg||'#b3121b').slice(1).toUpperCase(),hf=(th.hfg||'#ffffff').slice(1).toUpperCase(),tbc=(th.tot||'#fff0c2').slice(1).toUpperCase(),gbc=(th.grand||'#ffe08a').slice(1).toUpperCase();
+ const nc=T.head.length,fw=T.fw,rest=nc-fw.length,w=(tw-fw.reduce((a,b)=>a+b,0))/rest,colW=[...fw,...Array(rest).fill(w)],lead=T.span?2:1;
+ const HR=(T.heads||[T.head.map(t=>({t}))]).map(r=>r.map(h=>{const o={bold:true,color:hf,fill:{color:hb},fontSize:fs};if(h.cs)o.colspan=h.cs;if(h.rs)o.rowspan=h.rs;return cell(String(h.t),o)}));
+ const cnt={},seen={};rows.forEach(r=>{if(r.g&&!r.k)cnt[r.g]=(cnt[r.g]||0)+1});const body=[];
+ rows.forEach((r,ri)=>{const row=[],fc=r.k==='grand'?gbc:tbc;r.c.forEach((v,i)=>{if(T.span){if(i===0){if(r.k){row.push(tt(String(v),{align:'left',colspan:2,fontSize:fs,fill:{color:fc}}));return}if(!seen[r.g]){seen[r.g]=1;row.push(cell(String(v),{bold:true,align:'left',fill:{color:'FFFFFF'},rowspan:cnt[r.g],fontSize:fs}))}return}if(i===1&&r.k)return}
+  const ld=i<lead,txt=ld?String(v):fm(T,v,i).replace(/&amp;/g,'&');const o={fontSize:fs};if(ld)Object.assign(o,{align:'left',bold:true});else{const z=sty(T,r,v,i);if(z.bg!==rowBg(T,r)||z.c!=='#111'){if(z.bg&&z.bg!=='#fff')o.fill={color:z.bg.slice(1).toUpperCase()};o.color=z.c.slice(1).toUpperCase()}if(z.b)o.bold=true}
+  if(r.k){o.fill=o.fill&&(r.cc&&r.cc[i]||(T.pc.includes(i)&&!(T.nb||[]).includes(i)))?o.fill:{color:fc};row.push(tt(txt,o))}else row.push(bd(txt,ri,o))});body.push(row)});
+ const all=[...HR,...body];s.addTable(all,{x,y,w:tw,colW,rowH:[...HR.map(()=>HR.length>1?hH*.6:hH),...body.map(()=>rH)]});return y+HR.length*(HR.length>1?hH*.6:hH)+body.length*rH}
+function ppt(pg,X){const {p,sl,note,TW,TX}=X;
  if(pg.sb==='chart'){const k=chartD(pg.d,pg.sel),s=sl('POSB Net Addition: '+(pg.d==='REGION'?'Indore Region':LBL[pg.d]+' Division'),'Month-wise Target vs Achievement | '+subT(pg.sel));
   s.addChart(p.charts.BAR,[{name:'Target (monthly)',labels:k.L,values:k.T},{name:'Net Addition',labels:k.L,values:k.A}],{x:.5,y:1.4,w:8.4,h:5.6,barDir:'col',barGrouping:'clustered',chartColors:['B3121B','FDB913'],showLegend:true,legendPos:'b',showValue:true,dataLabelFontSize:8,dataLabelFormatCode:'#,##0',valAxisLabelFontSize:9,catAxisLabelFontSize:10});
   [['Total Target (till '+rpMn(pg.sel)+')',f0(k.tt),'B3121B'],['Total Net Addition',f0(k.ta),'FDB913'],['Achievement % of Target',k.pct==null?'-':k.pct.toFixed(1)+'%','1B6B2F'],['Shortfall (Target - Achievement)',f0(k.sh),'B3121B']].forEach((x,i)=>{const y=1.5+i*1.35;s.addShape(p.ShapeType.rect,{x:9.2,y,w:3.6,h:1.15,fill:{color:'F5F5F5'}});s.addShape(p.ShapeType.rect,{x:9.2,y,w:3.6,h:.07,fill:{color:x[2]}});s.addText(x[0],{x:9.3,y:y+.12,w:3.4,h:.3,fontSize:11,color:'555555',fontFace:'Arial'});s.addText(x[1],{x:9.3,y:y+.45,w:3.4,h:.55,fontSize:24,bold:true,fontFace:'Arial'})});return}
- const T=pg.build(),nc=T.head.length,fw=T.fw,rest=nc-fw.length,w=(TW-fw.reduce((a,b)=>a+b,0))/rest,colW=[...fw,...Array(rest).fill(w)],fs=nc>18?7:nc>14?8:nc>10?9:10;
- const bo=b=>b?{fill:{color:b.bg.slice(1).toUpperCase()},color:b.c.slice(1).toUpperCase(),bold:true}:{};
- const chunks=[];if(T.span){let cur=[],g=null;const CAP=13;const grp=[];T.rows.forEach(r=>{if(r.k==='grand'){grp.push({rows:[r],grand:1});return}const l=grp[grp.length-1];if(l&&!l.grand&&l.g===r.g)l.rows.push(r);else grp.push({g:r.g,rows:[r]})});
+ const T=pg.build();
+ if(T.parts){const s=sl(T.title,T.sub),tw=T.chart?7.7:TW;let y=1.35;const rH=T.parts.length===1?.24:.22;
+  T.parts.forEach(pt=>{s.addText(pt.label,{x:TX,y,w:tw,h:.22,fontSize:10,bold:true,color:'B3121B',fontFace:'Arial',margin:0});y=tblPPT(X,s,Object.assign({span:0},pt),pt.rows,TX,y+.24,tw,.26,rH,pt.head.length>12?7:8)+.06});
+  note(s,Math.min(y+.04,7.05),T.note);
+  if(T.chart)s.addChart(p.charts.BAR,[{name:'Net addition',labels:T.chart.labels,values:T.chart.values}],{x:8.5,y:1.35,w:4.4,h:5.6,barDir:'bar',catAxisOrientation:'maxMin',chartColors:T.chart.colors,showLegend:false,showValue:true,dataLabelFontSize:7,catAxisLabelFontSize:7,valAxisHidden:true,valGridLine:{style:'none'}});return}
+ const nc=T.head.length,fs=nc>18?7:nc>14?8:nc>10?9:10,chunks=[];
+ if(T.span){let cur=[];const CAP=13,grp=[];T.rows.forEach(r=>{if(r.k==='grand'){grp.push({rows:[r],grand:1});return}const l=grp[grp.length-1];if(l&&!l.grand&&l.g===r.g)l.rows.push(r);else grp.push({g:r.g,rows:[r]})});
   grp.forEach(x=>{if(cur.length&&cur.length+x.rows.length>CAP){chunks.push(cur);cur=[]}cur=cur.concat(x.rows)});if(cur.length)chunks.push(cur)}else chunks.push(T.rows);
- chunks.forEach((ch,ci)=>{const s=sl(T.title+(chunks.length>1?' ('+(ci+1)+'/'+chunks.length+')':''),T.sub),rows=[T.head.map(h=>hd(h,fs))],cnt={};ch.forEach(r=>{if(r.g&&!r.k)cnt[r.g]=(cnt[r.g]||0)+1});const seen={};
-  ch.forEach((r,ri)=>{const row=[];r.c.forEach((v,i)=>{if(T.span){if(i===0){if(r.k){row.push(tt(String(v),{align:'left',colspan:2,fontSize:fs,fill:{color:r.k==='grand'?'FFE08A':'FFF0C2'}}));return}if(!seen[r.g]){seen[r.g]=1;row.push(cell(String(v),{bold:true,align:'left',fill:{color:'FFFFFF'},rowspan:cnt[r.g],fontSize:fs}))}return}if(i===1&&r.k)return}
-   const lead=i<(T.span?2:1),txt=lead?String(v):fm(T,v,i).replace(/&amp;/g,'&');let o={fontSize:fs};if(lead)Object.assign(o,{align:'left',bold:true});
-   else if(v!=null&&typeof v==='number'){if(T.pc.includes(i))Object.assign(o,bo(bandOf(v)));else if((T.gi||[]).includes(i))Object.assign(o,bo(v>=0?{bg:'#dcefd9',c:'#1b6b2e'}:{bg:'#fde0e0',c:'#c00000'}));else if(T.neg.includes(i)&&v<0)o.color='C00000'}
-   row.push(r.k?tt(txt,r.k==='grand'?Object.assign(o,{fill:{color:'FFE08A'}}):o):bd(txt,ri,o))});rows.push(row)});
-  const y=grid(s,rows,colW,.62,ch.length>10?.34:.46,1.5);note(s,Math.min(y+.12,6.75),T.note)})}
+ chunks.forEach((ch,ci)=>{const s=sl(T.title+(chunks.length>1?' ('+(ci+1)+'/'+chunks.length+')':''),T.sub),y=tblPPT(X,s,T,ch,TX,1.5,TW,T.heads?.8:.62,ch.length>10?.34:.46,fs);note(s,Math.min(y+.12,6.78),T.note)})}
 /* ---------- Excel (5 sheets) ---------- */
 function xlsx(){if(!S.months.length||!sb().files.length)return alert('Pehle POSB open / close files upload karein.');const sel=selM(),wb=XLSX.utils.book_new(),r1=x=>Math.round(x*10)/10,v=g=>(g&&g.m[sel])||null;
  const mkSheet=(by)=>{const G=agg(by),L=[];const addRow=(d,sd,g,fy)=>{const x=v(g),t=Math.round(fy/12);L.push(by==='sd'?[LBL[d],cap(sd),g?g.n:0,t,x?x.o:'',x?x.c:'',x?x.n:'',x&&t?r1(x.n*100/t):'',x?Math.max(t-x.n,0):'']:[LBL[d],g?g.n:0,t,x?x.o:'',x?x.c:'',x?x.n:'',x&&t?r1(x.n*100/t):'',x?Math.max(t-x.n,0):''])};
@@ -2430,7 +2491,7 @@ function xlsx(){if(!S.months.length||!sb().files.length)return alert('Pehle POSB
 const VIEWS=[['dm','Division (month)'],['sm','Sub-Division (month)'],['dp','Division progressive'],['sp','Sub-Division progressive'],['op','Accounts opened'],['yoy','vs Last year'],['ch','Graph']];
 function render(){const el=$('sbStat');if(!el)return;const s=sb();
  el.innerHTML=S.ok?`<div class="msg">Mapping: ${Object.keys(S.mst.byOff).length} offices | FY data: ${S.dat.months.map(rpMn).join(', ')||'-'}${S.dat.day?' (till '+S.dat.day+')':''} | Last year: ${Object.keys(S.ly).length?'loaded':'not loaded'} | Uploads: ${s.files.filter(f=>f.side==='open').length} open, ${s.files.filter(f=>f.side==='close').length} close</div>`:`<div class="msg ${S.err?'err':'warn'}">${S.err?esc(S.err):'Google sheets load ho rahi hain...'}</div>`;
- const um=$('sbUpM');if(um){const cur=s.upMonth||S.up||RP.FY[Math.min(11,Math.max(0,...S.dat.months.map(m=>RP.FY.indexOf(m)))+1)];um.innerHTML=RP.FY.map(y=>`<option value="${y}" ${y===cur?'selected':''}>${mFull(y)}</option>`).join('')}
+ const ud=$('sbUpD');if(ud)ud.value=s.upDay||'';const um=$('sbUpM');if(um){const cur=s.upMonth||S.up||RP.FY[Math.min(11,Math.max(0,...S.dat.months.map(m=>RP.FY.indexOf(m)))+1)];um.innerHTML=RP.FY.map(y=>`<option value="${y}" ${y===cur?'selected':''}>${mFull(y)}</option>`).join('')}
  const fl=$('sbFiles2');if(fl){const dup={};s.files.forEach(f=>{const k=f.side+'|'+f.fdiv;dup[k]=(dup[k]||0)+1});fl.innerHTML=s.files.length?'<table class="s2"><tr><th>#</th><th>File</th><th>Type (auto)</th><th>Division (from mapping)</th><th>Rows</th><th>Matched</th><th></th></tr>'+s.files.map((f,i)=>`<tr><td>${i+1}</td><td>${esc(f.name)}</td><td><select onchange="SBX.setSide(${i},this.value)"><option value="open" ${f.side==='open'?'selected':''}>Account OPEN</option><option value="close" ${f.side==='close'?'selected':''}>Account CLOSE</option></select></td><td><select onchange="SBX.setDiv(${i},this.value)"><option value="">?</option>${DK.map(d=>`<option value="${d}" ${f.fdiv===d?'selected':''}>${LBL[d]}</option>`).join('')}</select>${dup[f.side+'|'+f.fdiv]>1?' <span title="same type + division twice">&#9888;</span>':''}</td><td>${f.rows}</td><td class="${f.matched<f.rows?'bad':''}">${f.matched}/${f.rows}</td><td><button class="b sm gray" onclick="SBX.del(${i})">&#10006;</button></td></tr>`).join('')+'</table>':'<div class="hint">No files yet.</div>'}
  const ms=$('sbMonth');if(ms){ms.innerHTML=S.months.map(y=>`<option value="${y}" ${y===selM()?'selected':''}>${mFull(y)}</option>`).join('')}
  const vt=$('sbTabs');if(vt)vt.innerHTML=VIEWS.map(([k,l])=>`<button class="${S.view===k?'on':''}" onclick="SBX.setView('${k}')">${l}</button>`).join('');
@@ -2443,6 +2504,7 @@ function setRender(){const el=$('sbMapBox');if(!el)return;const s=sb();
  el.innerHTML=h}
 async function add(list){try{await S.ready}catch(e){}if(!S.ok)return alert('Mapping sheet abhi load nahi hui. Thodi der baad try karein.');const s=sb(),fs=[...list].filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));if(!fs.length)return alert('Excel / CSV files select karein.');let skip=0;
  for(const f of fs){const buf=await f.arrayBuffer();const r=parseFile(buf,f.name);if(r.error){alert(f.name+': '+r.error);continue}const i=s.files.findIndex(x=>x.name===f.name);if(i>=0)s.files[i]=r;else if(s.files.length>=14){skip++;continue}else s.files.push(r)}
+ if(!s.upDay&&typeof prompt==='function'){const up=s.upMonth||S.up||'',d=prompt('Uploaded POSB data kis date tak ka hai? (sirf date likhein, jaise 15)'+(up?'  ['+mFull(up)+']':''),String(new Date().getDate()));if(d&&+d>=1&&+d<=31)s.upDay=String(+d)}
  if(skip)alert('Maximum 14 files - '+skip+' extra file(s) skip hui.');save();calc();render();rpRefresh()}
 function rpRefresh(){try{if($('p-rp').style.display!=='none')rpRender()}catch(e){}}
 const upd=()=>{save();calc();render();rpRefresh()};
@@ -2450,16 +2512,33 @@ async function init(){S.ready=(async()=>{try{const [m,d,l]=await Promise.all([fe
 return{init,render,add,xlsx,pages,ppt,calc,
  setSide:(i,v)=>{sb().files[i].side=v;upd()},setDiv:(i,v)=>{sb().files[i].fdiv=v;upd()},del:i=>{sb().files.splice(i,1);upd()},
  reset:()=>{if(!confirm('Saari uploaded POSB files hata dein?'))return;sb().files=[];upd()},
- setView:v=>{S.view=v;render()},setCh:v=>{S.chDiv=v;render()},setM:v=>{sb().selM=v;save();render()},setUp:v=>{sb().upMonth=v;upd()},
+ setView:v=>{S.view=v;render()},setCh:v=>{S.chDiv=v;render()},setM:v=>{sb().selM=v;save();render()},setDay:v=>{sb().upDay=v?String(Math.min(31,Math.max(1,+v))):'';upd()},setUp:v=>{sb().upMonth=v;upd()},
  refresh:()=>init(),
  addOff:i=>{const u=S.unm[i],s=sb();s.extra[u.id]={name:$('sbn_'+i).value.trim()||u.id,cls:$('sbc_'+i).value,sd:$('sbs_'+i).value,div:u.div};upd();toast('Office added')},
  merge:i=>{const u=S.unm[i],t=cid($('sbi_'+i).value);if(!t)return alert('Target BO ID / SOL ID likhein');if(!(S.mst.byId[t]||[]).length)return alert('Ye ID mapping sheet me nahi mili: '+t);sb().alias[u.id]=t;upd();toast('Numbers added to '+t)},
  delX:(k,id)=>{delete sb()[k==='e'?'extra':'alias'][id];upd()}}})();
 SBX.init();
 /* hook into Reports tab (mega PPT / PDF) */
-RP.G.sb='POSB (SB) net addition - target vs achievement, progressive, graphs';
+RP.G.rv='Revenue - till the month where ALL verticals have data, and till latest month for the verticals that have it';RP.G.sb='POSB status reports (A/c opened-closed-net, net addition status) + target vs achievement, progressive, accounts opened, vs last year';RP.G.sbq='POSB - Q1 vs Q2';RP.G.sbr='POSB - BO / SO-HO / Sub-Division top & bottom lists';RP.G.sbc='POSB - net addition graphs';
 {const _p=RP.pages;RP.pages=()=>{const P=_p();try{SBX.pages().forEach(x=>P.push(x))}catch(e){console.error(e)}return P}}
 {const _rs2=renderSettings;renderSettings=function(){_rs2();SBX.render()}}
+
+/* ===================== Reports tab: section-wise selection for mega PPT / PDF ===================== */
+const RPSEC=[['Daily Reports',['day']],['Revenue Reports',['rv','sum','mon','yoy']],['Article Count Reports',['cnt','yoyc']],['Q1 Vs Q2 Reports (Article Count)',['q']],['POSB Reports',['sb','sbq','sbr','sbc']],['Nil Booking Reports',['bo']]];
+function rpSecList(si){return RP.PL.map((p,i)=>[p,i]).filter(x=>RPSEC[si][1].includes(x[0].g))}
+function rpSecRender(){const el=document.getElementById('rpSecCard');if(!el)return;const open=[...el.querySelectorAll('details[open]')].map(d=>d.dataset.k);RP.PL=RP.pages();const c=rpCfg();
+ let h='<h3>Mega PPT / PDF - choose sections</h3><div class="hint">Tick the sections you want (open a section to choose single groups or pages). Then press <b>Download selected PPT</b> / <b>PDF</b> - one complete file with the cover and all ticked sections.</div><div class="row"><button class="b sm gray" onclick="rpSecAll(true)">Select all</button><button class="b sm gray" onclick="rpSecAll(false)">Clear all</button><button class="b" onclick="rpPPT()">Download selected PPT</button><button class="b" onclick="rpPDF()">Download selected PDF</button><span class="hint">'+RP.sel().length+' of '+RP.PL.length+' pages selected</span></div>';
+ RPSEC.forEach(([nm,gs],si)=>{const ps=rpSecList(si);if(!ps.length)return;const on=ps.filter(x=>!c.ex[RP.pid(x[0])]).length;
+  h+=`<details data-k="s${si}" style="margin:6px 0;border:1px solid #e3e3e3;border-radius:8px;padding:6px 10px"><summary style="cursor:pointer"><label onclick="event.stopPropagation()"><input type="checkbox" ${on===ps.length?'checked':''} onchange="rpSecTog(${si},this.checked)"> <b>${esc(nm)}</b></label> <span class="hint">(${on}/${ps.length} pages)</span> <button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpSecDl('ppt',${si})">PPT</button><button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpSecDl('pdf',${si})">PDF</button></summary>`;
+  gs.forEach(g=>{const gp=ps.filter(x=>x[0].g===g);if(!gp.length)return;const all=gp.every(x=>!c.ex[RP.pid(x[0])]);
+   h+=`<details data-k="g${g}" style="margin:4px 0 4px 18px"><summary style="cursor:pointer"><label onclick="event.stopPropagation()"><input type="checkbox" ${all?'checked':''} onchange="rpGrp2('${g}',this.checked)"> ${esc(RP.G[g]||g)}</label> <span class="hint">(${gp.length})</span> <button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpDlG('ppt','${g}')">PPT</button><button class="b sm" onclick="event.preventDefault();event.stopPropagation();rpDlG('pdf','${g}')">PDF</button></summary><div style="padding-left:22px">`+gp.map(([p,i])=>`<div style="display:flex;align-items:center;gap:8px;padding:2px 0"><label style="min-width:380px"><input type="checkbox" ${c.ex[RP.pid(p)]?'':'checked'} onchange="rpTog(${i},this.checked)"> ${esc(p.t)}</label><button class="b sm" onclick="rpDlP('ppt',${i})">PPT</button><button class="b sm" onclick="rpDlP('pdf',${i})">PDF</button><button class="b sm" onclick="rpDlP('jpg',${i})">JPG</button></div>`).join('')+'</div></details>'});
+  h+='</details>'});
+ el.innerHTML=h;open.forEach(k=>{const d=el.querySelector(`details[data-k="${k}"]`);if(d)d.open=true})}
+function rpSecTog(si,on){const c=rpCfg();rpSecList(si).forEach(x=>{if(on)delete c.ex[RP.pid(x[0])];else c.ex[RP.pid(x[0])]=1});NB.save();rpSecRender()}
+function rpGrp2(g,on){const c=rpCfg();RP.PL.filter(p=>p.g===g).forEach(p=>{if(on)delete c.ex[RP.pid(p)];else c.ex[RP.pid(p)]=1});NB.save();rpSecRender()}
+function rpSecAll(on){const c=rpCfg();RP.PL.forEach(p=>{if(on)delete c.ex[RP.pid(p)];else c.ex[RP.pid(p)]=1});NB.save();rpSecRender()}
+function rpSecDl(k,si){const c=rpCfg(),l=rpSecList(si).map(x=>x[0]).filter(p=>!c.ex[RP.pid(p)]);if(!l.length)return alert('No page is ticked in this section');const n=RPSEC[si][0].replace(/[^\w]+/g,'_');return k==='ppt'?rpPPT(l,n):rpPDF(l,n)}
+{const _rr=rpRender;rpRender=function(){_rr.apply(this,arguments);try{rpSecRender()}catch(e){console.error(e)}}}
 
 </script>
 </body>
