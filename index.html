@@ -4,10 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Day Wise Report – MO, Parcel & CCS (Aadhaar) – Indore Region</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script><script>if(typeof XLSX==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script>if(typeof JSZip==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script>if(typeof jspdf==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script><script>if(typeof PptxGenJS==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"><\/script>');</script>
+<script>
+/* Fallback: agar CDN load na ho to XLSX ka chhota CSV-only version (CSV upload phir bhi chalega) */
+if(typeof XLSX==="undefined"){(function(){
+function parseCSV(t){t=t.replace(/^\ufeff/,'');var rows=[],row=[],f='',q=false,i=0,c;
+ while(i<t.length){c=t[i];
+  if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=c}
+  else if(c=='"')q=true;else if(c==','){row.push(f);f=''}
+  else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;row.push(f);rows.push(row);row=[];f=''}
+  else f+=c;i++}
+ if(f!==''||row.length){row.push(f);rows.push(row)}return rows}
+function sheetFrom(a){return {__aoa:a}}
+window.XLSX={
+ __shim:true,
+ read:function(buf,o){var u=new Uint8Array(buf instanceof ArrayBuffer?buf:(buf.buffer||buf));
+  if((u[0]==0x50&&u[1]==0x4B)||(u[0]==0xD0&&u[1]==0xCF))
+   throw new Error('Excel (.xlsx/.xls) file padhne wali library (XLSX) internet se load nahi hui. Internet / ad-blocker / firewall check karein aur page refresh karein, ya file ko CSV mein save karke upload karein.');
+  var t=new TextDecoder('utf-8').decode(u);
+  return {SheetNames:['Sheet1'],Sheets:{Sheet1:sheetFrom(parseCSV(t))}}},
+ utils:{
+  sheet_to_json:function(sh,o){o=o||{};var a=sh.__aoa||[];
+   if(o.header===1)return a.map(function(r){return r.slice()});
+   if(!a.length)return[];var h=a[0].map(function(x){return String(x)}),out=[];
+   for(var i=1;i<a.length;i++){var r=a[i];if(r.every(function(x){return x===''}))continue;var obj={};
+    h.forEach(function(k,j){obj[k]=r[j]===undefined?(o.defval!==undefined?o.defval:undefined):r[j]});out.push(obj)}
+   return out},
+  sheet_to_csv:function(sh){return (sh.__aoa||[]).map(function(r){return r.map(function(x){x=String(x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x}).join(',')}).join('\n')}
+ },
+ SSF:{parse_date_code:function(n){var d=new Date(Math.round((n-25569)*864e5));return{y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate()}}}
+};
+window.addEventListener('DOMContentLoaded',function(){var d=document.createElement('div');
+ d.style.cssText='background:#fff3cd;color:#664d03;padding:8px 12px;font:13px Arial;border-bottom:1px solid #e6c200';
+ d.textContent='Warning: Excel library (XLSX) internet se load nahi hui. Abhi sirf CSV upload chalega. Excel / download ke liye internet ya ad-blocker check karke page refresh karein.';
+ document.body.insertBefore(d,document.body.firstChild)});
+})()}
+</script>
 <style>
 :root{--red:#b3121b;--red-d:#8f0e15;--yel:#fdb913;--ink:#1f2430;--mut:#5b6472;--line:#dfe3ea;--bg:#f2f4f8}
 *{box-sizing:border-box}
@@ -387,10 +422,56 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <div id="gdlg"><div class="box" id="gbox"></div></div>
 <div id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script><script>if(typeof html2canvas==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>');</script>
 <script>
+/* === IndexedDB storage (localStorage ki 5 MB limit hat gayi) === */
+(function(){
+ var DBN='dwStoreV1',ST='kv',mem=new Map(),dirty={},timer=null,db=null,pending=0;
+ function open(){return new Promise(function(res){try{var r=indexedDB.open(DBN,1);
+  r.onupgradeneeded=function(){r.result.createObjectStore(ST)};
+  r.onsuccess=function(){res(r.result)};r.onerror=function(){res(null)};r.onblocked=function(){res(null)}}catch(e){res(null)}})}
+ function loadAll(d){return new Promise(function(res){try{var rq=d.transaction(ST,'readonly').objectStore(ST).openCursor();
+  rq.onsuccess=function(){var c=rq.result;if(c){mem.set(c.key,c.value);c.continue()}else res()};
+  rq.onerror=function(){res()}}catch(e){res()}})}
+ function flush(cb){timer=null;var ks=Object.keys(dirty);if(!ks.length||!db){cb&&cb();return}
+  var snap=dirty;dirty={};
+  try{var tx=db.transaction(ST,'readwrite'),os=tx.objectStore(ST);
+   ks.forEach(function(k){if(snap[k]===null)os.delete(k);else os.put(snap[k],k)});
+   tx.oncomplete=function(){cb&&cb()};
+   tx.onerror=tx.onabort=function(){ks.forEach(function(k){if(!(k in dirty))dirty[k]=snap[k]});console.warn('IndexedDB save failed')}
+  }catch(e){ks.forEach(function(k){if(!(k in dirty))dirty[k]=snap[k]})}}
+ function sched(){if(!timer)timer=setTimeout(function(){flush()},200)}
+ var real=null;try{real=window.localStorage}catch(e){}
+ window.DBLS={
+  getItem:function(k){return mem.has(k)?mem.get(k):null},
+  setItem:function(k,v){v=String(v);mem.set(k,v);
+   if(db){dirty[k]=v;sched()}else if(real){try{real.setItem(k,v)}catch(e){}}},
+  removeItem:function(k){mem.delete(k);if(db){dirty[k]=null;sched()}else if(real){try{real.removeItem(k)}catch(e){}}},
+  key:function(i){return Array.from(mem.keys())[i]||null},
+  clear:function(){var ks=Array.from(mem.keys());ks.forEach(function(k){window.DBLS.removeItem(k)})},
+  get length(){return mem.size}};
+ window.storageUsage=function(){var t=0,r=[];mem.forEach(function(v,k){var n=(k.length+v.length)*2;t+=n;r.push([k,n])});
+  r.sort(function(a,b){return b[1]-a[1]});return{total:t,items:r,store:db?'IndexedDB':'memory/localStorage'}};
+ document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush()});
+ window.addEventListener('pagehide',function(){flush()});
+ function start(){
+  var list=Array.prototype.slice.call(document.querySelectorAll('script[type="text/x-deferred"]'));
+  list.forEach(function(o){var n=document.createElement('script');n.text=o.text;o.parentNode.replaceChild(n,o)})}
+ (async function(){
+  try{db=await open();
+   if(db){await loadAll(db);
+    /* purana localStorage data IndexedDB mein le aao (ek baar), phir localStorage khali karo */
+    if(real){var moved=[];try{for(var i=0;i<real.length;i++){var k=real.key(i);if(!mem.has(k)){var v=real.getItem(k);if(v!==null){mem.set(k,v);dirty[k]=v}}moved.push(k)}}catch(e){}
+     if(Object.keys(dirty).length||moved.length)flush(function(){try{moved.forEach(function(k){real.removeItem(k)})}catch(e){}})}
+    try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+   }else if(real){try{for(var j=0;j<real.length;j++){var kk=real.key(j);mem.set(kk,real.getItem(kk))}}catch(e){}}
+  }catch(e){console.warn('storage init',e)}
+  start()})();
+})();
+</script>
+<script type="text/x-deferred">
 /* ===================== CONFIG ===================== */
-let NM=localStorage.getItem('dwMapNew')==='1';
+let NM=DBLS.getItem('dwMapNew')==='1';
 const DIVS_OLD=['Indore City','Indore Mfl','Indore RMS','Khandwa','Mandsaur','Ratlam','Sehore','Ujjain'];
 const DIVS_NEW=['Indore','Indore RMS','Dewas','Dhar','Khandwa','Khargone','Mandsaur','Ratlam','Sehore','Ujjain'];
 let DIVS=NM?DIVS_NEW:DIVS_OLD;
@@ -422,7 +503,7 @@ function soAuto(d){
 }
 const soD=d=>{const o=(DB.soOv||{})[kd(d)];return(o!=null&&o!=='')?+o:soAuto(d)};
 const LYX=()=>NM?LYN:LY;
-function setMap(v){NM=v==='n';localStorage.setItem('dwMapNew',NM?'1':'0');DIVS=NM?DIVS_NEW:DIVS_OLD;curDiv='Region Total';
+function setMap(v){NM=v==='n';DBLS.setItem('dwMapNew',NM?'1':'0');DIVS=NM?DIVS_NEW:DIVS_OLD;curDiv='Region Total';
  document.querySelectorAll('select.csvRg option,select.sbRg option,#dlRegion option,#tgtRegion option').forEach(o=>{if(o.dataset.t==null)o.dataset.t=o.textContent;o.textContent=NM?o.dataset.t.replace('Indore Region','Indore Region (New Mapping)'):o.dataset.t});
  try{RP.DV=(NM?DV_N:DV_O).slice();RP.DV0=RP.DV.slice();RP.build()}catch(e){}try{SBX.useMap()}catch(e){}
  try{renderReport()}catch(e){}try{renderTgt()}catch(e){}try{rpRender()}catch(e){}}
@@ -473,7 +554,7 @@ function normDB(d){
 }
 function load(){
   let d={};
-  try{d=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  try{d=JSON.parse(DBLS.getItem(KEY)||'{}')}catch(e){}
   return normDB(d);
 }
 
@@ -484,12 +565,12 @@ function save(){
     const cur=JSON.stringify(DB);
     if(GH.last!==cur){GH.u.push(GH.last);if(GH.u.length>GH.max)GH.u.shift();GH.r=[]}
     GH.last=cur;
-    localStorage.setItem(KEY,cur);
+    DBLS.setItem(KEY,cur);
   }catch(e){alert('Unable to save data: '+e.message)}
 }
 function gRestore(s){
   DB=normDB(JSON.parse(s));GH.last=s;
-  try{localStorage.setItem(KEY,s)}catch(e){}
+  try{DBLS.setItem(KEY,s)}catch(e){}
   renderReport();
   if(document.getElementById('p-settings').style.display!=='none')renderSettings();
 }
@@ -1448,12 +1529,12 @@ function buildAOA(dv,month,irgb,noAad){
 let PDFX=null;
 function pdfExcl(){
   if(!PDFX){
-    try{const s=localStorage.getItem('dwPdfEx');if(s!==null)PDFX=new Set(JSON.parse(s))}catch(e){}
+    try{const s=DBLS.getItem('dwPdfEx');if(s!==null)PDFX=new Set(JSON.parse(s))}catch(e){}
     if(!PDFX)PDFX=new Set([RXT].concat(CMP_TABS_X));   /* default: without-Sehore pages are off */
   }
   return PDFX;
 }
-function pdfSave(){try{localStorage.setItem('dwPdfEx',JSON.stringify([...pdfExcl()]))}catch(e){}}
+function pdfSave(){try{DBLS.setItem('dwPdfEx',JSON.stringify([...pdfExcl()]))}catch(e){}}
 function pdfCount(){const e=document.getElementById('pdfCnt');if(e)e.textContent=ALL_TABS_FULL().filter(t=>!pdfExcl().has(t)).length+' page(s) selected'}
 function pdfPicker(){
   const box=document.getElementById('pdfPickBox');if(!box)return;
@@ -1522,7 +1603,7 @@ function resetNewCnt(){DB.newCnt=null;save();rndRender();toast('Built-in new div
 
 /* ---- Random month(s): CSVs built only from the uploaded data (first date to last date detected automatically) ---- */
 const rndOn=()=>{const e=document.getElementById('rndOn');return !!(e&&e.checked)};
-function rndToggle(){try{localStorage.setItem('dwRndOn',rndOn()?'1':'0')}catch(e){}rndRender()}
+function rndToggle(){try{DBLS.setItem('dwRndOn',rndOn()?'1':'0')}catch(e){}rndRender()}
 const uplDates=()=>Object.keys(DB.csvDates).filter(d=>!(DB.exclOn&&DB.exclDate===d)).sort();
 function uplMonths(){const s={};uplDates().forEach(d=>{s[d.slice(0,7)]=1});return Object.keys(s).sort()}
 function withNew(fn){const o=NM;NM=true;try{return fn()}finally{NM=o}}   /* new-division data is read whatever mapping is selected */
@@ -1549,7 +1630,7 @@ function uplCalc(){
 let _rndInit=false;
 function rndRender(){
   const cb=document.getElementById('rndOn');if(!cb)return;
-  if(!_rndInit){_rndInit=true;try{cb.checked=localStorage.getItem('dwRndOn')==='1'}catch(e){}}
+  if(!_rndInit){_rndInit=true;try{cb.checked=DBLS.getItem('dwRndOn')==='1'}catch(e){}}
   const p=document.getElementById('rndPanel');p.style.display=cb.checked?'':'none';
   if(!cb.checked)return;
   const info=document.getElementById('rndInfo'),ds=uplDates();
@@ -1650,9 +1731,9 @@ async function restore(f){
 function resetAll(){
   if(confirm('All data will be deleted. Do you want to continue?')){
     const before=JSON.stringify(DB);
-    localStorage.removeItem(KEY);DB=load();
+    DBLS.removeItem(KEY);DB=load();
     GH.u.push(before);GH.r=[];GH.last=JSON.stringify(DB);
-    try{localStorage.setItem(KEY,GH.last)}catch(e){}
+    try{DBLS.setItem(KEY,GH.last)}catch(e){}
     renderSettings();renderReport();toast('All data deleted (Ctrl+Z to undo)');
   }
 }
@@ -2230,11 +2311,11 @@ const NB={K:'nilBookV1',CATS:['IRGB','Other','Parcel','SPEED POST'],
  COL:{'INDORE CITY':'#f2dcdb','INDORE MFL':'#dce6f1','KHANDWA':'#f2dcdb','MANDSAUR':'#e2efda','RATLAM':'#e4dfec','SEHORE':'#daeef3','UJJAIN':'#d9d9d9'},
  REP:{bo_all:{t:'All Vertical BO Report',cls:'BO',all:1,th:10},bo_par:{t:'Parcel BO Report',cls:'BO',all:0,th:5},so_par:{t:'Parcel SO Report',cls:'SO',all:0,th:50},so_all:{t:'All Category SO Report',cls:'SO',all:1,th:100}},
  S:null,cur:'bo_all'};
-NB.S=(()=>{let s={};try{s=JSON.parse(localStorage.getItem(NB.K)||'{}')}catch(e){}
+NB.S=(()=>{let s={};try{s=JSON.parse(DBLS.getItem(NB.K)||'{}')}catch(e){}
  s.offD=s.offD||{};s.offM=s.offM||{};s.alias=s.alias||{};s.pm=s.pm||{};s.th=Object.assign({bo_all:10,bo_par:5,so_par:50,so_all:100},s.th||{});s.month=s.month||'';return s})();
 NB.db=()=>new Promise((res,rej)=>{if(!window.indexedDB)return rej();const r=indexedDB.open('nilBookDB',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej()});
 NB.load=async()=>{try{const db=await NB.db(),g=k=>new Promise(r=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r()});const d=await g('offD'),m=await g('offM');if(d)NB.S.offD=d;if(m)NB.S.offM=m}catch(e){}nbFillMs()};
-NB.save=()=>{const o=Object.assign({},NB.S);delete o.offD;delete o.offM;try{localStorage.setItem(NB.K,JSON.stringify(o))}catch(e){}NB.db().then(db=>{const t=db.transaction('kv','readwrite').objectStore('kv');t.put(NB.S.offD,'offD');t.put(NB.S.offM,'offM')}).catch(()=>{})};
+NB.save=()=>{const o=Object.assign({},NB.S);delete o.offD;delete o.offM;try{DBLS.setItem(NB.K,JSON.stringify(o))}catch(e){}NB.db().then(db=>{const t=db.transaction('kv','readwrite').objectStore('kv');t.put(NB.S.offD,'offD');t.put(NB.S.offM,'offM')}).catch(()=>{})};
 NB.catOf=p=>{const n=norm(p);if(n.includes('international'))return'IRGB';if(NB.S.pm[n])return NB.S.pm[n];if(NB.DEFPM[n])return NB.DEFPM[n];const c=catOf(p);return c==='MO'?'Other':c||null};
 NB.act=id=>!NB.S.alias[id];
 NB.DEF_ALIAS={'23107683':'23109287','23107460':'23109288','23107098':'23660998','23106778':'23660997','23660882':'23660999','23107359':'23109292','23106779':'23660994'};
@@ -2260,7 +2341,7 @@ function oldMapApply(csv){
   Object.keys(DEF_OFFMAP).forEach(k=>delete DEF_OFFMAP[k]);Object.assign(DEF_OFFMAP,map);
   return n;
 }
-try{const _c=localStorage.getItem('dwOldMapCsv');if(_c)oldMapApply(_c)}catch(e){console.warn('cached old mapping',e)}
+try{const _c=DBLS.getItem('dwOldMapCsv');if(_c)oldMapApply(_c)}catch(e){console.warn('cached old mapping',e)}
 NB.res=id=>NB.S.alias[id]||id;
 NB.vals=(ym)=>{const o={},add=(id,a)=>{id=NB.res(id);const t=o[id]=o[id]||[0,0,0,0,0,0,0,0];for(let i=0;i<8;i++)t[i]+=a[i]};
  const ds=Object.keys(NB.S.offD).filter(d=>d.slice(0,7)===ym);
@@ -2904,7 +2985,7 @@ function irApplySBMap(csv){
 async function loadIndoreReferenceSheets(showToast=true){
   const status=[];
   const jobs=[
-    ['Old Office Mapping',async()=>{const csv=await irFetchCSV(OLD_MAP_URL,'Old Office Mapping');const n=oldMapApply(csv);try{localStorage.setItem('dwOldMapCsv',csv)}catch(e){}
+    ['Old Office Mapping',async()=>{const csv=await irFetchCSV(OLD_MAP_URL,'Old Office Mapping');const n=oldMapApply(csv);try{DBLS.setItem('dwOldMapCsv',csv)}catch(e){}
       try{let mv=0;for(const id of Object.keys(DB.pend||{})){const dv=officeDiv(id);if(!dv)continue;const p=DB.pend[id],R=(DB.raw[dv]=DB.raw[dv]||{});
         for(const dt in p.d){const t=(R[dt]=R[dt]||{});for(const pn in p.d[dt])t[pn]=(t[pn]||0)+p.d[dt][pn]}
         const RR=(DB.rev[dv]=DB.rev[dv]||{});for(const dt in (p.r||{})){const t=(RR[dt]=RR[dt]||{});for(const pn in p.r[dt])t[pn]=(t[pn]||0)+p.r[dt][pn]}
@@ -3015,7 +3096,7 @@ RGX.set=function(on){on=!!on;if(on===RGX.on)return;RGX.on=on;
   RP.DV=RP.DV0.filter(d=>d!=='Sehore');let X=null;try{_b();X=snap()}catch(e){}
   Object.assign(RP,A);RP._A=A;RP._X=X}}
 </script>
-<script>
+<script type="text/x-deferred">
 /* ===================== D+0 REPORTS add-on (v2) ===================== */
 const D0=(()=>{
 const DIVO=['INDORE CITY','INDORE MFL','KHANDWA','MANDSAUR','RATLAM','SEHORE','UJJAIN'];
@@ -3045,10 +3126,10 @@ function metaFor(id,name,cls,sd,div){const o=NB_OFF[id];if(o){let c=o[1];if(c===
   if(id==='23660715')return{name:name||'NODAL DELIVERY CENTER INDORE',cls:'NODAL DELIVERY CENTER',sd:'INDORE CITY SD',div:'INDORE CITY',map:1};
   return{name:name,cls:cls,sd:fixSd(sd),div:div,map:0}}
 const OK='d0OffMapV1';
-const ovr=()=>{try{return JSON.parse(localStorage.getItem(OK)||'{}')}catch(e){return{}}};
+const ovr=()=>{try{return JSON.parse(DBLS.getItem(OK)||'{}')}catch(e){return{}}};
 const rsd=m=>m.sd==='INDORE CITY SD'?'INDORE EAST SD':m.sd;   /* nodal delivery centre is reported inside Indore East SD */
 /* ---------- category mapping ---------- */
-function loadMap(){try{return JSON.parse(localStorage.getItem(MK)||'{}')}catch(e){return{}}}
+function loadMap(){try{return JSON.parse(DBLS.getItem(MK)||'{}')}catch(e){return{}}}
 function isParcel(cat,map){const n=norm(cat);if(Object.prototype.hasOwnProperty.call(map,n))return map[n]==='P';let c=null;try{c=catOf(n)}catch(e){}return c==='Parcel'||n==='parcel'||n==='speed parcel'}
 /* ---------- parse D+0 table (office-wise "table" file) ---------- */
 async function pick(file){
@@ -3069,7 +3150,7 @@ async function pick(file){
   }catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
   $('d0File').value='';
 }
-function setCat(sel){const m=loadMap();m[norm(sel.dataset.cat)]=sel.value;try{localStorage.setItem(MK,JSON.stringify(m))}catch(e){}}
+function setCat(sel){const m=loadMap();m[norm(sel.dataset.cat)]=sel.value;try{DBLS.setItem(MK,JSON.stringify(m))}catch(e){}}
 function generate(){
   const d=$('d0Date').value;if(!d){toast('Please select the report date');return}
   const {rows,c}=S.raw,map=loadMap(),by={},meta={},unm=[];
@@ -3088,10 +3169,10 @@ function generate(){
   toast('D+0 report generated');
 }
 const metaArr=id=>{const m=S.meta[id];return[id,m.name,m.cls,m.sd,m.div,m.map]};
-function persist(){try{const by=S.months[S.cur];if(!by)return;localStorage.setItem(SK,JSON.stringify({cur:S.cur,date:S.curDate,rows:Object.keys(by).map(id=>metaArr(id).concat(by[id]))}))}catch(e){}}
-function restore(){try{const s=JSON.parse(localStorage.getItem(SK)||'null');if(s&&s.rows){const by={};s.rows.forEach(r=>{by[r[0]]=r.slice(6);S.meta[r[0]]={name:r[1],cls:r[2],sd:r[3],div:r[4],map:r[5]}});S.cur=s.cur;S.curDate=s.date;S.months[s.cur]=by}}catch(e){}
-  try{const c=JSON.parse(localStorage.getItem(CK)||'null');if(c){Object.keys(c.m).forEach(l=>{if(l!==S.cur)S.months[l]=c.m[l]});Object.keys(c.meta).forEach(id=>{if(!S.meta[id]){const r=c.meta[id];S.meta[id]={name:r[0],cls:r[1],sd:r[2],div:r[3],map:r[4]}}})}}catch(e){}}
-function cacheMonths(){try{const m={},meta={};GM.forEach(([l])=>{if(S.months[l]&&l!==S.cur){m[l]=S.months[l];Object.keys(S.months[l]).forEach(id=>{const x=S.meta[id];if(x)meta[id]=[x.name,x.cls,x.sd,x.div,x.map]})}});localStorage.setItem(CK,JSON.stringify({m,meta}))}catch(e){}}
+function persist(){try{const by=S.months[S.cur];if(!by)return;DBLS.setItem(SK,JSON.stringify({cur:S.cur,date:S.curDate,rows:Object.keys(by).map(id=>metaArr(id).concat(by[id]))}))}catch(e){}}
+function restore(){try{const s=JSON.parse(DBLS.getItem(SK)||'null');if(s&&s.rows){const by={};s.rows.forEach(r=>{by[r[0]]=r.slice(6);S.meta[r[0]]={name:r[1],cls:r[2],sd:r[3],div:r[4],map:r[5]}});S.cur=s.cur;S.curDate=s.date;S.months[s.cur]=by}}catch(e){}
+  try{const c=JSON.parse(DBLS.getItem(CK)||'null');if(c){Object.keys(c.m).forEach(l=>{if(l!==S.cur)S.months[l]=c.m[l]});Object.keys(c.meta).forEach(id=>{if(!S.meta[id]){const r=c.meta[id];S.meta[id]={name:r[0],cls:r[1],sd:r[2],div:r[3],map:r[4]}}})}}catch(e){}}
+function cacheMonths(){try{const m={},meta={};GM.forEach(([l])=>{if(S.months[l]&&l!==S.cur){m[l]=S.months[l];Object.keys(S.months[l]).forEach(id=>{const x=S.meta[id];if(x)meta[id]=[x.name,x.cls,x.sd,x.div,x.map]})}});DBLS.setItem(CK,JSON.stringify({m,meta}))}catch(e){}}
 /* ---------- CSV in "Ind - D" format ---------- */
 const HDR=['S.No','Office ID','Office Name','Class','Name of Sub Division','Name of Division'];
 const BLK=['Received','Invoiced','D+0 Delivered','% D+0 Delivered','D+0 Redirected','% D+0 Redirected','D+0 Returned','% D+0 Returned','% of D+0 (RTS+Redirect)','Total D+0 Actioned','% Total Actioned'];
@@ -3286,7 +3367,7 @@ const unmIds=()=>Object.keys(S.months[S.cur]||{}).filter(id=>S.meta[id]&&!S.meta
 const unmCount=()=>unmIds().length;
 function allSds(){const o={};DIVO.forEach(d=>o[d]=(SDORD[d]||[]).slice());Object.keys(S.meta).forEach(id=>{const m=S.meta[id];if(o[m.div]&&m.sd&&!o[m.div].some(x=>x.toLowerCase()===m.sd.toLowerCase()))o[m.div].push(m.sd)});return o}
 const AK='d0AliasV1';
-const aliasMap=()=>{try{return JSON.parse(localStorage.getItem(AK)||'{}')}catch(e){return{}}};
+const aliasMap=()=>{try{return JSON.parse(DBLS.getItem(AK)||'{}')}catch(e){return{}}};
 const aliasOf=id=>aliasMap()[id]||id;
 const sdsOf=d=>(allSds()[d]||[]).slice().sort((a,b)=>String(a).localeCompare(String(b)));
 function targetMeta(t){if(!t)return null;const m=S.meta[t];if(m&&m.map)return m;const x=metaFor(t,'','','','');return x&&x.map?x:null}
@@ -3320,7 +3401,7 @@ function unmSd(id){const v=$('d0us_'+id).value,n=$('d0usn_'+id),c=$('d0uc_'+id);
 function unmChk(id){const t=$('d0ut_'+id).value.trim(),m=targetMeta(t),e=$('d0uf_'+id);
   e.innerHTML=!t?'':m?`<b style="color:#1b7a3c">&#10004; ${esc(m.name)} &middot; ${esc(m.sd)} &middot; ${esc(m.div)}</b>`:'<b style="color:#c00">not found in the office master</b>'}
 function mergeInto(id,t){
-  const al=aliasMap();al[id]=t;try{localStorage.setItem(AK,JSON.stringify(al))}catch(e){}
+  const al=aliasMap();al[id]=t;try{DBLS.setItem(AK,JSON.stringify(al))}catch(e){}
   if(!S.meta[t]||!S.meta[t].map)S.meta[t]=metaFor(t,'','','','');
   Object.keys(S.months).forEach(l=>{const by=S.months[l];if(!by||!by[id])return;const a=by[id],b=by[t]=by[t]||new Array(a.length).fill(0);a.forEach((v,i)=>b[i]=(b[i]||0)+v);delete by[id]});
   delete S.meta[id];
@@ -3332,15 +3413,15 @@ function saveUnm(id){
   const div=$('d0ud_'+id).value;if(!div)return alert('1. Select the division');
   let sd=$('d0us_'+id).value;if(sd==='__new')sd=$('d0usn_'+id).value.trim();if(!sd)return alert('2. Select the sub-division');
   const cls=$('d0uc_'+id).value;if(!cls)return alert('3. Select the class');
-  const o=ovr();o[id]={name:m0.name,cls,sd,div};try{localStorage.setItem(OK,JSON.stringify(o))}catch(e){}
+  const o=ovr();o[id]={name:m0.name,cls,sd,div};try{DBLS.setItem(OK,JSON.stringify(o))}catch(e){}
   S.meta[id]={name:m0.name,cls,sd,div,map:1};persist();cacheMonths();renderUnm();draw();if(typeof updBadge==='function')updBadge();toast('Office saved - reports updated');
 }
-function delAlias(id){const al=aliasMap();delete al[id];try{localStorage.setItem(AK,JSON.stringify(al))}catch(e){}renderUnm();toast('Removed - numbers already added stay added; the next upload will list this office again')}
-function delUnm(id){const o=ovr();delete o[id];try{localStorage.setItem(OK,JSON.stringify(o))}catch(e){}if(S.meta[id])S.meta[id].map=0;persist();renderUnm();draw();if(typeof updBadge==='function')updBadge()}
+function delAlias(id){const al=aliasMap();delete al[id];try{DBLS.setItem(AK,JSON.stringify(al))}catch(e){}renderUnm();toast('Removed - numbers already added stay added; the next upload will list this office again')}
+function delUnm(id){const o=ovr();delete o[id];try{DBLS.setItem(OK,JSON.stringify(o))}catch(e){}if(S.meta[id])S.meta[id].map=0;persist();renderUnm();draw();if(typeof updBadge==='function')updBadge()}
 const SETK='d0SetV1';
-function loadSet(){try{const t=JSON.parse(localStorage.getItem(SETK)||'{}');S.N=t.N||10;S.minR=t.minR==null?10:t.minR;S.minA=t.minA==null?1:t.minA}catch(e){}}
+function loadSet(){try{const t=JSON.parse(DBLS.getItem(SETK)||'{}');S.N=t.N||10;S.minR=t.minR==null?10:t.minR;S.minA=t.minA==null?1:t.minA}catch(e){}}
 function fillSet(){if($('d0N')){$('d0N').value=S.N;$('d0MinR').value=S.minR;$('d0MinA').value=S.minA}}
-function setSet(){S.N=Math.max(1,+$('d0N').value||10);S.minR=Math.max(0,+$('d0MinR').value||0);S.minA=Math.max(0,+$('d0MinA').value||0);try{localStorage.setItem(SETK,JSON.stringify({N:S.N,minR:S.minR,minA:S.minA}))}catch(e){}toast('D+0 settings saved');rpRef()}
+function setSet(){S.N=Math.max(1,+$('d0N').value||10);S.minR=Math.max(0,+$('d0MinR').value||0);S.minA=Math.max(0,+$('d0MinA').value||0);try{DBLS.setItem(SETK,JSON.stringify({N:S.N,minR:S.minR,minA:S.minA}))}catch(e){}toast('D+0 settings saved');rpRef()}
 function rpRef(){try{const p=document.getElementById('p-rp');if(p&&p.style.display!=='none'&&typeof rpRender==='function')rpRender()}catch(e){}}
 loadSet();restore();
 return{setSet,fillSet,unmCount,renderUnm,saveUnm,delUnm,setX,unmMode,unmDiv,unmSd,unmChk,delAlias,pick,setCat,generate,csv,open,ctl,basis,scope,xl,jpg,pdf,manual,fetchMonths,draw,pages,mega,GM,fillSel};
@@ -3363,9 +3444,9 @@ window.D0=D0;D0.fillSel();
 /* ---- upload meter (4 uploads: Aadhaar, D+0, daily CSV (either one), POSB) ---- */
 const UPM=(()=>{
  const K='upMeterV2',IT=[['src','Daily CSV (Division-wise or Post-office-wise)'],['aad','Aadhaar'],['d0','D+0 report'],['posb','POSB reports']];
- let S={};try{S=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+ let S={};try{S=JSON.parse(DBLS.getItem(K)||'{}')}catch(e){}
  const p2=n=>String(n).padStart(2,'0'),now=()=>new Date(),day=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()),tm=d=>p2(d.getHours())+':'+p2(d.getMinutes());
- const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+ const save=()=>{try{DBLS.setItem(K,JSON.stringify(S))}catch(e){}};
  function mark(k,x){const d=now(),t=day(d);if(k==='posb'){const o=S.posb&&S.posb.d===t?S.posb.names:[];S.posb={d:t,t:tm(d),names:[...new Set([...o,...(x||[])])]}}else S[k]={d:t,t:tm(d),w:x||''};save();render()}
  const fresh=k=>!!(S[k]&&S[k].d===day(now()));
  const dm=s=>s.slice(8)+'.'+s.slice(5,7);
@@ -3399,6 +3480,6 @@ UPM.render();
 try{updBadge()}catch(e){}
 D0.fetchMonths();
 </script>
-<script>document.getElementById('mapSel').value=NM?'n':'o';if(NM)setMap('n');</script>
+<script type="text/x-deferred">document.getElementById('mapSel').value=NM?'n':'o';if(NM)setMap('n');</script>
 </body>
 </html>
