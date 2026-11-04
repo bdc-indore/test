@@ -343,7 +343,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div class="card">
     <h3>Aadhaar machines and number of SOs (division-wise)</h3>
     <div id="centresBox"></div>
-    <div class="hint" style="margin:6px 0">No. of SOs is pre-filled from "Total Offices" in the Nil Booking Report (Indore City 34, Mfl 51, Khandwa 51, Mandsaur 35, Ratlam 38, Sehore 33, Ujjain 54 = 296). To use a different SO count for a particular day, edit the value in that day's row on the division tab of the report.</div>
+    <div class="hint" style="margin:6px 0">No. of SOs is pre-filled by counting the SOs of each division in the <b>office mapping</b> (old mapping &rarr; Office ID master, new mapping &rarr; New Office Mapping sheet). You can edit any number; it is kept until you press "Reset to office mapping". To use a different SO count for a particular day, edit the value in that day's row on the division tab of the report.</div>
     <button class="b" onclick="saveCentres()">Save</button>
   </div>
   <div class="card">
@@ -405,7 +405,26 @@ const SDT_N={"DEWAS":[["ASP Shajapur",16044],["DEWAS",22705],["KANNOD",31787],["
 const NEW_DSD={};for(const dv in NEW_SDN)for(const sd in NEW_SDN[dv])NEW_SDN[dv][sd].split(',').forEach(i=>NEW_DSD[i]=[dv,sd]);
 const DV_O=['Indore City','Indore Mfl','Khandwa','Mandsaur','Ratlam','Sehore','Ujjain','Indore RMS'],DV_N=['Indore','Dewas','Dhar','Khandwa','Khargone','Mandsaur','Ratlam','Sehore','Ujjain','Indore RMS'];
 const kd=d=>NM?'N:'+d:d;
-const soD=d=>NM?(NEW_SO[d]||0):(+DB.soDef[d]||0);
+/* No. of SOs = offices of class SO in the office master, grouped by the ACTIVE office mapping
+   (old mapping -> Office ID master / manual entries, new mapping -> New Office Mapping sheet).
+   A value typed in Settings is kept as an override; empty / same as mapping = automatic. */
+let SOC={key:'',v:null};
+function soAuto(d){
+  let key;try{key=(NM?'n':'o')+'|'+Object.keys(DB.offMap).length+'|'+Object.keys(NEW_OFFMAP).length+'|'+Object.keys(NB.S.alias||{}).length}catch(e){key='x'}
+  if(SOC.key!==key||!SOC.v){
+    try{
+      const v={};
+      for(const id in NB_OFF){
+        if(NB_OFF[id][1]!=='SO'||!NB.act(id))continue;
+        const dv=NM?NEW_OFFMAP[id]:officeDiv(id);
+        if(dv)v[dv]=(v[dv]||0)+1;
+      }
+      SOC={key,v};
+    }catch(e){return NM?(NEW_SO[d]||0):(DEF_SO[d]||0)}   /* office master not loaded yet */
+  }
+  return SOC.v[d]||0;
+}
+const soD=d=>{const o=(DB.soOv||{})[kd(d)];return(o!=null&&o!=='')?+o:soAuto(d)};
 const LYX=()=>NM?LYN:LY;
 function setMap(v){NM=v==='n';localStorage.setItem('dwMapNew',NM?'1':'0');DIVS=NM?DIVS_NEW:DIVS_OLD;curDiv='Region Total';
  document.querySelectorAll('select.csvRg option,select.sbRg option,#dlRegion option,#tgtRegion option').forEach(o=>{if(o.dataset.t==null)o.dataset.t=o.textContent;o.textContent=NM?o.dataset.t.replace('Indore Region','Indore Region (New Mapping)'):o.dataset.t});
@@ -451,6 +470,8 @@ function normDB(d){
   d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[]; d.offMap=d.offMap||{}; d.pend=d.pend||{}; d.rev=d.rev||{}; d.revDates=d.revDates||{}; d.tgtText=d.tgtText||{}; if((d.tgtVer||0)<2){d.tgtText={};d.tgtVer=2} d.lyRev=d.lyRev||null; d.lyCnt=d.lyCnt||null;
   d.sb=d.sb||{};d.rawN=d.rawN||{};d.revN=d.revN||{};d.newCnt=d.newCnt||null;
   d.centres=Object.assign({},DEF_CENTRES,d.centres||{});
+  d.soOv=d.soOv||{};
+  if(d.soDef&&!d.soOvMig){for(const k in d.soDef)if(+d.soDef[k]!==DEF_SO[k])d.soOv[k]=+d.soDef[k];d.soOvMig=1}   /* old saved SO numbers that were really edited stay as overrides */
   d.soDef=Object.assign({},DEF_SO,d.soDef||{});
   return d;
 }
@@ -857,7 +878,8 @@ function monthsAvail(){
   return [...s].sort();
 }
 function maxAadDate(){const k=Object.keys(DB.aadDates);return k.length?k.sort().pop():''}
-function listOf(dv){return dv==='Region Total'?DIVS:dv===RXT?DIVS.filter(d=>d!=='Sehore'):[dv]}
+let PDFDIVS=null;   /* set only while the PDF is made: divisions still ticked in the PDF page list */
+function listOf(dv){const A=PDFDIVS?DIVS.filter(d=>PDFDIVS.has(d)):DIVS;return dv==='Region Total'?A:dv===RXT?A.filter(d=>d!=='Sehore'):[dv]}
 function soDefOf(dv){return listOf(dv).reduce((a,d)=>a+soD(d),0)}
 const todayStr=()=>{const t=new Date();return `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`};
 function setExcl(){
@@ -924,7 +946,12 @@ function buildAOA0(dv,month,irgb){
   out.push({cls:'tot',cells:['TOTAL',lastSO,tmo,tpa].concat(irgb?[tir]:[]).concat([lastMach,ttr,tAvg])});
   return {head,rows:out};
 }
-const divTitle=dv=>dv==='Region Total'?'INDORE REGION (TOTAL)':dv===RXT?'INDORE REGION (WITHOUT SEHORE)':dv.toUpperCase();
+const divTitle=dv=>{
+  if(dv!=='Region Total'&&dv!==RXT)return dv.toUpperCase();
+  const out=PDFDIVS?DIVS.filter(d=>!PDFDIVS.has(d)):[];
+  if(dv===RXT&&!out.includes('Sehore'))out.push('Sehore');
+  return out.length?'INDORE REGION (WITHOUT '+out.map(x=>x.toUpperCase()).join(', ')+')':'INDORE REGION (TOTAL)';
+};
 /* ===================== TARGET vs ACHIEVEMENT (Revenue + Count) ===================== */
 const TGT_DEF={rev:"Target & Achievement FY 2026-27 (Vertical wise),,,,,,,,,,,,,\nParcel Vertical,,,,,,,,,,,,,\nName of Division,Total Target 2026-27,Total Target till this month,Achievement in April 26,Achivement in May-26,Achievement in June-26,Achievement in July-26,Total achievement in August-26,Total achievement in September-26,Total achievement in October-26,Total achievement in November-26,Total Achievemen till date,% of Achievement as compared to proportionate Target,% of Achievement as compared to Total Target\nIndore City,5.56,3.707,0.465,0.431,0.354,0.460047,0.573875,0.5181,0.527,,3.329,89.80%,59.87%\nIndore Mfl,1.25,0.833,0.063,0.036,0.03,0.036993,0.0483,0.04924,0.1,,0.364,43.70%,29.12%\nKhandwa,1.5,1,0.089,0.075,0.087,0.077963,0.096146,0.105151,0.086,,0.616,61.60%,41.07%\nMandsaur,1.5,1,0.055,0.073,0.049,0.043451,0.041759,0.09178,0.085,,0.439,43.90%,29.27%\nRatlam,1.25,0.833,0.042,0.044,0.048,0.042928,0.060558,0.08796,0.053,,0.378,45.38%,30.24%\nSehore,0.85,0.567,0.024,0.022,0.019,0.021088,0.031165,0.031633,0.036,,0.185,32.63%,21.76%\nUjjain,1.5,1,0.09,0.089,0.071,0.082507,0.103779,0.103653,0.083,,0.623,62.30%,41.53%\nRMS ID,0.65,0.433,0.026,0.03,0.036,0.045245,0.054347,0.073949,0.082,,0.348,80.37%,53.54%\nTotal,14.06,9.373,0.854,0.799,0.695,0.81,1.01,1.061,1.052,,6.281,67.01%,44.67%\n,,,,,,,,,,,,,\nMail Operation Vertical,,,,,,,,,,,,,\nName of Division,Total Target 2026-27,Total Target till this month,Achievement in April 26,Achivement in May-26,Achievement in June-26,Achievement in July-26,Total achievement in August-26,Total achievement in September-26,Total achievement in October-26,Total achievement in November-26,Total Achievemen till date,% of Achievement as compared to proportionate Target,% of Achievement as compared to Total Target\nIndore City,14,9.333,0.598,0.638,0.484,0.52845,0.72963,0.64377,0.403,,4.025,43.13%,28.75%\nIndore Mfl,2,1.333,0.087,0.087,0.097,0.10758,0.1215,0.10707,0.168,,0.775,58.14%,38.75%\nKhandwa,3,2,0.127,0.132,0.112,0.13236,0.15164,0.13326,0.132,,0.92,46.00%,30.67%\nMandsaur,1.5,1,0.079,0.086,0.075,0.09201,0.10813,0.08717,0.094,,0.621,62.10%,41.40%\nRatlam,1.5,1,0.072,0.07,0.069,0.09336,0.09171,0.07662,0.092,,0.565,56.50%,37.67%\nSehore,1.35,0.9,0.061,0.079,0.059,0.06866,0.06921,0.12678,0.084,,0.548,60.89%,40.59%\nUjjain,3,2,0.125,0.134,0.119,0.13371,0.20971,0.14096,0.138,,1,50.00%,33.33%\nRMS ID,2.5,1.667,0.045,0.044,0.045,0.04692,0.06279,0.05602,0.062,,0.362,21.72%,14.48%\nTotal,28.85,19.233,1.195,1.27,1.061,1.203,1.544,1.372,1.173,,8.818,45.85%,30.56%\n,,,,,,,,,,,,,\nIRGB Vertical,,,,,,,,,,,,,\nName of Division,Total Target 2026-27,Total Target till this month,Achievement up to April 26,Achivement in May-26,Achievement in June-26,Achievement in July-26,Total achievement in August-26,Total achievement in September-26,Total achievement in October-26,Total achievement in November-26,Total Achievemen till date,% of Achievement as compared to proportionate Target,% of Achievement as compared to Total Target\nIndore City,175,116.667,7.977,8.709,7.953,13.225,18.437,12.577,13.882,,82.76,70.94%,47.29%\nIndore Mfl,30,20,0.354,0.468,0.378,0.918,1.433,1.045,3.498,,8.094,40.47%,26.98%\nKhandwa,30,20,0.662,1.339,0.924,0.876,1.27,2.2,1.325,,8.596,42.98%,28.65%\nMandsaur,50,33.333,2.581,1.824,2.152,1.936,3.748,2.381,2.571,,17.193,51.58%,34.39%\nRatlam,30,20,0.904,0.883,0.416,1.399,0.883,1.213,1.132,,6.83,34.15%,22.77%\nSehore,30,20,0.152,0.061,0.045,0.38,0.427,0.559,0.289,,1.913,9.56%,6.38%\nUjjain,50,33.333,1.45,0.984,1.085,2.098,2.385,2.507,2.069,,12.578,37.73%,25.16%\nRMS ID,30,20,0.261,0.18,0.395,0.287,0.368,0.544,0.208,,2.243,11.21%,7.48%\nTotal,425,283.333,14.34,14.447,13.349,21.118,28.951,23.024,24.974,,140.203,49.48%,32.99%",cnt:"Parcel Article Count,,,,,,,,,,,,,,,,\nName of Divison,April-26 Target,April-26,may-26 target,May-26,june-26 Target,June-26,july-26 Target2,July-26,August-26 Target,August-26 article count,September-26 Target,September-26 article count,October-26 Target,October-26 Achievement,November-26 Target,November-26 Achievement\nIndore City Division,49059,40784,48941,38570,53019,42059,53019,51627,53019,53165,53019,53638,53019,65566,53019,\nIndore Moffusil Division,7766,6260,7512,5775,8138,5822,8138,6779,8138,5119,8138,4363,8138,5112,8138,\nKhandwa Division,7111,5712,6854,5967,7426,7474,7426,8071,7426,6420,7426,5774,7426,5686,7426,\nMandsaur Division,5857,4316,5179,4501,5611,5039,5611,4965,5611,4739,5611,4870,5611,5648,5611,\nRatlam Division,2803,2231,2677,2176,2900,2686,2900,3097,2900,2542,2900,2846,2900,3174,2900,\nSehore Division,2156,1651,1981,1413,2146,1741,2146,2159,2146,1734,2146,2019,2146,2262,2146,\nUjjain Division,7269,6666,7999,5631,8666,6218,8666,7159,8666,7120,8666,6323,8666,7427,8666,\nID DIVISION INDORE,4079,2823,3388,2559,3670,3592,3670,5589,3670,6794,3670,4510,3670,5222,3670,\nTotal,86100,70443,84531,66592,91576,74631,91576,89446,91576,87633,91576,84343,91576,100097,91576,\nMO Article Count,,,,,,,,,,,,,,,,\nName of Divison,April-26 Target,April-26,may-26 target,May-26,june-26 Target,June-26,July-26 Target,July-26,August-26 Target,August-26 article count,September-26 Target,September-26 article count,October-26 Target,October-26 Achievement,November-26 Target,November-26 Achievement\nIndore City Division,151842,122093,146511,119892,158721,104429,158721,219512,158721,175745,158721,123244,158721,98435,158721,\nIndore Moffusil Division,45058,66233,79479,36781,86103,56707,86103,47396,86103,48068,86103,53150,86103,41909,86103,\nKhandwa Division,49413,64801,77761,29650,84241,37539,84241,52722,84241,51847,84241,53863,84241,33873,84241,\nMandsaur Division,22042,34413,41295,25600,44737,18407,44737,36179,44737,34814,44737,28072,44737,24858,44737,\nRatlam Division,19536,44586,53503,19655,57962,20875,57962,55647,57962,30882,57962,33151,57962,24938,57962,\nSehore Division,23299,46231,55477,19379,60100,23266,60100,37608,60100,20951,60100,33321,60100,22109,60100,\nUjjain Division,55837,34289,41146,33840,44576,72383,44576,47276,44576,42640,44576,54245,44576,35314,44576,\nID DIVISION INDORE,14305,11940,14328,12973,15522,17094,15522,17834,15522,19805,15522,25790,15522,23422,15522,\nTotal,381332,424586,509500,297770,551962,350700,551962,514174,551962,424752,551962,404836,551962,304858,551962,\n,,,,,,,,,,,,,,,\nIRGB Article Count,,,,,,,,,,,,,,,,\nName of Divison,April-26 Target,April-26,May-26 target,May-26,june-26 target,June-26,july-26 target,July-26,August-26 Target,August-26 article count,September-26 Target,September-26 article count,October-26 Target,October-26 Achievement,November-26 Target,November-26 Achievement\nIndore City Division,610,376,489,395,489,394,489,815,1905,1626,1905,631,1905,636,1905,\nIndore Moffusil Division,69,37,48,58,48,74,48,133,250,162,250,70,250,102,250,\nKhandwa Division,62,33,43,42,43,52,43,53,200,122,200,69,200,51,200,\nMandsaur Division,153,148,192,138,192,123,192,135,250,223,250,143,250,152,250,\nRatlam Division,20,26,34,42,34,18,34,52,80,59,80,40,80,31,80,\nSehore Division,10,8,10,4,10,6,10,20,30,46,30,21,30,9,30,\nUjjain Division,168,62,81,73,81,86,81,104,250,233,250,161,250,109,250,\nID DIVISION INDORE,0,5,7,6,7,10,7,18,35,53,35,14,35,15,35,\nTotal,1092,695,904,758,904,763,904,1330,3000,2524,3000,1149,3000,1105,3000,"};
 const MON3=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
@@ -1445,7 +1472,9 @@ function pdfAll(v){const ex=pdfExcl();if(v)ex.clear();else ALL_TABS_FULL().forEa
 async function exportPDFSel(){
   const list=ALL_TABS_FULL().filter(t=>!pdfExcl().has(t));
   if(!list.length){alert('Select at least one page for the PDF.');return}
-  await exportPDF(true,list);
+  const keep=new Set(DIVS.filter(d=>!pdfExcl().has(d)));
+  PDFDIVS=(keep.size&&keep.size<DIVS.length)?keep:null;   /* Region Total (SO, MO, Parcel, IRGB, Aadhaar and baseline row) counts only ticked divisions */
+  try{await exportPDF(true,list)}finally{PDFDIVS=null}
 }
 
 /* ---- New division article count targets (Parcel / IRGB / MO, month-wise). Built-in + replaceable from the Upload tab ---- */
@@ -1585,8 +1614,10 @@ function renderSettings(){
   renderPend();
   const sum=o=>DIVS.reduce((a,d)=>a+(+o[d]||0),0);
   document.getElementById('centresBox').innerHTML='<table class="s2"><tr><th></th>'+DIVS.map(d=>`<th>${d}</th>`).join('')+'<th>Total</th></tr>'+
-    '<tr><th>Aadhaar machines</th>'+DIVS.map(d=>`<td><input type="number" id="c_${d}" value="${DB.centres[d]||0}" style="width:70px"></td>`).join('')+`<td><b>${sum(DB.centres)}</b></td></tr>`+
-    "<tr><th>No of SO's</th>"+DIVS.map(d=>`<td><input type="number" id="s_${d}" value="${DB.soDef[d]}" style="width:70px"></td>`).join('')+`<td><b>${sum(DB.soDef)}</b></td></tr></table>`;
+    '<tr><th>Aadhaar machines</th>'+DIVS.map(d=>`<td><input type="number" id="c_${d}" value="${DB.centres[d]||0}" style="width:70px" ${NM?'disabled title="New mapping: machines not used"':''}></td>`).join('')+`<td><b>${NM?0:sum(DB.centres)}</b></td></tr>`+
+    "<tr><th>No of SO's</th>"+DIVS.map(d=>`<td><input type="number" id="s_${d}" value="${soD(d)}" style="width:70px;${(DB.soOv||{})[kd(d)]!=null?'background:#fff2b3':''}"></td>`).join('')+`<td><b>${DIVS.reduce((a,d)=>a+soD(d),0)}</b></td></tr>`+
+    "<tr><th><small>SO count from office mapping</small></th>"+DIVS.map(d=>`<td><small>${soAuto(d)}</small></td>`).join('')+`<td><small>${DIVS.reduce((a,d)=>a+soAuto(d),0)}</small></td></tr></table>`+
+    `<div class="hint" style="margin-top:4px">Yellow cell = edited by you. <button class="b sm gray" onclick="resetSO()">Reset to office mapping</button></div>`;
   const prods=[...new Set([...Object.keys(DEF_MAP),...Object.keys(DB.customMap),...DB.seenProducts])].sort();
   document.getElementById('mapBox').innerHTML='<table class="s2"><tr><th>Product name</th><th>Category</th></tr>'+prods.map(p=>{
     const c=catOf(p)||'',lock=isIntl(p);
@@ -1594,10 +1625,16 @@ function renderSettings(){
       ['MO','Parcel','IRGB'].map(x=>`<option ${c===x?'selected':''}>${x}</option>`).join('')+'</select></td></tr>';
   }).join('')+'</table>';
 }
-function saveCentres(){if(NM){toast('New mapping: machine / SO counts are not editable yet');return}
-  DIVS.forEach(d=>{DB.centres[d]=Number(document.getElementById('c_'+d).value)||0;DB.soDef[d]=Number(document.getElementById('s_'+d).value)||0});
-  save();renderSettings();toast('Settings saved');
+function saveCentres(){
+  DB.soOv=DB.soOv||{};
+  DIVS.forEach(d=>{
+    if(!NM)DB.centres[d]=Number(document.getElementById('c_'+d).value)||0;
+    const v=document.getElementById('s_'+d).value;
+    if(v===''||Number(v)===soAuto(d))delete DB.soOv[kd(d)];else DB.soOv[kd(d)]=Number(v)||0;
+  });
+  save();renderSettings();try{renderReport()}catch(e){}toast('Settings saved');
 }
+function resetSO(){DB.soOv=DB.soOv||{};DIVS.forEach(d=>delete DB.soOv[kd(d)]);save();renderSettings();try{renderReport()}catch(e){}toast('No. of SOs reset to office mapping')}
 function saveMap(){
   document.querySelectorAll('select.mp').forEach(s=>{
     if(s.disabled)return;
