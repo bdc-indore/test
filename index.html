@@ -4,45 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Day Wise Report – MO, Parcel & CCS (Aadhaar) – Indore Region</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script><script>if(typeof XLSX==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script>if(typeof JSZip==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>');</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script>if(typeof jspdf==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>');</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script><script>if(typeof PptxGenJS==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"><\/script>');</script>
-<script>
-/* Fallback: agar CDN load na ho to XLSX ka chhota CSV-only version (CSV upload phir bhi chalega) */
-if(typeof XLSX==="undefined"){(function(){
-function parseCSV(t){t=t.replace(/^\ufeff/,'');var rows=[],row=[],f='',q=false,i=0,c;
- while(i<t.length){c=t[i];
-  if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=c}
-  else if(c=='"')q=true;else if(c==','){row.push(f);f=''}
-  else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;row.push(f);rows.push(row);row=[];f=''}
-  else f+=c;i++}
- if(f!==''||row.length){row.push(f);rows.push(row)}return rows}
-function sheetFrom(a){return {__aoa:a}}
-window.XLSX={
- __shim:true,
- read:function(buf,o){var u=new Uint8Array(buf instanceof ArrayBuffer?buf:(buf.buffer||buf));
-  if((u[0]==0x50&&u[1]==0x4B)||(u[0]==0xD0&&u[1]==0xCF))
-   throw new Error('Excel (.xlsx/.xls) file padhne wali library (XLSX) internet se load nahi hui. Internet / ad-blocker / firewall check karein aur page refresh karein, ya file ko CSV mein save karke upload karein.');
-  var t=new TextDecoder('utf-8').decode(u);
-  return {SheetNames:['Sheet1'],Sheets:{Sheet1:sheetFrom(parseCSV(t))}}},
- utils:{
-  sheet_to_json:function(sh,o){o=o||{};var a=sh.__aoa||[];
-   if(o.header===1)return a.map(function(r){return r.slice()});
-   if(!a.length)return[];var h=a[0].map(function(x){return String(x)}),out=[];
-   for(var i=1;i<a.length;i++){var r=a[i];if(r.every(function(x){return x===''}))continue;var obj={};
-    h.forEach(function(k,j){obj[k]=r[j]===undefined?(o.defval!==undefined?o.defval:undefined):r[j]});out.push(obj)}
-   return out},
-  sheet_to_csv:function(sh){return (sh.__aoa||[]).map(function(r){return r.map(function(x){x=String(x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x}).join(',')}).join('\n')}
- },
- SSF:{parse_date_code:function(n){var d=new Date(Math.round((n-25569)*864e5));return{y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate()}}}
-};
-window.addEventListener('DOMContentLoaded',function(){var d=document.createElement('div');
- d.style.cssText='background:#fff3cd;color:#664d03;padding:8px 12px;font:13px Arial;border-bottom:1px solid #e6c200';
- d.textContent='Warning: Excel library (XLSX) internet se load nahi hui. Abhi sirf CSV upload chalega. Excel / download ke liye internet ya ad-blocker check karke page refresh karein.';
- document.body.insertBefore(d,document.body.firstChild)});
-})()}
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
 <style>
 :root{--red:#b3121b;--red-d:#8f0e15;--yel:#fdb913;--ink:#1f2430;--mut:#5b6472;--line:#dfe3ea;--bg:#f2f4f8}
 *{box-sizing:border-box}
@@ -422,7 +387,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <div id="gdlg"><div class="box" id="gbox"></div></div>
 <div id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script><script>if(typeof html2canvas==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
 let NM=localStorage.getItem('dwMapNew')==='1';
