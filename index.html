@@ -507,6 +507,7 @@ const kd=d=>NM?'N:'+d:d;
 /* No. of SOs = offices whose CLASS is SO in the mapping sheet, grouped by division of the ACTIVE mapping
    (old mapping -> Old Office Mapping sheet, new mapping -> New Office Mapping sheet).
    A value typed in Settings is kept as an override; empty / same as mapping = automatic. */
+const NB_OFF={};   /* id -> [office name, CLASS, SD, DIVISION]  (loaded from the Old Office Mapping sheet) */
 let SOC={key:'',v:null};
 function soAuto(d){
   let key;try{key=(NM?'n':'o')+'|'+Object.keys(DB.offMap).length+'|'+Object.keys(NEW_OFFMAP).length+'|'+Object.keys(NB_OFF).length+'|'+Object.keys(NEW_CLS).length}catch(e){key='x'}
@@ -2317,9 +2318,8 @@ bind();bindPrev();draw();syncUI();
 return{_S:S,start,applyPer,setPer,load,make,rebuild,add,txt,img,del,ti,su,og,bd,go,mvS,rmS,fill,ext,clr,rule,clrRules,openChart,closeChart,mkChart,chat,dl,draw,undo,redo,moveRows,mergeSel,unmergeSel,ff,fsz,fsd,bold,ital,al,setOne,tbFill,tbSz,tx,txT,scl,bw,sc,lblT,pick,pickCancel,gtab,editChart,mset,msn,msc,mcat,mval,mtot,mdelS,mdelR,madd,maddS,maddT,mkMan}
 })();
 
-renderReport();updBadge();
+/* renderReport() ab sabse end mein chalta hai (sab const bannne ke baad) */
 
-const NB_OFF={};   /* id -> [office name, CLASS, SD, DIVISION]  (loaded from the Old Office Mapping sheet) */
 const SB_DEF="DIVISON ,VERTICAL,TARGET (26-27),April-26,May-26,June-26,July-26,Aug-26,Sep-26\nINDORE CITY,POSB,11.84,1.0952,0.7726,0.798,0.8,0.86114195,0.8765405\nINDORE MFL,POSB,27.37,2.5608,1.9671,2.029,2.08,2.214418052,2.2088033\nKHANDWA,POSB,24.06,2.4328,1.6886,1.7556,1.77,1.898300644,1.9594683\nMANDSAUR,POSB,20.28,2.1727,1.4134,1.4792,1.49,1.610341402,1.6186739\nRATLAM,POSB,19.72,1.9853,1.3864,1.4322,1.36,1.574523471,1.4611814\nSEHORE,POSB,19.95,2.0937,1.3989,1.4596,1.51,1.595153762,1.5589046\nUJJAIN ,POSB,20.42,2.1543,1.4176,1.495,1.48,1.624040527,1.6162208\nID RMS,POSB,0,0,0,0,0,0,\nIndore City,PLI/RPLI,1.6,0.101,0.093,0.128,0.123,0.11,0.11\nindore mfl,PLI/RPLI,1.9,0.075,0.088,0.107,0.093,0.12,0.11\nKhandwa,PLI/RPLI,2.1,0.113,0.145,0.158,0.144,0.19,0.2\nMandsaur,PLI/RPLI,2.6,0.175,0.177,0.199,0.221,0.21,0.24\nRatlam,PLI/RPLI,2.5,0.18,0.185,0.23,0.215,0.21,0.22\nSehore,PLI/RPLI,1.6,0.116,0.111,0.122,0.106,0.14,0.14\nUjjain,PLI/RPLI,2.3,0.148,0.188,0.201,0.186,0.25,0.2\nID RMS,PLI/RPLI,0,0,0,0,0,0,0\nIndore City,CCS,4.15,0.109083,0.183247,0.21076,0.221287,0.146522,0.186782\nIndore Mfl,CCS,2.74,0.018401,0.098972,0.266356,0.152475,0.047453,0.22984\nKhandwa,CCS,3.15,0.041526,0.133674,0.285077,0.237215,0.090889,0.311432\nMandsaur,CCS,2.22,0.043631,0.137038,0.238279,0.191523,0.106112,0.215285\nRatlam,CCS,2.79,0.052903,0.202806,0.352332,0.236849,0.078396,0.28396\nSehore,CCS,1.42,0.020839,0.059064,0.068878,0.124086,0.059846,0.077077\nUjjain,CCS,2.44,0.041243,0.145724,0.218272,0.183195,0.088614,0.220651\nRMS ID,CCS,0.09,0.004143,0.008067,0.007647,0.009568,0.007521,0.006826\n,,,,,,, ,\n,,,,,,, ,";
 /* ===== NIL BOOKING REPORTS add-on ===== */
 const NB={K:'nilBookV1',CATS:['IRGB','Other','Parcel','SPEED POST'],
@@ -3497,6 +3497,7 @@ UPM.render();
 try{updBadge()}catch(e){}
 D0.fetchMonths();
 </script>
-<script type="text/x-deferred">document.getElementById('mapSel').value=NM?'n':'o';if(NM)setMap('n');</script>
+<script type="text/x-deferred">document.getElementById('mapSel').value=NM?'n':'o';if(NM)setMap('n');
+try{renderReport();updBadge()}catch(e){console.error('renderReport',e);setTimeout(function(){throw e})}</script>
 </body>
 </html>
