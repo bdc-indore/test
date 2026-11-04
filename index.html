@@ -146,10 +146,16 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
     <div class="row">
       <b>Month:</b> <select id="monthSel" onchange="renderReport()"></select>
       <label><input type="checkbox" id="showIRGB" onchange="renderReport()"> Show IRGB column</label>
+      <label title="Removes Machines / Total Trans. / Per day average and the ADHAR heading from the report, Excel, JPG and PDF"><input type="checkbox" id="hideAad" onchange="renderReport()"> Remove Aadhaar data</label>
       <label title="Data for this date stays blank in the report and is not added to the totals"><input type="checkbox" id="exclOn" onchange="setExcl()"> Exclude data for this date:</label>
       <input type="date" id="exclDate" onchange="setExcl()">
       <button class="b sm gray" onclick="setExclToday()">Today</button>
       <button class="b gray" onclick="window.print()">Print</button>
+    </div>
+    <div class="row" style="margin-top:8px;align-items:flex-start">
+      <button class="b alt" id="rpdfBtn" onclick="exportPDFSel()">&#11015; Download PDF</button>
+      <details id="pdfPick" style="flex:1;min-width:260px"><summary class="hint" style="cursor:pointer">Pages in the PDF &ndash; untick a division to remove it (<span id="pdfCnt"></span>). PDF follows the IRGB / Aadhaar ticks above.</summary><div id="pdfPickBox"></div></details>
+      <span class="hint" id="rpdfMsg"></span>
     </div>
     <div class="tabs" id="divTabs"></div>
   </div>
@@ -189,6 +195,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <h3 style="margin:18px 2px 8px;color:#5b6472;font-size:14px">Built-in data &ndash; upload only if you want to replace it</h3>
   <div class="card"><h3>SB / PLI / CCS revenue CSV</h3><div class="row"><label class="b">Choose CSV file<input type="file" id="rpSBf" accept=".csv" hidden onchange="rpSB(this.files[0])"></label> <button class="b gray" onclick="rpSBreset()">Restore built-in</button></div><div class="hint">Format: DIVISON, VERTICAL, TARGET (26-27), April-26, May-26 &hellip; (any number of months).</div><div id="rpMsg"></div></div>
 <div class="card"><h3>Target tables</h3><div class="row"><label class="b gray">Revenue target + achievement CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'rev')"></label><label class="b gray">Article count target CSV<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadTgt(this.files[0],'cnt')"></label><button class="b gray" onclick="resetTgt()">Restore built-in tables</button></div></div>
+<div class="card"><h3>New division article count targets (Parcel / IRGB / Mail, month-wise)</h3><div class="row"><label class="b gray">Choose target CSV / Excel<input type="file" accept=".csv,.xlsx,.xls" hidden onchange="loadNewCnt(this.files[0]);this.value=''"></label><button class="b gray" onclick="resetNewCnt()">Restore built-in</button></div><div class="hint">Built-in: FY 2026-27 targets of Indore, Dewas, Dhar, Khandwa, Khargone, Mandsaur, Ratlam, Sehore, Ujjain and ID Division Indore (= Indore RMS). Format: three tables (Parcel, IRGB, Mail/MO) with <i>New Division, Apr-26, May-26 &hellip;</i> columns. Used by &ldquo;Article Count CSV &ndash; as per uploaded file&rdquo;.</div></div>
 <div class="card"><h3>Last year data (Apr-25 to Mar-26) &ndash; for this year vs last year comparison</h3><div class="row"><label class="b">Last year REVENUE file (xlsx / csv)<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="lyUpload(this.files[0],'rev');this.value=''"></label><label class="b alt">Last year ARTICLE COUNT file (xlsx / csv)<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="lyUpload(this.files[0],'cnt');this.value=''"></label><button class="b gray" onclick="lyReset()">Restore built-in</button></div><div class="hint">The month of every column is read from its heading (e.g. "Achievement in april 25", or a date such as 01-Jan-2026), so the files can be uploaded as they are. Revenue file: Division, Vertical (MO, Parcel, IRGB, POSB, PLI/RPLI), monthly revenue in crore. Count file: Division, Vertical (MO, PARCEL, IRGB), monthly article count. Last-year data is already built in; upload only to replace it.</div><div id="lyMsg"></div></div>
 </section>
 
@@ -303,7 +310,11 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <div><b>All Post Office report (CSV):</b> <select class="csvRg d0sel" onchange="document.querySelectorAll('.csvRg').forEach(e=>e.value=this.value)" title="Applies to the office-wise CSV / Excel downloads"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option></select> <select class="nbMs" onchange="nbStat()"></select> <button class="b sm" onclick="nbCSV(this.previousElementSibling.value)">Download All Post Office Report (CSV)</button><div id="nbStat"></div></div>
 <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e3e3e3"><b>Target vs Achievement CSV (Revenue &amp; Article Count):</b> month <select id="tgtMonth" onchange="renderTgt()"></select> <select id="tgtRegion" class="d0sel" onchange="renderTgt()" title="Indore Region total"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option></select>
  <button class="b alt sm" id="dlRevCsv" onclick="dlTgt('rev')">Download Revenue CSV</button> <button class="b alt sm" id="dlCntCsv" onclick="dlTgt('cnt')">Download Article Count CSV</button>
- <div class="hint" style="margin-top:4px">Division-wise Parcel / MO / IRGB target, achievement and % (Revenue: Parcel and MO in crore, IRGB in lakh). Buttons are enabled once the month's data is complete. Target tables can be replaced in the <b>Upload</b> tab.</div><div id="tgtStatus"></div></div>
+ <div class="hint" style="margin-top:4px">Division-wise Parcel / MO / IRGB target, achievement and % (Revenue: Parcel and MO in crore, IRGB in lakh). Buttons are enabled once the month's data is complete. Target tables can be replaced in the <b>Upload</b> tab.</div><div id="tgtStatus"></div>
+ <div style="margin-top:8px;padding:8px 10px;background:#fff8e1;border:1px dashed #d9a400;border-radius:8px"><label><input type="checkbox" id="rndOn" onchange="rndToggle()"> <b>Uploaded data is of random month(s)</b></label> <span class="hint">&ndash; tick this when the uploaded file has many months together (not only the current month).</span>
+  <div id="rndPanel" style="display:none;margin-top:6px"><div id="rndInfo"></div>
+   <button class="b alt sm" onclick="dlUpl('rev')">Revenue CSV &ndash; as per uploaded file</button> <button class="b alt sm" onclick="dlUpl('cnt')">Article Count CSV &ndash; as per uploaded file</button>
+   <div class="hint" style="margin-top:4px">These two do not use the built-in saved tables. Months are detected from the dates in the uploaded data (from the first date to the last date). Article Count: Name of Division, April Target, April Achievement, May Target, May Achievement &hellip; (new division targets). Revenue: month-wise achievement (Parcel / MO in crore, IRGB in lakh). Needs the post-office-wise CSV (Office ID based).</div></div></div></div>
 <div style="margin-top:8px"><b>Daily report (all divisions):</b> <div class="dl">
       <b>Download – all pages (Region Total + 8 divisions + MO / Parcel / IRGB comparison):</b> <select id="dlRegion" class="d0sel" title="Which Indore Region total goes into the files below"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option><option value="b">Both</option></select>
       <button class="b alt" id="dlXls" onclick="exportExcel()">Excel</button>
@@ -438,7 +449,7 @@ function normDB(d){
   d.raw=d.raw||{};              // division -> date -> product -> count
   d.csvDates=d.csvDates||{}; d.aad=d.aad||{}; d.aadDates=d.aadDates||{};
   d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[]; d.offMap=d.offMap||{}; d.pend=d.pend||{}; d.rev=d.rev||{}; d.revDates=d.revDates||{}; d.tgtText=d.tgtText||{}; if((d.tgtVer||0)<2){d.tgtText={};d.tgtVer=2} d.lyRev=d.lyRev||null; d.lyCnt=d.lyCnt||null;
-  d.sb=d.sb||{};d.rawN=d.rawN||{};d.revN=d.revN||{};
+  d.sb=d.sb||{};d.rawN=d.rawN||{};d.revN=d.revN||{};d.newCnt=d.newCnt||null;
   d.centres=Object.assign({},DEF_CENTRES,d.centres||{});
   d.soDef=Object.assign({},DEF_SO,d.soDef||{});
   return d;
@@ -889,7 +900,7 @@ function baseFor(dv,month){
   return {label:defLabel(month),so:soDefOf(dv),mo,parcel,irgb,mach,trans,avg:mach?Math.round(trans/mach/LY_DAYS):0};
 }
 function defLabel(m){return MONTHS[+m.slice(5,7)-1]+'-'+String(+m.slice(0,4)-1).slice(2)}
-function buildAOA(dv,month,irgb){
+function buildAOA0(dv,month,irgb){
   const [y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate();
   const head=['DATE',"NO of So's",'MO','PARCEL'].concat(irgb?['IRGB']:[]).concat(['Total Machines','Total Trans.','Per day average']);
   const out=[];
@@ -1039,6 +1050,7 @@ function tgtCell(v,isRev,r,c,X){
   return esc(v);
 }
 function renderTgt(){
+  try{rndRender()}catch(e){}
   const ms=tgtMonths(),sel=document.getElementById('tgtMonth'),prev=sel.value;
   sel.innerHTML=ms.map(m=>`<option value="${m}">${monthLbl(m)}</option>`).join('');
   sel.value=ms.includes(prev)?prev:(ms[ms.length-1]||'');
@@ -1220,6 +1232,7 @@ function renderReport(){
   const prev=sel.value;
   sel.innerHTML=ms.map(m=>`<option value="${m}">${mFull(m)}</option>`).join('');
   document.getElementById('curDivName').textContent=isCmp(curDiv)?cmpName(curDiv):curDiv;
+  try{pdfPicker()}catch(e){}
   updBadge();
   {const n=pendCount(),pb=document.getElementById('pendBanner');if(pb)pb.innerHTML=n?`<div class="msg err" style="margin:0 0 12px">&#9888; ${n} office(s) have no division, so their data is NOT counted in this report. <button class="b sm" onclick="showTab('settings')">Open Settings &rarr; Unknown offices</button></div>`:''}
   document.getElementById('exclOn').checked=!!DB.exclOn;
@@ -1230,10 +1243,11 @@ function renderReport(){
   document.getElementById('divTabs').innerHTML=tabs.map(t=>`<button class="${t===curDiv?'on':''}" ${t==='CMP_MO'?'style="margin-left:14px"':''} onclick="curDiv='${t}';renderReport()">${tabLbl(t)}</button>`).join('');
   const irgb=document.getElementById('showIRGB').checked,month=sel.value;
   if(isCmp(curDiv)){document.getElementById('reportBox').innerHTML=renderCmp(curDiv,month);return}
-  const {head,rows}=buildAOA(curDiv,month,irgb);
+  const noAad=aadOff(),na=noAad?0:3;
+  const {head,rows}=buildAOA(curDiv,month,irgb,noAad);
   const n=head.length;
   let h=`<table class="rep"><tr><th class="title" colspan="${n}">Day wise report for the MO, Parcel and CCS Verticals</th></tr>`;
-  h+=`<tr><th colspan="${n-3}">NAME OF DIVISION: ${divTitle(curDiv)}</th><th colspan="3">ADHAR</th></tr><tr>`;
+  h+=`<tr><th colspan="${n-na}">NAME OF DIVISION: ${divTitle(curDiv)}</th>${na?'<th colspan="3">ADHAR</th>':''}</tr><tr>`;
   head.forEach(x=>h+=`<th>${esc(x)}</th>`);h+='</tr>';
   for(const r of rows){
     h+=`<tr class="${r.cls}">`;
@@ -1266,6 +1280,8 @@ const safeName=s=>s.replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');
 function setBusy(on,txt){
   ['dlXls','dlJpgAll','dlPdfAll','dlJpgOne','dlPdfOne'].forEach(id=>{const e=document.getElementById(id);if(e)e.disabled=on});
   document.getElementById('dlMsg').textContent=txt||'';
+  const pb=document.getElementById('rpdfBtn');if(pb)pb.disabled=on;
+  const pm=document.getElementById('rpdfMsg');if(pm)pm.textContent=txt||'';
 }
 function saveBlob(blob,name){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
@@ -1275,7 +1291,7 @@ function saveBlob(blob,name){
 const canvasBlob=(c,type,q)=>new Promise(r=>c.toBlob(r,type,q));
 
 function exportExcel(){
-  const month=curMonth(),irgb=irgbOn();
+  const month=curMonth(),irgb=irgbOn(),noAad=aadOff(),na=noAad?0:3;
   if(!month){alert('No data available');return}
   const wb=XLSX.utils.book_new();
   ALL_TABS().forEach(dv=>{
@@ -1286,13 +1302,13 @@ function exportExcel(){
       XLSX.utils.book_append_sheet(wb,ws,cmpName(dv));
       return;
     }
-    const {head,rows}=buildAOA(dv,month,irgb);
+    const {head,rows}=buildAOA(dv,month,irgb,noAad);
     const n=head.length;
     const aoa=[['Day wise report for the MO, Parcel and CCS Verticals'],
-      ['NAME OF DIVISION: '+divTitle(dv)].concat(new Array(n-4).fill('')).concat(['ADHAR','','']),
+      ['NAME OF DIVISION: '+divTitle(dv)].concat(new Array(n-na-1).fill('')).concat(na?['ADHAR','','']:[]),
       head].concat(rows.map(r=>r.cells.map(c=>c==null?'':c)));
     const ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:n-1}},{s:{r:1,c:0},e:{r:1,c:n-4}},{s:{r:1,c:n-3},e:{r:1,c:n-1}}];
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:n-1}},{s:{r:1,c:0},e:{r:1,c:n-na-1}}].concat(na?[{s:{r:1,c:n-3},e:{r:1,c:n-1}}]:[]);
     ws['!cols']=head.map((_,i)=>({wch:i===0?12:15}));
     XLSX.utils.book_append_sheet(wb,ws,dv.replace(/[^A-Za-z0-9 ]/g,''));
   });
@@ -1300,9 +1316,9 @@ function exportExcel(){
 }
 
 /* draws the report on a canvas (used by both JPG and PDF export) */
-function drawReport(dv,month,irgb,T){
+function drawReport(dv,month,irgb,T,noAad){
   if(isCmp(dv))return drawCmp(dv,month,T);
-  const {head,rows}=buildAOA(dv,month,irgb);
+  const {head,rows}=buildAOA(dv,month,irgb,noAad);
   const n=head.length,S=2,F='"Segoe UI",Arial,sans-serif';
   const RH=26,TH=36;
   const mc=document.createElement('canvas').getContext('2d');
@@ -1326,9 +1342,10 @@ function drawReport(dv,month,irgb,T){
   };
   const HB=T?'#b3121b':'#dce6f1',HC=T?'#ffffff':'#222',TB=T?'#fdb913':'#92d050';
   cell(0,0,W,TH,'Day wise report for the MO, Parcel and CCS Verticals',{bg:HB,color:HC,bold:true,size:17});
-  const wl=widths.slice(0,n-3).reduce((a,b)=>a+b,0);
-  cell(0,TH,wl,RH,'NAME OF DIVISION: '+divTitle(dv),{bg:HB,color:HC,bold:true});
-  cell(wl,TH,W-wl,RH,'ADHAR',{bg:HB,color:HC,bold:true});
+  const na=noAad?0:3;
+  const wl=widths.slice(0,n-na).reduce((a,b)=>a+b,0);
+  cell(0,TH,na?wl:W,RH,'NAME OF DIVISION: '+divTitle(dv),{bg:HB,color:HC,bold:true});
+  if(na)cell(wl,TH,W-wl,RH,'ADHAR',{bg:HB,color:HC,bold:true});
   let px=0;head.forEach((h,j)=>{cell(px,TH+RH,widths[j],RH,h,{bg:HB,color:HC,bold:true});px+=widths[j]});
   rows.forEach((r,i)=>{
     const py=TH+RH*(i+2);px=0;
@@ -1350,18 +1367,18 @@ function needLib(names){
 }
 async function exportJPG(all){
   const month=curMonth();if(!month){alert('No data available');return}
-  const irgb=irgbOn(),list=all?ALL_TABS():[curDiv];
+  const irgb=irgbOn(),noAad=aadOff(),list=all?ALL_TABS():[curDiv];
   if(all&&!needLib(['JSZip']))return;
   setBusy(true,'Generating JPG…');
   try{
     if(!all){
-      const b=await canvasBlob(drawReport(curDiv,month,irgb),'image/jpeg',.95);
+      const b=await canvasBlob(drawReport(curDiv,month,irgb,undefined,noAad),'image/jpeg',.95);
       saveBlob(b,`Daywise_${month}_${safeName(curDiv)}.jpg`);
     }else{
       const zip=new JSZip();
       for(let i=0;i<list.length;i++){
         setBusy(true,`Generating JPG ${i+1}/${list.length}…`);
-        const b=await canvasBlob(drawReport(list[i],month,irgb),'image/jpeg',.95);
+        const b=await canvasBlob(drawReport(list[i],month,irgb,undefined,noAad),'image/jpeg',.95);
         zip.file(`${pad(i+1)}_${safeName(list[i])}_${month}.jpg`,b);
         await new Promise(r=>setTimeout(r,0));
       }
@@ -1371,17 +1388,17 @@ async function exportJPG(all){
     setBusy(false,'Download complete');
   }catch(e){setBusy(false,'');alert('Unable to create the JPG: '+e.message)}
 }
-async function exportPDF(all){
+async function exportPDF(all,listOvr){
   const month=curMonth();if(!month){alert('No data available');return}
   if(!needLib(['jspdf']))return;
-  const irgb=irgbOn(),list=all?ALL_TABS():[curDiv];
+  const irgb=irgbOn(),noAad=aadOff(),list=listOvr||(all?ALL_TABS():[curDiv]);
   setBusy(true,'Generating PDF…');
   try{
     const {jsPDF}=window.jspdf;
     let pdf=null;
     for(let i=0;i<list.length;i++){
       setBusy(true,`Generating PDF page ${i+1}/${list.length}…`);
-      const c=drawReport(list[i],month,irgb);
+      const c=drawReport(list[i],month,irgb,undefined,noAad);
       const orient=c.width>c.height*1.15?'l':'p';
       if(!pdf)pdf=new jsPDF({orientation:orient,unit:'mm',format:'a4'});else pdf.addPage('a4',orient);
       const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),m=8;
@@ -1393,6 +1410,174 @@ async function exportPDF(all){
     pdf.save(all?`Daywise_Report_${month}.pdf`:`Daywise_${month}_${safeName(curDiv)}.pdf`);
     setBusy(false,'Download complete');
   }catch(e){setBusy(false,'');alert('Unable to create the PDF: '+e.message)}
+}
+
+
+/* ===================== NEW: Remove-Aadhaar tick, PDF page picker, random-month CSV downloads ===================== */
+const aadOff=()=>{const e=document.getElementById('hideAad');return !!(e&&e.checked)};
+/* buildAOA with optional Aadhaar removal (last 3 columns: Total Machines, Total Trans., Per day average) */
+function buildAOA(dv,month,irgb,noAad){
+  const A=buildAOA0(dv,month,irgb);
+  if(noAad){A.head=A.head.slice(0,-3);A.rows.forEach(r=>{r.cells=r.cells.slice(0,-3)})}
+  return A;
+}
+/* ---- PDF: choose which pages (divisions) go into the PDF ---- */
+let PDFX=null;
+function pdfExcl(){
+  if(!PDFX){
+    try{const s=localStorage.getItem('dwPdfEx');if(s!==null)PDFX=new Set(JSON.parse(s))}catch(e){}
+    if(!PDFX)PDFX=new Set([RXT].concat(CMP_TABS_X));   /* default: without-Sehore pages are off */
+  }
+  return PDFX;
+}
+function pdfSave(){try{localStorage.setItem('dwPdfEx',JSON.stringify([...pdfExcl()]))}catch(e){}}
+function pdfCount(){const e=document.getElementById('pdfCnt');if(e)e.textContent=ALL_TABS_FULL().filter(t=>!pdfExcl().has(t)).length+' page(s) selected'}
+function pdfPicker(){
+  const box=document.getElementById('pdfPickBox');if(!box)return;
+  const ex=pdfExcl();
+  box.innerHTML='<div class="row" style="gap:6px;margin:4px 0"><button class="b sm gray" onclick="pdfAll(true)">Select all</button><button class="b sm gray" onclick="pdfAll(false)">Clear all</button></div>'+
+   '<div style="display:flex;flex-wrap:wrap;gap:4px 18px;margin-bottom:6px">'+
+   ALL_TABS_FULL().map(t=>`<label style="white-space:nowrap"><input type="checkbox" ${ex.has(t)?'':'checked'} data-t="${esc(t)}" onchange="pdfTog(this)"> ${esc(tabLbl(t))}</label>`).join('')+'</div>';
+  pdfCount();
+}
+function pdfTog(el){const ex=pdfExcl(),t=el.dataset.t;if(el.checked)ex.delete(t);else ex.add(t);pdfSave();pdfCount()}
+function pdfAll(v){const ex=pdfExcl();if(v)ex.clear();else ALL_TABS_FULL().forEach(t=>ex.add(t));pdfSave();pdfPicker()}
+async function exportPDFSel(){
+  const list=ALL_TABS_FULL().filter(t=>!pdfExcl().has(t));
+  if(!list.length){alert('Select at least one page for the PDF.');return}
+  await exportPDF(true,list);
+}
+
+/* ---- New division article count targets (Parcel / IRGB / MO, month-wise). Built-in + replaceable from the Upload tab ---- */
+const NEW_CNT_DEF={"Parcel":{"Indore":{"2026-04":50497,"2026-05":50332,"2026-06":54526,"2026-07":54526,"2026-08":54526,"2026-09":54526,"2026-10":54526,"2026-11":54526,"2026-12":54526,"2027-01":54526,"2027-02":54526,"2027-03":54526},"Dewas":{"2026-04":5462,"2026-05":5646,"2026-06":6117,"2026-07":6117,"2026-08":6117,"2026-09":6117,"2026-10":6117,"2026-11":6117,"2026-12":6117,"2027-01":6117,"2027-02":6117,"2027-03":6117},"Dhar":{"2026-04":3706,"2026-05":3584,"2026-06":3882,"2026-07":3882,"2026-08":3882,"2026-09":3882,"2026-10":3882,"2026-11":3882,"2026-12":3882,"2027-01":3882,"2027-02":3882,"2027-03":3882},"Khandwa":{"2026-04":4725,"2026-05":4554,"2026-06":4934,"2026-07":4934,"2026-08":4934,"2026-09":4934,"2026-10":4934,"2026-11":4934,"2026-12":4934,"2027-01":4934,"2027-02":4934,"2027-03":4934},"Khargone":{"2026-04":2386,"2026-05":2300,"2026-06":2492,"2026-07":2492,"2026-08":2492,"2026-09":2492,"2026-10":2492,"2026-11":2492,"2026-12":2492,"2027-01":2492,"2027-02":2492,"2027-03":2492},"Mandsaur":{"2026-04":5857,"2026-05":5179,"2026-06":5611,"2026-07":5611,"2026-08":5611,"2026-09":5611,"2026-10":5611,"2026-11":5611,"2026-12":5611,"2027-01":5611,"2027-02":5611,"2027-03":5611},"Ratlam":{"2026-04":2687,"2026-05":2566,"2026-06":2780,"2026-07":2780,"2026-08":2780,"2026-09":2780,"2026-10":2780,"2026-11":2780,"2026-12":2780,"2027-01":2780,"2027-02":2780,"2027-03":2780},"Sehore":{"2026-04":2156,"2026-05":1981,"2026-06":2146,"2026-07":2146,"2026-08":2146,"2026-09":2146,"2026-10":2146,"2026-11":2146,"2026-12":2146,"2027-01":2146,"2027-02":2146,"2027-03":2146},"Ujjain":{"2026-04":4545,"2026-05":5001,"2026-06":5418,"2026-07":5418,"2026-08":5418,"2026-09":5418,"2026-10":5418,"2026-11":5418,"2026-12":5418,"2027-01":5418,"2027-02":5418,"2027-03":5418},"Indore RMS":{"2026-04":4079,"2026-05":3388,"2026-06":3670,"2026-07":3670,"2026-08":3670,"2026-09":3670,"2026-10":3670,"2026-11":3670,"2026-12":3670,"2027-01":3670,"2027-02":3670,"2027-03":3670}},"IRGB":{"Indore":{"2026-04":617,"2026-05":494,"2026-06":494,"2026-07":1631,"2026-08":1920,"2026-09":1928,"2026-10":1928,"2026-11":1928,"2026-12":1928,"2027-01":1928,"2027-02":1928,"2027-03":1928},"Dewas":{"2026-04":91,"2026-05":49,"2026-06":42,"2026-07":49,"2026-08":102,"2026-09":193,"2026-10":193,"2026-11":193,"2026-12":193,"2027-01":193,"2027-02":193,"2027-03":193},"Dhar":{"2026-04":36,"2026-05":26,"2026-06":26,"2026-07":26,"2026-08":86,"2026-09":133,"2026-10":133,"2026-11":133,"2026-12":133,"2027-01":133,"2027-02":133,"2027-03":133},"Khandwa":{"2026-04":51,"2026-05":35,"2026-06":35,"2026-07":35,"2026-08":44,"2026-09":165,"2026-10":165,"2026-11":165,"2026-12":165,"2027-01":165,"2027-02":165,"2027-03":165},"Khargone":{"2026-04":11,"2026-05":8,"2026-06":7,"2026-07":8,"2026-08":9,"2026-09":35,"2026-10":35,"2026-11":35,"2026-12":35,"2027-01":35,"2027-02":35,"2027-03":35},"Mandsaur":{"2026-04":153,"2026-05":192,"2026-06":138,"2026-07":192,"2026-08":135,"2026-09":250,"2026-10":250,"2026-11":250,"2026-12":250,"2027-01":250,"2027-02":250,"2027-03":250},"Ratlam":{"2026-04":20,"2026-05":33,"2026-06":25,"2026-07":33,"2026-08":58,"2026-09":78,"2026-10":78,"2026-11":78,"2026-12":78,"2027-01":78,"2027-02":78,"2027-03":78},"Sehore":{"2026-04":10,"2026-05":10,"2026-06":10,"2026-07":6,"2026-08":20,"2026-09":30,"2026-10":30,"2026-11":30,"2026-12":30,"2027-01":30,"2027-02":30,"2027-03":30},"Ujjain":{"2026-04":103,"2026-05":50,"2026-06":38,"2026-07":50,"2026-08":64,"2026-09":153,"2026-10":153,"2026-11":153,"2026-12":153,"2027-01":153,"2027-02":153,"2027-03":153},"Indore RMS":{"2026-04":0,"2026-05":7,"2026-06":7,"2026-07":10,"2026-08":18,"2026-09":35,"2026-10":35,"2026-11":35,"2026-12":35,"2027-01":35,"2027-02":35,"2027-03":35}},"MO":{"Indore":{"2026-04":158999,"2026-05":159136,"2026-06":172398,"2026-07":172398,"2026-08":172398,"2026-09":172398,"2026-10":172398,"2026-11":172398,"2026-12":172398,"2027-01":172398,"2027-02":172398,"2027-03":172398},"Dewas":{"2026-04":45878,"2026-05":48450,"2026-06":52488,"2026-07":52488,"2026-08":52488,"2026-09":52488,"2026-10":52488,"2026-11":52488,"2026-12":52488,"2027-01":52488,"2027-02":52488,"2027-03":52488},"Dhar":{"2026-04":24557,"2026-05":44206,"2026-06":47890,"2026-07":47890,"2026-08":47890,"2026-09":47890,"2026-10":47890,"2026-11":47890,"2026-12":47890,"2027-01":47890,"2027-02":47890,"2027-03":47890},"Khandwa":{"2026-04":31243,"2026-05":49168,"2026-06":53265,"2026-07":53265,"2026-08":53265,"2026-09":53265,"2026-10":53265,"2026-11":53265,"2026-12":53265,"2027-01":53265,"2027-02":53265,"2027-03":53265},"Khargone":{"2026-04":18170,"2026-05":28593,"2026-06":30976,"2026-07":30976,"2026-08":30976,"2026-09":30976,"2026-10":30976,"2026-11":30976,"2026-12":30976,"2027-01":30976,"2027-02":30976,"2027-03":30976},"Mandsaur":{"2026-04":22042,"2026-05":41295,"2026-06":44737,"2026-07":44737,"2026-08":44737,"2026-09":44737,"2026-10":44737,"2026-11":44737,"2026-12":44737,"2027-01":44737,"2027-02":44737,"2027-03":44737},"Ratlam":{"2026-04":18623,"2026-05":51003,"2026-06":55254,"2026-07":55254,"2026-08":55254,"2026-09":55254,"2026-10":55254,"2026-11":55254,"2026-12":55254,"2027-01":55254,"2027-02":55254,"2027-03":55254},"Sehore":{"2026-04":23299,"2026-05":55477,"2026-06":60100,"2026-07":60100,"2026-08":60100,"2026-09":60100,"2026-10":60100,"2026-11":60100,"2026-12":60100,"2027-01":60100,"2027-02":60100,"2027-03":60100},"Ujjain":{"2026-04":24216,"2026-05":17844,"2026-06":19332,"2026-07":19332,"2026-08":19332,"2026-09":19332,"2026-10":19332,"2026-11":19332,"2026-12":19332,"2027-01":19332,"2027-02":19332,"2027-03":19332},"Indore RMS":{"2026-04":14305,"2026-05":14328,"2026-06":15522,"2026-07":15522,"2026-08":15522,"2026-09":15522,"2026-10":15522,"2026-11":15522,"2026-12":15522,"2027-01":15522,"2027-02":15522,"2027-03":15522}}};
+const newCnt=()=>DB.newCnt||NEW_CNT_DEF;
+function nameToNew(name){
+  const n=norm(name);if(!n)return null;
+  if(n.includes('id division')||n.includes('rms'))return 'Indore RMS';
+  for(const d of DIVS_NEW)if(d!=='Indore RMS'&&n.includes(d.toLowerCase()))return d;
+  return null;
+}
+function parseNewCnt(text){
+  const wb=XLSX.read(text,{type:'string',raw:true});
+  const g=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:true});
+  const out={};let cur=null,cols=null;
+  for(const r of g){
+    const t=String(r[0]==null?'':r[0]).trim(),l=t.toLowerCase();
+    if(!t)continue;
+    const rest=r.slice(1).some(x=>x!==''&&x!=null);
+    if(!rest){
+      if(/month.?wise|target|vertical/.test(l)){
+        cur=/irgb/.test(l)?'IRGB':/parcel/.test(l)?'Parcel':/\bmail\b|\bmo\b/.test(l)?'MO':null;
+        cols=null;if(cur)out[cur]=out[cur]||{};
+      }
+      continue;
+    }
+    const mk=r.map(x=>hdrMonth(x));
+    if(mk.filter(Boolean).length>=3){cols=mk;continue}
+    if(cur&&cols){
+      const d=nameToNew(t);if(!d)continue;
+      const o=(out[cur][d]=out[cur][d]||{});
+      cols.forEach((m,c)=>{if(m&&r[c]!==''&&r[c]!=null)o[m]=toNum(r[c])});
+    }
+  }
+  return ['Parcel','IRGB','MO'].some(k=>out[k]&&Object.keys(out[k]).length)?out:null;
+}
+async function loadNewCnt(file){
+  if(!file)return;
+  try{
+    let text;
+    if(/\.csv$/i.test(file.name))text=await file.text();
+    else{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true});text=XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]],{blankrows:true})}
+    const P=parseNewCnt(text);
+    if(!P)throw new Error('No Parcel / IRGB / Mail target tables found. Expected rows like: New Division, Apr-26, May-26 ...');
+    DB.newCnt=P;save();rndRender();toast('New division article count targets loaded');
+  }catch(e){alert('Unable to load: '+e.message)}
+}
+function resetNewCnt(){DB.newCnt=null;save();rndRender();toast('Built-in new division targets restored')}
+
+/* ---- Random month(s): CSVs built only from the uploaded data (first date to last date detected automatically) ---- */
+const rndOn=()=>{const e=document.getElementById('rndOn');return !!(e&&e.checked)};
+function rndToggle(){try{localStorage.setItem('dwRndOn',rndOn()?'1':'0')}catch(e){}rndRender()}
+const uplDates=()=>Object.keys(DB.csvDates).filter(d=>!(DB.exclOn&&DB.exclDate===d)).sort();
+function uplMonths(){const s={};uplDates().forEach(d=>{s[d.slice(0,7)]=1});return Object.keys(s).sort()}
+function withNew(fn){const o=NM;NM=true;try{return fn()}finally{NM=o}}   /* new-division data is read whatever mapping is selected */
+const monthName=m=>FULLM[+m.slice(5,7)-1];
+const UP_V=[['Parcel','parcel','Parcel'],['IRGB','irgb','IRGB'],['MO','mo','MO (Mail)']];
+function uplCalc(){
+  const ms=uplMonths(),nox=tgtNox(),T=newCnt();
+  return withNew(()=>{
+    const divs=DIVS_NEW.filter(d=>!(nox&&d==='Sehore'));
+    const info={};
+    ms.forEach(m=>{
+      const dts=monthDatesOf(m),[y,mm]=m.split('-').map(Number),dim=new Date(y,mm,0).getDate();
+      info[m]={dts,first:dts[0],last:dts[dts.length-1],partial:!(dts.length&&+dts[0].slice(8)===1&&+dts[dts.length-1].slice(8)===dim)};
+    });
+    const res={ms,info,divs,nox,total:0,V:{}};
+    for(const [vk,fld] of UP_V){
+      res.V[vk]=divs.map(d=>({d,
+        t:ms.map(m=>{const v=((T[vk]||{})[d]||{})[m];return v==null?'':v}),
+        a:ms.map(m=>{let c=0,r=0;info[m].dts.forEach(dt=>{c+=dayVals(d,dt)[fld]||0;r+=dayRev(d,dt)[fld]||0});res.total+=c;return {c,r}})}));
+    }
+    return res;
+  });
+}
+let _rndInit=false;
+function rndRender(){
+  const cb=document.getElementById('rndOn');if(!cb)return;
+  if(!_rndInit){_rndInit=true;try{cb.checked=localStorage.getItem('dwRndOn')==='1'}catch(e){}}
+  const p=document.getElementById('rndPanel');p.style.display=cb.checked?'':'none';
+  if(!cb.checked)return;
+  const info=document.getElementById('rndInfo'),ds=uplDates();
+  if(!ds.length){info.innerHTML='<div class="msg warn">No data uploaded yet. Upload the post-office-wise CSV in the Upload tab.</div>';return}
+  const ms=uplMonths();
+  let t=`Uploaded data found: ${dmy(ds[0])} to ${dmy(ds[ds.length-1])} \u2022 ${ds.length} day(s) \u2022 ${ms.length} month(s): ${ms.map(m=>MONTHS[+m.slice(5,7)-1]+'-'+m.slice(2,4)).join(', ')}`,cls='msg';
+  let R=null;try{R=uplCalc()}catch(e){}
+  if(R&&!R.total){cls='msg warn';t+='\nNo new-division data found. Upload the post-office-wise CSV (Office ID based) in the Upload tab.'}
+  const n=pendCount();if(n){cls='msg err';t+=`\n${n} office(s) have no division \u2013 their data is NOT counted (Settings \u2192 Unknown offices).`}
+  info.innerHTML=`<div class="${cls}">${esc(t)}</div>`;
+}
+function dlUpl(k){
+  const R=uplCalc();
+  if(!R.ms.length){alert('No data uploaded yet.');return}
+  if(!R.total){alert('No data found for the new divisions. Upload the post-office-wise CSV (Office ID based) in the Upload tab.');return}
+  const n=pendCount();
+  if(n&&!confirm(n+' office(s) have no division, so their data is NOT counted. Download anyway?'))return;
+  const ds=uplDates(),rng=`${dmy(ds[0])} to ${dmy(ds[ds.length-1])}`;
+  const dup=new Set(R.ms.map(monthName)).size!==R.ms.length;
+  const mn=m=>monthName(m)+(dup?'-'+m.slice(2,4):'');
+  const part=m=>{const i=R.info[m];return i.partial?` (${+i.first.slice(8)}-${+i.last.slice(8)} ${MONTHS[+m.slice(5,7)-1]})`:''};
+  const lines=[],push=a=>lines.push(a.map(csvCell).join(','));
+  const label=R.nox?'Indore Region (without Sehore)':'Indore Region';
+  push([(k==='cnt'?'Article Count - Target vs Achievement':'Revenue - Achievement')+' (as per uploaded file) - '+label+' - data from '+rng]);
+  for(const [vk,fld,vl] of UP_V){
+    push([]);
+    const unit=vk==='IRGB'?1e5:1e7;
+    push([vl+' Vertical'+(k==='rev'?(vk==='IRGB'?' (Revenue in Lakh)':' (Revenue in Crore)'):'')]);
+    const head=['Name of Division'];
+    R.ms.forEach(m=>{if(k==='cnt'){head.push(mn(m)+' Target');head.push(mn(m)+' Achievement'+part(m))}else head.push(mn(m)+' Achievement'+part(m))});
+    if(k==='rev')head.push('Total Achievement');
+    push(head);
+    const tT=R.ms.map(()=>0),tTa=R.ms.map(()=>false),tA=R.ms.map(()=>0);
+    for(const row of R.V[vk]){
+      const cells=[row.d];let rs=0;
+      R.ms.forEach((m,i)=>{
+        const a=k==='cnt'?row.a[i].c:Math.round(row.a[i].r/unit*1000)/1000;
+        if(k==='cnt'){cells.push(row.t[i]);cells.push(a);if(row.t[i]!==''){tT[i]+=row.t[i];tTa[i]=true}}else cells.push(a);
+        tA[i]+=a;rs+=a;
+      });
+      if(k==='rev')cells.push(Math.round(rs*1000)/1000);
+      push(cells);
+    }
+    const tc=['Total'];let rs=0;
+    R.ms.forEach((m,i)=>{
+      if(k==='cnt'){tc.push(tTa[i]?tT[i]:'');tc.push(tA[i])}else tc.push(Math.round(tA[i]*1000)/1000);
+      rs+=tA[i];
+    });
+    if(k==='rev')tc.push(Math.round(rs*1000)/1000);
+    push(tc);
+  }
+  const fn=`${k==='cnt'?'Article_Count':'Revenue'}_as_per_uploaded_file_${ds[0]}_to_${ds[ds.length-1]}${R.nox?'_without_Sehore':''}.csv`;
+  saveBlob(new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),fn);
 }
 
 /* ===================== SETTINGS ===================== */
