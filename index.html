@@ -122,7 +122,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 </head>
 <body>
 <header>
-  <div class="noprint" style="margin:6px 0"><b>Mapping:</b> <select id="mapSel" onchange="setMap(this.value)"><option value="o">Old mapping (Indore Region)</option><option value="n">New mapping (Indore Region)</option></select> <span class="hint">New mapping = post-office-wise CSV upload (Office ID), then Indore Region with / without Sehore + new divisions</span></div>
+  <div class="noprint" style="margin:6px 0"><b>Mapping:</b> <select id="mapSel" onchange="setMap(this.value)"><option value="o">Old mapping (Indore Region)</option><option value="n">New mapping (Indore Region)</option></select> <button class="b sm alt" onclick="loadIndoreReferenceSheets()">Refresh Google Sheets</button> <span class="hint">New mapping and targets are loaded from the linked Google Sheets</span></div>
   <h1>Day Wise Report – MO, Parcel &amp; CCS (Aadhaar) Verticals</h1>
   <small>Indore Region • Division-wise • Daily CSV (division-wise or post-office-wise), Target vs Achievement and Aadhaar Excel upload • Excel / JPG / PDF export • Presentation Maker</small>
 </header>
@@ -591,7 +591,7 @@ async function handleCSV(file,mode){
         if(!oid){noId++;skipped++;continue}
         const nk=NEW_OFFMAP[oid];
         if(nk){const a=((aggN[nk]=aggN[nk]||{})[dt]=aggN[nk][dt]||{});a[pn]=(a[pn]||0)+cnt;const b=((raggN[nk]=raggN[nk]||{})[dt]=raggN[nk][dt]||{});b[pn]=(b[pn]||0)+pst}
-        dk=officeDiv(oid);
+        dk=NM?(NEW_OFFMAP[oid]||officeDiv(oid)):officeDiv(oid);
         if(!dk){
           dates.add(dt);prods.add(pn);
           const p=(pend[oid]=pend[oid]||{n:String(r['office-name']||''),d:{},r:{}});
@@ -2544,7 +2544,7 @@ function sbUse(){const a=NM?SDT_N:SDT_O,b=NM?DT_N:DT_O,c=NM?LBL_N:LBL_O;[SDT,DT,
 sbUse();
 const GREEN=75,ORANGE=60; /* % achievement colours: green >= 75, orange 60-75, red < 60 */
 const OTHER_SD='SB OFFICE NOT MAPPED';
-const S={ok:false,err:'',mst:{byId:{},byOff:{}},dat:{rows:[],months:[],day:''},ly:{},recs:[],months:[],unm:[],covered:new Set(),up:'',view:'dm',chDiv:'REGION'};
+const S={ok:false,err:'',mst:{byId:{},byOff:{}},mstOld:null,mstNew:null,dat:{rows:[],months:[],day:''},ly:{},recs:[],months:[],unm:[],covered:new Set(),up:'',view:'dm',chDiv:'REGION'};
 const $=i=>document.getElementById(i);
 const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/,/g,''));return isNaN(n)?0:n};
 const cid=v=>String(v==null?'':v).trim().toUpperCase().replace(/\.0$/,'');
@@ -2776,19 +2776,90 @@ async function add(list){try{await S.ready}catch(e){}if(!S.ok)return alert('Mapp
  if(skip)alert('Maximum 14 files - '+skip+' extra file(s) skip hui.');save();calc();render();rpRefresh()}
 function setX(on){DK.length=0;(on?DK0.filter(d=>d!=='SEHORE'):DK0).forEach(d=>DK.push(d))}
 function setRx(v){S.rx=!!v;render()}
-function useMap(){sbUse();calc();setX(S.rx);render()}
+function useMap(){if(NM&&S.mstNew)S.mst=S.mstNew;else if(!NM&&S.mstOld)S.mst=S.mstOld;sbUse();calc();setX(S.rx);render()}
 function rpRefresh(){try{if($('p-rp').style.display!=='none')rpRender()}catch(e){}}
 const upd=()=>{save();calc();render();rpRefresh()};
-async function init(){S.ready=(async()=>{try{const [m,d,l]=await Promise.all([fetchTxt(U_MAP,'Office mapping'),fetchTxt(U_DAT,'FY data'),fetchTxt(U_LY,'Last year').catch(()=>'')]);S.mst=parseMap(m);S.dat=parseDat(d);S.ly=l?parseLY(l):{};S.ok=true;S.err='';calc()}catch(e){S.ok=false;S.err=e.message}render()})();return S.ready}
+async function init(){S.ready=(async()=>{try{const [m,d,l]=await Promise.all([fetchTxt(U_MAP,'Office mapping'),fetchTxt(U_DAT,'FY data'),fetchTxt(U_LY,'Last year').catch(()=>'')]);S.mst=parseMap(m);S.mstOld=S.mst;S.dat=parseDat(d);S.ly=l?parseLY(l):{};S.ok=true;S.err='';calc()}catch(e){S.ok=false;S.err=e.message}render()})();return S.ready}
 return{data:()=>({recs:S.recs,months:S.months,ok:S.ok,files:sb().files.map(f=>f.name)}),init,render,add,xlsx,pages,ppt,calc,tblHTML,posbOff,setX,setRx,useMap,
  setSide:(i,v)=>{sb().files[i].side=v;upd()},setDiv:(i,v)=>{sb().files[i].fdiv=v;upd()},del:i=>{sb().files.splice(i,1);upd()},
  reset:()=>{if(!confirm('Saari uploaded POSB files hata dein?'))return;sb().files=[];upd()},
  setView:v=>{S.view=v;render()},setCh:v=>{S.chDiv=v;render()},setM:v=>{sb().selM=v;save();render()},setDay:v=>{sb().upDay=v?String(Math.min(31,Math.max(1,+v))):'';upd()},setUp:v=>{sb().upMonth=v;upd()},
- refresh:()=>init(),
+ refresh:()=>init(),setNewMapping:m=>{S.mstNew=m;if(NM)S.mst=m;calc();render()},
  addOff:i=>{const u=S.unm[i],s=sb();s.extra[u.id]={name:$('sbn_'+i).value.trim()||u.id,cls:$('sbc_'+i).value,sd:$('sbs_'+i).value,div:u.div};upd();toast('Office added')},
  merge:i=>{const u=S.unm[i],t=cid($('sbi_'+i).value);if(!t)return alert('Target BO ID / SOL ID likhein');if(!(S.mst.byId[t]||[]).length)return alert('Ye ID mapping sheet me nahi mili: '+t);sb().alias[u.id]=t;upd();toast('Numbers added to '+t)},
  delX:(k,id)=>{delete sb()[k==='e'?'extra':'alias'][id];upd()}}})();
+
 SBX.init();
+/* ===== Live Indore Region reference sheets (published Google CSVs) =====
+   1: New office mapping (Office ID -> new Division / Sub-Division)
+   2: New article-count targets (Parcel / IRGB / MO)
+   3: New POSB/SB office mapping. Old mapping remains available in Old mode. */
+const IR_REF_SHEETS={
+  office:'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=876308579&single=true&output=csv',
+  targets:'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=2145700546&single=true&output=csv',
+  sb:'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=1393437330&single=true&output=csv'
+};
+async function irFetchCSV(url,label){
+  let last;
+  for(const u of [url+(url.includes('?')?'&':'?')+'_='+Date.now(),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+    'https://corsproxy.io/?'+encodeURIComponent(url)]){
+    try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);
+      const t=await r.text();if(!t.trim()||/^\s*<(!doctype|html)/i.test(t))throw Error('CSV response nahi mila');return t;
+    }catch(e){last=e}
+  }
+  throw Error(label+': '+(last?.message||'load failed'));
+}
+function irGrid(csv){const w=XLSX.read(csv,{type:'string',raw:true});return XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]],{header:1,defval:'',raw:true})}
+function irHeadMap(row){const m={};row.forEach((v,i)=>m[String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'')]=i);return m}
+function irCol(h,names){for(const n of names){const k=n.toLowerCase().replace(/[^a-z0-9]/g,'');if(h[k]!=null)return h[k]}return -1}
+function irApplyOfficeMap(csv){
+  const g=irGrid(csv),hi=g.findIndex(r=>r.some(v=>/office.?id/i.test(String(v))));if(hi<0)throw Error('New Office Mapping: Office ID header nahi mila');
+  const h=irHeadMap(g[hi]),ci=irCol(h,['office id','office-id','officeid','office code']),cd=irCol(h,['new division','division name','division','new division name']),cs=irCol(h,['new sub division','sub division','subdivision','sub division name','new subdivision']);
+  if(ci<0||cd<0)throw Error('New Office Mapping me Office ID aur New Division columns chahiye');
+  const next={},sdNext={};let count=0;
+  for(const r of g.slice(hi+1)){const id=offId(r[ci]),dv=String(r[cd]||'').trim(),sd=cs>=0?String(r[cs]||'').trim():'';if(!id||!dv)continue;
+    const d=nameToNew(dv)||DIVS_NEW.find(x=>x.toLowerCase()===dv.toLowerCase())||dv;
+    next[id]=d;if(sd)sdNext[id]=[d,sd];count++;
+  }
+  if(!count)throw Error('New Office Mapping me valid Office ID rows nahi mile');
+  Object.keys(NEW_OFFMAP).forEach(k=>delete NEW_OFFMAP[k]);Object.assign(NEW_OFFMAP,next);
+  Object.keys(NEW_DSD).forEach(k=>delete NEW_DSD[k]);Object.assign(NEW_DSD,sdNext);
+  return count;
+}
+function irApplySBMap(csv){
+  const g=irGrid(csv),hi=g.findIndex(r=>r.some(v=>/office.?id/i.test(String(v))));if(hi<0)throw Error('New SB Mapping: Office ID header nahi mila');
+  const h=irHeadMap(g[hi]),ix={
+    oid:irCol(h,['office id','office-id','officeid','office code']),
+    bo:irCol(h,['bo id','boid','bo code']),sol:irCol(h,['sol id','solid','sol code']),
+    name:irCol(h,['office name','office','name']),cls:irCol(h,['class','office class']),
+    sd:irCol(h,['sub division','subdivision','sub division name']),dv:irCol(h,['division','division name'])
+  };
+  if(ix.oid<0||ix.dv<0)throw Error('New SB Mapping me Office ID aur Division columns chahiye');
+  const rows=[['Office ID','BO ID','SOL ID','Office Name','Class','Sub Division','Division']];
+  for(const r of g.slice(hi+1)){const id=ix.oid<0?'':r[ix.oid];if(!id)continue;
+    rows.push([id,ix.bo<0?'':r[ix.bo],ix.sol<0?'':r[ix.sol],ix.name<0?'':r[ix.name],ix.cls<0?'BO':r[ix.cls],ix.sd<0?'':r[ix.sd],r[ix.dv]]);
+  }
+  if(rows.length<2)throw Error('New SB Mapping me office records nahi mile');
+  return parseMap(XLSX.utils.aoa_to_sheet(rows)?XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(rows)):'');
+}
+async function loadIndoreReferenceSheets(showToast=true){
+  const status=[];
+  const jobs=[
+    ['New Office Mapping',async()=>irApplyOfficeMap(await irFetchCSV(IR_REF_SHEETS.office,'New Office Mapping'))],
+    ['New Article Count Targets',async()=>{const p=parseNewCnt(await irFetchCSV(IR_REF_SHEETS.targets,'Article Count Targets'));if(!p)throw Error('Parcel / IRGB / MO target sections parse nahi hue');DB.newCnt=p;save();return Object.values(p).reduce((a,x)=>a+Object.keys(x).length,0)}],
+    ['New SB Mapping',async()=>{const m=irApplySBMap(await irFetchCSV(IR_REF_SHEETS.sb,'New SB Mapping'));SBX.setNewMapping(m);return Object.keys(m.byOff).length}]
+  ];
+  for(const [name,fn] of jobs){try{const n=await fn();status.push('✓ '+name+': '+n+' records')}catch(e){status.push('⚠ '+name+': '+e.message)}}
+  if(typeof SBX!=='undefined')SBX.useMap();
+  try{renderReport();renderTgt();rndRender();}catch(e){}
+  const note=status.join('\n');
+  const el=document.getElementById('offMasterMsg');if(el)el.innerHTML='<div class="msg">'+esc(note)+'</div>';
+  if(showToast)toast('Reference sheets refresh complete');
+  return status;
+}
+
+loadIndoreReferenceSheets(false);
 /* hook into Reports tab (mega PPT / PDF) */
 RP.G.rv='Revenue - till the month where ALL verticals have data, and till latest month for the verticals that have it';RP.G.sb='POSB status reports (A/c opened-closed-net, net addition status) + target vs achievement, progressive, accounts opened, vs last year';RP.G.sbq='POSB - Q1 vs Q2';RP.G.sbr='POSB - BO / SO-HO / Sub-Division top & bottom lists';RP.G.sbc='POSB - net addition graphs';
 {const _p=RP.pages;RP.pages=()=>{const P=_p();try{SBX.pages().forEach(x=>P.push(x))}catch(e){console.error(e)}return P}}
