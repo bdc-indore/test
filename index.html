@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Day Wise Report – MO, Parcel & CCS (Aadhaar) – Indore Region</title>
+<script>
+/* Diagnostics: koi bhi error ho to screen par dikhega (screenshot bhej sakte hain) */
+(function(){var log=[];
+ function show(m){log.push(m);if(log.length>6)log.shift();
+  var b=document.getElementById('__dg');
+  if(!b){if(!document.body)return;b=document.createElement('div');b.id='__dg';
+   b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#7a0b12;color:#fff;font:12px/1.4 Arial;padding:8px 10px;max-height:40vh;overflow:auto;white-space:pre-wrap';
+   document.body.appendChild(b)}
+  b.innerHTML='<b>Error (screenshot bhejein):</b> <button onclick="this.parentNode.remove()" style="float:right">x</button>\n'+log.map(function(x){return x.replace(/</g,'&lt;')}).join('\n---\n')}
+ window.addEventListener('error',function(e){if(e.target&&e.target!==window&&e.target.src){if(/cdn|googleapis/.test(e.target.src))show('Library load nahi hui: '+e.target.src);return}
+  show((e.message||'error')+'\n'+(e.filename||'').split('/').pop()+':'+e.lineno+':'+e.colno)},true);
+ window.addEventListener('unhandledrejection',function(e){var r=e.reason;show('Promise error: '+(r&&r.stack||r&&r.message||r))});
+ window.addEventListener('DOMContentLoaded',function(){setInterval(function(){try{var u=window.storageUsage&&storageUsage();var c=document.getElementById('__st');
+  if(!c){c=document.createElement('div');c.id='__st';c.style.cssText='position:fixed;left:4px;bottom:2px;z-index:99998;font:10px Arial;color:#888;background:rgba(255,255,255,.8);padding:0 4px;border-radius:3px';document.body.appendChild(c)}
+  if(u)c.textContent='Storage: '+u.store+' \u2022 '+(u.total/1048576).toFixed(2)+' MB'}catch(e){}},1500)});
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script><script>if(typeof XLSX==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script><script>if(typeof JSZip==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>');</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script>if(typeof jspdf==="undefined")document.write('<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>');</script>
@@ -3475,7 +3492,7 @@ window.UPM=UPM;
  document.querySelectorAll('.dz').forEach(z=>{const inp=z.querySelector('input'),fn=H[z.dataset.h];
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});z.addEventListener('dragleave',()=>z.classList.remove('over'));
   z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');if(e.dataTransfer.files.length)fn(e.dataTransfer.files)});
-  inp.addEventListener('change',()=>{const fl=[...inp.files];if(fl.length)fn(fl);if(z.dataset.h==='posb')inp.value=''})})}
+  inp.addEventListener('change',()=>{const fl=[...inp.files];inp.value='';if(fl.length)fn(fl)})})}
 UPM.render();
 try{updBadge()}catch(e){}
 D0.fetchMonths();
