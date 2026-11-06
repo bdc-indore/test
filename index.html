@@ -235,6 +235,10 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
     <td><div class="dzs"><label class="dz" data-h="csvDiv"><b>Division-wise CSV</b><span>click or drop file</span><input type="file" id="csvFile"  accept=".csv,.xlsx,.xls" hidden></label><label class="dz" data-h="csvOff"><b>Post-office-wise CSV</b><span>click or drop file</span><input type="file" id="csvFileOff"  accept=".csv,.xlsx,.xls" hidden></label></div><div id="csvMsg"></div><div id="csvMsgOff"></div></td></tr>
    <tr><td class="l">Aadhaar transactions<small>Excel (division x date grid, or office-wise monthly sheet).</small></td>
     <td><div class="dzs"><label class="dz" data-h="aad"><b>Aadhaar Excel</b><span>click or drop file</span><input type="file" id="aadFile"  accept=".csv,.xlsx,.xls" hidden></label></div><div id="aadMsg"></div><div id="aadPick"></div></td></tr>
+   <tr><td class="l">Aadhaar &ndash; last year<small>Monthly statement &ldquo;Sheet2&rdquo; format (one sheet per month, Apr-25 to Mar-26). Laptop Kit rows are added to the office above them. Replaces the old built-in last-year Aadhaar data.</small></td>
+    <td><div class="dzs"><label class="dz" data-h="lyaad"><b>Last-year Aadhaar Excel</b><span>click or drop file</span><input type="file" id="lyAadFile" accept=".csv,.xlsx,.xls" hidden></label></div><div id="lyAadMsg"></div><div id="lyAadList"></div></td></tr>
+   <tr><td class="l">Aadhaar CSV download<small>Office ID, Center Name, Division, Total Transaction (this year&rsquo;s uploaded office-wise data).</small></td>
+    <td><div class="row"><select id="aadCsvM"></select> <select id="aadCsvMap"><option value="n">New mapping</option><option value="o">Old mapping</option></select> <button class="b sm" onclick="aadCsv()">&#11015; Download Aadhaar CSV</button></div><div id="aadCsvMsg" class="hint"></div></td></tr>
    <tr><td class="l">D+0 report<small>Office-wise "table" file. Date is asked after upload.</small></td>
     <td><div class="dzs"><label class="dz" data-h="d0"><b>D+0 table file</b><span>click or drop file</span><input type="file" id="d0File"  accept=".csv,.xlsx,.xls" hidden></label></div><div id="d0UpMsg"></div></td></tr>
    <tr><td class="l">POSB reports<small>Up to 14 files (Open + Close), any order. Details in the POSB Upload tab.</small></td>
@@ -352,7 +356,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <!-- ============ SETTINGS ============ -->
 <section id="p-rp" style="display:none">
   <div class="card noprint"><h3>D+0 data &amp; Mega CSV</h3>
-   <div class="row"><select class="csvRg d0sel" onchange="document.querySelectorAll('.csvRg').forEach(e=>e.value=this.value)" title="Applies to the office-wise CSV / Excel downloads"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option></select> <button class="b alt" onclick="D0.mega()">&#11015; Download Mega CSV (Excel, 5 sheets)</button>
+   <div class="row"><select class="csvRg d0sel" onchange="document.querySelectorAll('.csvRg').forEach(e=>e.value=this.value)" title="Applies to the office-wise CSV / Excel downloads"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option><option value="r">Indore Region (without Sehore &amp; RMS)</option></select> <button class="b alt" onclick="D0.mega()">&#11015; Download Mega CSV (Excel, 5 sheets)</button>
    <button class="b sm alt" onclick="D0.csv()">D+0 CSV (Ind - D format)</button>
    <label class="b sm gray">Load month CSV manually<input type="file" id="d0Man" accept=".csv,.xlsx,.xls" hidden onchange="D0.manual(this.files[0])"></label>
    <select id="d0ManMonth" class="d0sel"></select><button class="b sm gray" onclick="D0.fetchMonths()">Reload monthly CSVs</button>
@@ -360,8 +364,8 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
    <div class="hint">Mega CSV sheets: 1 Revenue CSV &bull; 2 Article Count CSV &bull; 3 All Post Office report &bull; 4 POSB sheet (uploaded format) &bull; 5 latest D+0 sheet (Ind - D format). D+0 reports are in the table below (section &ldquo;D+0 Reports&rdquo;); minimum mail / worst-N settings are in Settings.</div></div>
 <div class="card"><h3>Reports, PPT &amp; PDF - all downloads are here</h3>
 <div class="hint" style="margin-bottom:6px">Everything is built from what you upload in the <b>Upload</b> tab. Good-booking limits, office-id shifts, product mapping and the choice of pages for the mega PPT / PDF are in <b>Settings</b>.</div>
-<div><b>All Post Office report (CSV):</b> <select class="csvRg d0sel" onchange="document.querySelectorAll('.csvRg').forEach(e=>e.value=this.value)" title="Applies to the office-wise CSV / Excel downloads"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option></select> <select class="nbMs" onchange="nbStat()"></select> <button class="b sm" onclick="nbCSV(this.previousElementSibling.value)">Download All Post Office Report (CSV)</button><div id="nbStat"></div></div>
-<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e3e3e3"><b>Target vs Achievement CSV (Revenue &amp; Article Count):</b> month <select id="tgtMonth" onchange="renderTgt()"></select> <select id="tgtRegion" class="d0sel" onchange="renderTgt()" title="Indore Region total"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option></select>
+<div><b>All Post Office report (CSV):</b> <select class="csvRg d0sel" onchange="document.querySelectorAll('.csvRg').forEach(e=>e.value=this.value)" title="Applies to the office-wise CSV / Excel downloads"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option><option value="r">Indore Region (without Sehore &amp; RMS)</option></select> <select class="nbMs" onchange="nbStat()"></select> <button class="b sm" onclick="nbCSV(this.previousElementSibling.value)">Download All Post Office Report (CSV)</button><div id="nbStat"></div></div>
+<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e3e3e3"><b>Target vs Achievement CSV (Revenue &amp; Article Count):</b> month <select id="tgtMonth" onchange="renderTgt()"></select> <select id="tgtRegion" class="d0sel" onchange="renderTgt()" title="Indore Region total"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option><option value="r">Indore Region (without Sehore &amp; RMS)</option></select>
  <button class="b alt sm" id="dlRevCsv" onclick="dlTgt('rev')">Download Revenue CSV</button> <button class="b alt sm" id="dlCntCsv" onclick="dlTgt('cnt')">Download Article Count CSV</button>
  <div class="hint" style="margin-top:4px">Division-wise Parcel / MO / IRGB target, achievement and % (Revenue: Parcel and MO in crore, IRGB in lakh). Buttons are enabled once the month's data is complete. Target tables can be replaced in the <b>Upload</b> tab.</div><div id="tgtStatus"></div>
  <div style="margin-top:8px;padding:8px 10px;background:#fff8e1;border:1px dashed #d9a400;border-radius:8px"><label><input type="checkbox" id="rndOn" onchange="rndToggle()"> <b>Uploaded data is of random month(s)</b></label> <span class="hint">&ndash; tick this when the uploaded file has many months together (not only the current month).</span>
@@ -369,7 +373,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
    <button class="b alt sm" onclick="dlUpl('rev')">Revenue CSV &ndash; as per uploaded file</button> <button class="b alt sm" onclick="dlUpl('cnt')">Article Count CSV &ndash; as per uploaded file</button>
    <div class="hint" style="margin-top:4px">These two do not use the built-in saved tables. Months are detected from the dates in the uploaded data (from the first date to the last date). Article Count: Name of Division, April Target, April Achievement, May Target, May Achievement &hellip; (new division targets). Revenue: month-wise achievement (Parcel / MO in crore, IRGB in lakh). Needs the post-office-wise CSV (Office ID based).</div></div></div></div>
 <div style="margin-top:8px"><b>Daily report (all divisions):</b> <div class="dl">
-      <b>Download – all pages (Region Total + 8 divisions + MO / Parcel / IRGB comparison):</b> <select id="dlRegion" class="d0sel" title="Which Indore Region total goes into the files below"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option><option value="b">Both</option></select>
+      <b>Download – all pages (Region Total + 8 divisions + MO / Parcel / IRGB comparison):</b> <select id="dlRegion" class="d0sel" title="Which Indore Region total goes into the files below"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option><option value="r">Indore Region (without Sehore &amp; RMS)</option><option value="b">Both</option></select>
       <button class="b alt" id="dlXls" onclick="exportExcel()">Excel</button>
       <button class="b alt" id="dlJpgAll" onclick="exportJPG(true)">JPG (ZIP – one image per division)</button>
       <button class="b alt" id="dlPdfAll" onclick="exportPDF(true)">Combined PDF (one page per division)</button>
@@ -527,6 +531,9 @@ function setMap(v){NM=v==='n';DBLS.setItem('dwMapNew',NM?'1':'0');DIVS=NM?DIVS_N
  try{RP.DV=(NM?DV_N:DV_O).slice();RP.DV0=RP.DV.slice();RP.build()}catch(e){}try{SBX.useMap()}catch(e){}
  try{renderReport()}catch(e){}try{renderTgt()}catch(e){}try{rpRender()}catch(e){}}
 const DEF_CENTRES={'Indore City':21,'Indore Mfl':21,'Indore RMS':1,'Khandwa':20,'Mandsaur':21,'Ratlam':18,'Sehore':16,'Ujjain':24};
+/* New mapping: Aadhaar machines (centres) per new division, from the Aadhaar Txn report. Sehore is not in that report, so it keeps its old-mapping count. */
+const DEF_CENTRES_N={'Indore':27,'Indore RMS':1,'Dewas':12,'Dhar':11,'Khandwa':8,'Khargone':12,'Mandsaur':21,'Ratlam':16,'Sehore':16,'Ujjain':18};
+const machOf=d=>NM?((DB.centresN||{})[d]||0):((DB.centres||{})[d]||0);
 /* Division-wise total of "Total Offices in Sub Dn" from the Nil Booking Report (Indore Region) */
 const DEF_SO={'Indore City':34,'Indore Mfl':51,'Indore RMS':0,'Khandwa':51,'Mandsaur':35,'Ratlam':38,'Sehore':33,'Ujjain':54};
 const DEF_MAP={
@@ -534,12 +541,13 @@ const DEF_MAP={
  'magazine post':'MO','speed post parcel domestic':'Parcel','indiapost parcel contractual':'Parcel'
 };
 /* Previous year (Apr-25 to Mar-26): division -> month(1-12) -> [MO, Parcel, IRGB, Aadhaar Trans] */
-const LY={"Sehore":{"4":[19949,1909,9,3389],"5":[26268,2047,7,3273],"6":[14525,2131,9,2844],"7":[16813,2392,16,2595],"8":[26201,1557,15,1925],"9":[23737,1290,5,2314],"10":[26865,1407,6,2254],"11":[28771,1491,3,2479],"12":[26036,1736,4,2979],"1":[16638,1622,9,3126],"2":[18691,1721,11,2826],"3":[19416,1797,5,2108]},"Ratlam":{"4":[22988,2187,17,7761],"5":[21838,2174,16,9447],"6":[15746,2379,16,14246],"7":[23240,2509,36,21595],"8":[33089,1965,29,16226],"9":[35722,2136,19,15933],"10":[23249,2176,22,12743],"11":[29817,2172,19,15497],"12":[32594,2894,20,19560],"1":[18833,2665,28,15416],"2":[17535,2511,23,12564],"3":[16280,2336,17,9837]},"Khandwa":{"4":[37998,5420,52,10177],"5":[47241,6887,43,9996],"6":[34991,6775,45,7418],"7":[41064,6556,60,9295],"8":[51110,4961,52,8698],"9":[39531,5530,13,10383],"10":[31297,6014,23,7221],"11":[40438,6167,18,7095],"12":[44998,7136,23,8551],"1":[34629,7003,27,8341],"2":[30230,6168,33,7078],"3":[41178,5926,24,6034]},"Indore Mfl":{"4":[69036,7304,58,3943],"5":[55602,5694,78,4562],"6":[37982,6210,98,5376],"7":[46643,6024,168,5290],"8":[51477,4182,175,5073],"9":[38563,4664,67,6395],"10":[38194,5402,73,4570],"11":[40042,6012,67,4728],"12":[39114,7732,65,5332],"1":[32917,7347,39,6442],"2":[36183,8230,89,6459],"3":[37549,6472,60,4896]},"Mandsaur":{"4":[23530,4172,128,10177],"5":[21228,4843,116,11213],"6":[20925,4832,75,10158],"7":[23188,5372,63,11115],"8":[26633,4173,81,9388],"9":[25212,5406,60,9996],"10":[19510,6354,64,6529],"11":[18406,5871,72,8687],"12":[24745,5317,106,10003],"1":[17959,4999,85,9379],"2":[18737,4248,66,9494],"3":[18369,4881,68,7298]},"Indore RMS":{"4":[8805,1347,0,0],"5":[8785,1648,0,0],"6":[8895,1463,0,0],"7":[8705,1082,27,0],"8":[11250,1205,59,0],"9":[9390,1198,19,49],"10":[7528,1144,0,34],"11":[9070,1248,0,102],"12":[9162,1304,0,299],"1":[8475,1495,1,481],"2":[8779,1789,0,289],"3":[11921,3399,5,183]},"Indore City":{"4":[123387,42276,509,9952],"5":[136438,44031,624,11374],"6":[99138,38498,559,11180],"7":[952130,38756,757,10535],"8":[245668,27854,390,8857],"9":[143493,30244,274,9725],"10":[97116,32308,337,7537],"11":[128409,39332,310,9686],"12":[147538,48374,343,11880],"1":[112957,50253,459,11477],"2":[148067,37320,392,9734],"3":[126535,40883,329,6926]},"Ujjain":{"4":[34360,6583,140,7391],"5":[44643,6929,144,9249],"6":[41903,7121,118,10005],"7":[39419,7410,37,10077],"8":[53131,4694,42,9325],"9":[45146,5699,50,11244],"10":[38312,5847,32,8707],"11":[35520,5714,72,9606],"12":[48898,6615,130,10982],"1":[42585,6880,135,10819],"2":[31818,6777,135,8529],"3":[46531,6058,87,6636]}};
+const LY={"Sehore":{"4":[19949,1909,9,0],"5":[26268,2047,7,0],"6":[14525,2131,9,0],"7":[16813,2392,16,0],"8":[26201,1557,15,0],"9":[23737,1290,5,0],"10":[26865,1407,6,0],"11":[28771,1491,3,0],"12":[26036,1736,4,0],"1":[16638,1622,9,0],"2":[18691,1721,11,0],"3":[19416,1797,5,0]},"Ratlam":{"4":[22988,2187,17,0],"5":[21838,2174,16,0],"6":[15746,2379,16,0],"7":[23240,2509,36,0],"8":[33089,1965,29,0],"9":[35722,2136,19,0],"10":[23249,2176,22,0],"11":[29817,2172,19,0],"12":[32594,2894,20,0],"1":[18833,2665,28,0],"2":[17535,2511,23,0],"3":[16280,2336,17,0]},"Khandwa":{"4":[37998,5420,52,0],"5":[47241,6887,43,0],"6":[34991,6775,45,0],"7":[41064,6556,60,0],"8":[51110,4961,52,0],"9":[39531,5530,13,0],"10":[31297,6014,23,0],"11":[40438,6167,18,0],"12":[44998,7136,23,0],"1":[34629,7003,27,0],"2":[30230,6168,33,0],"3":[41178,5926,24,0]},"Indore Mfl":{"4":[69036,7304,58,0],"5":[55602,5694,78,0],"6":[37982,6210,98,0],"7":[46643,6024,168,0],"8":[51477,4182,175,0],"9":[38563,4664,67,0],"10":[38194,5402,73,0],"11":[40042,6012,67,0],"12":[39114,7732,65,0],"1":[32917,7347,39,0],"2":[36183,8230,89,0],"3":[37549,6472,60,0]},"Mandsaur":{"4":[23530,4172,128,0],"5":[21228,4843,116,0],"6":[20925,4832,75,0],"7":[23188,5372,63,0],"8":[26633,4173,81,0],"9":[25212,5406,60,0],"10":[19510,6354,64,0],"11":[18406,5871,72,0],"12":[24745,5317,106,0],"1":[17959,4999,85,0],"2":[18737,4248,66,0],"3":[18369,4881,68,0]},"Indore RMS":{"4":[8805,1347,0,0],"5":[8785,1648,0,0],"6":[8895,1463,0,0],"7":[8705,1082,27,0],"8":[11250,1205,59,0],"9":[9390,1198,19,0],"10":[7528,1144,0,0],"11":[9070,1248,0,0],"12":[9162,1304,0,0],"1":[8475,1495,1,0],"2":[8779,1789,0,0],"3":[11921,3399,5,0]},"Indore City":{"4":[123387,42276,509,0],"5":[136438,44031,624,0],"6":[99138,38498,559,0],"7":[952130,38756,757,0],"8":[245668,27854,390,0],"9":[143493,30244,274,0],"10":[97116,32308,337,0],"11":[128409,39332,310,0],"12":[147538,48374,343,0],"1":[112957,50253,459,0],"2":[148067,37320,392,0],"3":[126535,40883,329,0]},"Ujjain":{"4":[34360,6583,140,0],"5":[44643,6929,144,0],"6":[41903,7121,118,0],"7":[39419,7410,37,0],"8":[53131,4694,42,0],"9":[45146,5699,50,0],"10":[38312,5847,32,0],"11":[35520,5714,72,0],"12":[48898,6615,130,0],"1":[42585,6880,135,0],"2":[31818,6777,135,0],"3":[46531,6058,87,0]}};
 /* Previous year's Aadhaar machines (division-wise) */
-const LY_MACH={"Indore City": 22, "Indore Mfl": 21, "Khandwa": 20, "Mandsaur": 21, "Ratlam": 18, "Sehore": 16, "Ujjain": 24, "Indore RMS": 0};
+const LY_MACH={"Indore City":0,"Indore Mfl":0,"Khandwa":0,"Mandsaur":0,"Ratlam":0,"Sehore":0,"Ujjain":0,"Indore RMS":0};   /* last-year Aadhaar machines + transactions now come from the "Last-year Aadhaar" upload (applyLyAad) */
 /* Built-in Office-ID -> Division master (from the count_calculator RD sheet). Offices not listed here are asked in Settings. */
 const DEF_OFF={};   /* old office mapping is NOT stored in code: loaded from the Google Sheet (see oldMapApply) */
 const DEF_OFFMAP={};
+const LY_MACH_N={};   /* new-mapping last-year machines (counted from the last-year Aadhaar upload) */
 const LY_DAYS=25;   /* previous-year average = Trans / Machines / 25 */
 const KEY='daywiseReportV1';
 let DB=load();
@@ -562,10 +570,11 @@ function normDB(d){
   d=d&&typeof d==='object'?d:{};
   d.days=d.days||{};            // legacy saved data
   d.raw=d.raw||{};              // division -> date -> product -> count
-  d.csvDates=d.csvDates||{}; d.aad=d.aad||{}; d.aadDates=d.aadDates||{};
+  d.lyAad=d.lyAad||{}; d.aadOff=d.aadOff||{}; d.lyNameMap=d.lyNameMap||{}; d.csvDates=d.csvDates||{}; d.aad=d.aad||{}; d.aadDates=d.aadDates||{};
   d.so=d.so||{}; d.base=d.base||{}; d.customMap=d.customMap||{}; d.seenProducts=d.seenProducts||[]; d.offMap=d.offMap||{}; d.pend=d.pend||{}; d.rev=d.rev||{}; d.revDates=d.revDates||{}; d.tgtText=d.tgtText||{}; if((d.tgtVer||0)<2){d.tgtText={};d.tgtVer=2} d.lyRev=d.lyRev||null; d.lyCnt=d.lyCnt||null;
   d.sb=d.sb||{};d.rawN=d.rawN||{};d.revN=d.revN||{};d.newCnt=d.newCnt||null;
   d.centres=Object.assign({},DEF_CENTRES,d.centres||{});
+  d.centresN=Object.assign({},DEF_CENTRES_N,d.centresN||{});
   d.soOv=d.soOv||{};
   if(d.soDef&&!d.soOvMig){for(const k in d.soDef)if(+d.soDef[k]!==DEF_SO[k])d.soOv[k]=+d.soDef[k];d.soOvMig=1}   /* old saved SO numbers that were really edited stay as overrides */
   d.soDef=Object.assign({},DEF_SO,d.soDef||{});
@@ -857,6 +866,9 @@ function parseAadSheet(rows){
       if(dropped.length)out.warn.push(`These dates fall outside the month or are invalid and were ignored: ${dropped.slice(0,6).join(', ')}${dropped.length>6?' …':''} – please correct the dates in the sheet and upload again`);
     }
     const unk=new Set();let started=false,nOff=0;
+    let idCol=-1,nameCol=-1;const offs=[];
+    [hdr,dr].forEach(hr=>(hr||[]).forEach((x,j)=>{const s=norm(x);if(idCol<0&&/office.?id/.test(s))idCol=j;if(nameCol<0&&/(centre|center|office|name)/.test(s)&&!/\bid\b/.test(s)&&!/division/.test(s)&&!/enrol|updat/.test(s))nameCol=j}));
+    if(nameCol<0)nameCol=divCol===0?-1:0;
     for(let i=hi+2;i<rows.length;i++){
       const r=rows[i]||[],dn=r[divCol];
       if(dn==null||String(dn).trim()===''){if(started)break;else continue}   // end of the first block – ignore any pivots/summaries below
@@ -864,11 +876,13 @@ function parseAadSheet(rows){
       const dk=divKey(dn);
       if(!dk){unk.add(String(dn).trim());continue}
       nOff++;
+      {const t_=pc.reduce((s,c)=>s+toNum(r[c.j]),0),nm_=nameCol>=0?String(r[nameCol]==null?'':r[nameCol]).trim():'',id_=idCol>=0?String(r[idCol]==null?'':r[idCol]).trim().replace(/\.0$/,''):'';
+       if(/laptop\s*kit/i.test(nm_)){const pv=offs[offs.length-1];if(pv)pv.t+=t_}else if(nm_||id_)offs.push({n:nm_,id:/^\d+$/.test(id_)?id_:'',od:String(dn).trim(),t:t_})}
       const o=out.vals[dk]=out.vals[dk]||{};
       for(const c of pc)o[c.d]=(o[c.d]||0)+toNum(r[c.j]);
     }
     if(unk.size)out.warn.push(`Division not recognised (skipped): ${[...unk].join(', ')}`);
-    out.info=`${nOff} offices`;
+    out.info=`${nOff} offices`;out.offs=offs;out.ym=dom||null;
   }else{
     /* ---- Format 1: division x date grid ---- */
     out.kind='Division × Date';
@@ -944,9 +958,10 @@ function importAad(){
       divs.add(dv);DB.aad[dv]=DB.aad[dv]||{};
       for(const d in c.vals[dv]){DB.aad[dv][d]=c.vals[dv][d];dates.add(d);DB.aadDates[d]=1}
     }
+    if(c.offs&&c.ym&&c.offs.length)DB.aadOff[c.ym]=c.offs;
     c.warn.forEach(w=>warns.push(`[${c.name}] ${w}`));
   }
-  save();
+  save();try{aadCsvFill()}catch(e){}
   const ds=[...dates].sort();
   let t=`${sel.length} sheet(s) imported (${sel.map(c=>c.name).join(', ')}) • ${ds.length} days (${dmy(ds[0])} to ${dmy(ds[ds.length-1])}) • ${divs.size} divisions`;
   let cls='msg';
@@ -975,7 +990,7 @@ function monthsAvail(){
 }
 function maxAadDate(){const k=Object.keys(DB.aadDates);return k.length?k.sort().pop():''}
 let PDFDIVS=null;   /* set only while the PDF is made: divisions still ticked in the PDF page list */
-function listOf(dv){const A=PDFDIVS?DIVS.filter(d=>PDFDIVS.has(d)):DIVS;return dv==='Region Total'?A:dv===RXT?A.filter(d=>d!=='Sehore'):[dv]}
+function listOf(dv){const A=PDFDIVS?DIVS.filter(d=>PDFDIVS.has(d)):DIVS;return dv==='Region Total'?A:dv===RXT?A.filter(d=>d!=='Sehore'):dv===RXR?A.filter(d=>d!=='Sehore'&&d!=='Indore RMS'):[dv]}
 function soDefOf(dv){return listOf(dv).reduce((a,d)=>a+soD(d),0)}
 const todayStr=()=>{const t=new Date();return `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`};
 function setExcl(){
@@ -997,7 +1012,7 @@ function rowFor(dv,date){
     mo+=x.mo||0;parcel+=x.parcel||0;irgb+=x.irgb||0;
     const manual=(DB.so[kd(d)]||{})[date];
     so+=(manual!=null&&manual!=='')?Number(manual):soD(d);
-    mach+=NM?0:(DB.centres[d]||0);
+    mach+=machOf(d);
     const a=(DB.aad[kd(d)]||{})[date];
     if(a!=null)trans+=a;
     else if(date<=mAad)trans+=0;
@@ -1013,7 +1028,7 @@ function baseFor(dv,month){
   let mo=0,parcel=0,irgb=0,trans=0,mach=0;
   for(const d of list){
     const x=(LYX()[d]||{})[mm];if(!x)continue;
-    mo+=x[0];parcel+=x[1];irgb+=x[2];trans+=x[3];mach+=NM?0:(LY_MACH[d]||0);
+    mo+=x[0];parcel+=x[1];irgb+=x[2];trans+=x[3];mach+=(NM?(LY_MACH_N[d]||0):(LY_MACH[d]||0));
   }
   return {label:defLabel(month),so:soDefOf(dv),mo,parcel,irgb,mach,trans,avg:mach?Math.round(trans/mach/LY_DAYS):0};
 }
@@ -1043,9 +1058,10 @@ function buildAOA0(dv,month,irgb){
   return {head,rows:out};
 }
 const divTitle=dv=>{
-  if(dv!=='Region Total'&&dv!==RXT)return dv.toUpperCase();
+  if(dv!=='Region Total'&&dv!==RXT&&dv!==RXR)return dv.toUpperCase();
   const out=PDFDIVS?DIVS.filter(d=>!PDFDIVS.has(d)):[];
   if(dv===RXT&&!out.includes('Sehore'))out.push('Sehore');
+  if(dv===RXR)['Sehore','Indore RMS'].forEach(x=>{if(!out.includes(x))out.push(x)});
   return out.length?'INDORE REGION (WITHOUT '+out.map(x=>x.toUpperCase()).join(', ')+')':'INDORE REGION (TOTAL)';
 };
 /* ===================== TARGET vs ACHIEVEMENT (Revenue + Count) ===================== */
@@ -1084,8 +1100,11 @@ function tgtMonths(){
   return [...set].filter(m=>have.has(m)).sort();
 }
 const tgtFM=()=>{const e=document.getElementById('tgtMonth');return e&&e.value?e.value:''};
-const tgtNox=()=>{const e=document.getElementById('tgtRegion');return !!(e&&e.value==='x')};
-const csvNox=()=>{const e=document.querySelector('.csvRg');return !!(e&&e.value==='x')};
+const tgtNox=()=>{const e=document.getElementById('tgtRegion');return e&&e.value==='r'?'r':!!(e&&e.value==='x')};
+const csvNox=()=>{const e=document.querySelector('.csvRg');return !!(e&&(e.value==='x'||e.value==='r'))};
+const csvRms=()=>{const e=document.querySelector('.csvRg');return !!(e&&e.value==='r')};
+const csvEx=dv=>{if(!csvNox())return false;const u=String(dv||'').toUpperCase();return u==='SEHORE'||(csvRms()&&/RMS|ID DIVISION/.test(u))};
+const csvSfx=()=>csvRms()?'_without_Sehore_RMS':csvNox()?'_without_Sehore':'';
 function monthDatesOf(fm){
   const [y,m]=fm.split('-').map(Number),days=new Date(y,m,0).getDate(),a=[];
   for(let i=1;i<=days;i++){const dt=`${fm}-${pad(i)}`;if(DB.csvDates[dt]&&!(DB.exclOn&&DB.exclDate===dt))a.push(dt)}
@@ -1100,15 +1119,15 @@ function computeTgt(k,fm,nox){
     P.secs.sort((a,b)=>a.hr-b.hr);
     for(let si=0;si<P.secs.length;si++){
       const sc=P.secs[si];let rs=-1;
-      for(let r=sc.hr+1;r<sc.tr;r++){if(divKey(g[r][0])==='Sehore'){rs=r;break}}
-      if(rs>=0){g.splice(rs,1);sc.tr--;P.secs.forEach((o,oi)=>{if(oi>si){o.hr--;o.tr--}})}
+      const rmv=[];for(let r=sc.hr+1;r<sc.tr;r++){const dk_=divKey(g[r][0]);if(dk_==='Sehore'||(nox==='r'&&dk_==='Indore RMS'))rmv.push(r)}
+      for(let q=rmv.length-1;q>=0;q--){g.splice(rmv[q],1);sc.tr--;P.secs.forEach((o,oi)=>{if(oi>si){o.hr--;o.tr--}})}
       g[sc.hr].map(String).forEach((h,c)=>{
         if(c===0||/^%/.test(h.trim()))return;
         let t=0,any=false;
         for(let r=sc.hr+1;r<sc.tr;r++){const v=g[r][c];if(v!==''&&v!=null){any=true;t+=num(v)}}
         g[sc.tr][c]=any?(isRev?Math.round(t*1000)/1000:Math.round(t)):'';
       });
-      g[sc.hr-1][0]=sc.title=sc.title+' - Indore Region (without Sehore)';
+      g[sc.hr-1][0]=sc.title=sc.title+(nox==='r'?' - Indore Region (without Sehore & RMS)':' - Indore Region (without Sehore)');
     }
   }
   for(const sc of P.secs){
@@ -1220,16 +1239,16 @@ function dlTgt(k){
   if(!(k==='rev'?st.revOk:st.cntOk)){alert('Data is not complete yet – see the message above.');return}
   const X=computeTgt(k,fm,tgtNox());
   const csv=X.g.map(r=>r.map(csvCell).join(',')).join('\r\n');
-  saveBlob(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),`${k==='rev'?'Revenue':'Count'}_Target_Achievement_${fm}${tgtNox()?'_without_Sehore':''}.csv`);
+  saveBlob(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),`${k==='rev'?'Revenue':'Count'}_Target_Achievement_${fm}${tgtNox()==='r'?'_without_Sehore_RMS':tgtNox()?'_without_Sehore':''}.csv`);
 }
 
 /* ===================== COMPARISON PAGES: MO / Parcel / IRGB  (this month vs same month last year) ===================== */
 const CMP={MO:{k:'mo',i:0},Parcel:{k:'parcel',i:1},IRGB:{k:'irgb',i:2}};
 const CMP_TABS=['CMP_MO','CMP_Parcel','CMP_IRGB'];
 const isCmp=t=>String(t).indexOf('CMP_')===0;
-const cmpCat=t=>t.slice(4).replace(/@X$/,'');
-const cmpName=t=>cmpCat(t)+' Comparison'+(/@X$/.test(t)?' (no Sehore)':'');
-const tabLbl=t=>isCmp(t)?cmpName(t).replace('(no Sehore)','(without Sehore)'):t;
+const cmpCat=t=>t.slice(4).replace(/@[XR]$/,'');
+const cmpName=t=>cmpCat(t)+' Comparison'+(/@X$/.test(t)?' (no Sehore)':/@R$/.test(t)?' (no Sehore & RMS)':'');
+const tabLbl=t=>isCmp(t)?cmpName(t).replace('(no Sehore)','(without Sehore)').replace('(no Sehore & RMS)','(without Sehore & RMS)'):t;
 const monthLbl=m=>mFull(m);
 function buildCmp(tab,month){
   const cat=cmpCat(tab),c=CMP[cat];
@@ -1240,14 +1259,14 @@ function buildCmp(tab,month){
   for(let i=1;i<=days;i++){const dt=`${month}-${pad(i)}`;if(DB.csvDates[dt]&&!(DB.exclOn&&DB.exclDate===dt))dts.push(dt)}
   const g=(cur,ly)=>(ly==null||!ly)?null:Math.round((cur-ly)/ly*10000)/100;
   const rows=[];let tc=0,tl=0;
-  const XR=/@X$/.test(tab);
-  for(const d of (XR?DIVS.filter(x=>x!=='Sehore'):DIVS)){
+  const XR=/@X$/.test(tab),RR=/@R$/.test(tab);
+  for(const d of (RR?DIVS.filter(x=>x!=='Sehore'&&x!=='Indore RMS'):XR?DIVS.filter(x=>x!=='Sehore'):DIVS)){
     let cur=0;dts.forEach(dt=>{cur+=dayVals(d,dt)[c.k]||0});
     const ly=lyOk?(((LYX()[d]||{})[mm]||[0,0,0,0])[c.i]||0):null;
     tc+=cur;if(ly!=null)tl+=ly;
     rows.push({cls:'',cells:[d,cur,ly,g(cur,ly)]});
   }
-  rows.push({cls:'tot',cells:[XR?'INDORE REGION (WITHOUT SEHORE)':'INDORE REGION (TOTAL)',tc,lyOk?tl:null,g(tc,lyOk?tl:null)]});
+  rows.push({cls:'tot',cells:[RR?'INDORE REGION (WITHOUT SEHORE & RMS)':XR?'INDORE REGION (WITHOUT SEHORE)':'INDORE REGION (TOTAL)',tc,lyOk?tl:null,g(tc,lyOk?tl:null)]});
   const cl=monthLbl(month),pl=monthLbl(`${py}-${pad(mm)}`);
   const last=dts.length?dts[dts.length-1]:'';
   const partial=last&&last<`${month}-${pad(days)}`;
@@ -1362,7 +1381,7 @@ function renderReport(){
   document.getElementById('exclDate').value=DB.exclDate||todayStr();
   if(!ms.length){document.getElementById('reportBox').innerHTML='<p>No data available yet. Please upload the CSV and the Aadhaar Excel file in the "Daily Upload" tab.</p>';document.getElementById('divTabs').innerHTML='';return}
   sel.value=ms.includes(prev)?prev:ms[ms.length-1];
-  const tabs=['Region Total',RXT].concat(DIVS).concat(CMP_TABS).concat(CMP_TABS_X);
+  const tabs=['Region Total',RXT,RXR].concat(DIVS).concat(CMP_TABS).concat(CMP_TABS_X).concat(CMP_TABS_R);
   document.getElementById('divTabs').innerHTML=tabs.map(t=>`<button class="${t===curDiv?'on':''}" ${t==='CMP_MO'?'style="margin-left:14px"':''} onclick="curDiv='${t}';renderReport()">${tabLbl(t)}</button>`).join('');
   const irgb=document.getElementById('showIRGB').checked,month=sel.value;
   if(isCmp(curDiv)){document.getElementById('reportBox').innerHTML=renderCmp(curDiv,month);return}
@@ -1377,7 +1396,7 @@ function renderReport(){
     r.cells.forEach((c,i)=>{
       const v=c==null||c===''?'':c;
       if(i===0)h+=`<td class="d">${esc(v)}</td>`;
-      else if(i===1&&r.date&&curDiv!=='Region Total'&&curDiv!==RXT){
+      else if(i===1&&r.date&&curDiv!=='Region Total'&&curDiv!==RXT&&curDiv!==RXR){
         h+=`<td><input class="so" type="number" value="${v}" onchange="setSO('${r.date}',this.value)"></td>`;
       }else h+=`<td>${esc(v)}</td>`;
     });
@@ -1394,9 +1413,9 @@ function setSO(date,v){
 
 /* ===================== DOWNLOADS: Excel / JPG / PDF ===================== */
 const CMP_TABS_X=['CMP_MO@X','CMP_Parcel@X','CMP_IRGB@X'];
-const RXT='Region Total (without Sehore)';
-const ALL_TABS_FULL=()=>['Region Total',RXT].concat(DIVS).concat(CMP_TABS).concat(CMP_TABS_X);
-const ALL_TABS=()=>{const m=(document.getElementById('dlRegion')||{}).value||'w';return m==='x'?[RXT].concat(DIVS.filter(d=>d!=='Sehore')).concat(CMP_TABS_X):m==='b'?ALL_TABS_FULL():['Region Total'].concat(DIVS).concat(CMP_TABS)};
+const RXT='Region Total (without Sehore)',RXR='Region Total (without Sehore & RMS)',CMP_TABS_R=['CMP_MO@R','CMP_Parcel@R','CMP_IRGB@R'];
+const ALL_TABS_FULL=()=>['Region Total',RXT,RXR].concat(DIVS).concat(CMP_TABS).concat(CMP_TABS_X).concat(CMP_TABS_R);
+const ALL_TABS=()=>{const m=(document.getElementById('dlRegion')||{}).value||'w';return m==='r'?[RXR].concat(DIVS.filter(d=>d!=='Sehore'&&d!=='Indore RMS')).concat(CMP_TABS_R):m==='x'?[RXT].concat(DIVS.filter(d=>d!=='Sehore')).concat(CMP_TABS_X):m==='b'?ALL_TABS_FULL():['Region Total'].concat(DIVS).concat(CMP_TABS)};
 const curMonth=()=>document.getElementById('monthSel').value;
 const irgbOn=()=>document.getElementById('showIRGB').checked;
 const safeName=s=>s.replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');
@@ -1551,6 +1570,7 @@ function pdfExcl(){
     try{const s=DBLS.getItem('dwPdfEx');if(s!==null)PDFX=new Set(JSON.parse(s))}catch(e){}
     if(!PDFX)PDFX=new Set([RXT].concat(CMP_TABS_X));   /* default: without-Sehore pages are off */
   }
+  try{if(!DBLS.getItem('dwPdfExR')){[RXR].concat(CMP_TABS_R).forEach(t=>PDFX.add(t));DBLS.setItem('dwPdfExR','1')}}catch(e){}
   return PDFX;
 }
 function pdfSave(){try{DBLS.setItem('dwPdfEx',JSON.stringify([...pdfExcl()]))}catch(e){}}
@@ -1631,7 +1651,7 @@ const UP_V=[['Parcel','parcel','Parcel'],['IRGB','irgb','IRGB'],['MO','mo','MO (
 function uplCalc(){
   const ms=uplMonths(),nox=tgtNox(),T=newCnt();
   return withNew(()=>{
-    const divs=DIVS_NEW.filter(d=>!(nox&&d==='Sehore'));
+    const divs=DIVS_NEW.filter(d=>!(nox&&(d==='Sehore'||(nox==='r'&&d==='Indore RMS'))));
     const info={};
     ms.forEach(m=>{
       const dts=monthDatesOf(m),[y,mm]=m.split('-').map(Number),dim=new Date(y,mm,0).getDate();
@@ -1672,7 +1692,7 @@ function dlUpl(k){
   const mn=m=>monthName(m)+(dup?'-'+m.slice(2,4):'');
   const part=m=>{const i=R.info[m];return i.partial?` (${+i.first.slice(8)}-${+i.last.slice(8)} ${MONTHS[+m.slice(5,7)-1]})`:''};
   const lines=[],push=a=>lines.push(a.map(csvCell).join(','));
-  const label=R.nox?'Indore Region (without Sehore)':'Indore Region';
+  const label=R.nox==='r'?'Indore Region (without Sehore & RMS)':R.nox?'Indore Region (without Sehore)':'Indore Region';
   push([(k==='cnt'?'Article Count - Target vs Achievement':'Revenue - Achievement')+' (as per uploaded file) - '+label+' - data from '+rng]);
   for(const [vk,fld,vl] of UP_V){
     push([]);
@@ -1701,7 +1721,7 @@ function dlUpl(k){
     if(k==='rev')tc.push(Math.round(rs*1000)/1000);
     push(tc);
   }
-  const fn=`${k==='cnt'?'Article_Count':'Revenue'}_as_per_uploaded_file_${ds[0]}_to_${ds[ds.length-1]}${R.nox?'_without_Sehore':''}.csv`;
+  const fn=`${k==='cnt'?'Article_Count':'Revenue'}_as_per_uploaded_file_${ds[0]}_to_${ds[ds.length-1]}${R.nox==='r'?'_without_Sehore_RMS':R.nox?'_without_Sehore':''}.csv`;
   saveBlob(new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),fn);
 }
 
@@ -1710,7 +1730,7 @@ function renderSettings(){
   renderPend();
   const sum=o=>DIVS.reduce((a,d)=>a+(+o[d]||0),0);
   document.getElementById('centresBox').innerHTML='<table class="s2"><tr><th></th>'+DIVS.map(d=>`<th>${d}</th>`).join('')+'<th>Total</th></tr>'+
-    '<tr><th>Aadhaar machines</th>'+DIVS.map(d=>`<td><input type="number" id="c_${d}" value="${DB.centres[d]||0}" style="width:70px" ${NM?'disabled title="New mapping: machines not used"':''}></td>`).join('')+`<td><b>${NM?0:sum(DB.centres)}</b></td></tr>`+
+    '<tr><th>Aadhaar machines'+(NM?' (new mapping)':'')+'</th>'+DIVS.map(d=>`<td><input type="number" id="c_${d}" value="${machOf(d)}" style="width:70px"></td>`).join('')+`<td><b>${DIVS.reduce((a,d)=>a+machOf(d),0)}</b></td></tr>`+
     "<tr><th>No of SO's</th>"+DIVS.map(d=>`<td><input type="number" id="s_${d}" value="${soD(d)}" style="width:70px;${(DB.soOv||{})[kd(d)]!=null?'background:#fff2b3':''}"></td>`).join('')+`<td><b>${DIVS.reduce((a,d)=>a+soD(d),0)}</b></td></tr>`+
     "<tr><th><small>SO count from office mapping</small></th>"+DIVS.map(d=>`<td><small>${soAuto(d)}</small></td>`).join('')+`<td><small>${DIVS.reduce((a,d)=>a+soAuto(d),0)}</small></td></tr></table>`+
     `<div class="hint" style="margin-top:4px">Yellow cell = edited by you. <button class="b sm gray" onclick="resetSO()">Reset to office mapping</button></div>`;
@@ -1724,7 +1744,7 @@ function renderSettings(){
 function saveCentres(){
   DB.soOv=DB.soOv||{};
   DIVS.forEach(d=>{
-    if(!NM)DB.centres[d]=Number(document.getElementById('c_'+d).value)||0;
+    {const mv=Number(document.getElementById('c_'+d).value)||0;if(NM)DB.centresN[d]=mv;else DB.centres[d]=mv}
     const v=document.getElementById('s_'+d).value;
     if(v===''||Number(v)===soAuto(d))delete DB.soOv[kd(d)];else DB.soOv[kd(d)]=Number(v)||0;
   });
@@ -2340,6 +2360,82 @@ NB.DEF_ALIAS={'23107683':'23109287','23107460':'23109288','23107098':'23660998',
 
 /* ===== OLD OFFICE MAPPING: loaded from the Google Sheet (office-id, OFFICE NAME, CLASS, SD, DIVISION); last copy is cached in this browser ===== */
 const OLD_MAP_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRP3rmfLuC9UGx2dgIi2yr7uCNsp-cnJfH0a1zCfDF6YuWlDMsNudN0fr3EtY2EResEpVeDKohUs7AF/pub?gid=0&single=true&output=csv';
+/* ===================== LAST-YEAR AADHAAR (upload) + OFFICE-WISE AADHAAR CSV ===================== */
+const LY_SEED={"indoregpo":"23350002","indorenagar":"23360029","vijaynagar":"23660721","armyheadquarter":"23660688","indoretillaknagar":"23660708","khatiwalatank":"23660712","bijasanroad":"23660689","indorecity2":"23660693","nandanagar":"23660714","rajendranagarindore":"23660717","vallabhnagarindore":"23660720","indorekanadiaroad":"23660698","sudamanagar":"23660719","lokmanyanagarindore":"23660713","indoregpo2":"23350002","indorerssnagar":"23660704","indoremanoramag":"23660701","indorecollectorate":"23660695","industrialestateindore":"23660711","gurunanakchauk":"23660690","indorenagar2":"23360029","dewas":"23360030","sonkutch":"23660770","dhar":"23360031","badnawar":"23660723","rajgarhdhar":"23660762","sardarpurdhar":"23660766","sanwer":"23660765","pithampur":"23660760","pithampursectoriii":"23660761","depalpur":"23660730","kasturbagram":"23660749","manglia":"23660754","rao":"23660763","hatpipliya":"23660743","kannod":"23660745","khategaon":"23660750","bagli":"23660725","manawar":"23660752","mhow":"23660757","dhamnod":"23660736","kukshi":"23660751","khandwa":"23360032","burhanpur":"23660782","khargone":"23360033","bhikangaon":"23660776","nepanagar":"23660806","barwani":"23660774","pandhana":"23660808","barwaha":"23660773","sanawad":"23660814","sendhwa":"23660817","mandleshwar":"23660802","anjad":"23660772","vidhyanagar":"23660822","kasrawad":"23660793","nayaharsud":"23660805","ratagadhkhandwa":"23660796","rajpur":"23660812","thikari":"23660820","bediakhargone":"23660775","maheshwar":"23660800","suwasaramandi":"23660857","bhanpura":"23660824","garoth":"23660830","shamgarh":"23660853","guradiadeda":"23108016","mandsaur":"23360034","mandsaurcity1":"23660840","dalauda":"23660827","nahargarh":"23660843","sitamau":"23660856","budha":"23660826","neemuch":"23360035","jawad":"23660831","khor":"23660834","baghananeemuch":"23660823","neemuchghantaghar":"23660847","malhargarh":"23660838","piplia":"23660849","manasa":"23660839","mahagarh":"23660837","rampuraneemuch":"23660850","alirajpur":"23660858","alote":"23660859","bamnia":"23660861","kalukheda":"23660870","jaora":"23660867","jhabua":"23360036","jobat":"23660869","meghnagar":"23660874","namli":"23660875","petlawad":"23660876","ranapur":"23660879","ratlamcollectorate":"23660881","ratlami":"23360037","ratlamii":"23360037","sailana":"23660889","shivpur":"23660999","tal":"23660892","thandla":"23660893","sehore":"23360039","rajgarhbia":"23360038","biaoramdg":"23660899","narsinghgarhlsg":"23660914","ashtalsg":"23660896","nasrullaganjlsg":"23660898","ichhawar":"23660905","sehorecity":"23660919","sarangpur":"23660918","pachore":"23660915","rehti":"23660917","kurawar":"23108788","khilchipur":"23660907","zirapur":"23660926","khujner":"23660908","budni":"23660902","ujjain":"23360041","shajapur":"23360040","barnagar":"23660931","birlagramnagda":"23660937","nagda":"23660953","ujjaincity":"23660970","ujjainmlnagar":"23660973","ujjainmadhonagar":"23660974","agarmalwa":"23660927","shujalpurmandi":"23660963","khachraud":"23660946","mehidpur":"23660951","tarana":"23660968","kalapipal":"23660941","baledi":"23660930","ghattia":"23660938","ujjain2":"23360041","ujjainkothi":"23660972","akodia":"23660928","berchha":"23660935","maksi":"23660949","nalkheda":"23660954","ujjaingujratisamaj":"23660971","susner":"23660966","rmsindore":"23260015"};   /* centre name -> Office ID (from the Aadhar_November Center Mapping sheet) */
+const MONS3=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+const lyNorm=s=>String(s==null?'':s).toLowerCase().replace(/\b[shb]\.?\s?o\b\.?/g,' ').replace(/[^a-z0-9]/g,'');
+let NAMEIDX=null,NAMEKEY=-1;
+function nameIdx(){const k=Object.keys(NB_OFF).length;if(NAMEIDX&&NAMEKEY===k)return NAMEIDX;const m={},dup={};for(const id in NB_OFF){const n=lyNorm(NB_OFF[id][0]);if(!n)continue;if(m[n]&&m[n]!==id)dup[n]=1;else m[n]=id}for(const n in dup)delete m[n];NAMEIDX=m;NAMEKEY=k;return m}
+function lyOldDiv(s){const u=String(s||'').toLowerCase().trim().replace(/^indor\b/,'indore');if(!u)return null;if(/rms|id div/.test(u))return 'Indore RMS';return DIVS_OLD.find(d=>d.toLowerCase()===u)||null}
+function resolveOff(r){let id=String(r.id||'').replace(/\.0$/,'').trim();const k=lyNorm(r.n);
+ if(!id)id=(DB.lyNameMap||{})[k]||LY_SEED[k]||nameIdx()[k]||'';
+ return {id,od:(id&&officeDiv(id))||lyOldDiv(r.od)||null,nd:id?(NEW_OFFMAP[id]||null):null}}
+function lyParse(rows){
+ let hi=-1,cN=-1,cI=-1,cT=-1,cD=-1;
+ for(let i=0;i<Math.min(rows.length,12)&&hi<0;i++){const r=rows[i]||[];
+  const t=r.findIndex(x=>/^total\s*trans/i.test(String(x==null?'':x).trim())),n=r.findIndex(x=>/name of/i.test(String(x==null?'':x)));
+  if(t>=0&&n>=0){hi=i;cT=t;cN=n;cI=r.findIndex(x=>/office\s*id/i.test(String(x==null?'':x)));cD=r.findIndex(x=>/^division$/i.test(String(x==null?'':x).trim()))}}
+ if(hi<0)return null;
+ let ym=null;for(let i=0;i<=hi&&!ym;i++)for(const x of rows[i]||[]){const m=String(x==null?'':x).match(/month of\s*([A-Za-z]{3})[a-z]*\.?\s*(\d{4})/i);if(m){const mi=MONS3.indexOf(m[1].toLowerCase());if(mi>=0){ym=m[2]+'-'+pad(mi+1);break}}}
+ const out=[];
+ for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[],n=String(r[cN]==null?'':r[cN]).trim();
+  if(!n)continue;if(/^total$/i.test(n))break;
+  if(r[cT]==null||r[cT]==='')continue;
+  const t=toNum(r[cT]);
+  if(/laptop\s*kit/i.test(n)){const pv=out[out.length-1];if(pv)pv.t+=t;continue}
+  const id=cI>=0?String(r[cI]==null?'':r[cI]).trim().replace(/\.0$/,''):'';
+  out.push({n,id:/^\d+$/.test(id)?id:'',od:cD>=0?String(r[cD]==null?'':r[cD]).trim():'',t})}
+ return {ym,rows:out}}
+function applyLyAad(){
+ for(const D of [LY,LYN])for(const d in D)for(const m in D[d])D[d][m][3]=0;
+ for(const k in LY_MACH)LY_MACH[k]=0;for(const k in LY_MACH_N)delete LY_MACH_N[k];
+ const ly=DB.lyAad||{},ks=Object.keys(ly).sort(),lastK=ks[ks.length-1];
+ for(const ym of ks){const mm=+ym.slice(5,7),cnt={},cntN={};
+  for(const r of ly[ym]){const x=resolveOff(r);
+   if(x.od){const a=LY[x.od]=LY[x.od]||{};(a[mm]=a[mm]||[0,0,0,0])[3]+=r.t;cnt[x.od]=(cnt[x.od]||0)+1}
+   if(x.nd){const a=LYN[x.nd]=LYN[x.nd]||{};(a[mm]=a[mm]||[0,0,0,0])[3]+=r.t;cntN[x.nd]=(cntN[x.nd]||0)+1}}
+  if(ym===lastK){for(const d in cnt)if(d!=='Indore RMS')LY_MACH[d]=cnt[d];for(const d in cntN)if(d!=='Indore RMS')LY_MACH_N[d]=cntN[d]}}}
+function lyAadStat(){
+ const L=DB.lyAad||{},ks=Object.keys(L).sort();
+ if(!ks.length)return '<div class="hint">No last-year Aadhaar data uploaded yet (last-year columns show 0 until you upload).</div>';
+ const hasNew=Object.keys(NEW_OFFMAP).length>0,un={};
+ let h='<div class="wrap"><table class="s2" style="margin-top:8px"><tr><th>Month</th><th>Offices</th><th>Total trans.</th><th>Unmatched</th><th></th></tr>';
+ ks.forEach(ym=>{let t=0,u=0;L[ym].forEach(r=>{t+=r.t;const x=resolveOff(r);if(!x.id||!x.od||(hasNew&&!x.nd)){u++;un[lyNorm(r.n)]=r.n}});
+  h+=`<tr><td>${mFull(ym)}</td><td>${L[ym].length}</td><td style="text-align:right">${t}</td><td>${u||'-'}</td><td><button class="b sm gray" onclick="lyAadDel('${ym}')">Remove</button></td></tr>`});
+ h+='</table></div>';
+ const uk=Object.keys(un);
+ if(uk.length)h+=`<div class="msg warn" style="margin-top:8px">${uk.length} office name(s) could not be matched to an Office ID. Enter the Office ID once and it is remembered:</div><div class="wrap"><table class="s2">`+uk.slice(0,40).map(k=>`<tr><td>${esc(un[k])}</td><td><input class="lyu" data-k="${esc(k)}" style="width:110px" placeholder="Office ID"></td></tr>`).join('')+'</table></div><button class="b sm" onclick="lyAadSaveMap()">Save Office IDs</button>';
+ return h}
+function lyAadSaveMap(){document.querySelectorAll('.lyu').forEach(e=>{const v=e.value.trim();if(/^\d+$/.test(v))DB.lyNameMap[e.dataset.k]=v});save();applyLyAad();document.getElementById('lyAadList').innerHTML=lyAadStat();try{renderReport()}catch(e){}}
+function lyAadDel(ym){delete DB.lyAad[ym];save();applyLyAad();document.getElementById('lyAadList').innerHTML=lyAadStat();try{renderReport()}catch(e){}}
+async function handleLyAad(file){
+ if(!file)return;const msg=document.getElementById('lyAadMsg');msg.innerHTML='<div class="msg">Reading the Excel file…</div>';
+ try{
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true}),done=[],skip=[];
+  for(const nm of visSheets(wb)){let p=null;try{p=lyParse(XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,raw:true,defval:null,blankrows:true}))}catch(e){}
+   if(!p||!p.rows.length)continue;
+   let ym=p.ym;if(!ym){const v=prompt('Sheet "'+nm+'": month not found in the title. Enter the month as YYYY-MM (e.g. 2025-11):','');if(!/^\d{4}-\d{2}$/.test(v||''))continue;ym=v}
+   if(ym<'2025-04'||ym>'2026-03'){skip.push(nm+' ('+mFull(ym)+')');continue}
+   DB.lyAad[ym]=p.rows;done.push(`${mFull(ym)} (${p.rows.length} offices, ${p.rows.reduce((s,r)=>s+r.t,0)} trans.)`)}
+  if(!done.length)throw new Error('No last-year Aadhaar sheet found. The sheet needs "Name of Aadhaar centre / Laptop Kit" and "Total Transactions" columns with a title like "...for the month of Nov 2025" (Apr-25 to Mar-26 only).'+(skip.length?'\nSkipped (not last-year months): '+skip.join(', '):''));
+  save();applyLyAad();
+  msg.innerHTML=`<div class="msg">Imported: ${esc(done.join('; '))}${skip.length?esc('\nSkipped (not last-year months): '+skip.join(', ')):''}</div>`;
+  document.getElementById('lyAadList').innerHTML=lyAadStat();try{renderReport()}catch(e){}
+ }catch(e){msg.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}}
+function aadCsvFill(){const s=document.getElementById('aadCsvM');if(!s)return;const ks=Object.keys(DB.aadOff||{}).sort(),p=s.value;
+ s.innerHTML=ks.length?ks.map(k=>`<option value="${k}">${mFull(k)}</option>`).join(''):'<option value="">No office-wise data</option>';if(ks.includes(p))s.value=p;else if(ks.length)s.value=ks[ks.length-1]}
+function aadCsv(){
+ const ym=document.getElementById('aadCsvM').value,mp=document.getElementById('aadCsvMap').value,msg=document.getElementById('aadCsvMsg');
+ const L=(DB.aadOff||{})[ym];
+ if(!L||!L.length){msg.textContent='No office-wise Aadhaar data found. Upload the office-wise monthly Aadhaar Excel (with centre names) first.';return}
+ const q=s=>'"'+String(s).replace(/"/g,'""')+'"',ord=mp==='n'?DIVS_NEW:DIVS_OLD,lab=d=>d==='Indore RMS'?'INDORE RMS (ID DIVISION)':d.toUpperCase()+' DIVISION';
+ const rows=L.map((r,i)=>{const x=resolveOff(r);return {i,id:x.id,n:r.n,dv:mp==='n'?x.nd:x.od,t:Math.round(r.t)}});
+ rows.sort((a,b)=>{const ia=ord.indexOf(a.dv),ib=ord.indexOf(b.dv);return (ia<0?99:ia)-(ib<0?99:ib)||a.i-b.i});
+ let tot=0,noId=0,noDv=0;const out=['Office ID,Center Name,Division,Total Transaction'];
+ rows.forEach(r=>{tot+=r.t;if(!r.id)noId++;if(!r.dv)noDv++;out.push([r.id,q(r.n),r.dv?lab(r.dv):'',r.t].join(','))});
+ out.push(['',q('Total'),'',tot].join(','));
+ saveBlob(new Blob(['\ufeff'+out.join('\r\n')],{type:'text/csv;charset=utf-8'}),`Aadhar_${FULLM[+ym.slice(5,7)-1]}_${ym.slice(0,4)}.csv`);
+ msg.textContent=`${rows.length} offices, total ${tot}.`+(noId?` ${noId} office(s) have no Office ID (name not found in mapping).`:'')+(noDv?` ${noDv} office(s) have no division.`:'')}
 function oldMapApply(csv){
   const w=XLSX.read(csv,{type:'string',raw:true}),g=XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]],{header:1,defval:'',raw:true});
   const hi=g.findIndex(r=>r.some(v=>/office.?id/i.test(String(v))));if(hi<0)throw Error('Old Office Mapping: office-id header nahi mila');
@@ -2357,9 +2453,11 @@ function oldMapApply(csv){
   if(!n)throw Error('Old Office Mapping me valid rows nahi mile');
   Object.keys(NB_OFF).forEach(k=>delete NB_OFF[k]);Object.assign(NB_OFF,off);
   Object.keys(DEF_OFFMAP).forEach(k=>delete DEF_OFFMAP[k]);Object.assign(DEF_OFFMAP,map);
+  try{applyLyAad()}catch(e){}
   return n;
 }
 try{const _c=DBLS.getItem('dwOldMapCsv');if(_c)oldMapApply(_c)}catch(e){console.warn('cached old mapping',e)}
+try{applyLyAad();aadCsvFill();const _l=document.getElementById('lyAadList');if(_l)_l.innerHTML=lyAadStat()}catch(e){console.warn('ly aadhaar',e)}
 NB.res=id=>NB.S.alias[id]||id;
 NB.vals=(ym)=>{const o={},add=(id,a)=>{id=NB.res(id);const t=o[id]=o[id]||[0,0,0,0,0,0,0,0];for(let i=0;i<8;i++)t[i]+=a[i]};
  const ds=Object.keys(NB.S.offD).filter(d=>d.slice(0,7)===ym);
@@ -2402,9 +2500,9 @@ async function nbIngest(file){const box=document.getElementById('csvMsgOff');let
  if(box)box.insertAdjacentHTML('beforeend',`<div class="${cls}">${esc(note)}</div>`)}
 const _hc=handleCSV;handleCSV=async function(file,mode){await _hc(file,mode);if(mode==='off'&&file)await nbIngest(file)};
 function nbCSV(ym){if(!ym)return alert('No post-office-wise data uploaded yet');const V=NB.vals(ym),L=['office-id,OFFICE NAME,CLASS,SD,DIVISION,CATEGORY,Booking_Count,Revenue'],q=s=>'"'+String(s).replace(/"/g,'""')+'"';
- for(const id in NB_OFF){if(!NB.act(id))continue;if(csvNox()&&NB_OFF[id][3]==='SEHORE')continue;const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,q(nm),cl,q(sd),dv,c,v[i*2],Math.round(v[i*2+1])].join(',')))}
+ for(const id in NB_OFF){if(!NB.act(id))continue;if(csvEx(NB_OFF[id][3]))continue;const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,q(nm),cl,q(sd),dv,c,v[i*2],Math.round(v[i*2+1])].join(',')))}
  Object.keys(V).filter(id=>!NB_OFF[id]).forEach(id=>NB.CATS.forEach((c,i)=>L.push([id,'""','','""','NOT IN MASTER',c,V[id][i*2],Math.round(V[id][i*2+1])].join(','))));
- saveBlob(new Blob(['\ufeff'+L.join('\r\n')],{type:'text/csv'}),`All_Post_Office_Report_${ym}${csvNox()?'_without_Sehore':''}.csv`)}
+ saveBlob(new Blob(['\ufeff'+L.join('\r\n')],{type:'text/csv'}),`All_Post_Office_Report_${ym}${csvSfx()}.csv`)}
 function nbFillMs(){document.querySelectorAll('.nbMs').forEach(s=>{s.innerHTML=NB.months().map(m=>`<option value="${m}" ${m===NB.S.month?'selected':''}>${mFull(m)}</option>`).join('')||'<option value="">no data</option>'});nbStat()}
 function nbStat(){const e=document.getElementById('nbStat');if(!e)return;const AO=Object.keys(NB_OFF).filter(NB.act),s=document.querySelector('#p-rp .nbMs'),ym=s&&s.value;if(!ym){e.innerHTML='<div class="hint">Upload a post-office-wise CSV (Daily Upload tab) - the All Post Office report is created automatically.</div>';return}
  const V=NB.vals(ym),ids=Object.keys(V),inM=ids.filter(i=>NB_OFF[i]),act=inM.filter(i=>V[i][0]+V[i][2]+V[i][4]+V[i][6]>0).length,ds=Object.keys(NB.S.offD).filter(d=>d.slice(0,7)===ym).sort(),cl={};
@@ -2526,7 +2624,7 @@ RP.yoyHTML=(kind,v)=>{const X=RP.yoyTbl(kind,v);let h='<table style="border-coll
  return RP.wrap(X.title,X.sub,h+'</table><div style="font:11px Arial;color:#777;padding-top:6px">'+esc(X.note)+'</div>')};
 RP.boYM=()=>NB.S.month||NB.months().pop();
 RP.pages=()=>{const P=[],ym=RP.boYM(),mo=(document.getElementById('monthSel')||{}).value;
- if(mo&&typeof ALL_TABS_FULL==='function')ALL_TABS_FULL().forEach(dv=>P.push({g:'day',t:dv==='Region Total'?'Indore Region (Total)':dv===RXT?'Indore Region (without Sehore)':/@X$/.test(dv)?cmpName(dv):dv,dv,mo,pd:(dv===RXT||/@X$/.test(dv))?'RegionX':undefined,canvas:()=>drawReport(dv,mo,irgbOn(),true)}));
+ if(mo&&typeof ALL_TABS_FULL==='function')ALL_TABS_FULL().forEach(dv=>P.push({g:'day',t:dv==='Region Total'?'Indore Region (Total)':dv===RXT?'Indore Region (without Sehore)':dv===RXR?'Indore Region (without Sehore & RMS)':/@[XR]$/.test(dv)?cmpName(dv):dv,dv,mo,pd:(dv===RXR||/@R$/.test(dv))?'RegionR':(dv===RXT||/@X$/.test(dv))?'RegionX':undefined,canvas:()=>drawReport(dv,mo,irgbOn(),true)}));
  [...RP.DV,'Region'].forEach(d=>P.push({g:'sum',t:rpNm(d)+' - Summary',html:()=>RP.sumHTML(d),d}));
  RP.VS.forEach(v=>P.push({g:'mon',t:'Revenue vs target: '+rpVn(v),html:()=>RP.monHTML(v),v}));
  P.push({g:'yoy',t:'Revenue vs last year: all verticals',html:()=>RP.yoyHTML('rev','ALL'),v:'ALL'});
@@ -2610,13 +2708,13 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
    if(isCmp(pg.dv)){
     const X=buildCmp(pg.dv,pg.mo),s=sl(X.title,X.sub||RP.sub()),rows=[X.head.map(h=>hd(h,11))],labs=[],cv=[],lv=[];
     X.rows.forEach((r,i)=>{const [d,cur,ly,gr]=r.cells,reg=r.cls==='tot',mk=(v,o={})=>reg?tt(v,Object.assign({fontSize:11},o)):bd(v,i,Object.assign({fontSize:11},o));
-     rows.push([mk(reg?(/@X$/.test(pg.dv)?'Indore Region (without Sehore)':'Indore Region'):rpNm(d),{align:'left',bold:true}),mk(f0(cur)),mk(ly==null?'NA':f0(ly)),mk(gr==null?'NA':(gr>=0?'+':'')+gr.toFixed(2)+'%',bandO(gr==null?null:gr>=0?BAND.g:BAND.r))]);
+     rows.push([mk(reg?(/@R$/.test(pg.dv)?'Indore Region (without Sehore & RMS)':/@X$/.test(pg.dv)?'Indore Region (without Sehore)':'Indore Region'):rpNm(d),{align:'left',bold:true}),mk(f0(cur)),mk(ly==null?'NA':f0(ly)),mk(gr==null?'NA':(gr>=0?'+':'')+gr.toFixed(2)+'%',bandO(gr==null?null:gr>=0?BAND.g:BAND.r))]);
      if(!reg){labs.push(rpNm(d));cv.push(+cur||0);lv.push(ly==null?0:ly)}});
     const y=grid(s,rows,[2.3,1.75,1.75,1.5],.62,.46,1.5);
     note(s,y+.12,X.lyOk?'Growth %:  Green = increase over last year  |  Red = decrease':'Last-year data is available only for Apr-25 to Mar-26, so no comparison is shown for this month.');
     s.addChart(p.charts.BAR,[{name:X.head[1],labels:labs,values:cv},{name:X.head[2],labels:labs,values:lv}],{x:8.0,y:1.45,w:4.8,h:5.4,barDir:'bar',barGrouping:'clustered',catAxisOrientation:'maxMin',valAxisHidden:true,valGridLine:{style:'none'},chartColors:['B3121B','FDB913'],showLegend:true,legendPos:'b',legendFontSize:9,showValue:true,dataLabelFontSize:8,dataLabelFormatCode:'#,##0',catAxisLabelFontSize:9});
    }else{
-    const irg=irgbOn(),A=buildAOA(pg.dv,pg.mo,irg),head=A.head,n=head.length,nm=pg.dv==='Region Total'?'Indore Region':pg.dv===RXT?'Indore Region (without Sehore)':rpNm(pg.dv);let R_=A.rows.slice(),lastD=-1;
+    const irg=irgbOn(),A=buildAOA(pg.dv,pg.mo,irg),head=A.head,n=head.length,nm=pg.dv==='Region Total'?'Indore Region':pg.dv===RXT?'Indore Region (without Sehore)':pg.dv===RXR?'Indore Region (without Sehore & RMS)':rpNm(pg.dv);let R_=A.rows.slice(),lastD=-1;
     R_.forEach((r,i)=>{if(r.cls!=='base'&&r.cls!=='tot'&&r.cells.slice(1).some(x=>x!==''&&x!=null))lastD=i});
     R_=R_.filter((r,i)=>r.cls==='base'||r.cls==='tot'||i<=lastD);
     const hasBase=R_.some(r=>r.cls==='base'),s=sl(nm+' - Day-wise Report ('+mFull(pg.mo)+')','Articles booked (MO, Parcel'+(irg?', IRGB':'')+') and Aadhaar transactions | '+RP.sub());
@@ -2983,7 +3081,7 @@ function irApplyOfficeMap(csv){
   if(!count)throw Error('New Office Mapping me valid Office ID rows nahi mile');
   Object.keys(NEW_OFFMAP).forEach(k=>delete NEW_OFFMAP[k]);Object.assign(NEW_OFFMAP,next);
   if(Object.keys(sdNext).length){Object.keys(NEW_DSD).forEach(k=>delete NEW_DSD[k]);Object.assign(NEW_DSD,sdNext)}
-  Object.keys(NEW_CLS).forEach(k=>delete NEW_CLS[k]);Object.assign(NEW_CLS,clsNext);
+  Object.keys(NEW_CLS).forEach(k=>delete NEW_CLS[k]);Object.assign(NEW_CLS,clsNext);try{applyLyAad()}catch(e){}
   return count;
 }
 function irApplySBMap(csv){
@@ -3045,8 +3143,8 @@ const rpScope=()=>{const c=rpCfg();return(!c.scope||c.scope==='REGION')?'REGION'
 const scName=sc=>sc==='REGION'?'Region (with Sehore)':sc==='REGION_X'?'Region (without Sehore)':sc+' division';
 /* which pages belong to a file: REGION = with Sehore, REGION_X = without Sehore, or one division */
 function inScope(p,sc){const d=pageDiv(p),day=p.g==='day',cm=day&&/^CMP_/.test(p.dv),cx=cm&&/@X$/.test(p.dv);
- if(sc==='REGION')return d!=='RegionX';
- if(sc==='REGION_X'){if(d==='Sehore')return false;if(day){if(p.dv==='Region Total')return false;if(cm&&!cx)return false}return true}
+ if(sc==='REGION')return d!=='RegionX'&&d!=='RegionR';
+ if(sc==='REGION_X'){if(d==='Sehore'||d==='RegionR')return false;if(day){if(p.dv==='Region Total')return false;if(cm&&!cx)return false}return true}
  return d===sc}
 function scopeF(l){const sc=rpScope();return l.filter(p=>inScope(p,sc)).map(p=>{if(sc!=='REGION_X'||p.g==='day')return p;const d=pageDiv(p);return(d==null||d==='Region')?Object.assign({},p,{rx:1}):p})}
 let RPB=[];
@@ -3201,12 +3299,12 @@ const BLK=['Received','Invoiced','D+0 Delivered','% D+0 Delivered','D+0 Redirect
 const DIVX=['INDORE CITY','INDORE MFL','KHANDWA','MANDSAUR','RATLAM','SEHORE','UJJAIN','ID DIVISION'];
 const sortIds=ids=>ids.sort((a,b)=>{const x=S.meta[a],y=S.meta[b];const da=DIVX.indexOf(x.div),db=DIVX.indexOf(y.div);return (da<0?99:da)-(db<0?99:db)||String(x.sd).localeCompare(y.sd)||clsRank(x.cls)-clsRank(y.cls)||String(x.name).localeCompare(y.name)});
 function blk(v){const [r,i,d,rd,rt]=v;return[r,i,d,f2(pc(d,r)),rd,f2(pc(rd,r)),rt,f2(pc(rt,r)),f2(pc(rd+rt,r)),d+rd+rt,f2(pc(d+rd+rt,r))]}
-function csvRows(lab){const by=S.months[lab];if(!by)return null;const out=[HDR.concat(BLK.map(x=>'Parcel '+x),BLK.map(x=>'Mail Ops '+x))];sortIds(Object.keys(by).filter(id=>S.meta[id]&&!(csvNox()&&S.meta[id].div==='SEHORE'))).forEach((id,k)=>{const m=S.meta[id],v=by[id];out.push([k+1,id,m.name,m.cls,m.sd,m.div].concat(blk(v.slice(0,5)),blk(v.slice(5))))});return out}
+function csvRows(lab){const by=S.months[lab];if(!by)return null;const out=[HDR.concat(BLK.map(x=>'Parcel '+x),BLK.map(x=>'Mail Ops '+x))];sortIds(Object.keys(by).filter(id=>S.meta[id]&&!csvEx(S.meta[id].div))).forEach((id,k)=>{const m=S.meta[id],v=by[id];out.push([k+1,id,m.name,m.cls,m.sd,m.div].concat(blk(v.slice(0,5)),blk(v.slice(5))))});return out}
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 function csv(){
   if(!S.months[S.cur]){toast('Upload the D+0 file and generate first');return}
   const q=x=>{x=String(x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x};
-  dl(new Blob(['\ufeff'+csvRows(S.cur).map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),'Ind - D-'+S.cur.slice(0,3).toUpperCase()+(csvNox()?'_without_Sehore':'')+'.csv');
+  dl(new Blob(['\ufeff'+csvRows(S.cur).map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),'Ind - D-'+S.cur.slice(0,3).toUpperCase()+(csvSfx())+'.csv');
 }
 /* ---------- monthly CSVs (Google Sheets) ---------- */
 function parseCsv(t){const rows=[];let r=[],c='',q=false;t=t.replace(/^\ufeff/,'');
@@ -3364,24 +3462,24 @@ function megaPosb(){
     const ms=d.months.slice().sort(),nm=m=>{const i=+m.slice(5,7)-1;return i>=3&&i<=7?FULLM[i].toUpperCase():MONTHS[i].toUpperCase()};
     const r1=['','','','','','',''],r2=['S.No','Office ID','BO ID/SOL ID','Office Name','Class','Sub Division','Division'];
     ms.forEach(m=>{r1.push(nm(m),nm(m),nm(m));r2.push('Account Open','Account Close','Net Addition')});
-    const out=[r1,r2];d.recs.filter(o=>!(csvNox()&&o.div==='SEHORE')).forEach((o,k)=>{const row=[k+1,o.oid,(o.ids&&o.ids[0])||'',o.name,o.cls,o.sd,o.div];ms.forEach(m=>{const v=o.m[m]||{o:0,c:0,n:0};row.push(v.o,v.c,v.n)});out.push(row)});return out}
+    const out=[r1,r2];d.recs.filter(o=>!csvEx(o.div)).forEach((o,k)=>{const row=[k+1,o.oid,(o.ids&&o.ids[0])||'',o.name,o.cls,o.sd,o.div];ms.forEach(m=>{const v=o.m[m]||{o:0,c:0,n:0};row.push(v.o,v.c,v.n)});out.push(row)});return out}
   catch(e){return[['POSB data error: '+e.message]]}
 }
 function megaPost(){
   try{const ym=NB.S.month||NB.months().slice(-1)[0];if(!ym)return[['No post-office-wise data uploaded']];
     const V=NB.vals(ym),L=[['office-id','OFFICE NAME','CLASS','SD','DIVISION','CATEGORY','Booking_Count','Revenue']];
-    for(const id in NB_OFF){if(!NB.act(id))continue;if(csvNox()&&NB_OFF[id][3]==='SEHORE')continue;const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,nm,cl,sd,dv,c,v[i*2],Math.round(v[i*2+1])]))}
+    for(const id in NB_OFF){if(!NB.act(id))continue;if(csvEx(NB_OFF[id][3]))continue;const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,nm,cl,sd,dv,c,v[i*2],Math.round(v[i*2+1])]))}
     Object.keys(V).filter(id=>!NB_OFF[id]).forEach(id=>NB.CATS.forEach((c,i)=>L.push([id,'','','','NOT IN MASTER',c,V[id][i*2],Math.round(V[id][i*2+1])])));return L}
   catch(e){return[['Post office data error: '+e.message]]}
 }
-function megaTgt(k){try{return computeTgt(k,tgtFM(),csvNox()).g}catch(e){return[['Not available: '+e.message]]}}
+function megaTgt(k){try{return computeTgt(k,tgtFM(),csvRms()?'r':csvNox()).g}catch(e){return[['Not available: '+e.message]]}}
 function mega(){
   if(typeof XLSX==='undefined')return alert('Excel library not loaded');
   const wb=XLSX.utils.book_new(),add=(n,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),n);
   const labs=labels(),dl7=S.cur&&S.months[S.cur]?S.cur:labs[labs.length-1];
   add('1 Revenue CSV',megaTgt('rev'));add('2 Article Count CSV',megaTgt('cnt'));add('3 All Post Office',megaPost());add('4 POSB',megaPosb());
   add('5 D+0 '+(dl7||'none'),dl7?csvRows(dl7):[['No D+0 data']]);
-  XLSX.writeFile(wb,'Mega_CSV'+(csvNox()?'_without_Sehore':'')+'.xlsx');toast('Mega CSV downloaded');
+  XLSX.writeFile(wb,'Mega_CSV'+(csvSfx())+'.xlsx');toast('Mega CSV downloaded');
 }
 
 /* ---------- offices of the D+0 upload that are not in the office master -> Settings ---------- */
@@ -3493,7 +3591,7 @@ window.UPM=UPM;
 {const _i=importAad;importAad=function(){const r=_i.apply(this,arguments);const b=document.getElementById('aadMsg');if(b&&!b.querySelector('.err')&&!/No sheet selected/.test(b.textContent))UPM.mark('aad');return r}}
 {const _a=SBX.add;SBX.add=async function(list){const names=[...list].map(f=>f.name);await _a.apply(this,arguments);const have=new Set(SBX.data().files);UPM.mark('posb',names.filter(n=>have.has(n)))}}
 /* ---- drag & drop / click zones of the Upload table ---- */
-{const H={csvDiv:f=>handleCSV(f[0],'div'),csvOff:f=>handleCSV(f[0],'off'),aad:f=>handleAadhaar(f[0]),d0:f=>D0.pick(f[0]),posb:f=>SBX.add([...f])};
+{const H={csvDiv:f=>handleCSV(f[0],'div'),csvOff:f=>handleCSV(f[0],'off'),aad:f=>handleAadhaar(f[0]),lyaad:f=>handleLyAad(f[0]),d0:f=>D0.pick(f[0]),posb:f=>SBX.add([...f])};
  document.querySelectorAll('.dz').forEach(z=>{const inp=z.querySelector('input'),fn=H[z.dataset.h];
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});z.addEventListener('dragleave',()=>z.classList.remove('over'));
   z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');if(e.dataTransfer.files.length)fn(e.dataTransfer.files)});
