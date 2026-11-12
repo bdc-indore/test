@@ -535,7 +535,7 @@ function soAuto(d){
 }
 const soD=d=>{const o=(DB.soOv||{})[kd(d)];return(o!=null&&o!=='')?+o:soAuto(d)};
 const LYX=()=>NM?LYN:LY;
-function setMap(v){NM=v==='n';DBLS.setItem('dwMapNew',NM?'1':'0');DIVS=NM?DIVS_NEW:DIVS_OLD;curDiv='Region Total';
+function setMap(v){NM=v==='n';DBLS.setItem('dwMapNew',NM?'1':'0');DIVS=NM?DIVS_NEW:DIVS_OLD;curDiv='Region Total';try{SDR.dv=''}catch(e){}
  document.querySelectorAll('select.csvRg option,select.sbRg option,#dlRegion option,#tgtRegion option').forEach(o=>{if(o.dataset.t==null)o.dataset.t=o.textContent;o.textContent=NM?o.dataset.t.replace('Indore Region','Indore Region (New Mapping)'):o.dataset.t});
  try{RP.DV=(NM?DV_N:DV_O).slice();RP.DV0=RP.DV.slice();RP.build()}catch(e){}try{SBX.useMap()}catch(e){}
  try{renderReport()}catch(e){}try{renderTgt()}catch(e){}try{rpRender()}catch(e){}}
@@ -1011,6 +1011,28 @@ function downloadAadTemplate(){
 }
 
 /* ===================== REPORT ===================== */
+/* ---- Combined views: month dropdown can also hold "FY2026" (financial year Apr-2026 to Mar-2027) and "ALL" (every month) ---- */
+const isCombo=m=>/^(FY\d{4}|ALL)$/.test(String(m));
+const fyOf=ym=>{const y=+String(ym).slice(0,4),m=+String(ym).slice(5,7);return m>=4?y:y-1};
+const fyLbl=y=>'FY '+y+'-'+String(+y+1).slice(2);
+const mShort=ym=>MONTHS[+String(ym).slice(5,7)-1]+'-'+String(ym).slice(0,4);
+function comboMonths(m){const all=monthsAvail();if(m==='ALL')return all;const y=+String(m).slice(2);return all.filter(x=>fyOf(x)===y)}
+const comboShort=m=>m==='ALL'?'All months':fyLbl(+String(m).slice(2));
+function comboLbl(m){const a=comboMonths(m);return comboShort(m)+(a.length?' ('+mShort(a[0])+(a.length>1?' to '+mShort(a[a.length-1]):'')+')':'')}
+function buildCombo(dv,month,irgb){
+  const ms=comboMonths(month),head=['MONTH',"NO of So's",'MO','PARCEL'].concat(irgb?['IRGB']:[]).concat(['Total Machines','Total Trans.','Per day average']);
+  const out=[],ti=head.length-2;let tmo=0,tpa=0,tir=0,ttr=0,nz=0,lastSO='',lastMach='';
+  for(const m of ms){
+    const A=buildAOA0(dv,m,irgb),t=A.rows[A.rows.length-1];
+    A.rows.forEach(r=>{if(r.date&&Number(r.cells[ti])>0)nz++});
+    const c=t.cells.slice();c[0]=mShort(m);
+    out.push({cls:'',cells:c});
+    tmo+=+c[2]||0;tpa+=+c[3]||0;if(irgb)tir+=+c[4]||0;ttr+=+c[ti]||0;lastSO=c[1];lastMach=c[ti-1];
+  }
+  const tAvg=(nz&&lastMach)?Math.round(ttr/lastMach/nz):'';
+  out.push({cls:'tot',cells:['TOTAL ('+comboShort(month)+')',lastSO,tmo,tpa].concat(irgb?[tir]:[]).concat([lastMach,ttr,tAvg])});
+  return{head,rows:out};
+}
 function monthsAvail(){
   const s=new Set();[...Object.keys(DB.csvDates),...Object.keys(DB.aadDates)].forEach(d=>s.add(d.slice(0,7)));
   return [...s].sort();
@@ -1063,6 +1085,7 @@ function baseFor(dv,month){
 }
 function defLabel(m){return MONTHS[+m.slice(5,7)-1]+'-'+String(+m.slice(0,4)-1).slice(2)}
 function buildAOA0(dv,month,irgb){
+  if(isCombo(month))return buildCombo(dv,month,irgb);
   const [y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate();
   const head=['DATE',"NO of So's",'MO','PARCEL'].concat(irgb?['IRGB']:[]).concat(['Total Machines','Total Trans.','Per day average']);
   const out=[];
@@ -1281,28 +1304,29 @@ const tabLbl=t=>t==='SDREP'?'Sub Division Report':isCmp(t)?cmpName(t).replace('(
 const monthLbl=m=>mFull(m);
 function buildCmp(tab,month){
   const cat=cmpCat(tab),c=CMP[cat];
+  const CB=isCombo(month),MS=CB?comboMonths(month):[month];
   const mm=+month.slice(5,7),py=+month.slice(0,4)-1;
-  const lyOk=(py===(mm>=4?2025:2026));            /* previous-year data covers Apr-25 to Mar-26 only */
-  const [y,m]=month.split('-').map(Number),days=new Date(y,m,0).getDate();
+  const lyOk=MS.length>0&&MS.every(x=>{const a=+x.slice(5,7),b=+x.slice(0,4)-1;return b===(a>=4?2025:2026)});            /* previous-year data covers Apr-25 to Mar-26 only */
+  const days=CB?0:new Date(+month.slice(0,4),mm,0).getDate();
   const dts=[];
-  for(let i=1;i<=days;i++){const dt=`${month}-${pad(i)}`;if(DB.csvDates[dt]&&!(DB.exclOn&&DB.exclDate===dt))dts.push(dt)}
+  MS.forEach(mo_=>{const dd=new Date(+mo_.slice(0,4),+mo_.slice(5,7),0).getDate();for(let i=1;i<=dd;i++){const dt=`${mo_}-${pad(i)}`;if(DB.csvDates[dt]&&!(DB.exclOn&&DB.exclDate===dt))dts.push(dt)}});
   const g=(cur,ly)=>(ly==null||!ly)?null:Math.round((cur-ly)/ly*10000)/100;
   const rows=[];let tc=0,tl=0;
   const XR=/@X$/.test(tab),RR=/@R$/.test(tab);
   const PD=effPD();
   for(const d of (RR?DIVS.filter(x=>x!=='Sehore'&&x!=='Indore RMS'):XR?DIVS.filter(x=>x!=='Sehore'):DIVS).filter(x=>!PD||PD.has(x))){
     let cur=0;dts.forEach(dt=>{cur+=dayVals(d,dt)[c.k]||0});
-    const ly=lyOk?(((LYX()[d]||{})[mm]||[0,0,0,0])[c.i]||0):null;
+    const ly=lyOk?MS.reduce((a,x)=>a+((((LYX()[d]||{})[+x.slice(5,7)]||[0,0,0,0])[c.i])||0),0):null;
     tc+=cur;if(ly!=null)tl+=ly;
     rows.push({cls:'',cells:[d,cur,ly,g(cur,ly)]});
   }
   rows.push({cls:'tot',cells:[PD?divTitle(RR?RXR:XR?RXT:'Region Total'):RR?'INDORE REGION (WITHOUT SEHORE & RMS)':XR?'INDORE REGION (WITHOUT SEHORE)':'INDORE REGION (TOTAL)',tc,lyOk?tl:null,g(tc,lyOk?tl:null)]});
-  const cl=monthLbl(month),pl=monthLbl(`${py}-${pad(mm)}`);
+  const cl=CB?comboShort(month):monthLbl(month),pl=CB?(month==='ALL'?'Previous year':fyLbl(+month.slice(2)-1)):monthLbl(`${py}-${pad(mm)}`);
   const last=dts.length?dts[dts.length-1]:'';
-  const partial=last&&last<`${month}-${pad(days)}`;
+  const partial=!CB&&last&&last<`${month}-${pad(days)}`;
   return {
     title:`Division wise ${cat} in ${cl} vs ${pl}`,
-    sub:dts.length?(partial?`${cl} data up to ${dmy(last)} (previous year: full month)`:''):`No data uploaded for ${cl}`,
+    sub:dts.length?(CB?`Combined data: ${comboLbl(month)} - up to ${dmy(last)}`:(partial?`${cl} data up to ${dmy(last)} (previous year: full month)`:'')):`No data uploaded for ${cl}`,
     head:['DIVISION',`${cat} ${cl}`,`${cat} ${pl}`,'Growth %'],
     rows,lyOk
   };
@@ -1402,7 +1426,7 @@ function delOff(id){delete DB.offMap[id];save();renderPend();toast('Removed')}
 function renderReport(){
   const ms=monthsAvail(),sel=document.getElementById('monthSel');
   const prev=sel.value;
-  sel.innerHTML=ms.map(m=>`<option value="${m}">${mFull(m)}</option>`).join('');
+  sel.innerHTML=ms.map(m=>`<option value="${m}">${mFull(m)}</option>`).join('')+(ms.length?'<option disabled>──────────</option>'+[...new Set(ms.map(fyOf))].map(y=>`<option value="FY${y}">${fyLbl(y)} - Combined</option>`).join('')+'<option value="ALL">All months - Combined</option>':'');
   document.getElementById('curDivName').textContent=isCmp(curDiv)?cmpName(curDiv):curDiv;
   try{pdfPicker()}catch(e){}
   updBadge();
@@ -1412,7 +1436,7 @@ function renderReport(){
   document.getElementById('exclOn').checked=!!DB.exclOn;
   document.getElementById('exclDate').value=DB.exclDate||todayStr();
   if(!ms.length){document.getElementById('reportBox').innerHTML='<p>No data available yet. Please upload the CSV and the Aadhaar Excel file in the "Daily Upload" tab.</p>';document.getElementById('divTabs').innerHTML='';return}
-  sel.value=ms.includes(prev)?prev:ms[ms.length-1];
+  sel.value=(ms.includes(prev)||(isCombo(prev)&&[...sel.options].some(o=>o.value===prev)))?prev:ms[ms.length-1];
   const tabs=['Region Total',RXT,RXR].concat(DIVS).concat(CMP_TABS).concat(CMP_TABS_X).concat(CMP_TABS_R).concat(['SDREP']);
   document.getElementById('divTabs').innerHTML=tabs.map(t=>`<button class="${t===curDiv?'on':''}" ${t==='CMP_MO'||t==='SDREP'?'style="margin-left:14px"':''} onclick="curDiv='${t}';renderReport()">${tabLbl(t)}</button>`).join('');
   if(curDiv==='SDREP'){sdrRender();return}
@@ -2519,55 +2543,82 @@ function nbHTML(key,ym){const {G,th}=nbBuild(key,ym),R=NB.REP[key];const pc=(a,b
 
 /* ===== SUB DIVISION REPORT (Report tab): Division > Sub Division > SO/HO-wise, BO, other offices, summary ===== */
 const SDR={dv:'',ym:'',th:{bo:10,so:200,sop:50}};
+const SDR_DVN=['INDORE','DEWAS','DHAR','KHANDWA','KHARGONE','MANDSAUR','RATLAM','SEHORE','UJJAIN'];
+/* Office list of the ACTIVE mapping: old -> Old Office Mapping (NB_OFF), new -> New Office Mapping (NEW_DSD / NEW_OFFMAP / NEW_CLS) */
+function sdrOffs(){
+ if(!NM){const L={};for(const id in NB_OFF){const e=NB_OFF[id];L[id]={nm:e[0],cl:e[1],sd:e[2],dv:e[3]}}return L}
+ const L={},ids=new Set([...Object.keys(NEW_OFFMAP),...Object.keys(NEW_DSD)]);
+ ids.forEach(id=>{const q=NEW_DSD[id],o=NB_OFF[id]||[];
+  let dv=q?q[0]:(NEW_OFFMAP[id]||'');dv=String(dv).toUpperCase();if(!dv)return;
+  L[id]={nm:o[0]||id,cl:String(NEW_CLS[id]||o[1]||'').toUpperCase(),sd:(q&&q[1])||'',dv}});
+ return L}
+function sdrDivs(){return NM?SDR_DVN.slice():NB.DIVO.slice()}
 function sdrBuild(ym,dvSel){
- const V=NB.vals(ym),D={};
- for(const id in NB_OFF){
-  const e=NB_OFF[id],nm=e[0],sd=e[2]||'(No Sub Division)',dv=e[3];
-  if(dv==='ID DIVISION'||!NB.act(id))continue;
+ const V=NB.vals(ym),D={},OF=sdrOffs();
+ for(const id in OF){
+  const e=OF[id],nm=e.nm,sd=e.sd||'(No Sub Division)',dv=e.dv;
+  if(dv==='ID DIVISION'||dv==='INDORE RMS'||!NB.act(id))continue;
   if(dvSel&&dv!==dvSel)continue;
   const v=V[id]||[0,0,0,0,0,0,0,0];
-  const o={id,nm,cl:String(e[1]||'').toUpperCase().trim(),par:v[4],mo:v[2]+v[6],irgb:v[0]};
+  const o={id,nm,cl:String(e.cl||'').toUpperCase().trim(),par:v[4],mo:v[2]+v[6],irgb:v[0]};
   o.tot=o.par+o.mo+o.irgb;
   ((D[dv]=D[dv]||{})[sd]=D[dv][sd]||[]).push(o)}
- const unm=Object.keys(V).filter(id=>!NB_OFF[id]).length;
- const order=NB.DIVO.filter(d=>D[d]).concat(Object.keys(D).filter(d=>!NB.DIVO.includes(d)).sort());
+ const unm=Object.keys(V).filter(id=>!OF[id]).length;
+ const base=sdrDivs();
+ const order=base.filter(d=>D[d]).concat(Object.keys(D).filter(d=>!base.includes(d)).sort());
  return{D,order,unm}}
 const sdrSum=a=>a.reduce((s,o)=>({par:s.par+o.par,mo:s.mo+o.mo,irgb:s.irgb+o.irgb,tot:s.tot+o.tot}),{par:0,mo:0,irgb:0,tot:0});
+const SDR_OTH=/(^|[^A-Z0-9])(BPC|BNPL|IDC)([^A-Z0-9]|$)/i;   /* BPC / BNPL / IDC are NOT sub divisions: shown together as "Other Units of Division" */
+const sdrPc=(a,b)=>b>0?(a*100/b).toFixed(1)+'%':'0.0%';
 function sdrRows(ym,dvSel){
  const {D,order,unm}=sdrBuild(ym,dvSel),T=SDR.th,R=[];let all=[];
  const cmpN=(a,b)=>a.nm.localeCompare(b.nm);
  order.forEach(dv=>{
-  R.push({t:'div',label:'Division: '+dv,dv});let dAll=[];
+  R.push({t:'div',label:'Division: '+dv,dv});let dAll=[];const oth=[];
   Object.keys(D[dv]).sort().forEach(sd=>{
-   const L=D[dv][sd],sh=L.filter(o=>o.cl==='HO'||o.cl==='SO'),bo=L.filter(o=>o.cl==='BO'),ot=L.filter(o=>o.cl!=='HO'&&o.cl!=='SO'&&o.cl!=='BO');
-   const so=L.filter(o=>o.cl==='SO');
-   dAll=dAll.concat(L);
-   R.push({t:'sd',label:'Sub Division: '+sd,dv,s:sdrSum(L)});
-   sh.sort((a,b)=>(a.cl===b.cl?0:a.cl==='HO'?-1:1)||cmpN(a,b)).forEach(o=>R.push({t:'off',label:o.nm,cl:o.cl,s:o}));
-   R.push({t:'sub',label:'Total Booking from SO/HO',s:sdrSum(sh)});
+   const L=D[dv][sd];dAll=dAll.concat(L);
+   if(SDR_OTH.test(sd)){L.forEach(o=>oth.push(Object.assign({},o,{sd})));return}
+   const ho=L.filter(o=>o.cl==='HO'),so=L.filter(o=>o.cl==='SO'),bo=L.filter(o=>o.cl==='BO'),ot=L.filter(o=>o.cl!=='HO'&&o.cl!=='SO'&&o.cl!=='BO');
+   R.push({t:'sd',label:'Sub Division: '+sd});
+   R.push({t:'hdr'});
+   ho.sort(cmpN).forEach(o=>R.push({t:'off',label:o.nm,cl:o.cl,s:o}));
+   so.sort(cmpN).forEach(o=>R.push({t:'off',label:o.nm,cl:o.cl,s:o}));
+   R.push({t:'sub',label:'Total Booking from HO',s:sdrSum(ho)});
+   R.push({t:'sub',label:'Total Booking from SO',s:sdrSum(so)});
    R.push({t:'sub',label:'Total Booking from BO',s:sdrSum(bo)});
-   R.push({t:'sub',label:'Total Booking from other offices',s:sdrSum(ot)});
+   R.push({t:'sub',label:'Total Booking from Other Offices',s:sdrSum(ot)});
    R.push({t:'tot',label:'Total - '+sd,s:sdrSum(L)});
-   R.push({t:'sum',items:[
-    ['Total BO',bo.length],
-    ['BO with greater than '+T.bo+' booking',bo.filter(o=>o.tot>T.bo).length],
-    ['BO with NIL booking',bo.filter(o=>o.tot<=0).length],
-    ['Total BO with 0 parcel booking',bo.filter(o=>o.par<=0).length],
-    ['Total SO in Sub division',so.length],
-    ['SO with more than '+T.so+' booking',so.filter(o=>o.tot>T.so).length],
-    ['SO with more than '+T.sop+' parcel',so.filter(o=>o.par>T.sop).length],
-    ['SO with NIL parcel booking',so.filter(o=>o.par<=0).length]]})});
+   const nb=bo.length,ns=so.length;
+   R.push({t:'sum',bo:[['Total BO',nb,null],
+     ['BO with more than '+T.bo+' booking',bo.filter(o=>o.tot>T.bo).length,nb],
+     ['BO with NIL booking',bo.filter(o=>o.tot<=0).length,nb],
+     ['BO with 0 parcel booking',bo.filter(o=>o.par<=0).length,nb]],
+    so:[['Total SO',ns,null],
+     ['SO with more than '+T.so+' booking',so.filter(o=>o.tot>T.so).length,ns],
+     ['SO with more than '+T.sop+' parcel',so.filter(o=>o.par>T.sop).length,ns],
+     ['SO with NIL parcel booking',so.filter(o=>o.par<=0).length,ns]]})});
+  if(oth.length){
+   oth.sort((a,b)=>a.sd.localeCompare(b.sd)||a.cl.localeCompare(b.cl)||cmpN(a,b));
+   R.push({t:'sd',label:'Other Units of Division - '+dv});
+   R.push({t:'hdr'});
+   oth.forEach(o=>R.push({t:'off',label:o.nm+' ('+o.sd+')',cl:o.cl,s:o}));
+   R.push({t:'tot',label:'Total - Other Units of '+dv,s:sdrSum(oth)});
+   R.push({t:'gap'})}
   all=all.concat(dAll);
   R.push({t:'dtot',label:dv+' Total',s:sdrSum(dAll)})});
  if(order.length>1)R.push({t:'gtot',label:'Region Total',s:sdrSum(all)});
  return{R,unm}}
 function sdrHTML(ym){
  const {R,unm}=sdrRows(ym,SDR.dv),f=n=>Number(n).toLocaleString('en-IN');
- const st={div:'background:#b8cce4;font-weight:700;text-align:left;font-size:15px',sd:'background:#fde4d6;font-weight:700',off:'',sub:'background:#f2f2f2;font-weight:700',tot:'background:#92d050;font-weight:700',dtot:'background:#ffd966;font-weight:700',gtot:'background:#bdd7ee;font-weight:700;font-size:14px'};
- let h=`<table class="rep" style="width:100%"><tr><th class="title" colspan="6">Sub Division wise Booking Report - Parcel, MO &amp; IRGB (${esc(mFull(ym))})</th></tr><tr><th style="text-align:left">Name</th><th>Class</th><th>Parcel</th><th>MO</th><th>IRGB</th><th>Total</th></tr>`;
+ const st={div:'background:#1f4e79;color:#fff;font-weight:700;text-align:left;font-size:15px;padding:6px 10px',sd:'background:#fde4d6;font-weight:700;text-align:left;font-size:14px;padding:5px 10px',off:'',sub:'background:#f2f2f2;font-weight:600',tot:'background:#92d050;font-weight:700',dtot:'background:#ffd966;font-weight:700',gtot:'background:#bdd7ee;font-weight:700;font-size:14px'};
+ const sumBlk=(ttl,items)=>`<td style="vertical-align:top;border:none;padding:0 8px 0 0;width:50%"><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px"><colgroup><col style="width:62%"><col style="width:16%"><col style="width:22%"></colgroup><tr><th colspan="3" style="background:#1f4e79;color:#fff;text-align:left;padding:4px 10px">${ttl}</th></tr><tr style="background:#dce6f1;font-weight:700"><td style="text-align:left">Particulars</td><td>Nos</td><td>% of Total</td></tr>${items.map((i,k)=>`<tr style="${k===0?'background:#f2f2f2;font-weight:700':''}"><td style="text-align:left">${esc(i[0])}</td><td style="font-weight:700">${i[1]}</td><td>${i[2]==null?'-':sdrPc(i[1],i[2])}</td></tr>`).join('')}</table></td>`;
+ let h=`<table class="rep" style="width:100%;table-layout:fixed"><colgroup><col style="width:40%"><col style="width:8%"><col style="width:13%"><col style="width:13%"><col style="width:13%"><col style="width:13%"></colgroup><tr><th class="title" colspan="6">Sub Division wise Booking Report - Parcel, MO &amp; IRGB (${esc(mFull(ym))})${NM?' - New Mapping':' - Old Mapping'}</th></tr>`;
  R.forEach(r=>{
   if(r.t==='div')h+=`<tr><td colspan="6" style="${st.div}">${esc(r.label)}</td></tr>`;
-  else if(r.t==='sum')h+=`<tr><td colspan="6" style="padding:0;text-align:left"><table style="border-collapse:collapse;margin:6px 0 10px 24px;font-size:12.5px;background:#fffbe6">${r.items.map(i=>`<tr><td style="border:1px solid #999;padding:2px 10px;text-align:left">${esc(i[0])}</td><td style="border:1px solid #999;padding:2px 14px;font-weight:700;text-align:center">${i[1]}</td></tr>`).join('')}</table></td></tr>`;
+  else if(r.t==='sd')h+=`<tr><td colspan="6" style="${st.sd}">${esc(r.label)}</td></tr>`;
+  else if(r.t==='hdr')h+='<tr style="background:#dce6f1;font-weight:700"><td style="text-align:left">Name</td><td>Class</td><td>Parcel</td><td>MO</td><td>IRGB</td><td>Total</td></tr>';
+  else if(r.t==='gap')h+='<tr><td colspan="6" style="border:none;height:10px;background:#fff"></td></tr>';
+  else if(r.t==='sum')h+=`<tr><td colspan="6" style="padding:8px 0 16px;border:none;background:#fff"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr>${sumBlk('BO Summary',r.bo)}${sumBlk('SO Summary',r.so)}</tr></table></td></tr>`;
   else{const s=r.s,c=r.t==='off'?esc(r.cl):'';
    h+=`<tr style="${st[r.t]}"><td style="text-align:left">${esc(r.label)}</td><td>${c}</td><td>${f(s.par)}</td><td>${f(s.mo)}</td><td>${f(s.irgb)}</td><td>${f(s.tot)}</td></tr>`}});
  h+='</table>';
@@ -2577,20 +2628,25 @@ function sdrRender(){
  const box=document.getElementById('reportBox'),ms=NB.months();
  if(!ms.length){box.innerHTML='<p>Office-wise data is not uploaded yet. Upload the <b>Post-office-wise CSV</b> in the Upload tab first.</p>';return}
  if(!SDR.ym||!ms.includes(SDR.ym))SDR.ym=ms.includes(NB.S.month)?NB.S.month:ms[ms.length-1];
- const dvs=[...new Set(Object.values(NB_OFF).map(x=>x[3]).filter(d=>d&&d!=='ID DIVISION'))].sort((a,b)=>{const i=NB.DIVO.indexOf(a),j=NB.DIVO.indexOf(b);return(i<0?99:i)-(j<0?99:j)||a.localeCompare(b)});
+ const OFL=sdrOffs(),bs=sdrDivs(),dvs=[...new Set(Object.values(OFL).map(x=>x.dv).filter(d=>d&&d!=='ID DIVISION'&&d!=='INDORE RMS'))].sort((a,b)=>{const i=bs.indexOf(a),j=bs.indexOf(b);return(i<0?99:i)-(j<0?99:j)||a.localeCompare(b)});
+ if(SDR.dv&&!dvs.includes(SDR.dv))SDR.dv='';
  const ctl=`<div class="row noprint" style="margin-bottom:10px;gap:10px;flex-wrap:wrap"><b>Month:</b><select onchange="SDR.ym=this.value;sdrRender()">${ms.map(m=>`<option value="${m}" ${m===SDR.ym?'selected':''}>${mFull(m)}</option>`).join('')}</select>
  <b>Division:</b><select onchange="SDR.dv=this.value;sdrRender()"><option value="">All divisions</option>${dvs.map(d=>`<option ${d===SDR.dv?'selected':''}>${esc(d)}</option>`).join('')}</select>
  <label>BO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.bo}" onchange="SDR.th.bo=+this.value||0;sdrRender()"></label>
  <label>SO &gt; <input type="number" min="0" style="width:60px" value="${SDR.th.so}" onchange="SDR.th.so=+this.value||0;sdrRender()"> booking</label>
  <label>SO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.sop}" onchange="SDR.th.sop=+this.value||0;sdrRender()"> parcel</label>
  <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button></div>
- <div class="hint noprint" style="margin-bottom:8px">MO = Mail Ops (Other + Speed Post), Parcel and IRGB come from the uploaded post-office-wise data. Total = Parcel + MO + IRGB. SO summary counts offices with class SO; the SO/HO list shows both.</div>`;
+ <div class="hint noprint" style="margin-bottom:8px">MO = Mail Ops (Other + Speed Post), Parcel and IRGB come from the uploaded post-office-wise data. Total = Parcel + MO + IRGB. BPC, BNPL and IDC are not treated as sub divisions: their offices are listed together under &ldquo;Other Units of Division&rdquo; of the division they belong to. SO summary counts offices with class SO; the HO / SO list shows both.</div>`;
  box.innerHTML=ctl+sdrHTML(SDR.ym)}
 function sdrExcel(){
- if(!SDR.ym)return;const {R}=sdrRows(SDR.ym,SDR.dv),A=[['Sub Division wise Booking Report - '+mFull(SDR.ym)],['Name','Class','Parcel','MO','IRGB','Total']];
- R.forEach(r=>{if(r.t==='div')A.push([r.label]);else if(r.t==='sum'){r.items.forEach(i=>A.push([i[0],'',i[1]]));A.push([])}
+ if(!SDR.ym)return;const {R}=sdrRows(SDR.ym,SDR.dv),A=[['Sub Division wise Booking Report - '+mFull(SDR.ym)]],H=['Name','Class','Parcel','MO','IRGB','Total'];
+ R.forEach(r=>{if(r.t==='div'){A.push([]);A.push([r.label])}
+  else if(r.t==='sd')A.push([r.label]);
+  else if(r.t==='hdr')A.push(H);
+  else if(r.t==='gap')A.push([]);
+  else if(r.t==='sum'){[['BO Summary',r.bo],['SO Summary',r.so]].forEach(x=>{A.push([x[0],'Nos','% of Total']);x[1].forEach(i=>A.push([i[0],i[1],i[2]==null?'-':sdrPc(i[1],i[2])]))});A.push([])}
   else A.push([r.label,r.t==='off'?r.cl:'',r.s.par,r.s.mo,r.s.irgb,r.s.tot])});
- const ws=XLSX.utils.aoa_to_sheet(A),wb=XLSX.utils.book_new();ws['!cols']=[{wch:46},{wch:8},{wch:10},{wch:10},{wch:10},{wch:10}];
+ const ws=XLSX.utils.aoa_to_sheet(A),wb=XLSX.utils.book_new();ws['!cols']=[{wch:46},{wch:10},{wch:12},{wch:10},{wch:10},{wch:10}];
  XLSX.utils.book_append_sheet(wb,ws,'SubDivision_Report');
  saveBlob(new Blob([XLSX.write(wb,{bookType:'xlsx',type:'array'})],{type:'application/octet-stream'}),'SubDivision_Report_'+SDR.ym+(SDR.dv?'_'+SDR.dv.replace(/\s+/g,'_'):'')+'.xlsx')}
 
