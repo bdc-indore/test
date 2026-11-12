@@ -3717,7 +3717,8 @@ const MF=(()=>{
   if(!S.files.length){el.innerHTML='';return}
   const M=months(),ks=Object.keys(M).sort();
   let h='<div style="border:1px solid #b3121b;border-radius:8px;padding:10px;background:#fffafa"><div class="row" style="justify-content:space-between"><b>Combine several post-office-wise files</b><span><label class="b sm gray">+ Add more files<input type="file" multiple accept=".csv,.xlsx,.xls" hidden onchange="MF.add([...this.files]);this.value=\'\'"></label> <button class="b sm gray" onclick="MF.clear()">Clear list</button></span></div>';
-  h+=`<div class="msg" style="margin:7px 0"><b>${esc(S.progressText||'Ready for upload')}</b><div style="height:9px;background:#eee;border-radius:8px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${S.progress}%;background:#b3121b;transition:width .15s"></div></div><div style="text-align:right;font-weight:700">${S.progress}%</div></div>`;\n   h+='<div class="hint">Dates are read from each file. Tick the files to use, then import a month (or all months). Files stay in this list until you clear it.</div>';
+  h+=`<div class="msg" style="margin:7px 0"><b>${esc(S.progressText||'Ready for upload')}</b><div style="height:9px;background:#eee;border-radius:8px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${S.progress}%;background:#b3121b;transition:width .15s"></div></div><div style="text-align:right;font-weight:700">${S.progress}%</div></div>`;
+   h+='<div class="hint">Dates are read from each file. Tick the files to use, then import a month (or all months). Files stay in this list until you clear it.</div>';
   h+='<div class="wrap" style="max-height:220px"><table class="s2"><tr><th></th><th>File</th><th>Rows</th><th>Dates in file</th><th>Days</th><th></th></tr>';
   S.files.forEach((f,i)=>{
    const d=Object.keys(f.days).sort();
