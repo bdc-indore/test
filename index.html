@@ -7,6 +7,7 @@
 <script>
 /* Diagnostics: koi bhi error ho to screen par dikhega (screenshot bhej sakte hain) */
 (function(){var log=[];
+ window.__dgShow=function(m){show(m)};
  function show(m){log.push(m);if(log.length>6)log.shift();
   var b=document.getElementById('__dg');
   if(!b){if(!document.body)return;b=document.createElement('div');b.id='__dg';
@@ -479,7 +480,14 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
  window.addEventListener('pagehide',function(){flush()});
  function start(){
   var list=Array.prototype.slice.call(document.querySelectorAll('script[type="text/x-deferred"]'));
-  list.forEach(function(o){var n=document.createElement('script');n.text=o.text;o.parentNode.replaceChild(n,o)})}
+  list.forEach(function(o,bi){var n=document.createElement('script');n.text=o.text;
+   var rec=null,h=function(e){rec=e};window.addEventListener('error',h,true);
+   try{o.parentNode.replaceChild(n,o)}catch(ex){
+    var m=String(ex&&ex.message||ex),src=o.text.split('\n'),ln=rec&&rec.lineno||0,cl=rec&&rec.colno||0;
+    var snip=ln&&src[ln-1]!=null?src[ln-1].slice(Math.max(0,cl-60),cl+60):'';
+    try{window.__dgShow&&window.__dgShow('Script block '+(bi+1)+' failed: '+m+(ln?'\nline '+ln+' col '+cl+': ...'+snip+'...':'')+'\nBrowser: '+navigator.userAgent)}catch(e2){}
+    console.error('Deferred block '+(bi+1)+' failed',ex)}
+   window.removeEventListener('error',h,true)})}
  (async function(){
   try{db=await open();
    if(db){await loadAll(db);
@@ -2284,7 +2292,7 @@ function manHTML(){calcTot();const m=S.mg;
  <label style="font-weight:400">Bar thickness <input type="range" min="30" max="100" value="${m.bw}" style="width:110px" oninput="PM.mset('bw',this.value)"></label>
  <label style="font-weight:400"><input type="checkbox" ${m.lbl?'checked':''} onchange="PM.mset('lbl',this.checked)"> Show values</label></div>
  <div style="overflow:auto"><table class="gmt"><tr><th>Name (on axis)</th>${m.ser.map((s,j)=>`<th><input type="text" value="${esc(s.n)}" oninput="PM.msn(${j},this.value)"><input type="color" value="#${s.c}" onchange="PM.msc(${j},this.value)"> <button class="b sm gray" onclick="PM.mdelS(${j})">&#10005;</button></th>`).join('')}<th>Line above</th><th></th></tr>
- ${m.rows.map((r,i)=>`<tr><td><input type="text" value="${esc(r.c)}" oninput="PM.mcat(${i},this.value)"></td>${m.ser.map((s,j)=>`<td><input type="number" id="gmv_${i}_${j}" value="${r.v[j]??''}" ${r.a?'disabled':''} oninput="PM.mval(${i},${j},this.value)"></td>`).join('')}<td style="text-align:center"><input type="checkbox" ${r.t?'checked':''} onchange="PM.mtot(${i},this.checked)">${r.a?' &Sigma;':''}</td><td><button class="b sm gray" onclick="PM.mdelR(${i})">&#10005;</button></td></tr>`).join('')}</table></div>
+ ${m.rows.map((r,i)=>`<tr><td><input type="text" value="${esc(r.c)}" oninput="PM.mcat(${i},this.value)"></td>${m.ser.map((s,j)=>`<td><input type="number" id="gmv_${i}_${j}" value="${(r.v[j]==null?'':r.v[j])}" ${r.a?'disabled':''} oninput="PM.mval(${i},${j},this.value)"></td>`).join('')}<td style="text-align:center"><input type="checkbox" ${r.t?'checked':''} onchange="PM.mtot(${i},this.checked)">${r.a?' &Sigma;':''}</td><td><button class="b sm gray" onclick="PM.mdelR(${i})">&#10005;</button></td></tr>`).join('')}</table></div>
  <div class="row"><button class="b sm alt" onclick="PM.madd()">+ Row</button><button class="b sm alt" onclick="PM.maddS()">+ Series</button><button class="b sm alt" onclick="PM.maddT()">+ Total row (sum of rows above, with a line)</button></div>
  <div class="row"><button class="b" onclick="PM.mkMan()">${S.ce?'Update graph':'Create graph'}</button><button class="b gray" onclick="PM.closeChart()">Cancel</button></div>`}
 const mre=()=>{$('gMan').innerHTML=manHTML()};
@@ -3144,7 +3152,7 @@ async function irFetchCSV(url,label){
       const t=await r.text();if(!t.trim()||/^\s*<(!doctype|html)/i.test(t))throw Error('CSV response nahi mila');return t;
     }catch(e){last=e}
   }
-  throw Error(label+': '+(last?.message||'load failed'));
+  throw Error(label+': '+((last&&last.message)||'load failed'));
 }
 function irGrid(csv){const w=XLSX.read(csv,{type:'string',raw:true});return XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]],{header:1,defval:'',raw:true})}
 function irHeadMap(row){const m={};row.forEach((v,i)=>m[String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'')]=i);return m}
@@ -3320,7 +3328,7 @@ const pn=(a,b)=>b>0?Math.round(a*10000/b)/100:null;
 const N=v=>{const n=Number(String(v==null?'':v).replace(/,/g,'').trim());return isFinite(n)?n:0};
 function normDiv(s){const k=typeof divKey==='function'?divKey(s):null;const m={'Indore City':'INDORE CITY','Indore Mfl':'INDORE MFL','Indore RMS':'ID DIVISION'};if(k)return m[k]||k.toUpperCase();return String(s||'').toUpperCase().replace(/\s*DIVISION\s*$/,'').trim()||'UNKNOWN'}
 function clsOf(n){n=String(n||'');if(/delivery\s*cent/i.test(n))return'NODAL DELIVERY CENTER';if(/\bh\.?\s?o\.?\s*$/i.test(n)||/\bg\.?p\.?o\.?\b/i.test(n))return'HO';if(/\bs\.?\s?o\.?\s*$/i.test(n))return'SO';if(/\bb\.?\s?o\.?\s*$/i.test(n))return'BO';return'OTHER'}
-const clsRank=c=>({HO:0,SO:1,BO:2}[c]??3);
+const clsRank=c=>(({HO:0,SO:1,BO:2}[c])==null?3:({HO:0,SO:1,BO:2}[c]));
 const fixSd=s=>{s=String(s||'').trim();return /burhanpur/i.test(s)?'Burhanpur Sub DN.':s};
 function metaFor(id,name,cls,sd,div){const o=NB_OFF[id];if(o){let c=o[1];if(c==='BO'){if(/\bs\.?\s?o\.?\s*$/i.test(o[0]))c='SO';else if(/\bh\.?\s?o\.?\s*$/i.test(o[0]))c='HO'}return{name:o[0],cls:c,sd:o[2],div:o[3],map:1}};
   const ov=ovr()[id];if(ov)return{name:ov.name||name,cls:ov.cls,sd:ov.sd,div:ov.div,map:1};
