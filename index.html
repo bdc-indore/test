@@ -712,7 +712,9 @@ async function handleCSV(file,mode){
     if(!rows.length)throw new Error('The file is empty.');
     const agg={},ragg={},aggN={},raggN={},pend={},unkDiv=new Set(),dates=new Set(),prods=new Set();let hasPost=false;
     let used=0,skipped=0,pendRows=0,noId=0,fbRows=0,totAll=0,lostN=0;const fbIds={};
-    for(const r0 of rows){
+    for(let ri=0;ri<rows.length;ri++){
+      const r0=rows[ri];
+      if(ri%4000===0){const pct=Math.round(ri/Math.max(1,rows.length)*100);box.innerHTML=`<div class="msg">Processing ${file.name||'CSV'}: ${pct}% (${ri.toLocaleString('en-IN')} / ${rows.length.toLocaleString('en-IN')} rows)</div>`;await new Promise(resolve=>setTimeout(resolve,0));}
       const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];
       const dt=xlDate(r['booking-date']);
       const pn=norm(r['product-name']);
@@ -790,7 +792,7 @@ async function handleCSV(file,mode){
       t+=`\n\nERROR: division could not be found for ${nPend} office(s) (Office ID not in the master): ${ids.slice(0,8).join(', ')}${ids.length>8?' …':''}\nTheir data is NOT counted in the report yet. Open Settings → "Unknown offices", write the division against each Office ID and save – the report will count them immediately.`;
       extra=`<div style="margin-top:8px"><button class="b sm" onclick="showTab('settings')">Open Settings &rarr; Unknown offices</button></div>`;
     }
-    box.innerHTML=`<div class="${cls}">${esc(t)}${extra}</div>`;
+    box.innerHTML=`<div class="${cls}">${esc(t)}\nUpload processing: 100% (${rows.length.toLocaleString('en-IN')} rows read)${extra}</div>`;
     if(inp)inp.value='';
   }catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
 }
@@ -2660,7 +2662,9 @@ RP.yoyHTML=(kind,v)=>{const X=RP.yoyTbl(kind,v);let h='<table style="border-coll
  return RP.wrap(X.title,X.sub,h+'</table><div style="font:11px Arial;color:#777;padding-top:6px">'+esc(X.note)+'</div>')};
 RP.boYM=()=>NB.S.month||NB.months().pop();
 RP.pages=()=>{const P=[],ym=RP.boYM(),mo=(document.getElementById('monthSel')||{}).value;
- if(mo&&typeof ALL_TABS_FULL==='function')ALL_TABS_FULL().forEach(dv=>P.push({g:'day',t:dv==='Region Total'?'Indore Region (Total)':dv===RXT?'Indore Region (without Sehore)':dv===RXR?'Indore Region (without Sehore & RMS)':/@[XR]$/.test(dv)?cmpName(dv):dv,dv,mo,pd:(dv===RXR||/@R$/.test(dv))?'RegionR':(dv===RXT||/@X$/.test(dv))?'RegionX':undefined,canvas:()=>drawReport(dv,mo,irgbOn(),true)}));
+ const bm=(document.getElementById('rpBundleMode')||{}).value||'m';let dayMonths=mo?[mo]:[];
+ if(bm==='fy'||bm==='all'){const opts=[...(document.getElementById('monthSel')||{}).options||[]].map(o=>o.value).filter(x=>/^\d{4}-\d{2}$/.test(x));dayMonths=opts.filter(x=>bm==='all'||x<=mo);if(!dayMonths.length&&mo)dayMonths=[mo]}
+ if(dayMonths.length&&typeof ALL_TABS_FULL==='function')dayMonths.forEach(dm=>ALL_TABS_FULL().forEach(dv=>P.push({g:'day',t:(dv==='Region Total'?'Indore Region (Total)':dv===RXT?'Indore Region (without Sehore)':dv===RXR?'Indore Region (without Sehore & RMS)':/@[XR]$/.test(dv)?cmpName(dv):dv)+' - '+mFull(dm),dv,mo:dm,pd:(dv===RXR||/@R$/.test(dv))?'RegionR':(dv===RXT||/@X$/.test(dv))?'RegionX':undefined,canvas:()=>drawReport(dv,dm,irgbOn(),true)})));
  [...RP.DV,'Region'].forEach(d=>P.push({g:'sum',t:rpNm(d)+' - Summary',html:()=>RP.sumHTML(d),d}));
  RP.VS.forEach(v=>P.push({g:'mon',t:'Revenue vs target: '+rpVn(v),html:()=>RP.monHTML(v),v}));
  P.push({g:'yoy',t:'Revenue vs last year: all verticals',html:()=>RP.yoyHTML('rev','ALL'),v:'ALL'});
@@ -3229,17 +3233,18 @@ function rpSecList(si){return RP.PL.map((p,i)=>[p,i]).filter(x=>RPSEC[si][1].inc
 function pageDiv(p){if(p.pd)return p.pd;if(p.g==='day'&&p.dv&&!/^CMP_/.test(p.dv))return p.dv==='Region Total'?'Region':p.dv;if((p.g==='sum'||p.g==='cnt')&&p.d)return p.d;return null}
 function pageTpl(p){const dv=pageDiv(p);if(!dv||dv==='Region'||dv==='RegionX')return null;const cand=dv==='Region'?['Indore Region (Total)','Indore Region']:[rpNm(dv),dv];for(const c of cand)if(p.t.includes(c))return p.t.replace(c,'@');return null}
 const rpScope=()=>{const c=rpCfg();return(!c.scope||c.scope==='REGION')?'REGION':c.scope};
-const scName=sc=>sc==='REGION'?'Region (with Sehore)':sc==='REGION_X'?'Region (without Sehore)':sc+' division';
+const scName=sc=>sc==='REGION'?'Region (with Sehore)':sc==='REGION_X'?'Region (without Sehore)':sc==='REGION_R'?'Region (without Sehore & RMS)':sc+' division';
 /* which pages belong to a file: REGION = with Sehore, REGION_X = without Sehore, or one division */
-function inScope(p,sc){const d=pageDiv(p),day=p.g==='day',cm=day&&/^CMP_/.test(p.dv),cx=cm&&/@X$/.test(p.dv);
+function inScope(p,sc){const d=pageDiv(p),day=p.g==='day',cm=day&&/^CMP_/.test(p.dv),cx=cm&&/@X$/.test(p.dv),cr=cm&&/@R$/.test(p.dv);
  if(sc==='REGION')return d!=='RegionX'&&d!=='RegionR';
  if(sc==='REGION_X'){if(d==='Sehore'||d==='RegionR')return false;if(day){if(p.dv==='Region Total')return false;if(cm&&!cx)return false}return true}
+ if(sc==='REGION_R'){if(d==='Sehore'||d==='Indore RMS'||d==='RegionX')return false;if(day){if(p.dv==='Region Total'||p.dv===RXT)return false;if(cm&&!cr)return false}return true}
  return d===sc}
 function scopeF(l){const sc=rpScope();return l.filter(p=>inScope(p,sc)).map(p=>{if(sc!=='REGION_X'||p.g==='day')return p;const d=pageDiv(p);return(d==null||d==='Region')?Object.assign({},p,{rx:1}):p})}
 let RPB=[];
 function rpSecRender(){const el=document.getElementById('rpSecCard');if(!el)return;RP.PL=RP.pages();const c=rpCfg(),sc=rpScope();RPB=[];
  const th='padding:8px 10px;background:#b3121b;color:#fff;text-align:left;border:1px solid #8c0e15;font-weight:700';
- let h='<h3>Mega PPT / PDF - select reports section-wise</h3><div style="border:1px solid #e0b000;background:#fffbe6;border-radius:8px;padding:8px 12px;margin:6px 0"><b>1. Which file do you want?</b><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION" '+(sc==='REGION'?'checked':'')+' onchange="rpScopeSet(\'REGION\')"> <b>Indore Region (with Sehore)</b> - complete Indore Region file (all ticked reports: Region + all 8 divisions)</label></div><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION_X" '+(sc==='REGION_X'?'checked':'')+' onchange="rpScopeSet(\'REGION_X\')"> <b>Indore Region (without Sehore)</b> - same reports, but Sehore is left out of every Region total, table and chart, and the Sehore division reports are not included</label></div><div><label><input type="radio" name="rsScope" value="DIV" '+(sc!=='REGION'&&sc!=='REGION_X'?'checked':'')+' onchange="rpScopeSet(document.getElementById(\'rsDiv\').value)"> <b>Specific division</b> - only that division\'s reports: </label><select id="rsDiv" onchange="rpScopeSet(this.value)">'+RP.DV.map(d=>`<option value="${d}" ${sc===d?'selected':''}>${esc(d)}</option>`).join('')+'</select></div><div class="hint" style="margin-top:4px">In a division file only the division-wise reports of that division are included (cover shows the division name). Region-wide tables that list all divisions together are left out.</div></div>'+
+ let h='<h3>Mega PPT / PDF - select reports section-wise</h3><div style="border:1px solid #e0b000;background:#fffbe6;border-radius:8px;padding:8px 12px;margin:6px 0"><b>0. Daily report month bundle:</b> <select id="rpBundleMode" onchange="rpSecRender()"><option value="m">Selected month only</option><option value="fy">Financial year combined (April to selected month)</option><option value="all">Complete financial year combined</option></select><div class="hint">FY combined includes April through selected month; Complete FY includes all months in the month list.</div><b>1. Which file do you want?</b><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION" '+(sc==='REGION'?'checked':'')+' onchange="rpScopeSet(\'REGION\')"> <b>Indore Region (with Sehore)</b> - complete Indore Region file (all ticked reports: Region + all 8 divisions)</label></div><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION_X" '+(sc==='REGION_X'?'checked':'')+' onchange="rpScopeSet(\'REGION_X\')"> <b>Indore Region (without Sehore)</b> - same reports, but Sehore is left out of every Region total, table and chart, and the Sehore division reports are not included</label></div><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION_R" '+(sc==='REGION_R'?'checked':'')+' onchange="rpScopeSet(\'REGION_R\')"> <b>Indore Region (without Sehore &amp; RMS)</b> - Sehore and Indore RMS excluded from region totals</label></div><div><label><input type="radio" name="rsScope" value="DIV" '+(sc!=='REGION'&&sc!=='REGION_X'&&sc!=='REGION_R'?'checked':'')+' onchange="rpScopeSet(document.getElementById(\'rsDiv\').value)"> <b>Specific division</b> - only that division\'s reports: </label><select id="rsDiv" onchange="rpScopeSet(this.value)">'+RP.DV.map(d=>`<option value="${d}" ${sc===d?'selected':''}>${esc(d)}</option>`).join('')+'</select></div><div class="hint" style="margin-top:4px">In a division file only the division-wise reports of that division are included (cover shows the division name). Region-wide tables that list all divisions together are left out.</div></div>'+
  '<b>2. Tick the reports</b><div class="hint">Division-wise reports (one report for every division) are bunched in one tick - tick it to take that report for all divisions (or only for the chosen division), untick to leave it out.</div><div class="row" style="margin:8px 0"><button class="b sm gray" onclick="rpSecAll(true)">Select all</button><button class="b sm gray" onclick="rpSecAll(false)">Clear all</button><button class="b" onclick="rpPPT()">Download selected PPT</button><button class="b" onclick="rpPDF()">Download selected PDF</button><b id="rsAll" style="margin-left:8px"></b></div>';
  h+='<table style="border-collapse:collapse;width:100%;font:13px Arial"><tr><td style="'+th+';width:230px">Section</td><td style="'+th+'">Reports in the section (tick = included)</td></tr>';
  RPSEC.forEach(([nm,gs],si)=>{const ps=rpSecList(si);if(!ps.length){if(/D\+0/.test(nm))h+=`<tr><td style="border:1px solid #bbb;padding:8px 10px;background:#fff7e0"><b style="font-size:14px">${esc(nm)}</b></td><td style="border:1px solid #bbb;padding:8px 10px"><span class="hint">D+0 reports yahan tick / untick karne ke liye dikhenge - pehle Upload tab me D+0 table file upload karo.</span></td></tr>`;return}
@@ -3683,7 +3688,7 @@ window.UPM=UPM;
 /* ---- Post-office-wise CSV: several files -> side panel, month-wise combine ---- */
 const MF=(()=>{
  const g=id=>document.getElementById(id);
- const S={files:[],dup:'later',done:{}};
+ const S={files:[],dup:'later',done:{},progress:0,progressText:''};
  const pad2=n=>String(n).padStart(2,'0');
  async function scan(file){
   const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true});
@@ -3695,12 +3700,15 @@ const MF=(()=>{
   return f;
  }
  async function add(list){
-  const box=g('csvMsgOff');
-  for(const file of list){
-   if(S.files.some(x=>x.name===file.name&&x.file.size===file.size))continue;
+  const box=g('csvMsgOff'),files=[...list].filter(file=>!S.files.some(x=>x.name===file.name&&x.file.size===file.size));
+  if(!files.length)return;
+  S.progress=0;S.progressText='Preparing '+files.length+' file(s)…';render();
+  for(let i=0;i<files.length;i++){
+   const file=files[i];S.progressText='Reading '+file.name+' ('+(i+1)+'/'+files.length+')';S.progress=Math.round(i/files.length*100);render();
    try{S.files.push(await scan(file))}catch(e){if(box)box.insertAdjacentHTML('beforeend',`<div class="msg err">${esc(file.name)}: ${esc(e.message)}</div>`)}
+   S.progress=Math.round((i+1)/files.length*100);render();await new Promise(r=>setTimeout(r,0));
   }
-  render();
+  S.progressText='File loading complete';S.progress=100;render();
  }
  const inc=()=>S.files.filter(f=>f.inc&&!f.monthly);
  function months(){const m={};inc().forEach((f,i)=>Object.keys(f.days).forEach(d=>{const y=d.slice(0,7),o=m[y]=m[y]||{days:{},files:new Set()};(o.days[d]=o.days[d]||[]).push(f.name);o.files.add(f.name)}));return m}
@@ -3709,7 +3717,7 @@ const MF=(()=>{
   if(!S.files.length){el.innerHTML='';return}
   const M=months(),ks=Object.keys(M).sort();
   let h='<div style="border:1px solid #b3121b;border-radius:8px;padding:10px;background:#fffafa"><div class="row" style="justify-content:space-between"><b>Combine several post-office-wise files</b><span><label class="b sm gray">+ Add more files<input type="file" multiple accept=".csv,.xlsx,.xls" hidden onchange="MF.add([...this.files]);this.value=\'\'"></label> <button class="b sm gray" onclick="MF.clear()">Clear list</button></span></div>';
-  h+='<div class="hint">Dates are read from each file. Tick the files to use, then import a month (or all months). Files stay in this list until you clear it.</div>';
+  h+=`<div class="msg" style="margin:7px 0"><b>${esc(S.progressText||'Ready for upload')}</b><div style="height:9px;background:#eee;border-radius:8px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${S.progress}%;background:#b3121b;transition:width .15s"></div></div><div style="text-align:right;font-weight:700">${S.progress}%</div></div>`;\n   h+='<div class="hint">Dates are read from each file. Tick the files to use, then import a month (or all months). Files stay in this list until you clear it.</div>';
   h+='<div class="wrap" style="max-height:220px"><table class="s2"><tr><th></th><th>File</th><th>Rows</th><th>Dates in file</th><th>Days</th><th></th></tr>';
   S.files.forEach((f,i)=>{
    const d=Object.keys(f.days).sort();
