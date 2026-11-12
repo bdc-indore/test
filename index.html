@@ -712,9 +712,7 @@ async function handleCSV(file,mode){
     if(!rows.length)throw new Error('The file is empty.');
     const agg={},ragg={},aggN={},raggN={},pend={},unkDiv=new Set(),dates=new Set(),prods=new Set();let hasPost=false;
     let used=0,skipped=0,pendRows=0,noId=0,fbRows=0,totAll=0,lostN=0;const fbIds={};
-    for(let ri=0;ri<rows.length;ri++){
-      const r0=rows[ri];
-      if(ri%4000===0){const pct=Math.round(ri/Math.max(1,rows.length)*100);box.innerHTML=`<div class="msg">Processing ${file.name||'CSV'}: ${pct}% (${ri.toLocaleString('en-IN')} / ${rows.length.toLocaleString('en-IN')} rows)</div>`;await new Promise(resolve=>setTimeout(resolve,0));}
+    for(const r0 of rows){
       const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];
       const dt=xlDate(r['booking-date']);
       const pn=norm(r['product-name']);
@@ -792,7 +790,7 @@ async function handleCSV(file,mode){
       t+=`\n\nERROR: division could not be found for ${nPend} office(s) (Office ID not in the master): ${ids.slice(0,8).join(', ')}${ids.length>8?' …':''}\nTheir data is NOT counted in the report yet. Open Settings → "Unknown offices", write the division against each Office ID and save – the report will count them immediately.`;
       extra=`<div style="margin-top:8px"><button class="b sm" onclick="showTab('settings')">Open Settings &rarr; Unknown offices</button></div>`;
     }
-    box.innerHTML=`<div class="${cls}">${esc(t)}\nUpload processing: 100% (${rows.length.toLocaleString('en-IN')} rows read)${extra}</div>`;
+    box.innerHTML=`<div class="${cls}">${esc(t)}${extra}</div>`;
     if(inp)inp.value='';
   }catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
 }
@@ -1279,7 +1277,7 @@ const CMP_TABS=['CMP_MO','CMP_Parcel','CMP_IRGB'];
 const isCmp=t=>String(t).indexOf('CMP_')===0;
 const cmpCat=t=>t.slice(4).replace(/@[XR]$/,'');
 const cmpName=t=>cmpCat(t)+' Comparison'+(/@X$/.test(t)?' (no Sehore)':/@R$/.test(t)?' (no Sehore & RMS)':'');
-const tabLbl=t=>isCmp(t)?cmpName(t).replace('(no Sehore)','(without Sehore)').replace('(no Sehore & RMS)','(without Sehore & RMS)'):t;
+const tabLbl=t=>t==='SDREP'?'Sub Division Report':isCmp(t)?cmpName(t).replace('(no Sehore)','(without Sehore)').replace('(no Sehore & RMS)','(without Sehore & RMS)'):t;
 const monthLbl=m=>mFull(m);
 function buildCmp(tab,month){
   const cat=cmpCat(tab),c=CMP[cat];
@@ -1415,8 +1413,9 @@ function renderReport(){
   document.getElementById('exclDate').value=DB.exclDate||todayStr();
   if(!ms.length){document.getElementById('reportBox').innerHTML='<p>No data available yet. Please upload the CSV and the Aadhaar Excel file in the "Daily Upload" tab.</p>';document.getElementById('divTabs').innerHTML='';return}
   sel.value=ms.includes(prev)?prev:ms[ms.length-1];
-  const tabs=['Region Total',RXT,RXR].concat(DIVS).concat(CMP_TABS).concat(CMP_TABS_X).concat(CMP_TABS_R);
-  document.getElementById('divTabs').innerHTML=tabs.map(t=>`<button class="${t===curDiv?'on':''}" ${t==='CMP_MO'?'style="margin-left:14px"':''} onclick="curDiv='${t}';renderReport()">${tabLbl(t)}</button>`).join('');
+  const tabs=['Region Total',RXT,RXR].concat(DIVS).concat(CMP_TABS).concat(CMP_TABS_X).concat(CMP_TABS_R).concat(['SDREP']);
+  document.getElementById('divTabs').innerHTML=tabs.map(t=>`<button class="${t===curDiv?'on':''}" ${t==='CMP_MO'||t==='SDREP'?'style="margin-left:14px"':''} onclick="curDiv='${t}';renderReport()">${tabLbl(t)}</button>`).join('');
+  if(curDiv==='SDREP'){sdrRender();return}
   const irgb=document.getElementById('showIRGB').checked,month=sel.value;
   if(isCmp(curDiv)){document.getElementById('reportBox').innerHTML=renderCmp(curDiv,month);return}
   const noAad=aadOff(),na=noAad?0:3;
@@ -2518,6 +2517,83 @@ function nbHTML(key,ym){const {G,th}=nbBuild(key,ym),R=NB.REP[key];const pc=(a,b
   h+=`<tr style="background:#fde4d6;font-weight:700"><td colspan="3" style="border:1px solid #888;padding:5px;text-align:center">${dv} Total</td>${row(T.t,'#fde4d6')}${row(T.n,'#fde4d6')}${row(T.l,'#fde4d6')}${row(T.g,'#fde4d6')}${row(pc(T.n,T.t),'#fde4d6')}${row(pc(T.g,T.t),'#fde4d6')}</tr>`});
  h+=`<tr style="background:#bdd7ee;font-weight:700"><td colspan="3" style="border:1px solid #888;padding:6px;text-align:center">Grand Total</td>${row(GT.t,'#bdd7ee')}${row(GT.n,'#bdd7ee')}${row(GT.l,'#bdd7ee')}${row(GT.g,'#bdd7ee')}${row(pc(GT.n,GT.t),'#bdd7ee')}${row(pc(GT.g,GT.t),'#bdd7ee')}</tr></table></div>`;return h}
 
+/* ===== SUB DIVISION REPORT (Report tab): Division > Sub Division > SO/HO-wise, BO, other offices, summary ===== */
+const SDR={dv:'',ym:'',th:{bo:10,so:200,sop:50}};
+function sdrBuild(ym,dvSel){
+ const V=NB.vals(ym),D={};
+ for(const id in NB_OFF){
+  const e=NB_OFF[id],nm=e[0],sd=e[2]||'(No Sub Division)',dv=e[3];
+  if(dv==='ID DIVISION'||!NB.act(id))continue;
+  if(dvSel&&dv!==dvSel)continue;
+  const v=V[id]||[0,0,0,0,0,0,0,0];
+  const o={id,nm,cl:String(e[1]||'').toUpperCase().trim(),par:v[4],mo:v[2]+v[6],irgb:v[0]};
+  o.tot=o.par+o.mo+o.irgb;
+  ((D[dv]=D[dv]||{})[sd]=D[dv][sd]||[]).push(o)}
+ const unm=Object.keys(V).filter(id=>!NB_OFF[id]).length;
+ const order=NB.DIVO.filter(d=>D[d]).concat(Object.keys(D).filter(d=>!NB.DIVO.includes(d)).sort());
+ return{D,order,unm}}
+const sdrSum=a=>a.reduce((s,o)=>({par:s.par+o.par,mo:s.mo+o.mo,irgb:s.irgb+o.irgb,tot:s.tot+o.tot}),{par:0,mo:0,irgb:0,tot:0});
+function sdrRows(ym,dvSel){
+ const {D,order,unm}=sdrBuild(ym,dvSel),T=SDR.th,R=[];let all=[];
+ const cmpN=(a,b)=>a.nm.localeCompare(b.nm);
+ order.forEach(dv=>{
+  R.push({t:'div',label:'Division: '+dv,dv});let dAll=[];
+  Object.keys(D[dv]).sort().forEach(sd=>{
+   const L=D[dv][sd],sh=L.filter(o=>o.cl==='HO'||o.cl==='SO'),bo=L.filter(o=>o.cl==='BO'),ot=L.filter(o=>o.cl!=='HO'&&o.cl!=='SO'&&o.cl!=='BO');
+   const so=L.filter(o=>o.cl==='SO');
+   dAll=dAll.concat(L);
+   R.push({t:'sd',label:'Sub Division: '+sd,dv,s:sdrSum(L)});
+   sh.sort((a,b)=>(a.cl===b.cl?0:a.cl==='HO'?-1:1)||cmpN(a,b)).forEach(o=>R.push({t:'off',label:o.nm,cl:o.cl,s:o}));
+   R.push({t:'sub',label:'Total Booking from SO/HO',s:sdrSum(sh)});
+   R.push({t:'sub',label:'Total Booking from BO',s:sdrSum(bo)});
+   R.push({t:'sub',label:'Total Booking from other offices',s:sdrSum(ot)});
+   R.push({t:'tot',label:'Total - '+sd,s:sdrSum(L)});
+   R.push({t:'sum',items:[
+    ['Total BO',bo.length],
+    ['BO with greater than '+T.bo+' booking',bo.filter(o=>o.tot>T.bo).length],
+    ['BO with NIL booking',bo.filter(o=>o.tot<=0).length],
+    ['Total BO with 0 parcel booking',bo.filter(o=>o.par<=0).length],
+    ['Total SO in Sub division',so.length],
+    ['SO with more than '+T.so+' booking',so.filter(o=>o.tot>T.so).length],
+    ['SO with more than '+T.sop+' parcel',so.filter(o=>o.par>T.sop).length],
+    ['SO with NIL parcel booking',so.filter(o=>o.par<=0).length]]})});
+  all=all.concat(dAll);
+  R.push({t:'dtot',label:dv+' Total',s:sdrSum(dAll)})});
+ if(order.length>1)R.push({t:'gtot',label:'Region Total',s:sdrSum(all)});
+ return{R,unm}}
+function sdrHTML(ym){
+ const {R,unm}=sdrRows(ym,SDR.dv),f=n=>Number(n).toLocaleString('en-IN');
+ const st={div:'background:#b8cce4;font-weight:700;text-align:left;font-size:15px',sd:'background:#fde4d6;font-weight:700',off:'',sub:'background:#f2f2f2;font-weight:700',tot:'background:#92d050;font-weight:700',dtot:'background:#ffd966;font-weight:700',gtot:'background:#bdd7ee;font-weight:700;font-size:14px'};
+ let h=`<table class="rep" style="width:100%"><tr><th class="title" colspan="6">Sub Division wise Booking Report - Parcel, MO &amp; IRGB (${esc(mFull(ym))})</th></tr><tr><th style="text-align:left">Name</th><th>Class</th><th>Parcel</th><th>MO</th><th>IRGB</th><th>Total</th></tr>`;
+ R.forEach(r=>{
+  if(r.t==='div')h+=`<tr><td colspan="6" style="${st.div}">${esc(r.label)}</td></tr>`;
+  else if(r.t==='sum')h+=`<tr><td colspan="6" style="padding:0;text-align:left"><table style="border-collapse:collapse;margin:6px 0 10px 24px;font-size:12.5px;background:#fffbe6">${r.items.map(i=>`<tr><td style="border:1px solid #999;padding:2px 10px;text-align:left">${esc(i[0])}</td><td style="border:1px solid #999;padding:2px 14px;font-weight:700;text-align:center">${i[1]}</td></tr>`).join('')}</table></td></tr>`;
+  else{const s=r.s,c=r.t==='off'?esc(r.cl):'';
+   h+=`<tr style="${st[r.t]}"><td style="text-align:left">${esc(r.label)}</td><td>${c}</td><td>${f(s.par)}</td><td>${f(s.mo)}</td><td>${f(s.irgb)}</td><td>${f(s.tot)}</td></tr>`}});
+ h+='</table>';
+ if(unm)h+=`<div class="msg warn">${unm} office-id(s) with booking data are not in the office master, so they are not counted here (Settings &rarr; Nil Booking / office-wise settings).</div>`;
+ return h}
+function sdrRender(){
+ const box=document.getElementById('reportBox'),ms=NB.months();
+ if(!ms.length){box.innerHTML='<p>Office-wise data is not uploaded yet. Upload the <b>Post-office-wise CSV</b> in the Upload tab first.</p>';return}
+ if(!SDR.ym||!ms.includes(SDR.ym))SDR.ym=ms.includes(NB.S.month)?NB.S.month:ms[ms.length-1];
+ const dvs=[...new Set(Object.values(NB_OFF).map(x=>x[3]).filter(d=>d&&d!=='ID DIVISION'))].sort((a,b)=>{const i=NB.DIVO.indexOf(a),j=NB.DIVO.indexOf(b);return(i<0?99:i)-(j<0?99:j)||a.localeCompare(b)});
+ const ctl=`<div class="row noprint" style="margin-bottom:10px;gap:10px;flex-wrap:wrap"><b>Month:</b><select onchange="SDR.ym=this.value;sdrRender()">${ms.map(m=>`<option value="${m}" ${m===SDR.ym?'selected':''}>${mFull(m)}</option>`).join('')}</select>
+ <b>Division:</b><select onchange="SDR.dv=this.value;sdrRender()"><option value="">All divisions</option>${dvs.map(d=>`<option ${d===SDR.dv?'selected':''}>${esc(d)}</option>`).join('')}</select>
+ <label>BO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.bo}" onchange="SDR.th.bo=+this.value||0;sdrRender()"></label>
+ <label>SO &gt; <input type="number" min="0" style="width:60px" value="${SDR.th.so}" onchange="SDR.th.so=+this.value||0;sdrRender()"> booking</label>
+ <label>SO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.sop}" onchange="SDR.th.sop=+this.value||0;sdrRender()"> parcel</label>
+ <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button></div>
+ <div class="hint noprint" style="margin-bottom:8px">MO = Mail Ops (Other + Speed Post), Parcel and IRGB come from the uploaded post-office-wise data. Total = Parcel + MO + IRGB. SO summary counts offices with class SO; the SO/HO list shows both.</div>`;
+ box.innerHTML=ctl+sdrHTML(SDR.ym)}
+function sdrExcel(){
+ if(!SDR.ym)return;const {R}=sdrRows(SDR.ym,SDR.dv),A=[['Sub Division wise Booking Report - '+mFull(SDR.ym)],['Name','Class','Parcel','MO','IRGB','Total']];
+ R.forEach(r=>{if(r.t==='div')A.push([r.label]);else if(r.t==='sum'){r.items.forEach(i=>A.push([i[0],'',i[1]]));A.push([])}
+  else A.push([r.label,r.t==='off'?r.cl:'',r.s.par,r.s.mo,r.s.irgb,r.s.tot])});
+ const ws=XLSX.utils.aoa_to_sheet(A),wb=XLSX.utils.book_new();ws['!cols']=[{wch:46},{wch:8},{wch:10},{wch:10},{wch:10},{wch:10}];
+ XLSX.utils.book_append_sheet(wb,ws,'SubDivision_Report');
+ saveBlob(new Blob([XLSX.write(wb,{bookType:'xlsx',type:'array'})],{type:'application/octet-stream'}),'SubDivision_Report_'+SDR.ym+(SDR.dv?'_'+SDR.dv.replace(/\s+/g,'_'):'')+'.xlsx')}
+
 async function nbIsMonthly(file){try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true}),r=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true})[0]||{};return Object.keys(r).some(k=>k.replace(/^\ufeff/,'').trim().toLowerCase()==='category')}catch(e){return false}}
 /* post-office-wise upload also feeds the office-level store used for Nil Booking reports and the all-post-office CSV */
 async function nbIngest(file){const box=document.getElementById('csvMsgOff');let note='',cls='msg';
@@ -2662,9 +2738,7 @@ RP.yoyHTML=(kind,v)=>{const X=RP.yoyTbl(kind,v);let h='<table style="border-coll
  return RP.wrap(X.title,X.sub,h+'</table><div style="font:11px Arial;color:#777;padding-top:6px">'+esc(X.note)+'</div>')};
 RP.boYM=()=>NB.S.month||NB.months().pop();
 RP.pages=()=>{const P=[],ym=RP.boYM(),mo=(document.getElementById('monthSel')||{}).value;
- const bm=(document.getElementById('rpBundleMode')||{}).value||'m';let dayMonths=mo?[mo]:[];
- if(bm==='fy'||bm==='all'){const opts=[...(document.getElementById('monthSel')||{}).options||[]].map(o=>o.value).filter(x=>/^\d{4}-\d{2}$/.test(x));dayMonths=opts.filter(x=>bm==='all'||x<=mo);if(!dayMonths.length&&mo)dayMonths=[mo]}
- if(dayMonths.length&&typeof ALL_TABS_FULL==='function')dayMonths.forEach(dm=>ALL_TABS_FULL().forEach(dv=>P.push({g:'day',t:(dv==='Region Total'?'Indore Region (Total)':dv===RXT?'Indore Region (without Sehore)':dv===RXR?'Indore Region (without Sehore & RMS)':/@[XR]$/.test(dv)?cmpName(dv):dv)+' - '+mFull(dm),dv,mo:dm,pd:(dv===RXR||/@R$/.test(dv))?'RegionR':(dv===RXT||/@X$/.test(dv))?'RegionX':undefined,canvas:()=>drawReport(dv,dm,irgbOn(),true)})));
+ if(mo&&typeof ALL_TABS_FULL==='function')ALL_TABS_FULL().forEach(dv=>P.push({g:'day',t:dv==='Region Total'?'Indore Region (Total)':dv===RXT?'Indore Region (without Sehore)':dv===RXR?'Indore Region (without Sehore & RMS)':/@[XR]$/.test(dv)?cmpName(dv):dv,dv,mo,pd:(dv===RXR||/@R$/.test(dv))?'RegionR':(dv===RXT||/@X$/.test(dv))?'RegionX':undefined,canvas:()=>drawReport(dv,mo,irgbOn(),true)}));
  [...RP.DV,'Region'].forEach(d=>P.push({g:'sum',t:rpNm(d)+' - Summary',html:()=>RP.sumHTML(d),d}));
  RP.VS.forEach(v=>P.push({g:'mon',t:'Revenue vs target: '+rpVn(v),html:()=>RP.monHTML(v),v}));
  P.push({g:'yoy',t:'Revenue vs last year: all verticals',html:()=>RP.yoyHTML('rev','ALL'),v:'ALL'});
@@ -3233,18 +3307,17 @@ function rpSecList(si){return RP.PL.map((p,i)=>[p,i]).filter(x=>RPSEC[si][1].inc
 function pageDiv(p){if(p.pd)return p.pd;if(p.g==='day'&&p.dv&&!/^CMP_/.test(p.dv))return p.dv==='Region Total'?'Region':p.dv;if((p.g==='sum'||p.g==='cnt')&&p.d)return p.d;return null}
 function pageTpl(p){const dv=pageDiv(p);if(!dv||dv==='Region'||dv==='RegionX')return null;const cand=dv==='Region'?['Indore Region (Total)','Indore Region']:[rpNm(dv),dv];for(const c of cand)if(p.t.includes(c))return p.t.replace(c,'@');return null}
 const rpScope=()=>{const c=rpCfg();return(!c.scope||c.scope==='REGION')?'REGION':c.scope};
-const scName=sc=>sc==='REGION'?'Region (with Sehore)':sc==='REGION_X'?'Region (without Sehore)':sc==='REGION_R'?'Region (without Sehore & RMS)':sc+' division';
+const scName=sc=>sc==='REGION'?'Region (with Sehore)':sc==='REGION_X'?'Region (without Sehore)':sc+' division';
 /* which pages belong to a file: REGION = with Sehore, REGION_X = without Sehore, or one division */
-function inScope(p,sc){const d=pageDiv(p),day=p.g==='day',cm=day&&/^CMP_/.test(p.dv),cx=cm&&/@X$/.test(p.dv),cr=cm&&/@R$/.test(p.dv);
+function inScope(p,sc){const d=pageDiv(p),day=p.g==='day',cm=day&&/^CMP_/.test(p.dv),cx=cm&&/@X$/.test(p.dv);
  if(sc==='REGION')return d!=='RegionX'&&d!=='RegionR';
  if(sc==='REGION_X'){if(d==='Sehore'||d==='RegionR')return false;if(day){if(p.dv==='Region Total')return false;if(cm&&!cx)return false}return true}
- if(sc==='REGION_R'){if(d==='Sehore'||d==='Indore RMS'||d==='RegionX')return false;if(day){if(p.dv==='Region Total'||p.dv===RXT)return false;if(cm&&!cr)return false}return true}
  return d===sc}
 function scopeF(l){const sc=rpScope();return l.filter(p=>inScope(p,sc)).map(p=>{if(sc!=='REGION_X'||p.g==='day')return p;const d=pageDiv(p);return(d==null||d==='Region')?Object.assign({},p,{rx:1}):p})}
 let RPB=[];
 function rpSecRender(){const el=document.getElementById('rpSecCard');if(!el)return;RP.PL=RP.pages();const c=rpCfg(),sc=rpScope();RPB=[];
  const th='padding:8px 10px;background:#b3121b;color:#fff;text-align:left;border:1px solid #8c0e15;font-weight:700';
- let h='<h3>Mega PPT / PDF - select reports section-wise</h3><div style="border:1px solid #e0b000;background:#fffbe6;border-radius:8px;padding:8px 12px;margin:6px 0"><b>0. Daily report month bundle:</b> <select id="rpBundleMode" onchange="rpSecRender()"><option value="m">Selected month only</option><option value="fy">Financial year combined (April to selected month)</option><option value="all">Complete financial year combined</option></select><div class="hint">FY combined includes April through selected month; Complete FY includes all months in the month list.</div><b>1. Which file do you want?</b><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION" '+(sc==='REGION'?'checked':'')+' onchange="rpScopeSet(\'REGION\')"> <b>Indore Region (with Sehore)</b> - complete Indore Region file (all ticked reports: Region + all 8 divisions)</label></div><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION_X" '+(sc==='REGION_X'?'checked':'')+' onchange="rpScopeSet(\'REGION_X\')"> <b>Indore Region (without Sehore)</b> - same reports, but Sehore is left out of every Region total, table and chart, and the Sehore division reports are not included</label></div><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION_R" '+(sc==='REGION_R'?'checked':'')+' onchange="rpScopeSet(\'REGION_R\')"> <b>Indore Region (without Sehore &amp; RMS)</b> - Sehore and Indore RMS excluded from region totals</label></div><div><label><input type="radio" name="rsScope" value="DIV" '+(sc!=='REGION'&&sc!=='REGION_X'&&sc!=='REGION_R'?'checked':'')+' onchange="rpScopeSet(document.getElementById(\'rsDiv\').value)"> <b>Specific division</b> - only that division\'s reports: </label><select id="rsDiv" onchange="rpScopeSet(this.value)">'+RP.DV.map(d=>`<option value="${d}" ${sc===d?'selected':''}>${esc(d)}</option>`).join('')+'</select></div><div class="hint" style="margin-top:4px">In a division file only the division-wise reports of that division are included (cover shows the division name). Region-wide tables that list all divisions together are left out.</div></div>'+
+ let h='<h3>Mega PPT / PDF - select reports section-wise</h3><div style="border:1px solid #e0b000;background:#fffbe6;border-radius:8px;padding:8px 12px;margin:6px 0"><b>1. Which file do you want?</b><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION" '+(sc==='REGION'?'checked':'')+' onchange="rpScopeSet(\'REGION\')"> <b>Indore Region (with Sehore)</b> - complete Indore Region file (all ticked reports: Region + all 8 divisions)</label></div><div style="margin:6px 0"><label><input type="radio" name="rsScope" value="REGION_X" '+(sc==='REGION_X'?'checked':'')+' onchange="rpScopeSet(\'REGION_X\')"> <b>Indore Region (without Sehore)</b> - same reports, but Sehore is left out of every Region total, table and chart, and the Sehore division reports are not included</label></div><div><label><input type="radio" name="rsScope" value="DIV" '+(sc!=='REGION'&&sc!=='REGION_X'?'checked':'')+' onchange="rpScopeSet(document.getElementById(\'rsDiv\').value)"> <b>Specific division</b> - only that division\'s reports: </label><select id="rsDiv" onchange="rpScopeSet(this.value)">'+RP.DV.map(d=>`<option value="${d}" ${sc===d?'selected':''}>${esc(d)}</option>`).join('')+'</select></div><div class="hint" style="margin-top:4px">In a division file only the division-wise reports of that division are included (cover shows the division name). Region-wide tables that list all divisions together are left out.</div></div>'+
  '<b>2. Tick the reports</b><div class="hint">Division-wise reports (one report for every division) are bunched in one tick - tick it to take that report for all divisions (or only for the chosen division), untick to leave it out.</div><div class="row" style="margin:8px 0"><button class="b sm gray" onclick="rpSecAll(true)">Select all</button><button class="b sm gray" onclick="rpSecAll(false)">Clear all</button><button class="b" onclick="rpPPT()">Download selected PPT</button><button class="b" onclick="rpPDF()">Download selected PDF</button><b id="rsAll" style="margin-left:8px"></b></div>';
  h+='<table style="border-collapse:collapse;width:100%;font:13px Arial"><tr><td style="'+th+';width:230px">Section</td><td style="'+th+'">Reports in the section (tick = included)</td></tr>';
  RPSEC.forEach(([nm,gs],si)=>{const ps=rpSecList(si);if(!ps.length){if(/D\+0/.test(nm))h+=`<tr><td style="border:1px solid #bbb;padding:8px 10px;background:#fff7e0"><b style="font-size:14px">${esc(nm)}</b></td><td style="border:1px solid #bbb;padding:8px 10px"><span class="hint">D+0 reports yahan tick / untick karne ke liye dikhenge - pehle Upload tab me D+0 table file upload karo.</span></td></tr>`;return}
@@ -3688,7 +3761,7 @@ window.UPM=UPM;
 /* ---- Post-office-wise CSV: several files -> side panel, month-wise combine ---- */
 const MF=(()=>{
  const g=id=>document.getElementById(id);
- const S={files:[],dup:'later',done:{},progress:0,progressText:''};
+ const S={files:[],dup:'later',done:{}};
  const pad2=n=>String(n).padStart(2,'0');
  async function scan(file){
   const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true});
@@ -3700,15 +3773,12 @@ const MF=(()=>{
   return f;
  }
  async function add(list){
-  const box=g('csvMsgOff'),files=[...list].filter(file=>!S.files.some(x=>x.name===file.name&&x.file.size===file.size));
-  if(!files.length)return;
-  S.progress=0;S.progressText='Preparing '+files.length+' file(s)…';render();
-  for(let i=0;i<files.length;i++){
-   const file=files[i];S.progressText='Reading '+file.name+' ('+(i+1)+'/'+files.length+')';S.progress=Math.round(i/files.length*100);render();
+  const box=g('csvMsgOff');
+  for(const file of list){
+   if(S.files.some(x=>x.name===file.name&&x.file.size===file.size))continue;
    try{S.files.push(await scan(file))}catch(e){if(box)box.insertAdjacentHTML('beforeend',`<div class="msg err">${esc(file.name)}: ${esc(e.message)}</div>`)}
-   S.progress=Math.round((i+1)/files.length*100);render();await new Promise(r=>setTimeout(r,0));
   }
-  S.progressText='File loading complete';S.progress=100;render();
+  render();
  }
  const inc=()=>S.files.filter(f=>f.inc&&!f.monthly);
  function months(){const m={};inc().forEach((f,i)=>Object.keys(f.days).forEach(d=>{const y=d.slice(0,7),o=m[y]=m[y]||{days:{},files:new Set()};(o.days[d]=o.days[d]||[]).push(f.name);o.files.add(f.name)}));return m}
@@ -3717,8 +3787,7 @@ const MF=(()=>{
   if(!S.files.length){el.innerHTML='';return}
   const M=months(),ks=Object.keys(M).sort();
   let h='<div style="border:1px solid #b3121b;border-radius:8px;padding:10px;background:#fffafa"><div class="row" style="justify-content:space-between"><b>Combine several post-office-wise files</b><span><label class="b sm gray">+ Add more files<input type="file" multiple accept=".csv,.xlsx,.xls" hidden onchange="MF.add([...this.files]);this.value=\'\'"></label> <button class="b sm gray" onclick="MF.clear()">Clear list</button></span></div>';
-  h+=`<div class="msg" style="margin:7px 0"><b>${esc(S.progressText||'Ready for upload')}</b><div style="height:9px;background:#eee;border-radius:8px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${S.progress}%;background:#b3121b;transition:width .15s"></div></div><div style="text-align:right;font-weight:700">${S.progress}%</div></div>`;
-   h+='<div class="hint">Dates are read from each file. Tick the files to use, then import a month (or all months). Files stay in this list until you clear it.</div>';
+  h+='<div class="hint">Dates are read from each file. Tick the files to use, then import a month (or all months). Files stay in this list until you clear it.</div>';
   h+='<div class="wrap" style="max-height:220px"><table class="s2"><tr><th></th><th>File</th><th>Rows</th><th>Dates in file</th><th>Days</th><th></th></tr>';
   S.files.forEach((f,i)=>{
    const d=Object.keys(f.days).sort();
