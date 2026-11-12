@@ -205,9 +205,10 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
       <button class="b sm gray" onclick="setExclToday()">Today</button>
       <button class="b gray" onclick="window.print()">Print</button>
     </div>
+    <div class="row" id="divExRow" style="margin-top:8px;font-size:13px"></div>
     <div class="row" style="margin-top:8px;align-items:flex-start">
       <button class="b alt" id="rpdfBtn" onclick="exportPDFSel()">&#11015; Download PDF</button>
-      <details id="pdfPick" style="flex:1;min-width:260px"><summary class="hint" style="cursor:pointer">Pages in the PDF &ndash; untick a division to remove it (<span id="pdfCnt"></span>). PDF follows the IRGB / Aadhaar ticks above.</summary><div id="pdfPickBox"></div></details>
+      <details id="pdfPick" style="flex:1;min-width:260px"><summary class="hint" style="cursor:pointer">Pages in the PDF &ndash; untick a division to remove it - its numbers are also taken out of Region Total (<span id="pdfCnt"></span>). PDF follows the IRGB / Aadhaar ticks above.</summary><div id="pdfPickBox"></div></details>
       <span class="hint" id="rpdfMsg"></span>
     </div>
     <div class="tabs" id="divTabs"></div>
@@ -232,7 +233,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div class="card"><h3>Reports to upload</h3>
   <table class="uptbl">
    <tr><td class="l">Daily CSV &ndash; Division-wise <i>or</i> Post-office-wise<small>Any one of the two (MO / Parcel / IRGB). Existing data of the dates in the file is replaced.</small></td>
-    <td><div class="dzs"><label class="dz" data-h="csvDiv"><b>Division-wise CSV</b><span>click or drop file</span><input type="file" id="csvFile"  accept=".csv,.xlsx,.xls" hidden></label><label class="dz" data-h="csvOff"><b>Post-office-wise CSV</b><span>click or drop file</span><input type="file" id="csvFileOff"  accept=".csv,.xlsx,.xls" hidden></label></div><div id="csvMsg"></div><div id="csvMsgOff"></div></td></tr>
+    <td><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start"><div style="flex:1;min-width:300px"><div class="dzs"><label class="dz" data-h="csvDiv"><b>Division-wise CSV</b><span>click or drop file</span><input type="file" id="csvFile"  accept=".csv,.xlsx,.xls" hidden></label><label class="dz" data-h="csvOff"><b>Post-office-wise CSV</b><span>click or drop file</span><input type="file" id="csvFileOff" multiple accept=".csv,.xlsx,.xls" hidden></label></div><div id="csvMsg"></div><div id="csvMsgOff"></div><div class="hint" style="margin-top:6px">Post-office-wise: select / drop <b>2 or more files</b> at once to combine them month-wise (panel opens on the right).</div></div><div id="csvMulti" style="flex:1.3;min-width:360px"></div></div></td></tr>
    <tr><td class="l">Aadhaar transactions<small>Excel (division x date grid, or office-wise monthly sheet).</small></td>
     <td><div class="dzs"><label class="dz" data-h="aad"><b>Aadhaar Excel</b><span>click or drop file</span><input type="file" id="aadFile"  accept=".csv,.xlsx,.xls" hidden></label></div><div id="aadMsg"></div><div id="aadPick"></div></td></tr>
    <tr><td class="l">Aadhaar &ndash; last year<small>Monthly statement &ldquo;Sheet2&rdquo; format (one sheet per month, Apr-25 to Mar-26). Laptop Kit rows are added to the office above them. Replaces the old built-in last-year Aadhaar data.</small></td>
@@ -990,7 +991,9 @@ function monthsAvail(){
 }
 function maxAadDate(){const k=Object.keys(DB.aadDates);return k.length?k.sort().pop():''}
 let PDFDIVS=null;   /* set only while the PDF is made: divisions still ticked in the PDF page list */
-function listOf(dv){const A=PDFDIVS?DIVS.filter(d=>PDFDIVS.has(d)):DIVS;return dv==='Region Total'?A:dv===RXT?A.filter(d=>d!=='Sehore'):dv===RXR?A.filter(d=>d!=='Sehore'&&d!=='Indore RMS'):[dv]}
+/* Divisions unticked in the Report tab (same list as the PDF page picker) are removed from every Region Total */
+function effPD(){if(PDFDIVS)return PDFDIVS;try{const ex=pdfExcl(),keep=new Set(DIVS.filter(d=>!ex.has(d)));return(keep.size&&keep.size<DIVS.length)?keep:null}catch(e){return null}}
+function listOf(dv){const PD=effPD();const A=PD?DIVS.filter(d=>PD.has(d)):DIVS;return dv==='Region Total'?A:dv===RXT?A.filter(d=>d!=='Sehore'):dv===RXR?A.filter(d=>d!=='Sehore'&&d!=='Indore RMS'):[dv]}
 function soDefOf(dv){return listOf(dv).reduce((a,d)=>a+soD(d),0)}
 const todayStr=()=>{const t=new Date();return `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`};
 function setExcl(){
@@ -1059,7 +1062,7 @@ function buildAOA0(dv,month,irgb){
 }
 const divTitle=dv=>{
   if(dv!=='Region Total'&&dv!==RXT&&dv!==RXR)return dv.toUpperCase();
-  const out=PDFDIVS?DIVS.filter(d=>!PDFDIVS.has(d)):[];
+  const PD=effPD(),out=PD?DIVS.filter(d=>!PD.has(d)):[];
   if(dv===RXT&&!out.includes('Sehore'))out.push('Sehore');
   if(dv===RXR)['Sehore','Indore RMS'].forEach(x=>{if(!out.includes(x))out.push(x)});
   return out.length?'INDORE REGION (WITHOUT '+out.map(x=>x.toUpperCase()).join(', ')+')':'INDORE REGION (TOTAL)';
@@ -1260,13 +1263,14 @@ function buildCmp(tab,month){
   const g=(cur,ly)=>(ly==null||!ly)?null:Math.round((cur-ly)/ly*10000)/100;
   const rows=[];let tc=0,tl=0;
   const XR=/@X$/.test(tab),RR=/@R$/.test(tab);
-  for(const d of (RR?DIVS.filter(x=>x!=='Sehore'&&x!=='Indore RMS'):XR?DIVS.filter(x=>x!=='Sehore'):DIVS)){
+  const PD=effPD();
+  for(const d of (RR?DIVS.filter(x=>x!=='Sehore'&&x!=='Indore RMS'):XR?DIVS.filter(x=>x!=='Sehore'):DIVS).filter(x=>!PD||PD.has(x))){
     let cur=0;dts.forEach(dt=>{cur+=dayVals(d,dt)[c.k]||0});
     const ly=lyOk?(((LYX()[d]||{})[mm]||[0,0,0,0])[c.i]||0):null;
     tc+=cur;if(ly!=null)tl+=ly;
     rows.push({cls:'',cells:[d,cur,ly,g(cur,ly)]});
   }
-  rows.push({cls:'tot',cells:[RR?'INDORE REGION (WITHOUT SEHORE & RMS)':XR?'INDORE REGION (WITHOUT SEHORE)':'INDORE REGION (TOTAL)',tc,lyOk?tl:null,g(tc,lyOk?tl:null)]});
+  rows.push({cls:'tot',cells:[PD?divTitle(RR?RXR:XR?RXT:'Region Total'):RR?'INDORE REGION (WITHOUT SEHORE & RMS)':XR?'INDORE REGION (WITHOUT SEHORE)':'INDORE REGION (TOTAL)',tc,lyOk?tl:null,g(tc,lyOk?tl:null)]});
   const cl=monthLbl(month),pl=monthLbl(`${py}-${pad(mm)}`);
   const last=dts.length?dts[dts.length-1]:'';
   const partial=last&&last<`${month}-${pad(days)}`;
@@ -1377,6 +1381,8 @@ function renderReport(){
   try{pdfPicker()}catch(e){}
   updBadge();
   {const n=pendCount(),pb=document.getElementById('pendBanner');if(pb)pb.innerHTML=n?`<div class="msg err" style="margin:0 0 12px">&#9888; ${n} office(s) have no division, so their data is NOT counted in this report. <button class="b sm" onclick="showTab('settings')">Open Settings &rarr; Unknown offices</button></div>`:''}
+  {const r=document.getElementById('divExRow');if(r){const ex=pdfExcl();r.innerHTML='<b>Divisions counted in Region Total:</b> '+DIVS.map(d=>`<label style="white-space:nowrap;margin-right:10px"><input type="checkbox" ${ex.has(d)?'':'checked'} data-t="${esc(d)}" onchange="pdfTog(this)"> ${esc(d)}</label>`).join('')}
+   const pd=effPD(),nb=document.getElementById('pendBanner');if(pd&&nb)nb.insertAdjacentHTML('beforeend',`<div class="msg" style="margin:0 0 12px">Region Total (SO, MO, Parcel, IRGB, Aadhaar, last-year row and the MO / Parcel / IRGB comparison) does NOT include: <b>${esc(DIVS.filter(d=>!pd.has(d)).join(', '))}</b>. Tick the division again above to bring it back.</div>`)}
   document.getElementById('exclOn').checked=!!DB.exclOn;
   document.getElementById('exclDate').value=DB.exclDate||todayStr();
   if(!ms.length){document.getElementById('reportBox').innerHTML='<p>No data available yet. Please upload the CSV and the Aadhaar Excel file in the "Daily Upload" tab.</p>';document.getElementById('divTabs').innerHTML='';return}
@@ -1583,8 +1589,8 @@ function pdfPicker(){
    ALL_TABS_FULL().map(t=>`<label style="white-space:nowrap"><input type="checkbox" ${ex.has(t)?'':'checked'} data-t="${esc(t)}" onchange="pdfTog(this)"> ${esc(tabLbl(t))}</label>`).join('')+'</div>';
   pdfCount();
 }
-function pdfTog(el){const ex=pdfExcl(),t=el.dataset.t;if(el.checked)ex.delete(t);else ex.add(t);pdfSave();pdfCount()}
-function pdfAll(v){const ex=pdfExcl();if(v)ex.clear();else ALL_TABS_FULL().forEach(t=>ex.add(t));pdfSave();pdfPicker()}
+function pdfTog(el){const ex=pdfExcl(),t=el.dataset.t;if(el.checked)ex.delete(t);else ex.add(t);pdfSave();pdfCount();try{renderReport()}catch(e){}}
+function pdfAll(v){const ex=pdfExcl();if(v)ex.clear();else ALL_TABS_FULL().forEach(t=>ex.add(t));pdfSave();pdfPicker();try{renderReport()}catch(e){}}
 async function exportPDFSel(){
   const list=ALL_TABS_FULL().filter(t=>!pdfExcl().has(t));
   if(!list.length){alert('Select at least one page for the PDF.');return}
@@ -2356,6 +2362,9 @@ NB.load=async()=>{try{const db=await NB.db(),g=k=>new Promise(r=>{const q=db.tra
 NB.save=()=>{const o=Object.assign({},NB.S);delete o.offD;delete o.offM;try{DBLS.setItem(NB.K,JSON.stringify(o))}catch(e){}NB.db().then(db=>{const t=db.transaction('kv','readwrite').objectStore('kv');t.put(NB.S.offD,'offD');t.put(NB.S.offM,'offM')}).catch(()=>{})};
 NB.catOf=p=>{const n=norm(p);if(n.includes('international'))return'IRGB';if(NB.S.pm[n])return NB.S.pm[n];if(NB.DEFPM[n])return NB.DEFPM[n];const c=catOf(p);return c==='MO'?'Other':c||null};
 NB.act=id=>!NB.S.alias[id];
+NB.S.extra=NB.S.extra||{};NB.S.unk=NB.S.unk||{};
+function nbApplyExtra(){for(const id in NB.S.extra)NB_OFF[id]=NB.S.extra[id].slice()}
+function nbNote(id,r){if(NB_OFF[id])return;const n=String(r['office-name']||r['office name']||r['officename']||'').trim(),d=String(r['division-name']||r['division name']||r['division']||'').trim(),sd=String(r['sub-division-name']||r['sub-division']||r['sub division']||r['sd']||'').trim(),o=NB.S.unk[id]=NB.S.unk[id]||{};if(n&&!o.n)o.n=n;if(d&&!o.d)o.d=d;if(sd&&!o.sd)o.sd=sd}
 NB.DEF_ALIAS={'23107683':'23109287','23107460':'23109288','23107098':'23660998','23106778':'23660997','23660882':'23660999','23107359':'23109292','23106779':'23660994'};
 
 /* ===== OLD OFFICE MAPPING: loaded from the Google Sheet (office-id, OFFICE NAME, CLASS, SD, DIVISION); last copy is cached in this browser ===== */
@@ -2456,6 +2465,7 @@ function oldMapApply(csv){
   try{applyLyAad()}catch(e){}
   return n;
 }
+{const _o=oldMapApply;oldMapApply=function(){const r=_o.apply(this,arguments);nbApplyExtra();return r}}
 try{const _c=DBLS.getItem('dwOldMapCsv');if(_c)oldMapApply(_c)}catch(e){console.warn('cached old mapping',e)}
 try{applyLyAad();aadCsvFill();const _l=document.getElementById('lyAadList');if(_l)_l.innerHTML=lyAadStat()}catch(e){console.warn('ly aadhaar',e)}
 NB.res=id=>NB.S.alias[id]||id;
@@ -2485,17 +2495,17 @@ async function nbIsMonthly(file){try{const wb=XLSX.read(await file.arrayBuffer()
 async function nbIngest(file){const box=document.getElementById('csvMsgOff');let note='',cls='msg';
  try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true}),rows=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});if(!rows.length)return;
   const R=r0=>{const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];return r};let n=0,skip=0;const bad=new Set();
-  if('category' in R(rows[0])){const mon=(prompt('This file has monthly office totals. Which month is it? (YYYY-MM)',NB.S.month||'2026-10')||'').trim();if(!/^\d{4}-\d{2}$/.test(mon))throw new Error('Month not given');const m={};
-   for(const r0 of rows){const r=R(r0),id=offId(r['office-id']),c=String(r.category).trim().toUpperCase(),i=NB.CATS.findIndex(x=>x.toUpperCase()===c);if(!id||i<0){skip++;continue}const t=m[id]=m[id]||[0,0,0,0,0,0,0,0];t[i*2]+=toNum(r.booking_count);t[i*2+1]+=toNum(r.revenue);n++}
+  if('category' in R(rows[0])){const mon=(window.MF_MON||prompt('This file has monthly office totals. Which month is it? (YYYY-MM)',NB.S.month||'2026-10')||'').trim();if(!/^\d{4}-\d{2}$/.test(mon))throw new Error('Month not given');const m={};
+   for(const r0 of rows){const r=R(r0),id=offId(r['office-id']),c=String(r.category).trim().toUpperCase(),i=NB.CATS.findIndex(x=>x.toUpperCase()===c);if(id)nbNote(id,r);if(!id||i<0){skip++;continue}const t=m[id]=m[id]||[0,0,0,0,0,0,0,0];t[i*2]+=toNum(r.booking_count);t[i*2+1]+=toNum(r.revenue);n++}
    NB.S.offM[mon]=m;for(const d of Object.keys(NB.S.offD))if(d.slice(0,7)===mon)delete NB.S.offD[d];NB.S.month=mon;
   }else{const nd={};
    for(const r0 of rows){const r=R(r0),dt=xlDate(r['booking-date']),id=offId(r['office-id']),pn=norm(r['product-name']);if(!dt||!id||!pn){skip++;continue}
-    const c=NB.catOf(pn);if(!c){bad.add(pn);skip++;continue}const t=((nd[dt]=nd[dt]||{})[id]=nd[dt][id]||[0,0,0,0,0,0,0,0]),i=NB.ci(c);t[i]+=toNum(r['article-count']);t[i+1]+=toNum(r['postage']);n++}
+    nbNote(id,r);const c=NB.catOf(pn);if(!c){bad.add(pn);skip++;continue}const t=((nd[dt]=nd[dt]||{})[id]=nd[dt][id]||[0,0,0,0,0,0,0,0]),i=NB.ci(c);t[i]+=toNum(r['article-count']);t[i+1]+=toNum(r['postage']);n++}
    if(!n)return;for(const d in nd)NB.S.offD[d]=nd[d];NB.S.month=Object.keys(nd).sort().pop().slice(0,7)}
   NB.save();nbFillMs();
   const u=NB.unk(NB.S.month);note=`Office-wise data saved for Nil Booking reports and the All Post Office CSV (${n} rows, month ${NB.S.month}).`;
   if(bad.size){cls='msg warn';note+=`\nProducts with no category (not counted): ${[...bad].join(', ')} - set them in Settings.`}
-  if(u.length){cls='msg warn';note+=`\n${u.length} office-id not in the office master: their data is NOT counted in the office reports. Settings -> "Nil Booking / office-wise settings" lets you write the office-id in which it should be counted.`}
+  if(u.length){cls='msg warn';note+=`\n${u.length} office-id not in the office master: their data is NOT counted in the office reports. Settings -> "Nil Booking / office-wise settings" -> section 2: add it as a NEW office or include its data in an existing office-id.`}
  }catch(e){cls='msg err';note='Office-wise store: '+e.message}
  if(box)box.insertAdjacentHTML('beforeend',`<div class="${cls}">${esc(note)}</div>`)}
 const _hc=handleCSV;handleCSV=async function(file,mode){await _hc(file,mode);if(mode==='off'&&file)await nbIngest(file)};
@@ -2662,12 +2672,65 @@ function nbFilt(p){const g=k=>document.getElementById('nbc_'+p+'_'+k).value,q=g(
 function nbAddAlias(){const v=i=>document.getElementById(i).value;const o=offId(v('nbMo'))||v('nbc_src_l'),n=offId(v('nbMn'))||v('nbc_dst_l');if(!o||!n)return alert('Choose / write both the old and the new office-id');if(o===n)return alert('Old and new office-id are the same');if(!NB_OFF[n])return alert('New office-id '+n+' is not in the office master');NB.S.alias[o]=n;NB.save();nbSyncPend();nbSettingsRender();toast('Added')}
 function nbDelAlias(o){delete NB.S.alias[o];NB.save();nbSettingsRender()}
 function nbSaveAlias(){document.querySelectorAll('.nbA').forEach(i=>{const v=offId(i.value);if(v&&NB_OFF[v])NB.S.alias[i.dataset.id]=v;else if(v)toast('Office-id '+v+' not in master');else delete NB.S.alias[i.dataset.id]});NB.save();nbSyncPend();nbSettingsRender();try{renderPend()}catch(e){}}
+
+/* ---- Settings 2: office-ids not in the master -> add as NEW office / include data in an existing office-id ---- */
+const nbDivList=()=>[...new Set(Object.values(NB_OFF).map(x=>x[3]))].filter(Boolean).sort();
+const nbSdList=dv=>[...new Set(Object.values(NB_OFF).filter(x=>!dv||x[3]===dv).map(x=>x[2]))].filter(Boolean).sort();
+function nbGuessDiv(s){const u=String(s||'').toUpperCase();if(!u)return'';if(/RMS|ID DIV/.test(u))return'ID DIVISION';return nbDivList().find(d=>u.includes(d))||''}
+function nbUnkInfo(id){const i=NB.S.unk[id]||{},p=(DB.pend&&DB.pend[id])||{};return{n:i.n||p.n||'',d:i.d||'',sd:i.sd||''}}
+function nbGuessCls(n){return /\bS\.?\s?O\.?\s*$/i.test(n)?'SO':/\bH\.?\s?O\.?\s*$/i.test(n)?'HO':'BO'}
+function nbUnkHTML(u,cnt){
+ let h='';
+ if(!u.length)h+='<div class="hint">None.</div>';
+ else{
+  const cls=[...new Set(['BO','SO','HO'].concat(Object.values(NB_OFF).map(x=>x[1]).filter(Boolean)))];
+  h+='<div class="hint">Name and division are taken from the uploaded file. Choose what to do with each office, fill the boxes that appear and press Save - the data is counted immediately.</div><div class="wrap" style="max-height:480px"><table class="s2"><tr><th>Office-id</th><th>Office name (upload)</th><th>Division (upload)</th><th>Articles</th><th>What to do</th><th>Details</th><th></th></tr>'+u.map(id=>{
+   const inf=nbUnkInfo(id),eid=esc(id),al=NB.S.alias[id];
+   return `<tr style="vertical-align:top"><td>${eid}</td><td>${esc(inf.n)||'<span class="hint">not in upload</span>'}</td><td>${esc(inf.d)||'-'}</td><td>${cnt[id]}</td>
+<td><select id="nbum_${eid}" onchange="nbUm('${eid}')"><option value="">- choose -</option><option value="new">Add as NEW office</option><option value="inc">Include data in this office-id</option></select>${al?`<div class="hint">now counted in ${esc(al)}</div>`:''}</td>
+<td><div id="nbun_${eid}" style="display:none"><div class="row">Name <input id="nbunn_${eid}" value="${esc(inf.n)}" style="width:190px"></div>
+<div class="row"><b>1.</b> Division <select id="nbund_${eid}" onchange="nbUd('${eid}','n')"></select></div>
+<div class="row"><b>2.</b> Sub-Division <select id="nbuns_${eid}" onchange="nbUn('${eid}')"></select> <input id="nbunsn_${eid}" placeholder="new sub-division name" style="display:none;width:170px"></div>
+<div class="row"><b>3.</b> Class <select id="nbunc_${eid}">${cls.map(c=>`<option ${c===nbGuessCls(inf.n)?'selected':''}>${esc(c)}</option>`).join('')}</select></div></div>
+<div id="nbui_${eid}" style="display:none"><div class="row"><b>1.</b> Division <select id="nbuid_${eid}" onchange="nbUd('${eid}','i')"></select></div>
+<div class="row"><b>2.</b> Sub-Division <select id="nbuis_${eid}" onchange="nbUs('${eid}')"></select></div>
+<div class="row"><b>3.</b> Office-id <select id="nbuio_${eid}" style="max-width:260px"></select> or type <input id="nbuit_${eid}" placeholder="office-id" style="width:100px"></div></div></td>
+<td><button class="b sm" onclick="nbUSave('${eid}')">Save</button></td></tr>`}).join('')+'</table></div>';
+ }
+ const ex=Object.keys(NB.S.extra);
+ if(ex.length)h+='<div class="hint" style="margin-top:8px"><b>New offices added from here</b> (used for every upload):</div><table class="s2"><tr><th>Office-id</th><th>Name</th><th>Class</th><th>Sub-Division</th><th>Division</th><th></th></tr>'+ex.map(id=>{const e=NB.S.extra[id];return `<tr><td>${esc(id)}</td><td>${esc(e[0])}</td><td>${esc(e[1])}</td><td>${esc(e[2])}</td><td>${esc(e[3])}</td><td><button class="b sm gray" onclick="nbDelExtra('${esc(id)}')">&#10006;</button></td></tr>`}).join('')+'</table>';
+ return h;
+}
+function nbUm(id){const $=x=>document.getElementById(x),v=$('nbum_'+id).value;$('nbun_'+id).style.display=v==='new'?'':'none';$('nbui_'+id).style.display=v==='inc'?'':'none';
+ if(v&&!$('nbum_'+id).dataset.f){$('nbum_'+id).dataset.f='1';const g=nbGuessDiv(nbUnkInfo(id).d),dvs=nbDivList();
+  ['nbund_','nbuid_'].forEach(p=>{$(p+id).innerHTML='<option value="">- select division -</option>'+dvs.map(d=>`<option ${d===g?'selected':''}>${esc(d)}</option>`).join('')});nbUd(id,'n');nbUd(id,'i')}}
+function nbUd(id,k){const $=x=>document.getElementById(x),dv=$((k==='n'?'nbund_':'nbuid_')+id).value,sds=nbSdList(dv),want=(nbUnkInfo(id).sd||'').toLowerCase(),pick=sds.find(x=>x.toLowerCase()===want)||'';
+ const o=sds.map(x=>`<option ${x===pick?'selected':''}>${esc(x)}</option>`).join('');
+ if(k==='n'){const s=$('nbuns_'+id);s.innerHTML='<option value="">- select sub-division -</option>'+o+'<option value="__new">+ New sub-division (type the name)</option>';s.disabled=!dv;nbUn(id)}
+ else{$('nbuis_'+id).innerHTML='<option value="">- all sub-divisions -</option>'+o;nbUs(id)}}
+function nbUn(id){const s=document.getElementById('nbuns_'+id);document.getElementById('nbunsn_'+id).style.display=s.value==='__new'?'':'none'}
+function nbUs(id){const $=x=>document.getElementById(x),dv=$('nbuid_'+id).value,sd=$('nbuis_'+id).value;
+ const l=dv?Object.keys(NB_OFF).filter(k=>NB_OFF[k][3]===dv&&(!sd||NB_OFF[k][2]===sd)&&NB.act(k)).sort((a,b)=>String(NB_OFF[a][0]).localeCompare(String(NB_OFF[b][0]))):[];
+ $('nbuio_'+id).innerHTML='<option value="">- select office -</option>'+l.slice(0,600).map(k=>`<option value="${esc(k)}">${esc(NB_OFF[k][0])} (${esc(k)}, ${esc(NB_OFF[k][1])})</option>`).join('')}
+function nbUDone(id){delete NB.S.unk[id];NB.save();save();nbSyncPend();try{renderPend()}catch(e){}nbSettingsRender();try{nbStat()}catch(e){}updBadge()}
+function nbUSave(id){const $=x=>document.getElementById(x),m=$('nbum_'+id).value;
+ if(!m)return alert('Choose what to do with office-id '+id);
+ if(m==='new'){const nm=$('nbunn_'+id).value.trim(),dv=$('nbund_'+id).value;if(!nm)return alert('Write the office name');if(!dv)return alert('1. Select the division');
+  let sd=$('nbuns_'+id).value;if(sd==='__new')sd=$('nbunsn_'+id).value.trim();if(!sd)return alert('2. Select the sub-division');
+  const cl=$('nbunc_'+id).value,d=RP.DMAP[dv];if(!d)return alert('Division '+dv+' is not known to the report');
+  NB.S.extra[id]=[nm,cl,sd,dv];NB_OFF[id]=[nm,cl,sd,dv];DB.offMap[id]=d;delete NB.S.alias[id];
+  nbUDone(id);toast('New office '+id+' added - data counted');return}
+ const t=offId($('nbuit_'+id).value)||$('nbuio_'+id).value;
+ if(!t)return alert('Select the office-id (or type it) in which this data should be counted');
+ if(t===id)return alert('Choose a different office-id');if(!NB_OFF[t])return alert('Office-id '+t+' is not in the office master');
+ NB.S.alias[id]=t;nbUDone(id);toast('Data of '+id+' is counted in office-id '+t)}
+function nbDelExtra(id){delete NB.S.extra[id];delete NB_OFF[id];delete DB.offMap[id];NB.save();save();nbSettingsRender();toast('Removed - data already counted stays; the next upload will list this office again')}
 function nbSettingsRender(){const el=document.getElementById('nbSetBody');if(!el)return;if(!rpInit())return;const c=rpCfg(),cnt={};
  NB.months().forEach(m=>{const v=NB.vals(m);for(const id in v)if(!NB_OFF[id])cnt[id]=(cnt[id]||0)+v[id][0]+v[id][2]+v[id][4]+v[id][6]});const u=Object.keys(cnt);RP.PL=RP.pages();
  const pr=[...new Set([...Object.keys(NB.DEFPM),...Object.keys(NB.S.pm),...DB.seenProducts])].sort();
  el.innerHTML=`<h4>1. Good booking limit (separate for each report)</h4>`+Object.keys(NB.REP).map(k=>`<label style="margin-right:14px">${NB.REP[k].t}: good booking &gt; <input type="number" id="nbT_${k}" value="${NB.S.th[k]}" style="width:60px"></label>`).join('')+` <button class="b sm" onclick="nbSaveTh()">Save</button>
  <div class="hint">NIL = office with no booking in the category(ies) of that report (All = IRGB + MO + Parcel together; Parcel = only Parcel). Low = 1 to the limit.</div>
- <h4>2. Office-ids not in the office master</h4>${u.length?`<table class="s2"><tr><th>Office-id</th><th>Articles</th><th>Count in office-id</th></tr>${u.map(id=>`<tr><td>${esc(id)}</td><td>${cnt[id]}</td><td><input class="nbA" data-id="${esc(id)}" value="${esc(NB.S.alias[id]||'')}" placeholder="office-id"></td></tr>`).join('')}</table><button class="b sm" onclick="nbSaveAlias()">Save</button>`:'<div class="hint">None.</div>'}
+ <h4>2. Office-ids not in the office master</h4>${nbUnkHTML(u,cnt)}
  <h4>3. Office-id shifts (old office-id -> new office-id)</h4><div class="hint">Data of the old office-id is counted in the new office-id (division report, Nil Booking reports and the All Post Office CSV). The old office-id is no longer counted as an office.</div>${Object.keys(NB.S.alias).length?`<table class="s2"><tr><th>Old office-id</th><th>Old office</th><th>New office-id</th><th>New office</th><th></th></tr>${Object.keys(NB.S.alias).map(o=>`<tr><td>${esc(o)}</td><td>${NB_OFF[o]?esc(NB_OFF[o][0]):'-'}</td><td>${esc(NB.S.alias[o])}</td><td>${NB_OFF[NB.S.alias[o]]?esc(NB_OFF[NB.S.alias[o]][0]):'-'}</td><td><button class="b sm gray" onclick="nbDelAlias('${esc(o)}')">&#10006;</button></td></tr>`).join('')}</table>`:''}<div style="margin-top:6px">Add: old office-id <input id="nbMo" style="width:100px"> &rarr; new office-id <input id="nbMn" style="width:100px"> <span class="hint">(or pick from the lists below)</span></div>${nbChooser('src','Old office (data to move FROM)')}${nbChooser('dst','New office (count the data IN)')}<button class="b sm" onclick="nbAddAlias()">Add</button>
  <h4>4. Product -> category (IRGB / Other / Parcel / SPEED POST; MO = Other + Speed Post)</h4><table class="s2"><tr><th>Product name</th><th>Category</th></tr>${pr.map(p=>{const k=NB.catOf(p)||'',lk=p.includes('international');return`<tr><td>${esc(p)}</td><td><select class="nbP" data-p="${esc(p)}" ${lk?'disabled':''}><option value="">-</option>${NB.CATS.map(x=>`<option ${k===x?'selected':''}>${x}</option>`).join('')}</select></td></tr>`}).join('')}</table><button class="b sm" onclick="nbSavePm()">Save mapping</button>
  <h4>5. Mega PPT / PDF</h4><div style="display:flex;gap:10px;flex-wrap:wrap"><label>First slide title <input id="rpT" value="${esc(c.title)}" style="width:200px"></label><label>Subtitle <input id="rpS" value="${esc(c.sub)}" style="width:300px"></label><label>Badge <input id="rpB" value="${esc(c.badge)}" style="width:150px"></label> <button class="b sm" onclick="rpSaveCover()">Save</button></div>
@@ -3590,8 +3653,102 @@ window.UPM=UPM;
 {const _h=handleCSV;handleCSV=async function(file,mode){await _h.apply(this,arguments);const b=document.getElementById(mode==='off'?'csvMsgOff':'csvMsg');if(file&&b&&!b.querySelector('.err'))UPM.mark('src',mode==='off'?'Post-office-wise':'Division-wise')}}
 {const _i=importAad;importAad=function(){const r=_i.apply(this,arguments);const b=document.getElementById('aadMsg');if(b&&!b.querySelector('.err')&&!/No sheet selected/.test(b.textContent))UPM.mark('aad');return r}}
 {const _a=SBX.add;SBX.add=async function(list){const names=[...list].map(f=>f.name);await _a.apply(this,arguments);const have=new Set(SBX.data().files);UPM.mark('posb',names.filter(n=>have.has(n)))}}
+
+/* ---- Post-office-wise CSV: several files -> side panel, month-wise combine ---- */
+const MF=(()=>{
+ const g=id=>document.getElementById(id);
+ const S={files:[],dup:'later',done:{}};
+ const pad2=n=>String(n).padStart(2,'0');
+ async function scan(file){
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true});
+  const raw=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});
+  const rows=raw.map(r0=>{const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];return r});
+  const monthly=!!rows.length&&('category' in rows[0]);
+  const f={name:file.name,file,rows,monthly,days:{},inc:true,mon:''};
+  if(!monthly)rows.forEach(r=>{const dt=xlDate(r['booking-date']);if(dt){r['booking-date']=dt;f.days[dt]=1}});
+  return f;
+ }
+ async function add(list){
+  const box=g('csvMsgOff');
+  for(const file of list){
+   if(S.files.some(x=>x.name===file.name&&x.file.size===file.size))continue;
+   try{S.files.push(await scan(file))}catch(e){if(box)box.insertAdjacentHTML('beforeend',`<div class="msg err">${esc(file.name)}: ${esc(e.message)}</div>`)}
+  }
+  render();
+ }
+ const inc=()=>S.files.filter(f=>f.inc&&!f.monthly);
+ function months(){const m={};inc().forEach((f,i)=>Object.keys(f.days).forEach(d=>{const y=d.slice(0,7),o=m[y]=m[y]||{days:{},files:new Set()};(o.days[d]=o.days[d]||[]).push(f.name);o.files.add(f.name)}));return m}
+ function render(){
+  const el=g('csvMulti');if(!el)return;
+  if(!S.files.length){el.innerHTML='';return}
+  const M=months(),ks=Object.keys(M).sort();
+  let h='<div style="border:1px solid #b3121b;border-radius:8px;padding:10px;background:#fffafa"><div class="row" style="justify-content:space-between"><b>Combine several post-office-wise files</b><span><label class="b sm gray">+ Add more files<input type="file" multiple accept=".csv,.xlsx,.xls" hidden onchange="MF.add([...this.files]);this.value=\'\'"></label> <button class="b sm gray" onclick="MF.clear()">Clear list</button></span></div>';
+  h+='<div class="hint">Dates are read from each file. Tick the files to use, then import a month (or all months). Files stay in this list until you clear it.</div>';
+  h+='<div class="wrap" style="max-height:220px"><table class="s2"><tr><th></th><th>File</th><th>Rows</th><th>Dates in file</th><th>Days</th><th></th></tr>';
+  S.files.forEach((f,i)=>{
+   const d=Object.keys(f.days).sort();
+   const rng=f.monthly?`monthly totals - month: <input value="${esc(f.mon)}" placeholder="YYYY-MM" style="width:80px" onchange="MF.mon(${i},this.value)">`:d.length?`${dmy(d[0])} to ${dmy(d[d.length-1])}`:'no booking-date found';
+   h+=`<tr><td><input type="checkbox" ${f.inc?'checked':''} onchange="MF.tog(${i},this.checked)"></td><td>${esc(f.name)}</td><td>${f.rows.length}</td><td>${rng}</td><td>${f.monthly?'-':d.length}</td><td><button class="b sm gray" onclick="MF.rm(${i})">&#10006;</button></td></tr>`;
+  });
+  h+='</table></div>';
+  h+=`<div class="row" style="margin-top:6px"><b>If the same date is in more than one file:</b> <label><input type="radio" name="mfdup" ${S.dup==='later'?'checked':''} onchange="MF.dupSet('later')"> later file replaces (same data again)</label> <label><input type="radio" name="mfdup" ${S.dup==='add'?'checked':''} onchange="MF.dupSet('add')"> add together (files hold different offices)</label></div>`;
+  if(ks.length){
+   h+='<div class="wrap" style="max-height:230px;margin-top:6px"><table class="s2"><tr><th>Month</th><th>Files</th><th>Days found</th><th>Missing days</th><th>Same date in 2+ files</th><th></th></tr>';
+   ks.forEach(y=>{
+    const o=M[y],dts=Object.keys(o.days).sort(),last=+dts[dts.length-1].slice(8,10),miss=[];
+    for(let d=1;d<=last;d++)if(!o.days[`${y}-${pad2(d)}`])miss.push(d);
+    const dup=dts.filter(d=>o.days[d].length>1);
+    h+=`<tr><td>${mFull(y)}${S.done[y]?' <b style="color:#1b7a3c">&#10004; imported</b>':''}</td><td>${o.files.size}</td><td>${dts.length} (${dmy(dts[0])} to ${dmy(dts[dts.length-1])})</td><td>${miss.length?miss.slice(0,12).join(', ')+(miss.length>12?' …':''):'-'}</td><td>${dup.length?`<span style="color:#b36b00">${dup.length} day(s): ${dup.slice(0,3).map(x=>dmy(x).slice(0,5)).join(', ')}${dup.length>3?' …':''}</span>`:'-'}</td><td><button class="b sm" onclick="MF.imp('${y}')">Import this month</button></td></tr>`;
+   });
+   h+='</table></div>';
+  }
+  h+=`<div class="row" style="margin-top:6px"><button class="b" onclick="MF.imp('')">Combine &amp; import all ticked files</button></div><div id="mfMsg"></div></div>`;
+  el.innerHTML=h;
+ }
+ function combine(ym){
+  const use=inc(),owner={};
+  use.forEach((f,i)=>Object.keys(f.days).forEach(d=>{if(!ym||d.slice(0,7)===ym)owner[d]=i}));
+  const out=[];
+  use.forEach((f,i)=>f.rows.forEach(r=>{const d=r['booking-date'];if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return;if(ym&&d.slice(0,7)!==ym)return;if(S.dup==='later'&&owner[d]!==i)return;out.push(r)}));
+  return out;
+ }
+ function toFile(rows,ym){
+  const cols=[],seen=new Set();rows.forEach(r=>{for(const k in r)if(!seen.has(k)){seen.add(k);cols.push(k)}});
+  const q=v=>{const t=v==null?'':String(v);return /[",\r\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t};
+  const lines=[cols.map(q).join(',')];rows.forEach(r=>lines.push(cols.map(c=>q(r[c])).join(',')));
+  return new File([lines.join('\r\n')],'combined_'+(ym||'all')+'.csv',{type:'text/csv'});
+ }
+ async function imp(ym){
+  const box=g('csvMsgOff'),log=[];
+  try{
+   const rows=combine(ym);
+   if(rows.length){
+    const nf=inc().length;
+    await handleCSV(toFile(rows,ym),'off');
+    log.push(`<div class="msg"><b>${ym?mFull(ym):'All months'}</b>: ${nf} file(s) combined (${rows.length} rows).</div>`+box.innerHTML);
+    const ds=new Set(rows.map(r=>r['booking-date'].slice(0,7)));ds.forEach(y=>S.done[y]=1);
+   }
+   for(const f of S.files.filter(x=>x.inc&&x.monthly)){
+    if(ym&&f.mon!==ym)continue;
+    if(!/^\d{4}-\d{2}$/.test(f.mon)){log.push(`<div class="msg err">${esc(f.name)}: write the month (YYYY-MM) for this monthly file first.</div>`);continue}
+    window.MF_MON=f.mon;try{await handleCSV(f.file,'off')}finally{window.MF_MON=null}
+    log.push(`<div class="msg"><b>${esc(f.name)}</b> (${mFull(f.mon)})</div>`+box.innerHTML);
+   }
+   if(!log.length)log.push('<div class="msg warn">Nothing to import - tick at least one file with dates.</div>');
+   box.innerHTML=log.join('');
+  }catch(e){box.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
+  render();
+ }
+ return{files:S.files,add,render,imp,
+  tog(i,v){S.files[i].inc=v;render()},
+  rm(i){S.files.splice(i,1);render()},
+  mon(i,v){S.files[i].mon=String(v).trim()},
+  dupSet(v){S.dup=v;render()},
+  clear(){S.files.length=0;S.done={};render()}};
+})();
+window.MF=MF;
 /* ---- drag & drop / click zones of the Upload table ---- */
-{const H={csvDiv:f=>handleCSV(f[0],'div'),csvOff:f=>handleCSV(f[0],'off'),aad:f=>handleAadhaar(f[0]),lyaad:f=>handleLyAad(f[0]),d0:f=>D0.pick(f[0]),posb:f=>SBX.add([...f])};
+{const H={csvDiv:f=>handleCSV(f[0],'div'),csvOff:f=>(f.length>1||MF.files.length)?MF.add([...f]):handleCSV(f[0],'off'),aad:f=>handleAadhaar(f[0]),lyaad:f=>handleLyAad(f[0]),d0:f=>D0.pick(f[0]),posb:f=>SBX.add([...f])};
  document.querySelectorAll('.dz').forEach(z=>{const inp=z.querySelector('input'),fn=H[z.dataset.h];
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});z.addEventListener('dragleave',()=>z.classList.remove('over'));
   z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');if(e.dataTransfer.files.length)fn(e.dataTransfer.files)});
