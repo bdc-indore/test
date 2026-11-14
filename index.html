@@ -234,7 +234,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div class="card"><h3>Reports to upload</h3>
   <table class="uptbl">
    <tr><td class="l">Daily CSV &ndash; Division-wise <i>or</i> Post-office-wise<small>Any one of the two (MO / Parcel / IRGB). Existing data of the dates in the file is replaced.</small></td>
-    <td><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start"><div style="flex:1;min-width:300px"><div class="dzs"><label class="dz" data-h="csvDiv"><b>Division-wise CSV</b><span>click or drop file</span><input type="file" id="csvFile"  accept=".csv,.xlsx,.xls" hidden></label><label class="dz" data-h="csvOff"><b>Post-office-wise CSV</b><span>click or drop file</span><input type="file" id="csvFileOff" multiple accept=".csv,.xlsx,.xls" hidden></label></div><div id="csvMsg"></div><div id="csvMsgOff"></div><div class="hint" style="margin-top:6px">Post-office-wise: select / drop <b>2 or more files</b> at once to combine them month-wise (panel opens on the right).</div></div><div id="csvMulti" style="flex:1.3;min-width:360px"></div></div></td></tr>
+    <td><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start"><div style="flex:1;min-width:300px"><div class="dzs"><label class="dz" data-h="csvDiv"><b>Division-wise CSV</b><span>click or drop file</span><input type="file" id="csvFile"  accept=".csv,.xlsx,.xls" hidden></label><label class="dz" data-h="csvOff"><b>Post-office-wise CSV</b><span>click or drop file</span><input type="file" id="csvFileOff" multiple accept=".csv,.xlsx,.xls" hidden></label></div><div id="csvMsg"></div><div id="csvMsgOff"></div><div id="bookingProgress" class="msg" style="display:none"><progress max="100" value="0" style="width:100%;height:19px;accent-color:#b3121b"></progress><div class="bpLabel">0%</div></div><div class="hint" style="margin-top:6px">Post-office-wise: select / drop <b>2 or more files</b> at once to combine them month-wise (panel opens on the right).</div></div><div id="csvMulti" style="flex:1.3;min-width:360px"></div></div></td></tr>
    <tr><td class="l">Aadhaar transactions<small>Excel (division x date grid, or office-wise monthly sheet).</small></td>
     <td><div class="dzs"><label class="dz" data-h="aad"><b>Aadhaar Excel</b><span>click or drop file</span><input type="file" id="aadFile"  accept=".csv,.xlsx,.xls" hidden></label></div><div id="aadMsg"></div><div id="aadPick"></div></td></tr>
    <tr><td class="l">Aadhaar &ndash; last year<small>Monthly statement &ldquo;Sheet2&rdquo; format (one sheet per month, Apr-25 to Mar-26). Laptop Kit rows are added to the office above them. Replaces the old built-in last-year Aadhaar data.</small></td>
@@ -685,6 +685,43 @@ function showTab(t){
   if(t==='ppt'&&window.PM)PM.draw();
 }
 
+/* ===== LARGE CSV: incremental file reading, cooperative UI yielding, shared parse ===== */
+const BOOKING_CACHE=new WeakMap();
+const bookingYield=()=>new Promise(resolve=>setTimeout(resolve,0));
+function bookingProgress(pct,msg){
+ const el=document.getElementById('bookingProgress');if(!el)return;
+ el.style.display='block';el.querySelector('progress').value=Math.max(0,Math.min(100,pct));
+ el.querySelector('.bpLabel').textContent=Math.round(pct)+'% • '+msg;
+}
+async function bookingRows(file){
+ if(file&&file.__bookingVirtual)return file;
+ if(file&&file.__bookingRows)return file.__bookingRows;
+ if(BOOKING_CACHE.has(file))return BOOKING_CACHE.get(file);
+ if(!/\.csv$/i.test(file.name||'')){
+  bookingProgress(5,'Excel workbook reading');
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true});
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});
+  BOOKING_CACHE.set(file,rows);bookingProgress(35,'Workbook loaded');return rows;
+ }
+ const rows=[], decoder=new TextDecoder('utf-8'),CHUNK=1024*1024;
+ let headers=null,field='',record=[],quoted=false,afterQuote=false,bytes=0;
+ function commit(){record.push(field);field='';if(!headers){headers=record.map(x=>x.replace(/^\ufeff/,'').trim().toLowerCase())}
+ else if(record.some(x=>x!=='')) {const obj={};for(let i=0;i<headers.length;i++)obj[headers[i]]=record[i]===undefined?'':record[i];rows.push(obj)}record=[]}
+ function parse(txt){for(let i=0;i<txt.length;i++){
+  const c=txt[i];if(quoted){if(c==='"'){quoted=false;afterQuote=true}else field+=c;continue}
+  if(afterQuote){if(c==='"'){field+='"';quoted=true;afterQuote=false;continue}afterQuote=false}
+  if(c==='"'&&field===''){quoted=true;continue}
+  if(c===','){record.push(field);field='';continue}
+  if(c==='\n'){commit();continue}
+  if(c==='\r')continue;
+  field+=c;
+ }}
+ while(bytes<file.size){const end=Math.min(file.size,bytes+CHUNK),blob=file.slice(bytes,end);parse(decoder.decode(await blob.arrayBuffer(),{stream:end<file.size}));bytes=end;
+  bookingProgress(5+Math.round(30*bytes/Math.max(1,file.size)), 'Reading '+file.name+' ('+rows.length.toLocaleString('en-IN')+' rows)');await bookingYield();}
+ parse(decoder.decode());if(field!==''||record.length)commit();
+ BOOKING_CACHE.set(file,rows);return rows;
+}
+function bookingRelease(file){if(file&&!file.__bookingRows)BOOKING_CACHE.delete(file)}
 /* ===================== CSV UPLOAD (MO / Parcel / IRGB) ===================== */
 /* office-id helpers: Office-ID -> Division (built-in master + learned + manual entries from Settings) */
 function offId(v){
@@ -706,13 +743,14 @@ async function handleCSV(file,mode){
   const box=document.getElementById(mode==='off'?'csvMsgOff':'csvMsg');
   const inp=document.getElementById(mode==='off'?'csvFileOff':'csvFile');
   try{
-    const buf=await file.arrayBuffer();
-    const wb=XLSX.read(buf,{type:'array',raw:true});
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});
+    bookingProgress(0,'Starting upload');
+    const rows=await bookingRows(file);
     if(!rows.length)throw new Error('The file is empty.');
     const agg={},ragg={},aggN={},raggN={},pend={},unkDiv=new Set(),dates=new Set(),prods=new Set();let hasPost=false;
     let used=0,skipped=0,pendRows=0,noId=0,fbRows=0,totAll=0,lostN=0;const fbIds={};
+    let _processed=0;
     for(const r0 of rows){
+      if((++_processed%4000)===0){bookingProgress(35+35*_processed/rows.length,'Aggregating MO / Parcel / IRGB ('+_processed.toLocaleString('en-IN')+' rows)');await bookingYield()}
       const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];
       const dt=xlDate(r['booking-date']);
       const pn=norm(r['product-name']);
@@ -765,6 +803,7 @@ async function handleCSV(file,mode){
     for(const id in pend){const p=DB.pend[id]=DB.pend[id]||{n:pend[id].n,d:{},r:{}};if(!p.r)p.r={};if(!p.n)p.n=pend[id].n;for(const dt in pend[id].d)p.d[dt]=pend[id].d[dt];for(const dt in pend[id].r)p.r[dt]=pend[id].r[dt]}
     prods.forEach(p=>{if(!DB.seenProducts.includes(p))DB.seenProducts.push(p)});
     dates.forEach(d=>DB.csvDates[d]=1);
+    bookingProgress(80,'Saving division-wise totals');await bookingYield();
     save();updBadge();
     const ds=[...dates].sort(),unmapped=[...prods].filter(p=>!catOf(p));
     const nPend=Object.keys(pend).length;
@@ -778,7 +817,7 @@ async function handleCSV(file,mode){
     if(skipped&&!noId)t+=`\n(${skipped} rows skipped)`;
     if(mode==='off'){
       const sumC=A=>{let s=0;for(const dv in A)for(const d in A[dv])for(const p in A[dv][d])if(catOf(p))s+=A[dv][d][p];return s};
-      let allCat=0;for(const r0 of rows){const pn0=norm(r0['product-name']);if(catOf(pn0))allCat+=toNum(r0['article-count'])}
+      let allCat=0,_rc=0;for(const r0 of rows){if((++_rc%6000)===0)await bookingYield();const pn0=norm(r0['product-name']);if(catOf(pn0))allCat+=toNum(r0['article-count'])}
       const cO=sumC(agg),cN=sumC(aggN);
       t+=`\n\nRECONCILIATION (article-count): file total ${totAll} • of which in mapped categories (MO/Parcel/IRGB) ${allCat} • counted in OLD mapping ${cO} • counted in NEW mapping ${cN}`+((cO===allCat&&cN===allCat)?'  ✔ MATCH':'  ✖ DIFFERENCE old '+(allCat-cO)+' / new '+(allCat-cN));
       if(fbRows)t+=`\nNote: ${fbRows} rows had an office-id missing in the old/new master → division taken from the file's division-name column (${Object.keys(fbIds).length} offices: ${Object.keys(fbIds).slice(0,8).join(', ')}${Object.keys(fbIds).length>8?' …':''}). Please add them to the mapping sheet.`;
@@ -2635,9 +2674,38 @@ function sdrRender(){
  <label>BO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.bo}" onchange="SDR.th.bo=+this.value||0;sdrRender()"></label>
  <label>SO &gt; <input type="number" min="0" style="width:60px" value="${SDR.th.so}" onchange="SDR.th.so=+this.value||0;sdrRender()"> booking</label>
  <label>SO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.sop}" onchange="SDR.th.sop=+this.value||0;sdrRender()"> parcel</label>
- <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button></div>
+ <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button> <button class="b alt" onclick="sdrSVGDownload()">&#11015; Download SVG</button> <button class="b sm" onclick="sdrSVGCode()">Show SVG Code</button> <button class="b sm gray" onclick="sdrSVGCopy()">Copy SVG Code</button></div><textarea id="sdrSvgSource" readonly style="display:none;width:100%;height:180px;font:12px monospace;margin-bottom:8px" aria-label="SVG source code"></textarea>
  <div class="hint noprint" style="margin-bottom:8px">MO = Mail Ops (Other + Speed Post), Parcel and IRGB come from the uploaded post-office-wise data. Total = Parcel + MO + IRGB. BPC, BNPL and IDC are not treated as sub divisions: their offices are listed together under &ldquo;Other Units of Division&rdquo; of the division they belong to. SO summary counts offices with class SO; the HO / SO list shows both.</div>`;
  box.innerHTML=ctl+sdrHTML(SDR.ym)}
+/* SVG export: native vector elements, self-contained and editable source. */
+function sdrSVG(){
+ if(!SDR.ym)throw Error('Choose a month first');
+ const {R}=sdrRows(SDR.ym,SDR.dv),W=1180,cols=[28,535,640,775,890,1005,1155],escx=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+ const fmt=v=>Number(v||0).toLocaleString('en-IN');let y=100,parts=[];
+ const rect=(x,yy,w,h,c)=>`<rect x="${x}" y="${yy}" width="${w}" height="${h}" fill="${c}"/>`;
+ const txt=(x,yy,t,bold=false,sz=15,color='#172431')=>`<text x="${x}" y="${yy}" fill="${color}" font-size="${sz}" font-weight="${bold?700:400}">${escx(t)}</text>`;
+ const bar=(name,bg,fg='#172431')=>{parts.push(rect(18,y,W-36,30,bg),txt(30,y+21,name,true,16,fg));y+=30};
+ const head=()=>{parts.push(rect(18,y,W-36,28,'#dce6f1'));['Name','Class','Parcel','MO','IRGB','Total'].forEach((h,i)=>parts.push(txt(cols[i]+5,y+19,h,true,14)));y+=28};
+ const simple=(name,cl,vals,bg='#ffffff',bold=false)=>{parts.push(rect(18,y,W-36,27,bg));parts.push(txt(cols[0]+5,y+19,String(name).slice(0,62),bold,14));parts.push(txt(cols[1]+5,y+19,cl||'',bold,14));[vals.par,vals.mo,vals.irgb,vals.tot].forEach((v,i)=>parts.push(txt(cols[i+2]+5,y+19,fmt(v),bold,14)));y+=27};
+ for(const r of R){
+  if(r.t==='div')bar(r.label,'#1f4e79','#ffffff');
+  else if(r.t==='sd')bar(r.label,'#fde4d6');
+  else if(r.t==='hdr')head();
+  else if(r.t==='gap'){y+=12}
+  else if(r.t==='sum'){
+   for(const [label,items] of [['BO Summary',r.bo],['SO Summary',r.so]]){
+    bar(label+' | Particulars / Nos / %','#dce6f1');
+    for(const it of items){parts.push(rect(18,y,W-36,25,'#f8fafc'),txt(30,y+18,it[0],false,13),txt(780,y+18,it[1],true,13),txt(1000,y+18,it[2]==null?'-':sdrPc(it[1],it[2]),false,13));y+=25;}
+   }
+  } else if(r.s){const c={sub:'#f2f2f2',tot:'#92d050',dtot:'#ffd966',gtot:'#bdd7ee'}[r.t]||'#fff';simple(r.label,r.t==='off'?r.cl:'',r.s,c,r.t!=='off')}
+ }
+ const H=y+30;
+ return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><title>${escx('Sub Division Booking Report '+SDR.ym)}</title><rect width="${W}" height="${H}" fill="#fff"/><g font-family="Arial,Helvetica,sans-serif">${txt(25,37,'INDIA POST | INDORE REGION',true,24,'#b3121b')}${txt(25,67,'Sub Division wise Booking - '+mFull(SDR.ym)+' | '+(NM?'New':'Old')+' Mapping'+(SDR.dv?' | '+SDR.dv:''),true,18)}${parts.join('')}</g></svg>`;
+}
+function sdrSVGDownload(){try{const svg=sdrSVG();saveBlob(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),'Sub_Division_Report_'+SDR.ym+(SDR.dv?'_'+SDR.dv.replace(/[^a-z0-9]+/gi,'_'):'')+'.svg');toast('SVG downloaded')}catch(e){alert(e.message)}}
+function sdrSVGCode(){try{const code=sdrSVG(),box=document.getElementById('sdrSvgSource');if(box){box.style.display='block';box.value=code;box.focus();box.select()}}catch(e){alert(e.message)}}
+async function sdrSVGCopy(){try{const code=sdrSVG();if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(code)}else{const ta=document.getElementById('sdrSvgSource');sdrSVGCode();ta.select();document.execCommand('copy')}toast('SVG code copied')}catch(e){sdrSVGCode();toast('Copy the code from the box')}}
+
 function sdrExcel(){
  if(!SDR.ym)return;const {R}=sdrRows(SDR.ym,SDR.dv),A=[['Sub Division wise Booking Report - '+mFull(SDR.ym)]],H=['Name','Class','Parcel','MO','IRGB','Total'];
  R.forEach(r=>{if(r.t==='div'){A.push([]);A.push([r.label])}
@@ -2653,13 +2721,13 @@ function sdrExcel(){
 async function nbIsMonthly(file){try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true}),r=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true})[0]||{};return Object.keys(r).some(k=>k.replace(/^\ufeff/,'').trim().toLowerCase()==='category')}catch(e){return false}}
 /* post-office-wise upload also feeds the office-level store used for Nil Booking reports and the all-post-office CSV */
 async function nbIngest(file){const box=document.getElementById('csvMsgOff');let note='',cls='msg';
- try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true}),rows=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});if(!rows.length)return;
+ try{const rows=await bookingRows(file);if(!rows.length)return;bookingProgress(82,'Saving office-wise data');
   const R=r0=>{const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];return r};let n=0,skip=0;const bad=new Set();
   if('category' in R(rows[0])){const mon=(window.MF_MON||prompt('This file has monthly office totals. Which month is it? (YYYY-MM)',NB.S.month||'2026-10')||'').trim();if(!/^\d{4}-\d{2}$/.test(mon))throw new Error('Month not given');const m={};
-   for(const r0 of rows){const r=R(r0),id=offId(r['office-id']),c=String(r.category).trim().toUpperCase(),i=NB.CATS.findIndex(x=>x.toUpperCase()===c);if(id)nbNote(id,r);if(!id||i<0){skip++;continue}const t=m[id]=m[id]||[0,0,0,0,0,0,0,0];t[i*2]+=toNum(r.booking_count);t[i*2+1]+=toNum(r.revenue);n++}
+   let _nbc=0;for(const r0 of rows){if((++_nbc%4000)===0){bookingProgress(82+15*_nbc/rows.length,'Office-wise: '+_nbc.toLocaleString('en-IN')+' rows');await bookingYield()}const r=R(r0),id=offId(r['office-id']),c=String(r.category).trim().toUpperCase(),i=NB.CATS.findIndex(x=>x.toUpperCase()===c);if(id)nbNote(id,r);if(!id||i<0){skip++;continue}const t=m[id]=m[id]||[0,0,0,0,0,0,0,0];t[i*2]+=toNum(r.booking_count);t[i*2+1]+=toNum(r.revenue);n++}
    NB.S.offM[mon]=m;for(const d of Object.keys(NB.S.offD))if(d.slice(0,7)===mon)delete NB.S.offD[d];NB.S.month=mon;
   }else{const nd={};
-   for(const r0 of rows){const r=R(r0),dt=xlDate(r['booking-date']),id=offId(r['office-id']),pn=norm(r['product-name']);if(!dt||!id||!pn){skip++;continue}
+   let _nbc=0;for(const r0 of rows){if((++_nbc%4000)===0){bookingProgress(82+15*_nbc/rows.length,'Office-wise: '+_nbc.toLocaleString('en-IN')+' rows');await bookingYield()}const r=R(r0),dt=xlDate(r['booking-date']),id=offId(r['office-id']),pn=norm(r['product-name']);if(!dt||!id||!pn){skip++;continue}
     nbNote(id,r);const c=NB.catOf(pn);if(!c){bad.add(pn);skip++;continue}const t=((nd[dt]=nd[dt]||{})[id]=nd[dt][id]||[0,0,0,0,0,0,0,0]),i=NB.ci(c);t[i]+=toNum(r['article-count']);t[i+1]+=toNum(r['postage']);n++}
    if(!n)return;for(const d in nd)NB.S.offD[d]=nd[d];NB.S.month=Object.keys(nd).sort().pop().slice(0,7)}
   NB.save();nbFillMs();
@@ -2668,7 +2736,7 @@ async function nbIngest(file){const box=document.getElementById('csvMsgOff');let
   if(u.length){cls='msg warn';note+=`\n${u.length} office-id not in the office master: their data is NOT counted in the office reports. Settings -> "Nil Booking / office-wise settings" -> section 2: add it as a NEW office or include its data in an existing office-id.`}
  }catch(e){cls='msg err';note='Office-wise store: '+e.message}
  if(box)box.insertAdjacentHTML('beforeend',`<div class="${cls}">${esc(note)}</div>`)}
-const _hc=handleCSV;handleCSV=async function(file,mode){await _hc(file,mode);if(mode==='off'&&file)await nbIngest(file)};
+const _hc=handleCSV;handleCSV=async function(file,mode){try{await _hc(file,mode);if(mode==='off'&&file)await nbIngest(file);const e=document.getElementById(mode==='off'?'csvMsgOff':'csvMsg');bookingProgress(100,e&&e.querySelector('.err')?'Completed with warnings / errors':'Import finished')}finally{bookingRelease(file)}};
 function nbCSV(ym){if(!ym)return alert('No post-office-wise data uploaded yet');const V=NB.vals(ym),L=['office-id,OFFICE NAME,CLASS,SD,DIVISION,CATEGORY,Booking_Count,Revenue'],q=s=>'"'+String(s).replace(/"/g,'""')+'"';
  for(const id in NB_OFF){if(!NB.act(id))continue;if(csvEx(NB_OFF[id][3]))continue;const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,q(nm),cl,q(sd),dv,c,v[i*2],Math.round(v[i*2+1])].join(',')))}
  Object.keys(V).filter(id=>!NB_OFF[id]).forEach(id=>NB.CATS.forEach((c,i)=>L.push([id,'""','','""','NOT IN MASTER',c,V[id][i*2],Math.round(V[id][i*2+1])].join(','))));
@@ -3820,13 +3888,12 @@ const MF=(()=>{
  const S={files:[],dup:'later',done:{}};
  const pad2=n=>String(n).padStart(2,'0');
  async function scan(file){
-  const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:true});
-  const raw=XLSX.utils.sheet_to_json(wb.Sheets[frontSheet(wb)],{defval:'',raw:true});
-  const rows=raw.map(r0=>{const r={};for(const k in r0)r[k.replace(/^\ufeff/,'').trim().toLowerCase()]=r0[k];return r});
+  const raw=await bookingRows(file);
+  const rows=raw;
   const monthly=!!rows.length&&('category' in rows[0]);
   const f={name:file.name,file,rows,monthly,days:{},inc:true,mon:''};
-  if(!monthly)rows.forEach(r=>{const dt=xlDate(r['booking-date']);if(dt){r['booking-date']=dt;f.days[dt]=1}});
-  return f;
+  if(!monthly){let _i=0;for(const r of rows){if((++_i%6000)===0){bookingProgress(40+50*_i/rows.length,'Checking dates in '+file.name);await bookingYield()}const dt=xlDate(r['booking-date']);if(dt){r['booking-date']=dt;f.days[dt]=1}}}
+  bookingRelease(file);return f;
  }
  async function add(list){
   const box=g('csvMsgOff');
@@ -3865,28 +3932,22 @@ const MF=(()=>{
   h+=`<div class="row" style="margin-top:6px"><button class="b" onclick="MF.imp('')">Combine &amp; import all ticked files</button></div><div id="mfMsg"></div></div>`;
   el.innerHTML=h;
  }
- function combine(ym){
-  const use=inc(),owner={};
+ async function combine(ym){
+  const use=inc(),owner={};let count=0;
   use.forEach((f,i)=>Object.keys(f.days).forEach(d=>{if(!ym||d.slice(0,7)===ym)owner[d]=i}));
-  const out=[];
-  use.forEach((f,i)=>f.rows.forEach(r=>{const d=r['booking-date'];if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return;if(ym&&d.slice(0,7)!==ym)return;if(S.dup==='later'&&owner[d]!==i)return;out.push(r)}));
-  return out;
- }
- function toFile(rows,ym){
-  const cols=[],seen=new Set();rows.forEach(r=>{for(const k in r)if(!seen.has(k)){seen.add(k);cols.push(k)}});
-  const q=v=>{const t=v==null?'':String(v);return /[",\r\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t};
-  const lines=[cols.map(q).join(',')];rows.forEach(r=>lines.push(cols.map(c=>q(r[c])).join(',')));
-  return new File([lines.join('\r\n')],'combined_'+(ym||'all')+'.csv',{type:'text/csv'});
+  function* iterate(){for(let i=0;i<use.length;i++)for(const r of use[i].rows){const d=r['booking-date'];if(!d||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(d))continue;if(ym&&d.slice(0,7)!==ym)continue;if(S.dup==='later'&&owner[d]!==i)continue;yield r}}
+  const dates=new Set();for(const r of iterate()){count++;dates.add(r['booking-date'].slice(0,7));if(count%10000===0){bookingProgress(10+Math.min(20,count/50000),'Preparing combined files ('+count.toLocaleString('en-IN')+' rows)');await bookingYield()}}
+  return {length:count,dates,__bookingVirtual:true,[Symbol.iterator]:iterate,get 0(){const it=iterate().next();return it.done?undefined:it.value}};
  }
  async function imp(ym){
   const box=g('csvMsgOff'),log=[];
   try{
-   const rows=combine(ym);
+   const rows=await combine(ym);
    if(rows.length){
     const nf=inc().length;
-    await handleCSV(toFile(rows,ym),'off');
+    await handleCSV(rows,'off');
     log.push(`<div class="msg"><b>${ym?mFull(ym):'All months'}</b>: ${nf} file(s) combined (${rows.length} rows).</div>`+box.innerHTML);
-    const ds=new Set(rows.map(r=>r['booking-date'].slice(0,7)));ds.forEach(y=>S.done[y]=1);
+    rows.dates.forEach(y=>S.done[y]=1);
    }
    for(const f of S.files.filter(x=>x.inc&&x.monthly)){
     if(ym&&f.mon!==ym)continue;
