@@ -2717,24 +2717,111 @@ function sdrRender(){
  <div class="hint noprint" style="margin-bottom:8px">MO = Mail Ops (Other + Speed Post), Parcel and IRGB come from the uploaded post-office-wise data. Total = Parcel + MO + IRGB. BPC, BNPL and IDC are not treated as sub divisions: their offices are listed together under &ldquo;Other Units of Division&rdquo; of the division they belong to. SO summary counts offices with class SO; the HO / SO list shows both.</div>`;
  const monthsUsed=sdrSelectedMonths(SDR.ym).length;
  const periodNote=isCombo(SDR.ym)?`<div class="hint noprint" style="background:#fff8e1;padding:7px 10px;margin-bottom:8px;border:1px solid #e6d49a"><b>Combined-period threshold:</b> ${monthsUsed} uploaded month(s). BO &gt; ${SDR.th.bo} × ${monthsUsed} = &gt; ${SDR.th.bo*monthsUsed} total booking; SO &gt; ${SDR.th.so} × ${monthsUsed} = &gt; ${SDR.th.so*monthsUsed} total booking; SO Parcel &gt; ${SDR.th.sop} × ${monthsUsed} = &gt; ${SDR.th.sop*monthsUsed}. Office counts stay unchanged.</div>`:'';
- box.innerHTML=ctl+periodNote+sdrHTML(SDR.ym,SDR.dv,SDR.sd)}
+ box.innerHTML=ctl+periodNote+`<div class="card noprint" style="border:2px solid #d8e3f2;margin:12px 0;padding:12px"><div class="row"><b>Month-wise Summary Preview (PDF page)</b><select id="sdrPrevUnit" onchange="sdrPreviewUnit()" style="max-width:450px"></select><span id="sdrPrevInfo" class="hint"></span></div><div id="sdrMonthPreview" class="wrap" style="background:#fff;border:1px solid #ddd;max-height:760px;overflow:auto"></div></div>`+sdrHTML(SDR.ym,SDR.dv,SDR.sd);sdrPreviewInit()}
 
 /* PDF of existing detailed pages plus one-page month-wise booking summary for each
    subdivision / other-unit group, without changing any original booking calculations. */
-async function sdrPDF(){
- if(!SDR.ym)return alert('Choose a month or financial-year period first');
- const pages=sdrExportPages(SDR.ym,SDR.dv).filter(p=>!SDR.sd||p.sdName===SDR.sd);
- if(!pages.length)return alert('No Sub Division pages are available for this selection');
- const name=['SubDivision_Report',SDR.ym,SDR.dv,SDR.sd].filter(Boolean).join('_').replace(/[^A-Za-z0-9_-]+/g,'_');
- await rpPDF(pages,name);
+/* Preview uses exactly the same calculation and HTML as the download summary.
+   The independent unit picker avoids trying to render 50+ tables in the browser. */
+function sdrPreviewInit(){
+ const pick=document.getElementById('sdrPrevUnit');if(!pick)return;
+ const built=sdrBuild(SDR.ym,SDR.dv),units=[];
+ for(const dv of built.order){
+  const G=built.D[dv],names=Object.keys(G).filter(sd=>!sdrOther(sd)).sort();
+  if(Object.keys(G).some(sdrOther))names.push(SDR_OTHER_KEY);
+  for(const sd of names)if(!SDR.sd||SDR.sd===sd)units.push({dv,sd});
+ }
+ window.__sdrPreviewUnits=units;
+ pick.innerHTML=units.map((u,i)=>'<option value="'+i+'">'+esc(u.dv+' - '+(u.sd===SDR_OTHER_KEY?'Other Units of Division':u.sd))+'</option>').join('');
+ if(units.length){const n=Math.min(+window.__sdrPreviewIndex||0,units.length-1);pick.value=String(n);sdrPreviewUnit()}
+ else document.getElementById('sdrMonthPreview').innerHTML='<div class="msg warn">No matching Sub-Division data.</div>';
 }
-async function sdrSummaryPDF(){
- if(!SDR.ym)return alert('Choose a month or financial-year period first');
- const pages=sdrSummaryPages(SDR.ym,SDR.dv).filter(p=>!SDR.sd||p.sdName===SDR.sd);
- if(!pages.length)return alert('No Sub Division summary pages are available for this selection');
- const name=['SubDivision_Monthwise_Summary',SDR.ym,SDR.dv,SDR.sd].filter(Boolean).join('_').replace(/[^A-Za-z0-9_-]+/g,'_');
- await rpPDF(pages,name);
+function sdrPreviewUnit(){
+ const pick=document.getElementById('sdrPrevUnit'),u=(window.__sdrPreviewUnits||[])[+pick.value];if(!u)return;
+ window.__sdrPreviewIndex=+pick.value;
+ const target=document.getElementById('sdrMonthPreview');
+ target.innerHTML=sdrSummaryHTML(SDR.ym,u.dv,u.sd);
+ const el=document.getElementById('sdrPrevInfo');if(el)el.textContent='Preview '+(+pick.value+1)+' of '+window.__sdrPreviewUnits.length+' | Download PDF includes your selected units';
 }
+/* Native vector PDF: no html2canvas screenshots, no huge image conversion.
+   Detailed tables and summary values come from the unchanged sdrRows/sdrBuild data. */
+async function sdrFastPDF(summaryOnly){
+ if(!SDR.ym)return alert('Choose a month or FY first');
+ if(!(await needLib2('jspdf')))return;
+ const selected=sdrBuild(SDR.ym,SDR.dv),units=[];
+ for(const dv of selected.order){
+  const G=selected.D[dv],names=Object.keys(G).filter(sd=>!sdrOther(sd)).sort();
+  if(Object.keys(G).some(sdrOther))names.push(SDR_OTHER_KEY);
+  for(const sd of names)if(!SDR.sd||SDR.sd===sd)units.push({dv,sd});
+ }
+ if(!units.length)return alert('No Sub Division pages are available for this selection');
+ const monthlyData=new Map();
+ function oneMonth(m){if(!monthlyData.has(m))monthlyData.set(m,sdrBuild(m,''));return monthlyData.get(m)}
+ const doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true});
+ const W=297,H=210,left=12,right=285,fmt=n=>Number(n||0).toLocaleString('en-IN');
+ let made=false;
+ function newPage(){if(made)doc.addPage();made=true;doc.setTextColor(30,36,48);doc.setFont('helvetica','normal')}
+ function box(x,y,w,h,fill,border=true){if(fill){doc.setFillColor(...fill);doc.rect(x,y,w,h,border?'FD':'F')}else if(border)doc.rect(x,y,w,h,'S')}
+ function text(t,x,y,size=9,bold=false,align='left',max=90){doc.setTextColor(30,36,48);doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);let v=String(t==null?'':t);while(doc.getTextWidth(v)>max&&v.length>4)v=v.slice(0,-4)+'...';doc.text(v,x,y,{align})}
+ function header(label,sub){box(left,12,right-left,24,[179,18,27],false);doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text('INDIA POST - INDORE REGION',left+5,20);doc.setFontSize(15);doc.text(label,left+5,30);doc.setTextColor(30,36,48);text(sub,left,43,10,true,'left',270)}
+ function summary(u){
+  newPage();const sd=u.sd===SDR_OTHER_KEY?'Other Units of Division':u.sd;
+  header('Sub Division - Month-wise Booking Summary','Division: '+u.dv+'  |  Sub Division: '+sd);
+  text('Period: '+(isCombo(SDR.ym)?comboLbl(SDR.ym):mFull(SDR.ym))+'  |  '+(NM?'New':'Old')+' Mapping',left,51,9);
+  const months=sdrSelectedMonths(SDR.ym),x=[left,left+52,left+103,left+156,left+208,right],head=['Month','MO Booked','Parcel Booked','IRGB Booked','Grand Total'];
+  let y=59;for(let j=0;j<5;j++){box(x[j],y,x[j+1]-x[j],11,[220,230,241]);text(head[j],x[j]+(x[j+1]-x[j])/2,y+7,9,true,'center',x[j+1]-x[j]-3)}
+  y+=11;let total={mo:0,par:0,irgb:0,tot:0};
+  for(let i=0;i<months.length;i++){
+   const G=oneMonth(months[i]).D[u.dv]||{};
+   const rows=u.sd===SDR_OTHER_KEY?Object.keys(G).filter(sdrOther).flatMap(k=>G[k]):G[u.sd]||[];
+   const a=sdrSum(rows);for(const k of ['mo','par','irgb','tot'])total[k]+=a[k];
+   const vals=[mFull(months[i]),fmt(a.mo),fmt(a.par),fmt(a.irgb),fmt(a.tot)];
+   for(let j=0;j<5;j++){box(x[j],y,x[j+1]-x[j],8.2,i%2?[245,247,250]:[255,255,255]);text(vals[j],j?x[j+1]-3:x[j]+3,y+5.5,9,false,j?'right':'left',x[j+1]-x[j]-5)}y+=8.2;
+  }
+  if(y>185){ // exceptionally long archive: extend onto another page safely
+   newPage();header('Sub Division - Month-wise Booking Summary (continued)',u.dv+' - '+sd);y=60;
+  }
+  const vals=['TOTAL',fmt(total.mo),fmt(total.par),fmt(total.irgb),fmt(total.tot)];
+  for(let j=0;j<5;j++){box(x[j],y,x[j+1]-x[j],10,[146,208,80]);text(vals[j],j?x[j+1]-3:x[j]+3,y+7,10,true,j?'right':'left',x[j+1]-x[j]-5)}
+  text('MO = Mail Ops (Other + Speed Post). Values are from uploaded office-wise booking data.',left,Math.min(y+19,201),8);
+ }
+ function detail(u){
+  const label=u.sd===SDR_OTHER_KEY?'Other Units of Division':u.sd;
+  const data=sdrRows(SDR.ym,u.dv,u.sd).R;
+  const xs=[left,left+107,left+129,left+165,left+201,left+237,right],keys=['Name','Class','Parcel','MO','IRGB','Total'];
+  let y=54;newPage();header('Sub Division - Detailed Booking Report',u.dv+' | '+label+' | '+(isCombo(SDR.ym)?comboLbl(SDR.ym):mFull(SDR.ym)));
+  function cols(vals,fill,bold=false,h=7.5){for(let j=0;j<6;j++){box(xs[j],y,xs[j+1]-xs[j],h,fill);const val=vals[j]??'';text(val,j<2?xs[j]+2:xs[j+1]-2,y+h*.68,8,bold,j<2?'left':'right',xs[j+1]-xs[j]-4)}y+=h}
+  function newSection(){newPage();header('Sub Division - Detailed Booking Report (continued)',u.dv+' | '+label);y=54;cols(keys,[220,230,241],true)}
+  cols(keys,[220,230,241],true);
+  for(const row of data){
+   if(y>188)newSection();
+   if(row.t==='gap'){y+=2;continue}
+   if(row.t==='sum'){
+    for(const [title,items] of [['BO Summary',row.bo],['SO Summary',row.so]]){
+     if(y>179)newSection();cols([title,'','Nos','%','',''],[220,230,241],true,7);
+     for(const a of items){if(y>188)newSection();cols([a[0],'',String(a[1]),a[2]==null?'-':sdrPc(a[1],a[2]),'',''],[250,250,250],false,7)}
+    }continue;
+   }
+   if(row.t==='div'||row.t==='sd'){const color=row.t==='div'?[31,78,121]:[253,228,214];box(left,y,right-left,8,color);doc.setTextColor(row.t==='div'?255:30,row.t==='div'?255:36,row.t==='div'?255:48);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text(String(row.label).slice(0,105),left+3,y+5.5);y+=8;continue}
+   if(row.t==='hdr'){cols(keys,[220,230,241],true);continue}
+   if(!row.s)continue;
+   const c={sub:[242,242,242],tot:[146,208,80],dtot:[255,217,102],gtot:[189,215,238]}[row.t]||[255,255,255],a=row.s;
+   cols([row.label,row.t==='off'?row.cl:'',fmt(a.par),fmt(a.mo),fmt(a.irgb),fmt(a.tot)],c,row.t!=='off');
+  }
+ }
+ const filename=['SubDivision',summaryOnly?'Monthwise_Summary':'Detailed_and_Summary',SDR.ym,SDR.dv,SDR.sd].filter(Boolean).join('_').replace(/[^A-Za-z0-9_-]+/g,'_')+'.pdf';
+ const btns=[...document.querySelectorAll('#reportBox button')].filter(b=>/PDF/.test(b.textContent)),old=btns.map(b=>b.textContent);
+ try{
+  btns.forEach(b=>b.disabled=true);
+  for(let i=0;i<units.length;i++){
+   if(i%3===0){btns.forEach(b=>b.textContent='Creating PDF '+(i+1)+'/'+units.length+'…');await new Promise(r=>setTimeout(r,0))}
+   if(!summaryOnly)detail(units[i]);summary(units[i]);
+  }
+  saveBlob(doc.output('blob'),filename);toast('PDF ready: '+units.length+' unit(s)');
+ }catch(e){console.error(e);alert('PDF error: '+e.message)}finally{btns.forEach((b,i)=>{b.disabled=false;b.textContent=old[i]})}
+}
+async function sdrPDF(){return sdrFastPDF(false)}
+async function sdrSummaryPDF(){return sdrFastPDF(true)}
 /* One compact PDF sheet per sub division, including Other Units as a single group.
    Values come from sdrBuild(month,division), the same source as the detail report. */
 function sdrSummaryHTML(ym,dv,sd){
