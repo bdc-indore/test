@@ -2625,18 +2625,28 @@ function sdrBuild(ym,dvSel){
  const order=base.filter(d=>D[d]).concat(Object.keys(D).filter(d=>!base.includes(d)).sort());
  return{D,order,unm}}
 const sdrSum=a=>a.reduce((s,o)=>({par:s.par+o.par,mo:s.mo+o.mo,irgb:s.irgb+o.irgb,tot:s.tot+o.tot}),{par:0,mo:0,irgb:0,tot:0});
-const SDR_OTH=/(^|[^A-Z0-9])(BPC|BNPL|IDC)([^A-Z0-9]|$)/i;   /* BPC / BNPL / IDC are NOT sub divisions: shown together as "Other Units of Division" */
+const SDR_OTH=/(^|[^A-Z0-9])(BPC|BNPL|IDC)([^A-Z0-9]|$)/i;
+/* Selected months with uploaded office-wise data; preserve the exact source used by NB.vals. */
+function sdrSelectedMonths(ym){
+ const uploaded=NB.months(),chosen=isCombo(ym)?comboMonths(ym):[ym];
+ return chosen.filter(m=>uploaded.includes(m));
+}
+const SDR_OTHER_KEY='__SDR_OTHER_UNITS__';
+const sdrOther=sd=>SDR_OTH.test(sd);
+   /* BPC / BNPL / IDC are NOT sub divisions: shown together as "Other Units of Division" */
 const sdrPc=(a,b)=>b>0?(a*100/b).toFixed(1)+'%':'0.0%';
 function sdrRows(ym,dvSel,sdSel){
- const {D,order,unm}=sdrBuild(ym,dvSel),T=SDR.th,R=[];let all=[];
+ const {D,order,unm}=sdrBuild(ym,dvSel),periodCount=Math.max(1,sdrSelectedMonths(ym).length),
+  T={bo:SDR.th.bo*periodCount,so:SDR.th.so*periodCount,sop:SDR.th.sop*periodCount},R=[];let all=[];
  const cmpN=(a,b)=>a.nm.localeCompare(b.nm);
  order.forEach(dv=>{
-  if(sdSel&&!Object.keys(D[dv]).includes(sdSel))return;
+  if(sdSel&&sdSel!==SDR_OTHER_KEY&&!Object.keys(D[dv]).includes(sdSel))return;
+  if(sdSel===SDR_OTHER_KEY&&!Object.keys(D[dv]).some(sdrOther))return;
   R.push({t:'div',label:'Division: '+dv,dv});let dAll=[];const oth=[];
   Object.keys(D[dv]).sort().forEach(sd=>{
-   if(sdSel && sd!==sdSel)return;
+   if(sdSel && sd!==sdSel && !(sdSel===SDR_OTHER_KEY&&sdrOther(sd)))return;
    const L=D[dv][sd];dAll=dAll.concat(L);
-   if(SDR_OTH.test(sd)){L.forEach(o=>oth.push(Object.assign({},o,{sd})));return}
+   if(sdrOther(sd)){L.forEach(o=>oth.push(Object.assign({},o,{sd})));return}
    const ho=L.filter(o=>o.cl==='HO'),so=L.filter(o=>o.cl==='SO'),bo=L.filter(o=>o.cl==='BO'),ot=L.filter(o=>o.cl!=='HO'&&o.cl!=='SO'&&o.cl!=='BO');
    R.push({t:'sd',label:'Sub Division: '+sd});
    R.push({t:'hdr'});
@@ -2669,6 +2679,7 @@ function sdrRows(ym,dvSel,sdSel){
  return{R,unm}}
 function sdrHTML(ym,dvSel=SDR.dv,sdSel){
  const {R,unm}=sdrRows(ym,dvSel,sdSel),f=n=>Number(n).toLocaleString('en-IN');
+ const usedMonths=sdrSelectedMonths(ym).length;
  const st={div:'background:#1f4e79;color:#fff;font-weight:700;text-align:left;font-size:15px;padding:6px 10px',sd:'background:#fde4d6;font-weight:700;text-align:left;font-size:14px;padding:5px 10px',off:'',sub:'background:#f2f2f2;font-weight:600',tot:'background:#92d050;font-weight:700',dtot:'background:#ffd966;font-weight:700',gtot:'background:#bdd7ee;font-weight:700;font-size:14px'};
  const sumBlk=(ttl,items)=>`<td style="vertical-align:top;border:none;padding:0 8px 0 0;width:50%"><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px"><colgroup><col style="width:62%"><col style="width:16%"><col style="width:22%"></colgroup><tr><th colspan="3" style="background:#1f4e79;color:#fff;text-align:left;padding:4px 10px">${ttl}</th></tr><tr style="background:#dce6f1;font-weight:700"><td style="text-align:left">Particulars</td><td>Nos</td><td>% of Total</td></tr>${items.map((i,k)=>`<tr style="${k===0?'background:#f2f2f2;font-weight:700':''}"><td style="text-align:left">${esc(i[0])}</td><td style="font-weight:700">${i[1]}</td><td>${i[2]==null?'-':sdrPc(i[1],i[2])}</td></tr>`).join('')}</table></td>`;
  let h=`<table class="rep" style="width:100%;table-layout:fixed"><colgroup><col style="width:40%"><col style="width:8%"><col style="width:13%"><col style="width:13%"><col style="width:13%"><col style="width:13%"></colgroup><tr><th class="title" colspan="6">Sub Division wise Booking Report - Parcel, MO &amp; IRGB (${esc(isCombo(ym)?comboLbl(ym):mFull(ym))})${NM?' - New Mapping':' - Old Mapping'}</th></tr>`;
@@ -2681,6 +2692,7 @@ function sdrHTML(ym,dvSel=SDR.dv,sdSel){
   else{const s=r.s,c=r.t==='off'?esc(r.cl):'';
    h+=`<tr style="${st[r.t]}"><td style="text-align:left">${esc(r.label)}</td><td>${c}</td><td>${f(s.par)}</td><td>${f(s.mo)}</td><td>${f(s.irgb)}</td><td>${f(s.tot)}</td></tr>`}});
  h+='</table>';
+ if(isCombo(ym))h+=`<div style="font:12px Arial;padding:7px 4px;color:#555">Combined threshold uses ${usedMonths} uploaded month(s): BO &gt; ${SDR.th.bo} × ${usedMonths}; SO &gt; ${SDR.th.so} × ${usedMonths} booking; SO &gt; ${SDR.th.sop} × ${usedMonths} parcel. Total office counts are unchanged.</div>`;
  if(unm)h+=`<div class="msg warn">${unm} office-id(s) with booking data are not in the office master, so they are not counted here (Settings &rarr; Nil Booking / office-wise settings).</div>`;
  return h}
 function sdrRender(){
@@ -2691,21 +2703,24 @@ function sdrRender(){
  if(!SDR.ym||!periods.includes(SDR.ym))SDR.ym=ms.includes(NB.S.month)?NB.S.month:ms[ms.length-1];
  const OFL=sdrOffs(),bs=sdrDivs(),dvs=[...new Set(Object.values(OFL).map(x=>x.dv).filter(d=>d&&d!=='ID DIVISION'&&d!=='INDORE RMS'))].sort((a,b)=>{const i=bs.indexOf(a),j=bs.indexOf(b);return(i<0?99:i)-(j<0?99:j)||a.localeCompare(b)});
  if(SDR.dv&&!dvs.includes(SDR.dv))SDR.dv='';
- const subs=[...new Set(Object.values(OFL).filter(x=>!SDR.dv||x.dv===SDR.dv).map(x=>x.sd||'(No Sub Division)'))].sort();
+ const subs=[...new Set(Object.values(OFL).filter(x=>!SDR.dv||x.dv===SDR.dv).map(x=>x.sd||'(No Sub Division)'))].filter(x=>!sdrOther(x)).sort();
+ if(Object.values(OFL).some(x=>(!SDR.dv||x.dv===SDR.dv)&&sdrOther(x.sd||'')))subs.push(SDR_OTHER_KEY);
  if(SDR.sd&&!subs.includes(SDR.sd))SDR.sd='';
  const opt=(v,label,current)=>`<option value="${esc(v)}" ${v===current?'selected':''}>${esc(label)}</option>`;
  const ctl=`<div class="row noprint" style="margin-bottom:10px;gap:10px;flex-wrap:wrap"><b>Month / Period:</b><select onchange="SDR.ym=this.value;sdrRender()">${ms.map(m=>opt(m,mFull(m),SDR.ym)).join('')}${years.map(y=>opt('FY'+y,fyLbl(y)+' (combined)',SDR.ym)).join('')}${opt('ALL','All Months (combined)',SDR.ym)}</select>
  <b>Division:</b><select onchange="SDR.dv=this.value;SDR.sd='';sdrRender()">${opt('','All Divisions',SDR.dv)}${dvs.map(d=>opt(d,d,SDR.dv)).join('')}</select>
- <b>Sub Division:</b><select onchange="SDR.sd=this.value;sdrRender()">${opt('','All Sub Divisions',SDR.sd)}${subs.map(d=>opt(d,d,SDR.sd)).join('')}</select>
+ <b>Sub Division:</b><select onchange="SDR.sd=this.value;sdrRender()">${opt('','All Sub Divisions',SDR.sd)}${subs.map(d=>opt(d,d===SDR_OTHER_KEY?'Other Units of Division':d,SDR.sd)).join('')}</select>
  <label>BO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.bo}" onchange="SDR.th.bo=+this.value||0;sdrRender()"></label>
  <label>SO &gt; <input type="number" min="0" style="width:60px" value="${SDR.th.so}" onchange="SDR.th.so=+this.value||0;sdrRender()"> booking</label>
  <label>SO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.sop}" onchange="SDR.th.sop=+this.value||0;sdrRender()"> parcel</label>
- <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button> <button class="b alt" onclick="sdrPDF()">&#11015; Download PDF</button></div>
+ <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button> <button class="b alt" onclick="sdrPDF()">&#11015; Download PDF (Detailed + Monthly Summary)</button> <button class="b alt" onclick="sdrSummaryPDF()">&#11015; Month-wise Summary PDF</button></div>
  <div class="hint noprint" style="margin-bottom:8px">MO = Mail Ops (Other + Speed Post), Parcel and IRGB come from the uploaded post-office-wise data. Total = Parcel + MO + IRGB. BPC, BNPL and IDC are not treated as sub divisions: their offices are listed together under &ldquo;Other Units of Division&rdquo; of the division they belong to. SO summary counts offices with class SO; the HO / SO list shows both.</div>`;
- box.innerHTML=ctl+sdrHTML(SDR.ym,SDR.dv,SDR.sd)}
+ const monthsUsed=sdrSelectedMonths(SDR.ym).length;
+ const periodNote=isCombo(SDR.ym)?`<div class="hint noprint" style="background:#fff8e1;padding:7px 10px;margin-bottom:8px;border:1px solid #e6d49a"><b>Combined-period threshold:</b> ${monthsUsed} uploaded month(s). BO &gt; ${SDR.th.bo} × ${monthsUsed} = &gt; ${SDR.th.bo*monthsUsed} total booking; SO &gt; ${SDR.th.so} × ${monthsUsed} = &gt; ${SDR.th.so*monthsUsed} total booking; SO Parcel &gt; ${SDR.th.sop} × ${monthsUsed} = &gt; ${SDR.th.sop*monthsUsed}. Office counts stay unchanged.</div>`:'';
+ box.innerHTML=ctl+periodNote+sdrHTML(SDR.ym,SDR.dv,SDR.sd)}
 
-/* Home Sub Division PDF: exports the same styled rows as the on-screen report;
-   one sub-division per PDF page, suitable for individual or combined FY reports. */
+/* PDF of existing detailed pages plus one-page month-wise booking summary for each
+   subdivision / other-unit group, without changing any original booking calculations. */
 async function sdrPDF(){
  if(!SDR.ym)return alert('Choose a month or financial-year period first');
  const pages=sdrExportPages(SDR.ym,SDR.dv).filter(p=>!SDR.sd||p.sdName===SDR.sd);
@@ -2713,20 +2728,71 @@ async function sdrPDF(){
  const name=['SubDivision_Report',SDR.ym,SDR.dv,SDR.sd].filter(Boolean).join('_').replace(/[^A-Za-z0-9_-]+/g,'_');
  await rpPDF(pages,name);
 }
-
-/* Pages use the exact Sub Division Report table, split by sub-division to keep PDFs readable. */
+async function sdrSummaryPDF(){
+ if(!SDR.ym)return alert('Choose a month or financial-year period first');
+ const pages=sdrSummaryPages(SDR.ym,SDR.dv).filter(p=>!SDR.sd||p.sdName===SDR.sd);
+ if(!pages.length)return alert('No Sub Division summary pages are available for this selection');
+ const name=['SubDivision_Monthwise_Summary',SDR.ym,SDR.dv,SDR.sd].filter(Boolean).join('_').replace(/[^A-Za-z0-9_-]+/g,'_');
+ await rpPDF(pages,name);
+}
+/* One compact PDF sheet per sub division, including Other Units as a single group.
+   Values come from sdrBuild(month,division), the same source as the detail report. */
+function sdrSummaryHTML(ym,dv,sd){
+ const ms=sdrSelectedMonths(ym),oth=sd===SDR_OTHER_KEY;
+ const title=oth?'Other Units of Division':sd;
+ const f=n=>Number(n||0).toLocaleString('en-IN');
+ const rows=ms.map(m=>{
+  const G=sdrBuild(m,dv).D[dv]||{},off=oth?Object.keys(G).filter(sdrOther).flatMap(k=>G[k]):(G[sd]||[]);
+  return {m,counts:sdrSum(off)};
+ });
+ const total=rows.reduce((acc,r)=>({par:acc.par+r.counts.par,mo:acc.mo+r.counts.mo,irgb:acc.irgb+r.counts.irgb,tot:acc.tot+r.counts.tot}),{par:0,mo:0,irgb:0,tot:0});
+ const main=sdrBuild(ym,dv).D[dv]||{},officeList=oth?Object.keys(main).filter(sdrOther).flatMap(k=>main[k]):(main[sd]||[]);
+ const style='border:1px solid #4b5563;padding:10px 12px;text-align:center';
+ const th=x=>`<th style="${style};background:#dce6f1;font-weight:700">${x}</th>`;
+ const td=x=>`<td style="${style}">${x}</td>`;
+ return `<div style="background:#fff;width:1000px;min-height:680px;box-sizing:border-box;padding:35px 30px;font-family:Arial,sans-serif;color:#222">
+ <div style="border-bottom:5px solid #fdb913;background:#b3121b;color:#fff;padding:18px 22px"><div style="font-weight:700;font-size:17px;letter-spacing:1px">INDIA POST - INDORE REGION</div><div style="font-weight:700;font-size:24px;margin-top:7px">Sub Division - Month-wise Booking Summary</div></div>
+ <div style="margin:22px 0 15px;line-height:1.8;font-size:16px"><b>Division:</b> ${esc(dv)} &nbsp; | &nbsp; <b>${oth?'Unit Group':'Sub Division'}:</b> ${esc(title)}<div><b>Period:</b> ${esc(isCombo(ym)?comboLbl(ym):mFull(ym))} &nbsp; | &nbsp; <b>Mapping:</b> ${NM?'New':'Old'} &nbsp; | &nbsp; <b>No. of offices:</b> ${officeList.length}</div></div>
+ <table style="width:100%;border-collapse:collapse;font-size:16px;table-layout:fixed"><thead><tr>${['Month','Total MO Booked','Total Parcel Booked','Total IRGB Booked','Grand Total'].map(th).join('')}</tr></thead><tbody>
+ ${rows.map((r,i)=>`<tr style="background:${i%2?'#f5f7fa':'#ffffff'}">${td(esc(mFull(r.m)))}${td(f(r.counts.mo))}${td(f(r.counts.par))}${td(f(r.counts.irgb))}${td(f(r.counts.tot))}</tr>`).join('')}
+ <tr style="font-weight:700;background:#92d050">${td('TOTAL')}${td(f(total.mo))}${td(f(total.par))}${td(f(total.irgb))}${td(f(total.tot))}</tr></tbody></table>
+ <div style="font-size:12px;color:#555;margin-top:20px">MO = Mail Ops (Other + Speed Post). Figures are summed from the uploaded office-wise data for the listed months only. No missing month is assumed to have zero booking.</div>
+ </div>`;
+}
+function sdrSummaryPages(ym,dvOnly){
+ const m=ym||SDR.ym||((document.getElementById('monthSel')||{}).value);
+ if(!m||!sdrSelectedMonths(m).length)return [];
+ const data=sdrBuild(m,''),pages=[];
+ for(const dv of data.order){
+  if(dvOnly&&dv!==dvOnly)continue;
+  const d=RP.DMAP[dv]||RP.DV.find(x=>x.toUpperCase()===dv)||dv.replace(/\b\w/g,x=>x.toUpperCase());
+  const sdNames=Object.keys(data.D[dv]).filter(sd=>!sdrOther(sd)).sort();
+  if(Object.keys(data.D[dv]).some(sdrOther))sdNames.push(SDR_OTHER_KEY);
+  for(const sd of sdNames){
+   const title=sd===SDR_OTHER_KEY?'Other Units of Division':sd;
+   pages.push({g:'sdrep',t:'Month-wise Summary: '+title+' - '+dv+' ('+(isCombo(m)?comboShort(m):mFull(m))+')',d,pd:d,sdDiv:dv,sdName:sd,ym:m,
+    html:()=>sdrSummaryHTML(m,dv,sd)});
+  }
+ }
+ return pages;
+}
+/* Regular detail pages retain the existing table and add the corresponding monthly
+   summary immediately after it, so each unit can be extracted as a pair of pages. */
 function sdrExportPages(ym,dvOnly){
  const m=ym||SDR.ym||((document.getElementById('monthSel')||{}).value);
  if(!m)return [];
- const data=sdrBuild(m,''),pages=[];
+ const data=sdrBuild(m,''),pages=[],summary=sdrSummaryPages(m,dvOnly);
  for(const dv of data.order){
   if(dvOnly && dv!==dvOnly)continue;
-  for(const sd of Object.keys(data.D[dv]).sort()){
-   const d=RP.DMAP[dv]||Object.entries(RP.DMAP).find(([k,v])=>k===dv)?.[1]||
-    RP.DV.find(x=>x.toUpperCase()===dv)||dv.replace(/\b\w/g,x=>x.toUpperCase());
-   const title='Sub Division Report: '+sd+' - '+dv+' ('+(isCombo(m)?comboShort(m):mFull(m))+')';
-   pages.push({g:'sdrep',t:title,d,pd:d,sdDiv:dv,sdName:sd,ym:m,
+  const sdNames=Object.keys(data.D[dv]).filter(sd=>!sdrOther(sd)).sort();
+  if(Object.keys(data.D[dv]).some(sdrOther))sdNames.push(SDR_OTHER_KEY);
+  for(const sd of sdNames){
+   const d=RP.DMAP[dv]||RP.DV.find(x=>x.toUpperCase()===dv)||dv.replace(/\b\w/g,x=>x.toUpperCase());
+   const label=sd===SDR_OTHER_KEY?'Other Units of Division':sd;
+   pages.push({g:'sdrep',t:'Sub Division Report: '+label+' - '+dv+' ('+(isCombo(m)?comboShort(m):mFull(m))+')',d,pd:d,sdDiv:dv,sdName:sd,ym:m,
     html:()=>'<div style="width:1100px;padding:14px;background:#fff;font-family:Arial">'+sdrHTML(m,dv,sd)+'</div>'});
+   const summ=summary.find(p=>p.sdDiv===dv&&p.sdName===sd);
+   if(summ)pages.push(summ);
   }
  }
  return pages;
