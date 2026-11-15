@@ -2591,7 +2591,7 @@ function nbHTML(key,ym){const {G,th}=nbBuild(key,ym),R=NB.REP[key];const pc=(a,b
  h+=`<tr style="background:#bdd7ee;font-weight:700"><td colspan="3" style="border:1px solid #888;padding:6px;text-align:center">Grand Total</td>${row(GT.t,'#bdd7ee')}${row(GT.n,'#bdd7ee')}${row(GT.l,'#bdd7ee')}${row(GT.g,'#bdd7ee')}${row(pc(GT.n,GT.t),'#bdd7ee')}${row(pc(GT.g,GT.t),'#bdd7ee')}</tr></table></div>`;return h}
 
 /* ===== SUB DIVISION REPORT (Report tab): Division > Sub Division > SO/HO-wise, BO, other offices, summary ===== */
-const SDR={dv:'',ym:'',th:{bo:10,so:200,sop:50}};
+const SDR={dv:'',sd:'',ym:'',th:{bo:10,so:200,sop:50}};
 const SDR_DVN=['INDORE','DEWAS','DHAR','KHANDWA','KHARGONE','MANDSAUR','RATLAM','SEHORE','UJJAIN'];
 /* Office list of the ACTIVE mapping: old -> Old Office Mapping (NB_OFF), new -> New Office Mapping (NEW_DSD / NEW_OFFMAP / NEW_CLS) */
 function sdrOffs(){
@@ -2631,6 +2631,7 @@ function sdrRows(ym,dvSel,sdSel){
  const {D,order,unm}=sdrBuild(ym,dvSel),T=SDR.th,R=[];let all=[];
  const cmpN=(a,b)=>a.nm.localeCompare(b.nm);
  order.forEach(dv=>{
+  if(sdSel&&!Object.keys(D[dv]).includes(sdSel))return;
   R.push({t:'div',label:'Division: '+dv,dv});let dAll=[];const oth=[];
   Object.keys(D[dv]).sort().forEach(sd=>{
    if(sdSel && sd!==sdSel)return;
@@ -2685,17 +2686,33 @@ function sdrHTML(ym,dvSel=SDR.dv,sdSel){
 function sdrRender(){
  const box=document.getElementById('reportBox'),ms=NB.months();
  if(!ms.length){box.innerHTML='<p>Office-wise data is not uploaded yet. Upload the <b>Post-office-wise CSV</b> in the Upload tab first.</p>';return}
- if(!SDR.ym||!ms.includes(SDR.ym))SDR.ym=ms.includes(NB.S.month)?NB.S.month:ms[ms.length-1];
+ const years=[...new Set(ms.map(fyOf))].sort((a,b)=>a-b);
+ const periods=ms.concat(years.map(y=>'FY'+y),'ALL');
+ if(!SDR.ym||!periods.includes(SDR.ym))SDR.ym=ms.includes(NB.S.month)?NB.S.month:ms[ms.length-1];
  const OFL=sdrOffs(),bs=sdrDivs(),dvs=[...new Set(Object.values(OFL).map(x=>x.dv).filter(d=>d&&d!=='ID DIVISION'&&d!=='INDORE RMS'))].sort((a,b)=>{const i=bs.indexOf(a),j=bs.indexOf(b);return(i<0?99:i)-(j<0?99:j)||a.localeCompare(b)});
  if(SDR.dv&&!dvs.includes(SDR.dv))SDR.dv='';
- const ctl=`<div class="row noprint" style="margin-bottom:10px;gap:10px;flex-wrap:wrap"><b>Month:</b><select onchange="SDR.ym=this.value;sdrRender()">${ms.map(m=>`<option value="${m}" ${m===SDR.ym?'selected':''}>${mFull(m)}</option>`).join('')}</select>
- <b>Division:</b><select onchange="SDR.dv=this.value;sdrRender()"><option value="">All divisions</option>${dvs.map(d=>`<option ${d===SDR.dv?'selected':''}>${esc(d)}</option>`).join('')}</select>
+ const subs=[...new Set(Object.values(OFL).filter(x=>!SDR.dv||x.dv===SDR.dv).map(x=>x.sd||'(No Sub Division)'))].sort();
+ if(SDR.sd&&!subs.includes(SDR.sd))SDR.sd='';
+ const opt=(v,label,current)=>`<option value="${esc(v)}" ${v===current?'selected':''}>${esc(label)}</option>`;
+ const ctl=`<div class="row noprint" style="margin-bottom:10px;gap:10px;flex-wrap:wrap"><b>Month / Period:</b><select onchange="SDR.ym=this.value;sdrRender()">${ms.map(m=>opt(m,mFull(m),SDR.ym)).join('')}${years.map(y=>opt('FY'+y,fyLbl(y)+' (combined)',SDR.ym)).join('')}${opt('ALL','All Months (combined)',SDR.ym)}</select>
+ <b>Division:</b><select onchange="SDR.dv=this.value;SDR.sd='';sdrRender()">${opt('','All Divisions',SDR.dv)}${dvs.map(d=>opt(d,d,SDR.dv)).join('')}</select>
+ <b>Sub Division:</b><select onchange="SDR.sd=this.value;sdrRender()">${opt('','All Sub Divisions',SDR.sd)}${subs.map(d=>opt(d,d,SDR.sd)).join('')}</select>
  <label>BO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.bo}" onchange="SDR.th.bo=+this.value||0;sdrRender()"></label>
  <label>SO &gt; <input type="number" min="0" style="width:60px" value="${SDR.th.so}" onchange="SDR.th.so=+this.value||0;sdrRender()"> booking</label>
  <label>SO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.sop}" onchange="SDR.th.sop=+this.value||0;sdrRender()"> parcel</label>
- <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button> <button class="b alt" onclick="sdrSVGDownload()">&#11015; Download SVG</button> <button class="b sm" onclick="sdrSVGCode()">Show SVG Code</button> <button class="b sm gray" onclick="sdrSVGCopy()">Copy SVG Code</button></div><textarea id="sdrSvgSource" readonly style="display:none;width:100%;height:180px;font:12px monospace;margin-bottom:8px" aria-label="SVG source code"></textarea>
+ <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button> <button class="b alt" onclick="sdrPDF()">&#11015; Download PDF</button></div>
  <div class="hint noprint" style="margin-bottom:8px">MO = Mail Ops (Other + Speed Post), Parcel and IRGB come from the uploaded post-office-wise data. Total = Parcel + MO + IRGB. BPC, BNPL and IDC are not treated as sub divisions: their offices are listed together under &ldquo;Other Units of Division&rdquo; of the division they belong to. SO summary counts offices with class SO; the HO / SO list shows both.</div>`;
- box.innerHTML=ctl+sdrHTML(SDR.ym)}
+ box.innerHTML=ctl+sdrHTML(SDR.ym,SDR.dv,SDR.sd)}
+
+/* Home Sub Division PDF: exports the same styled rows as the on-screen report;
+   one sub-division per PDF page, suitable for individual or combined FY reports. */
+async function sdrPDF(){
+ if(!SDR.ym)return alert('Choose a month or financial-year period first');
+ const pages=sdrExportPages(SDR.ym,SDR.dv).filter(p=>!SDR.sd||p.sdName===SDR.sd);
+ if(!pages.length)return alert('No Sub Division pages are available for this selection');
+ const name=['SubDivision_Report',SDR.ym,SDR.dv,SDR.sd].filter(Boolean).join('_').replace(/[^A-Za-z0-9_-]+/g,'_');
+ await rpPDF(pages,name);
+}
 
 /* Pages use the exact Sub Division Report table, split by sub-division to keep PDFs readable. */
 function sdrExportPages(ym,dvOnly){
@@ -2745,7 +2762,7 @@ function sdrSVGCode(){try{const code=sdrSVG(),box=document.getElementById('sdrSv
 async function sdrSVGCopy(){try{const code=sdrSVG();if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(code)}else{const ta=document.getElementById('sdrSvgSource');sdrSVGCode();ta.select();document.execCommand('copy')}toast('SVG code copied')}catch(e){sdrSVGCode();toast('Copy the code from the box')}}
 
 function sdrExcel(){
- if(!SDR.ym)return;const {R}=sdrRows(SDR.ym,SDR.dv),A=[['Sub Division wise Booking Report - '+mFull(SDR.ym)]],H=['Name','Class','Parcel','MO','IRGB','Total'];
+ if(!SDR.ym)return;const {R}=sdrRows(SDR.ym,SDR.dv,SDR.sd),A=[['Sub Division wise Booking Report - '+(isCombo(SDR.ym)?comboLbl(SDR.ym):mFull(SDR.ym))]],H=['Name','Class','Parcel','MO','IRGB','Total'];
  R.forEach(r=>{if(r.t==='div'){A.push([]);A.push([r.label])}
   else if(r.t==='sd')A.push([r.label]);
   else if(r.t==='hdr')A.push(H);
