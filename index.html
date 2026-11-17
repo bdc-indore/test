@@ -267,6 +267,8 @@ table.sdp-sum.sdp-sum th,table.sdp-sum.sdp-sum td{border:1px solid #cdd6e1;paddi
 table.sdp-sum.sdp-sum th.sdp-sumh{background:#183557;color:#fff;text-align:left;font-size:13px;letter-spacing:.5px;padding:7px 12px}
 table.sdp-sum.sdp-sum tr.sdp-sumc td{background:#e8eef6;font-weight:700}
 table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
+/* Essential Reports UI */
+.ess-picker{border-collapse:collapse;width:100%;font:13px Arial}.ess-picker th{background:#183557;color:white}.ess-picker th,.ess-picker td{border:1px solid #d0dae6;padding:9px 12px;text-align:left}.ess-picker th:first-child,.ess-picker td:first-child{text-align:center}.ess-picker tbody tr:nth-child(even){background:#f5f8fc}.ess-picker input[type=checkbox]{accent-color:#b3121b;transform:scale(1.15)}.ess-table td{text-align:center!important}
 </style>
 </head>
 <body>
@@ -278,6 +280,7 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
 <nav class="noprint">
   <button class="tabbtn on" id="t-report" onclick="showTab('report')">Report</button>
   <button class="tabbtn" id="t-sdh" onclick="SDH.open()">Sub Division Reports</button>
+  <button class="tabbtn" id="t-essential" onclick="ESS.open()">Essential Reports</button>
   <button class="tabbtn" id="t-tgt" style="display:none" onclick="showTab('tgt')">Target vs Achievement</button>
   <button class="tabbtn" id="t-upload" onclick="showTab('upload')">Upload</button>
   <button class="tabbtn" id="t-sb" onclick="showTab('sb')">POSB Upload</button>
@@ -301,7 +304,7 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
       <label title="Data for this date stays blank in the report and is not added to the totals"><input type="checkbox" id="exclOn" onchange="setExcl()"> Exclude data for this date:</label>
       <input type="date" id="exclDate" onchange="setExcl()">
       <button class="b sm gray" onclick="setExclToday()">Today</button>
-      <button class="b gray" onclick="window.print()">Print</button>
+      <button class="b gray" onclick="window.print()">Print</button> <button class="b alt" onclick="ESS.fromReport()">Send to Essential Reports</button>
     </div>
     <div class="row" id="divExRow" style="margin-top:8px;font-size:13px"></div>
     <div class="row" style="margin-top:8px;align-items:flex-start">
@@ -326,8 +329,10 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
     <div class="row"><input type="file" id="fyLocalFile" accept=".csv,text/csv" onchange="FY_SHEETS.localUpload(this.files[0])"><button class="b sm gray" onclick="document.getElementById('sdhAuditBox').innerHTML=FY_SHEETS.reportAudit()">Audit all 7 months</button></div>
     <div id="fyLocalMessage" class="hint"></div>
   </div>
-  <div class="card"><h3>Selected PDF — Overall Preview</h3><div id="sdhPreviewNotice" class="msg warn">Select report pages above, then click Done — Generate Preview. Selections will not generate PDF pages until you click Done.</div><div id="sdHubPreview"></div></div>
+  <div class="card"><div class="row"><button class="b alt" onclick="ESS.fromSD()">Send Generated Preview to Essential Reports</button><span class="hint">First click Done — Generate Preview above.</span></div></div>
+   <div class="card"><h3>Selected PDF — Overall Preview</h3><div id="sdhPreviewNotice" class="msg warn">Select report pages above, then click Done — Generate Preview. Selections will not generate PDF pages until you click Done.</div><div id="sdHubPreview"></div></div>
 </section>
+<section id="p-essential" style="display:none"><div id="essentialBody"></div><div class="card"><h3>Essential Reports — Combined Preview</h3><div id="essentialPreview" class="hint">Choose reports and click Done — Generate Preview.</div></div></section>
 <!-- ============ TARGET vs ACHIEVEMENT ============ -->
 <section id="p-tgt" style="display:none">
   <div class="card">
@@ -793,7 +798,7 @@ function frontSheet(wb){const v=visSheets(wb),w=wb.Workbook&&wb.Workbook.WBView&
 
 /* ===================== TABS ===================== */
 function showTab(t){
-  ['report','sdh','tgt','upload','sb','ppt','rp','settings'].forEach(x=>{
+  ['report','sdh','essential','tgt','upload','sb','ppt','rp','settings'].forEach(x=>{
     document.getElementById('p-'+x).style.display=x===t?'':'none';
     document.getElementById('t-'+x).classList.toggle('on',x===t);
   });
@@ -4582,7 +4587,7 @@ const SDTGT=(()=>{
  const download=async(ppt)=>{const P=pages(S.period);if(!P.length)return alert('No target pages for selected period');await rpOut(ppt,P,'Sub_Division_Article_Count_Target_'+(NM?'New':'Old')+'_'+S.period,'Sub Division Article Count Target')};
  const summaryPDF=async(ppt)=>{const p=sdrSummaryPages(S.summaryPeriod).filter(p=>(!S.summaryDV||p.sdDiv===S.summaryDV)&&(!S.summarySD||p.sdName===S.summarySD));if(!p.length)return alert('No monthly summary pages');await rpOut(ppt,p,'Sub_Division_Monthly_Summary_'+S.summaryPeriod,'Sub Division \u2013 Monthly Booking Summary')};
  // No embedded last-year cache: live Google Sheets are loaded by LYCOMPARE.refresh().
- return {refresh,pages,subPages,render,preview,summaryRender,summaryPreview,download,summaryPDF,period(v){S.period=v;render()},division(v){S.dv=v;render()},vertical(v){S.vertical=v;render()},sumPeriod(v){S.summaryPeriod=v;summaryRender()},sumDiv(v){S.summaryDV=v;S.summarySD='';summaryRender()},sumSD(v){S.summarySD=v;summaryRender()},source:()=>S.origin[NM?'n':'o'],megaPeriod:()=>S.period,megaSummaryPeriod:()=>S.summaryPeriod,megaSet(v){S.period=v;rpRender()},megaSumSet(v){S.summaryPeriod=v;rpRender()},megaOptions(){const opts=availablePeriods(),a=validPeriod(S.period);return '<b>SD Target period:</b> <select onchange="SDTGT.megaSet(this.value)">'+opts.map(m=>'<option value="'+esc(m)+'" '+(m===a?'selected':'')+'>'+esc(label(m))+'</option>').join('')+'</select> <b>SD Monthly Summary period:</b> <select onchange="SDTGT.megaSumSet(this.value)">'+[...new Set([...NB.months(),...FY_SHEETS.MONTHS.filter(m=>FY_SHEETS.hasMonth(m))]),'ALL'].map(m=>'<option value="'+esc(m)+'" '+(m===S.summaryPeriod?'selected':'')+'>'+esc(m==='ALL'?'All months':mFull(m))+'</option>').join('')+'</select>'}};
+ return {essentialRows:activeRows,refresh,pages,subPages,render,preview,summaryRender,summaryPreview,download,summaryPDF,period(v){S.period=v;render()},division(v){S.dv=v;render()},vertical(v){S.vertical=v;render()},sumPeriod(v){S.summaryPeriod=v;summaryRender()},sumDiv(v){S.summaryDV=v;S.summarySD='';summaryRender()},sumSD(v){S.summarySD=v;summaryRender()},source:()=>S.origin[NM?'n':'o'],megaPeriod:()=>S.period,megaSummaryPeriod:()=>S.summaryPeriod,megaSet(v){S.period=v;rpRender()},megaSumSet(v){S.summaryPeriod=v;rpRender()},megaOptions(){const opts=availablePeriods(),a=validPeriod(S.period);return '<b>SD Target period:</b> <select onchange="SDTGT.megaSet(this.value)">'+opts.map(m=>'<option value="'+esc(m)+'" '+(m===a?'selected':'')+'>'+esc(label(m))+'</option>').join('')+'</select> <b>SD Monthly Summary period:</b> <select onchange="SDTGT.megaSumSet(this.value)">'+[...new Set([...NB.months(),...FY_SHEETS.MONTHS.filter(m=>FY_SHEETS.hasMonth(m))]),'ALL'].map(m=>'<option value="'+esc(m)+'" '+(m===S.summaryPeriod?'selected':'')+'>'+esc(m==='ALL'?'All months':mFull(m))+'</option>').join('')+'</select>'}};
 })();
 /* Remove the old automatic pairing: monthly summaries now have their own PDF checkbox. */
 {const _oldSDPages=sdrExportPages;sdrExportPages=function(){return _oldSDPages.apply(this,arguments).filter(p=>!p.t.startsWith('Month-wise Summary:'))};}
@@ -5375,6 +5380,148 @@ setTimeout(function(){try{RF.boot()}catch(e){console.error('RF.boot',e);try{rend
 try{renderReport();updBadge()}catch(e){console.error('renderReport',e);setTimeout(function(){throw e})}
 /* Keep the Settings mapping correction panel and SD Hub warnings synchronized. */
 {const priorShowTab=showTab;showTab=function(){const out=priorShowTab.apply(this,arguments);if(arguments[0]==='settings'){const b=document.getElementById('sdhSettingsAudit');if(b)b.innerHTML=SD_FULL_AUDIT.view()+SD_AUDIT.view(NB.months().at(-1)||'2026-11')}return out}}
+</script>
+<script>
+/* ===== ESSENTIAL REPORTS HUB · Indore Region ===== */
+const ESS=(()=>{
+ const main=[
+ ['target_div','Current Month Target vs Achievement — Division-wise'],
+ ['target_sd','Current Month Target vs Achievement — Sub Division-wise'],
+ ['ly_div','Last Year Comparison — Division-wise'],
+ ['ly_sd','Last Year Comparison — Sub Division-wise'],
+ ['fy_div','Cumulative FY Target vs Achievement — Division-wise'],
+ ['fy_sd','Cumulative FY Target vs Achievement — Sub Division-wise'],
+ ['daily','Current Month Day-wise MO / Parcel / IRGB Summary'],
+ ['monthly','April to Current Month — MO / Parcel / IRGB Monthly Summary'] ];
+ const special=[
+ ['bottom_par_fy','Bottom 10 SO — Parcel, Cumulative (Month-wise)'],
+ ['bottom_par_now','Bottom 10 SO — Parcel, Current Month'],
+ ['bottom_mo_fy','Bottom 10 SO — MO, Cumulative (Month-wise)'],
+ ['bottom_mo_now','Bottom 10 SO — MO, Current Month'],
+ ['bottom_all_fy','Bottom 10 Offices — MO + Parcel + IRGB, Cumulative'],
+ ['bottom_all_now','Bottom 10 Offices — MO + Parcel + IRGB, Current Month'],
+ ['top_par_fy','Top 10 Offices — Parcel, Cumulative (Month-wise)'],
+ ['top_par_now','Top 10 Offices — Parcel, Current Month'],
+ ['top_mo_fy','Top 10 Offices — MO, Cumulative (Month-wise)'],
+ ['top_mo_now','Top 10 Offices — MO, Current Month'],
+ ['top_all_fy','Top 10 Offices — MO + Parcel + IRGB, Cumulative'],
+ ['top_all_now','Top 10 Offices — MO + Parcel + IRGB, Current Month'],
+ ['bottom_sd_all','Bottom 10 Sub Divisions — Total Booking, Current Month'],
+ ['bottom_sd_par','Bottom 10 Sub Divisions — Parcel, Current Month'],
+ ['bottom_sd_mo','Bottom 10 Sub Divisions — MO, Current Month'],
+ ['bo_mo','BO Booking Performance — MO (More Than 10)'],
+ ['so_mo','SO Booking Performance — MO (More Than 200)'],
+ ['so_par','SO Booking Performance — Parcel (More Than 50)'],
+ ['bo_nil_fy','BO Nil Parcel Booking — Cumulative FY to Date'] ];
+ const all=main.concat(special), names=Object.fromEntries(all);
+ let selected={}, imported=[], options={sehore:false,rms:false},month='',pages=[],ready=false,viewer=null,building=false;
+ const storage='indore_essential_reports_v2';
+ try{const s=JSON.parse(localStorage.getItem(storage)||'{}');selected=s.selected||{};imported=s.imported||[];options={...options,...(s.options||{})}}catch(e){}
+ const save=()=>{try{localStorage.setItem(storage,JSON.stringify({selected,imported,options}))}catch(e){console.warn('Essential settings storage',e)}};
+ const escv=x=>String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const fmt=n=>Number(n||0).toLocaleString('en-IN');
+ const norm=x=>SD_NAME_RESOLVE.d(x), ignore=d=>(!options.sehore&&norm(d)==='SEHORE')||(!options.rms&&norm(d)==='INDORE RMS');
+ const avail=()=>[...new Set([...NB.months(),...FY_SHEETS.months()])].filter(m=>m>='2026-04'&&m<='2027-03').sort();
+ const active=()=>avail().filter(m=>m<=new Date().toISOString().slice(0,7));
+ const current=()=>month&&avail().includes(month)?month:(active().at(-1)||avail().at(-1)||'2026-11');
+ const months=()=>active().filter(m=>m<=current());
+ const allOff=()=>sdrOffs();
+ let aggKey="",aggValue=null;
+ const aggregate=()=>{
+  const ck=[window.__BV||0,FY_SHEETS.revision(),NM?1:0,options.sehore,options.rms,months().join(",")].join("|");if(aggValue&&ck===aggKey)return aggValue;
+  const out=new Map(),directory=allOff(),ms=months();
+  for(const m of ms){const values=NB.vals(m)||{};for(const id in values){const o=directory[id],v=values[id];if(!o||ignore(o.dv)||!NB.act(id))continue;
+   let x=out.get(id);if(!x){x={id,name:o.nm||id,cl:String(o.cl||'').toUpperCase(),div:o.dv,sd:SD_NAME_RESOLVE.sd(o.dv,o.sd),monthly:{},mo:0,par:0,irgb:0,total:0};out.set(id,x)}
+   const a={mo:(+v[2]||0)+(+v[6]||0),par:+v[4]||0,irgb:+v[0]||0};a.total=a.mo+a.par+a.irgb;x.monthly[m]=a;x.mo+=a.mo;x.par+=a.par;x.irgb+=a.irgb;x.total+=a.total;
+  }}for(const id in directory){const o=directory[id];if(!o||ignore(o.dv)||!NB.act(id)||out.has(id))continue;out.set(id,{id,name:o.nm||id,cl:String(o.cl||'').toUpperCase(),div:o.dv,sd:SD_NAME_RESOLVE.sd(o.dv,o.sd),monthly:{},mo:0,par:0,irgb:0,total:0})}
+  aggKey=ck;aggValue=[...out.values()];return aggValue;
+ };
+ const wrapper=(title,body,subtitle='')=>`<div class="sdh-region-page ess-paper"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>${escv(title)}</h1></div><div class="sdh-report-subtitle"><strong>INDORE REGION</strong><span>${escv(subtitle||'FY 2026–27')}</span></div>${body}<div class="sdh-note">Data: uploaded / published office-wise booking source · Mapping: ${NM?'New':'Old'} · Sehore ${options.sehore?'included':'excluded'} · RMS ${options.rms?'included':'excluded'}</div></div>`;
+ const table=(headers,rows,opts={})=>`<table class="sdh-region-table ess-table"><thead><tr>${headers.map(x=>'<th>'+escv(x)+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map((r,i)=>`<tr class="${r._total?'sdh-grand':''}">${r.cells.map((c,j)=>`<td>${typeof c==='number'?fmt(c):escv(c)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}">No data available in the selected period</td></tr>`}</tbody></table>`;
+ const pg=(id,title,html,meta={})=>({g:'essential',t:title,d:'Indore Region',pd:'Indore Region',eid:id,html:()=>html,...meta});
+ const metric=(o,v,m)=>m?(o.monthly[m]?.[v]||0):(o[v]||0);
+ const target= (id)=>{
+  const m=current(),fy=id.startsWith('fy_'),sd=id.endsWith('_sd'),ms=fy?months():[m],roll=new Map();
+  const targetRows=typeof SDTGT.essentialRows==='function'?SDTGT.essentialRows():[];
+  const targetMonth=x=>{const z=String(x).match(/(20\d{2})-(\d{1,2})/);if(z)return z[1]+'-'+z[2].padStart(2,'0');const a=String(x).match(/([A-Za-z]{3,9})[\s\-/]*(\d{2,4})/);if(!a)return '';const idx=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(a[1].slice(0,3).toLowerCase());return idx<0?'':(a[2].length===2?'20':'')+a[2]+'-'+String(idx+1).padStart(2,'0')};
+  for(const r of targetRows){const [d,s,v,m0,t]=r,dk=norm(d),sk=SD_NAME_RESOLVE.norm(s);if(ignore(dk)||!ms.includes(targetMonth(m0)))continue;
+   const vert=/PARCEL/i.test(v)?'Parcel':/IRGB|INTERNATIONAL/i.test(v)?'IRGB':/MO|MAIL/i.test(v)?'MO':null;if(!vert)continue;const k=sd?dk+'|'+sk+'|'+vert:dk+'|'+vert;
+   const a=roll.get(k)||{d:dk,s:sd?s:'',v:vert,t:0,a:0};a.t+=Number(t)||0;roll.set(k,a);
+  }
+  const dmap={};for(const o of aggregate()){const d=norm(o.div),s=SD_NAME_RESOLVE.norm(o.sd);for(const [v,field] of [['MO','mo'],['Parcel','par'],['IRGB','irgb']]){
+   const k=sd?d+'|'+s+'|'+v:d+'|'+v;const a=roll.get(k)||{d,s:sd?o.sd:'',v,t:0,a:0};a.a+=ms.reduce((x,m0)=>x+metric(o,field,m0),0);roll.set(k,a);
+  }}
+  const groups=[...roll.values()].sort((a,b)=>a.d.localeCompare(b.d)||a.s.localeCompare(b.s)||a.v.localeCompare(b.v));
+  const rows=groups.map(x=>({cells:[x.d,...(sd?[x.s]:[]),x.v,x.t,x.a,x.t?((100*x.a/x.t).toFixed(2)+'%'):'—']}));
+  const title=names[id],hdr=['Division',...(sd?['Sub Division']:[]),'Vertical','Target','Achievement','Achievement %'];
+  return pg(id,title,wrapper(title,table(hdr,rows),fy?'Cumulative April to '+mFull(m):mFull(m)));
+ };
+ const ly=(id)=>{
+  const detailed=id==='ly_sd',m=current(),off=allOff(),valid=[...new Set(Object.values(off).filter(o=>!ignore(o.dv)&&o.sd).map(o=>norm(o.dv)))].sort();
+  const pages=[];for(const vert of ['MO','PARCEL','IRGB']){
+   const rows=[],total={last:0,now:0,validLast:true,validNow:true};
+   for(const d of valid){const subs=[...new Set(Object.values(off).filter(o=>norm(o.dv)===d&&o.sd).map(o=>o.sd))].sort();const child=[];
+    for(const sd of subs){const x=LYCOMPARE.get(d,sd,vert,m);if(x.last===null&&x.now===null)continue;child.push({name:sd,last:x.last,now:x.now});}
+    if(detailed){for(const x of child)rows.push({cells:[d,x.name,x.last===null?'—':x.last,x.now===null?'—':x.now,x.last>0&&x.now!==null?((x.now-x.last)*100/x.last).toFixed(2)+'%':'—']});}
+    else {const last=child.every(x=>x.last!==null)?child.reduce((n,x)=>n+x.last,0):null,now=child.every(x=>x.now!==null)?child.reduce((n,x)=>n+x.now,0):null;rows.push({cells:[d,last===null?'—':last,now===null?'—':now,last>0&&now!==null?((now-last)*100/last).toFixed(2)+'%':'—']});}
+   }
+   pages.push(pg(id,names[id]+' · '+vert,wrapper(names[id]+' · '+vert,table(['Division',...(detailed?['Sub Division']:[]),'FY 2025–26','FY 2026–27','Growth / Decline'],rows),mFull(m)+' versus '+mFull(String(+m.slice(0,4)-1)+m.slice(4)))));
+  }return pages;
+ };
+ const summaries=id=>{
+  const m=current(),ms=id==='monthly'?months():[m],hasDaily=id==='daily';let headers,rows=[];
+  if(hasDaily){headers=['Date','MO','Parcel','IRGB','Total'];const daily=FY_SHEETS.daily(),dmap=allOff();const src=new Map();for(const [date,arr] of daily){if(!date.startsWith(m))continue;const z={mo:0,par:0,irgb:0};for(let i=0;i<arr.length;i+=4){const off=dmap[arr[i]];if(off&&!ignore(off.dv)){z.mo+=+arr[i+1]||0;z.par+=+arr[i+2]||0;z.irgb+=+arr[i+3]||0}}src.set(date,z)}
+   const days=[...new Set([...FYD.dates().filter(d=>d.startsWith(m)),...src.keys(),...Object.keys(DB.csvDates||{}).filter(d=>d.startsWith(m))])].sort();rows=days.map(d=>{let z=src.get(d);if(!z){z={mo:0,par:0,irgb:0};for(const div of sdrDivs()){if(ignore(div))continue;const r=dayVals(div,d)||{};z.mo+=r.mo||0;z.par+=r.parcel||0;z.irgb+=r.irgb||0}}return {cells:[d,z.mo,z.par,z.irgb,z.mo+z.par+z.irgb]}});
+   if(!rows.length)return pg(id,names[id],wrapper(names[id],'<div class="msg warn">Day-wise office booking data unavailable for '+escv(mFull(m))+'.</div>',mFull(m)));
+  }else{headers=['Month','MO','Parcel','IRGB','Total'];const O=aggregate();rows=ms.map(p=>{const a=O.reduce((z,o)=>{z.mo+=metric(o,'mo',p);z.par+=metric(o,'par',p);z.irgb+=metric(o,'irgb',p);return z},{mo:0,par:0,irgb:0});return {cells:[mFull(p),a.mo,a.par,a.irgb,a.mo+a.par+a.irgb]}})}
+  const tot=rows.reduce((z,r)=>z.map((x,i)=>x+(typeof r.cells[i]==='number'?r.cells[i]:0)),[0,0,0,0,0]);rows.push({_total:true,cells:['GRAND TOTAL',...tot.slice(1)]});return pg(id,names[id],wrapper(names[id],table(headers,rows),mFull(m)));
+ };
+ const rank=id=>{
+  const O=aggregate(),m=current(),isSub=id.startsWith('bottom_sd_'),isSO=id.startsWith('bottom_')&&/_par_|_mo_/.test(id),top=id.startsWith('top_'),fy=id.endsWith('_fy'),field=/_par_|_sd_par/.test(id)?'par':/_mo_|_sd_mo/.test(id)?'mo':'total';
+  let a=[];if(isSub){const map=new Map();for(const o of O){const k=norm(o.div)+'|'+o.sd,z=map.get(k)||{id:k,name:o.sd,div:o.div,cl:'SD',monthly:{},par:0,mo:0,total:0};for(const f of ['par','mo','total'])z[f]+=(o.monthly[m]?.[f]||0);map.set(k,z)}a=[...map.values()]}else a=O.filter(o=>!isSO||/\bSO\b|SUB\s*OFFICE|^S\.O\.?$/.test(o.cl));
+  const value=x=>isSub?x[field]:metric(x,field,fy?null:m);a=a.sort((x,y)=>top?value(y)-value(x)||x.name.localeCompare(y.name):value(x)-value(y)||x.name.localeCompare(y.name)).slice(0,10);
+  const hdr=['Rank',isSub?'Sub Division':'Office','Division',...(isSub?[]:['Class']),...(fy?months().map(mFull):[]),'Total '+(field==='par'?'Parcel':field==='mo'?'MO':'MO + Parcel + IRGB')];
+  const rows=a.map((x,i)=>({cells:[i+1,x.name,x.div,...(isSub?[]:[x.cl]),...(fy?months().map(m0=>metric(x,field,m0)):[]),value(x)]}));
+  return pg(id,names[id],wrapper(names[id],table(hdr,rows),fy?'Cumulative April to '+mFull(m):mFull(m)));
+ };
+ const csv=(rows,filename)=>{const line=rows.map(r=>r.map(x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"').join(',')).join('\r\n');const blob=new Blob(['\ufeff'+line],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),500)};
+ const nil=id=>{
+  const O=aggregate(),m=current(),bo=id.startsWith('bo_'),isFY=id==='bo_nil_fy',parcel=id==='so_par'||isFY,cut=isFY?0:bo?10:parcel?50:200,field=parcel?'par':'mo',groups=new Map();
+  for(const o of O){const cl=o.cl.replace(/[^A-Z]/g,'');if(!(bo?(cl==='BO'||cl.includes('BRANCHOFFICE')):(cl==='SO'||cl.includes('SUBOFFICE'))))continue;
+   const key=norm(o.div)+'|'+o.sd,g=groups.get(key)||{d:o.div,sd:o.sd,off:[],zero:[],above:[]};g.off.push(o);const v=metric(o,field,isFY?null:m);if(v===0)g.zero.push(o);if(!isFY&&v>cut)g.above.push(o);groups.set(key,g);
+  }
+  const list=[...groups.values()].sort((a,b)=>a.d.localeCompare(b.d)||a.sd.localeCompare(b.sd)),hdr=['Division','Sub Division','No. of '+(bo?'BO':'SO'),isFY?'Nil Parcel Booking':'Zero Booking',...(!isFY?['More than '+cut,'Above '+cut+' %']:[])];
+  const rows=list.map((g,i)=>({cells:[g.d,g.sd,g.off.length,g.zero.length,...(!isFY?[g.above.length,g.off.length?(100*g.above.length/g.off.length).toFixed(2)+'%':'0.00%']:[])]}));
+  const html=wrapper(names[id],table(hdr,rows)+`<p class="sdh-note">Office lists: use “Download Office List” beside the report preview. The numeric cells in PDF are not active file-download controls.</p>`,isFY?'FY cumulative through '+mFull(m):mFull(m));
+  return pg(id,names[id],html,{lists:list.map(g=>({label:g.d+' / '+g.sd,rows:[['Office ID','Office Name','Class','Division','Sub Division','MO','Parcel','IRGB'],...g.zero.map(o=>[o.id,o.name,o.cl,o.div,o.sd,isFY?o.mo:metric(o,'mo',m),isFY?o.par:metric(o,'par',m),isFY?o.irgb:metric(o,'irgb',m)])]})),groups:list});
+ };
+ const create=id=>{if(id.startsWith('target_')||id.startsWith('fy_'))return [target(id)];if(id.startsWith('ly_'))return ly(id);if(id==='daily'||id==='monthly')return [summaries(id)];if(id==='bo_mo'||id==='so_mo'||id==='so_par'||id==='bo_nil_fy')return [nil(id)];return [rank(id)]};
+ const checked=id=>selected[id]!==false;
+ const item=([id,title])=>`<tr><td style="width:58px;text-align:center"><input type="checkbox" ${checked(id)?'checked':''} onchange="ESS.tick('${id}',this.checked)"></td><td>${escv(title)}${id.startsWith('import_')?` <button class="b sm gray" onclick="ESS.remove(${Number(id.slice(7))})">Remove</button>`:''}</td></tr>`;
+ const box=(title,items,desc)=>`<div class="card"><h3>${title}</h3><p class="hint">${desc}</p><div class="wrap"><table class="ess-picker"><thead><tr><th>PDF</th><th>Report Name</th></tr></thead><tbody>${items.map(item).join('')}</tbody></table></div></div>`;
+ const draw=()=>{const root=document.getElementById('essentialBody');if(!root)return;const m=current();root.innerHTML=`<div class="card"><h3>Essential Reports — PDF Builder</h3><div class="row"><label>Month <select onchange="ESS.setMonth(this.value)">${avail().map(x=>`<option value="${x}" ${x===m?'selected':''}>${escv(mFull(x))}</option>`).join('')}</select></label><label><input type="checkbox" ${options.sehore?'checked':''} onchange="ESS.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${options.rms?'checked':''} onchange="ESS.extra('rms',this.checked)"> Include RMS / ID Division</label></div><div class="hint">Both divisions excluded by default (including in all totals/rankings). Essential reports remain listed permanently. Unticking only removes a page from the combined PDF.</div></div>`+
+  box('Essential Report — Main',main,'Targets, previous year comparison, day-wise and monthly summaries.')+
+  box('Essential Report — Top / Bottom / Nil',special,'Top and Bottom 10 lists, subdivision performance, and zero-booking office counts.')+
+  box('Essential Report — Imported from Other Sections',imported.map((p,i)=>['import_'+i,p.title]),'Saved report pages sent from Sub Division Reports or the Report section. You can remove an imported entry without affecting permanent reports.')+
+  `<div class="card"><div class="row"><button class="b gray sm" onclick="ESS.all(true)">Select All</button><button class="b gray sm" onclick="ESS.all(false)">Deselect All</button><button class="b alt" onclick="ESS.done()">Done — Generate Preview</button><button class="b" onclick="ESS.pdf()">Download Selected PDF</button><span id="essStatus" class="hint"></span></div><div class="hint">Preview builds only when Done is clicked; this avoids recalculating all reports on every checkbox change.</div></div>`;
+ };
+ const show=()=>{showTab('essential');if(!ready){ready=true;FY_SHEETS.ensure()}draw()};
+ const done=()=>{if(building)return;building=true;const root=document.getElementById('essentialPreview'),label=document.getElementById('essStatus');label.textContent='Preparing preview…';root.innerHTML='';setTimeout(async()=>{
+  try{pages=[];let progress=0;for(const [id] of all){if(!checked(id))continue;try{pages.push(...create(id))}catch(err){console.error(id,err);pages.push(pg(id,names[id],wrapper(names[id],'<div class="msg err">Report unavailable: '+escv(err.message)+'</div>')))}if(++progress%3===0){label.textContent="Building reports: "+progress+" / "+all.length;await new Promise(ok=>setTimeout(ok,0))}}
+   for(let i=0;i<imported.length;i++)if(checked('import_'+i)){
+    const p=imported[i];pages.push(pg('import_'+i,p.title,p.html));}
+   label.textContent=pages.length+' report pages selected';root.innerHTML=`<div class="msg">${pages.length} pages ready for PDF. Click Download Selected PDF.</div>`+pages.map((p,i)=>`<article class="sdh-sheet"><div class="sdh-page-title">${i+1}. ${escv(p.t)}</div>${p.lists?`<div class="row noprint"><button class="b sm alt" onclick="ESS.list(${i},'zero')">Download Nil / Zero Booking Office Lists (CSV)</button>${p.eid!=='bo_nil_fy'?`<button class="b sm gray" onclick="ESS.list(${i},'above')">Download Above-Threshold Office Lists (CSV)</button>`:''}</div>`:''}<div class="sdh-page-content" data-ess="${i}"></div></article>`).join('');
+   if(viewer)viewer.disconnect();const render=el=>{if(el.dataset.loaded)return;el.dataset.loaded='1';try{el.innerHTML=pages[+el.dataset.ess].html()}catch(e){el.innerHTML='<div class="msg err">'+escv(e.message)+'</div>'}};
+   const els=root.querySelectorAll('[data-ess]');if('IntersectionObserver' in window){viewer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){render(e.target);viewer.unobserve(e.target)}}),{rootMargin:'500px'});els.forEach(el=>viewer.observe(el))}else els.forEach(render);
+  }catch(e){root.innerHTML='<div class="msg err">Essential report preview error: '+escv(e.message)+'</div>'}finally{building=false}
+ },30)};
+ const pdf=async()=>{if(building)return alert('Report generation is in progress');if(!pages.length)return alert('Click Done — Generate Preview first.');await rpOut(false,pages,'Indore_Essential_Reports_'+current(),'Indore Region Essential Reports')};
+ const list=(i,type)=>{const p=pages[i],m=current();if(!p||!p.groups)return;const data=[['Division','Sub Division','Office ID','Office Name','Class','MO','Parcel','IRGB']];for(const g of p.groups)for(const o of (type==='above'?g.above:g.zero)){data.push([g.d,g.sd,o.id,o.name,o.cl,metric(o,'mo',p.eid==='bo_nil_fy'?null:m),metric(o,'par',p.eid==='bo_nil_fy'?null:m),metric(o,'irgb',p.eid==='bo_nil_fy'?null:m)])}csv(data,'Indore_'+p.eid+'_'+type+'_offices.csv')};
+ const fromSD=()=>{const a=window.__sdhPages||[];if(!a.length)return alert('First click Done — Generate Preview in Sub Division Reports.');let count=0;for(const p of a){let html;try{html=p.html()}catch(e){continue}const title=p.t||'Imported Report';if(!imported.some(x=>x.title===title&&x.html===html)){imported.push({title,html});count++}}save();toast(count+' report(s) sent to Essential Reports');};
+ const fromReport=()=>{const report=document.querySelector('#reportBox');if(!report||!report.querySelector('table'))return alert('Generate a report first.');const title='Main Report · '+mFull(document.getElementById('monthSel')?.value||current());imported.push({title,html:wrapper(title,report.innerHTML)});save();toast('Report sent to Essential Reports')};
+ return {open:show,done,pdf,list,fromSD,fromReport,all(v){all.forEach(([id])=>selected[id]=v);imported.forEach((_,i)=>selected['import_'+i]=v);save();draw()},tick(id,v){selected[id]=v;save();const status=document.getElementById('essStatus');if(status)status.textContent='Selection changed — click Done to update preview'},setMonth(m){month=m;draw()},extra(k,v){options[k]=v;save();draw()},remove(i){imported.splice(i,1);save();draw()}};
+})();
+
 </script>
 </body>
 </html>
