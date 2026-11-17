@@ -264,7 +264,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <section id="p-sdh" style="display:none">
   <div class="card"><h3>Sub Division Reports — PDF Page Selection &amp; Full Preview</h3>
   <div class="hint">Choose report types, divisions and sub divisions. Preview follows the exact selected PDF page order. New mapping excludes Sehore and RMS unless expressly included.</div>
-  <div id="fyLiveStatus" class="hint" style="margin:8px 0">Office-wise Google Sheet loading…</div><div id="sdHubBody"></div><div id="sdhAuditBox"></div></div>
+  <div id="fyLiveStatus" class="hint" style="margin:8px 0">Office-wise Google Sheet: will load when Sub Division Reports is opened</div><div id="sdHubBody"></div><div id="sdhAuditBox"></div></div>
   <div class="card"><h3>Selected PDF — Overall Preview</h3><div id="sdhPreviewNotice" class="msg warn">Select report pages above, then click Done — Generate Preview. Selections will not generate PDF pages until you click Done.</div><div id="sdHubPreview"></div></div>
 </section>
 <!-- ============ TARGET vs ACHIEVEMENT ============ -->
@@ -729,6 +729,7 @@ function showTab(t){
     document.getElementById('t-'+x).classList.toggle('on',x===t);
   });
   if(t==='report')renderReport();
+  if(t==='sdh'&&typeof FY_SHEETS!=='undefined')setTimeout(()=>FY_SHEETS.ensure(),0);
   if(t==='settings')renderSettings();
   if(t==='tgt'){renderTgt();nbFillMs()}
   if(t==='rp')rpRender();
@@ -4819,7 +4820,7 @@ const SDH=(()=>{
   const load=el=>{if(el.dataset.loaded)return;el.dataset.loaded='1';try{el.innerHTML=a[+el.dataset.i].html()}catch(e){el.innerHTML='<div class="msg err">Preview issue: '+E(e.message)+'</div>'}};
   const els=root.querySelectorAll('.sdh-page-content');if('IntersectionObserver' in window){observer=new IntersectionObserver(items=>items.forEach(item=>{if(item.isIntersecting){load(item.target);observer.unobserve(item.target)}}),{rootMargin:'400px'});els.forEach(x=>observer.observe(x))}else els.forEach(load);
  };
- const open=()=>{showTab('sdh');document.querySelectorAll('nav .tabbtn').forEach(b=>b.classList.toggle('on',b.id==='t-sdh'));if(!document.getElementById('sdHubBody').children.length)render()};
+ const open=()=>{showTab('sdh');document.querySelectorAll('nav .tabbtn').forEach(b=>b.classList.toggle('on',b.id==='t-sdh'));if(!document.getElementById('sdHubBody').children.length)render();FY_SHEETS.ensure()};
  const changeDivision=v=>{S.div=v;S.sub='';const x=document.getElementById('sdhSubSelect');if(x){const list=v?(S._subs&&S._subs[key(v)]||[]):[...new Set(Object.values(S._subs||{}).flat())].sort();x.innerHTML='<option value="">All Sub Divisions</option>'+list.map(n=>`<option value="${E(n)}">${E(n===SDR_OTHER_KEY?'Other Units':n)}</option>`).join('')}markDirty()};
  const download=async()=>{
   if(rendering)return alert('Preview generation is running. Please use Download after it completes.');
@@ -4877,14 +4878,16 @@ const FY_SHEETS=(()=>{
  const monthOf=x=>{const t=String(x||'').trim();if(/^20\d\d-\d\d-\d\d$/.test(t))return t.slice(0,7);const z=new Date(t);return Number.isFinite(z.getTime())?z.getFullYear()+'-'+String(z.getMonth()+1).padStart(2,'0'):''};
  // Published compact CSV is created in-house and uses numeric data with no quoted text.
  // Explicit duplicate detection avoids accidentally doubling an office-day booking.
- function parseOffice(csv){
+ async function parseOffice(csv){
   const lines=csv.replace(/^\uFEFF/,'').trim().split(/\r?\n/),h=lines[0].split(',').map(header);
   const col=(...n)=>h.findIndex(x=>n.includes(x));
   const ci={date:col('DATE','BOOKING DATE'),id:col('OFFICE ID','OFFICEID'),speed:col('MO SPEED POST'),other:col('MO OTHER'),mo:col('MO TOTAL'),ps:col('PARCEL SPEED POST'),business:col('BUSINESS PARCEL'),retail:col('RETAIL PARCEL'),par:col('PARCEL TOTAL'),irgb:col('IRGB'),tot:col('GRAND TOTAL')};
   if(Object.values(ci).some(i=>i<0))throw Error('Office Daily Sheet must contain Date, Office ID, MO Speed Post, MO Other, MO Total, Parcel Speed Post, Business Parcel, Retail Parcel, Parcel Total, IRGB, Grand Total. Found: '+h.join(' / '));
-  const next=new Map(MONTHS.map(m=>[m,new Map()])),daily=new Map(MONTHS.map(m=>[m,new Map()]));
+  const next=new Map(MONTHS.map(m=>[m,new Map()]));
   const seen=new Set();let count=0,all=0;const months=new Set();
   for(let i=1;i<lines.length;i++){
+   // Yield to the browser every 800 rows, so tabs and controls remain responsive.
+   if(i%800===0){STATUS.office='Processing Google Sheet: '+Math.round(100*i/lines.length)+'%';const b=document.getElementById('fyLiveStatus');if(b)b.textContent='Office-wise data: '+STATUS.office;await new Promise(ok=>setTimeout(ok,0));}
    if(!lines[i].trim())continue;const r=lines[i].split(',');
    const date=String(r[ci.date]||'').trim(),m=monthOf(date);if(!MONTHS.includes(m))continue;
    const id=String(r[ci.id]||'').trim().replace(/\.0$/,'');if(!/^\d{6,15}$/.test(id))throw Error('Invalid Office ID at row '+(i+1));
@@ -4894,11 +4897,11 @@ const FY_SHEETS=(()=>{
    if(x.ps+x.business+x.retail!==x.par)throw Error('Parcel breakup mismatch at '+id+' / '+date);
    if(x.mo+x.par+x.irgb!==x.tot)throw Error('Grand total mismatch at '+id+' / '+date);
    let monthly=next.get(m).get(id);if(!monthly){monthly=blank();next.get(m).set(id,monthly)}add(monthly,x);
-   daily.get(m).set(key,x);count++;all+=x.tot;months.add(m);
+   count++;all+=x.tot;months.add(m);
   }
   if(!count)throw Error('No April–October 2026 Office-Date rows found');
   const missing=MONTHS.filter(m=>!months.has(m));if(missing.length)throw Error('Published Office Daily sheet missing: '+missing.join(', '));
-  return {next,daily,count,all};
+  return {next,count,all};
  }
  function parseAliases(csv){const lines=csv.replace(/^\uFEFF/,'').trim().split(/\r?\n/);let idx=-1;for(let i=0;i<Math.min(lines.length,15);i++){const h=lines[i].split(',').map(header);if(h.includes('OLD OFFICE ID')&&h.includes('NEW OFFICE ID')){idx=i;break}}
   if(idx<0)throw Error('Office ID Merge headers missing');
@@ -4916,16 +4919,22 @@ const FY_SHEETS=(()=>{
    const id=resolve(raw),a=result[id]||(result[id]=Array(8).fill(0));a[0]+=c.irgb;a[2]+=c.speed;a[4]+=c.par;a[6]+=c.other;
   }return result;
  }
- function sums(m,dvSel){const list={},O=sdrOffs(),unmapped=[];if(!hasMonth(m))return {D:list,unmapped};
+ function sums(m,dvSel){
+  const list={},unmapped=[];if(!hasMonth(m))return {D:list,unmapped};
+  const O=sdrOffs(),lookup=Object.create(null);
+  const selected=dvSel?SD_NAME_RESOLVE.d(dvSel):null;
   for(const [raw,c] of INDEX.get(m)){
-   const id=resolve(raw),info=O[id]||O[raw];if(!info||!info.dv||!info.sd){unmapped.push({m,id,raw,c,reason:'Office ID / SD not in '+(NM?'RDN':'RD')+' mapping'});continue}
+   const id=resolve(raw),info=O[id]||O[raw];
+   if(!info||!info.dv||!info.sd){unmapped.push({m,id,raw,c,reason:'Office ID / SD not in '+(NM?'RDN':'RD')+' mapping'});continue}
    const dv=SD_NAME_RESOLVE.d(info.dv),sd=SD_NAME_RESOLVE.sd(dv,info.sd);
    if(!dv||!sd||sd==='(No Sub Division)'){unmapped.push({m,id,raw,c,reason:'Sub Division missing'});continue}
-   if(dvSel&&SD_NAME_RESOLVE.d(dvSel)!==dv)continue;
-   let office=((list[dv]=list[dv]||{})[sd]=(list[dv][sd]||[])).find(x=>x.id===id);
-   if(!office){office={id,nm:info.nm||id,cl:info.cl||'',par:0,mo:0,irgb:0,tot:0};list[dv][sd].push(office)}
+   if(selected&&selected!==dv)continue;
+   const key=dv+'\x1f'+sd+'\x1f'+id;
+   let office=lookup[key];
+   if(!office){const arr=(list[dv]||(list[dv]={}));const sub=(arr[sd]||(arr[sd]=[]));office={id,nm:info.nm||id,cl:info.cl||'',par:0,mo:0,irgb:0,tot:0};sub.push(office);lookup[key]=office;}
    office.par+=c.par;office.mo+=c.mo;office.irgb+=c.irgb;office.tot+=c.tot;
-  }return {D:list,unmapped};
+  }
+  return {D:list,unmapped};
  }
  function rows(m){const key=mode()+'|'+revision+'|'+(window.__BV||0)+'|'+m;if(summaryCache[key])return summaryCache[key];
   const D=sums(m,'').D,out=[];for(const [d,sub] of Object.entries(D))for(const [sd,items] of Object.entries(sub)){
@@ -4955,7 +4964,7 @@ const FY_SHEETS=(()=>{
  }
  async function refresh(show=true){if(busy)return busy;busy=(async()=>{
   const results=await Promise.allSettled([irFetchCSV(URL.office,'Office Daily FY 2026–27'),irFetchCSV(URL.merge,'Office ID Merge')]);
-  if(results[0].status==='fulfilled')try{const p=parseOffice(results[0].value);INDEX.clear();DAY.clear();for(const [k,v] of p.next)INDEX.set(k,v);for(const [k,v] of p.daily)DAY.set(k,v);STATUS.office=p.count+' Office-Date rows loaded (total '+p.all.toLocaleString('en-IN')+')';revision++;summaryCache={}}
+  if(results[0].status==='fulfilled')try{const p=await parseOffice(results[0].value);INDEX.clear();DAY.clear();for(const [k,v] of p.next)INDEX.set(k,v);STATUS.office=p.count+' Office-Date rows loaded (total '+p.all.toLocaleString('en-IN')+')';revision++;summaryCache={}}
    catch(e){STATUS.office='UNAVAILABLE: '+e.message;INDEX.clear();DAY.clear();summaryCache={}}
   else{STATUS.office='UNAVAILABLE: '+(results[0].reason?.message||results[0].reason);INDEX.clear();DAY.clear();summaryCache={}}
   if(results[1].status==='fulfilled')try{aliases=parseAliases(results[1].value);STATUS.merge=Object.keys(aliases).length+' merge rules loaded';revision++;summaryCache={}}
@@ -4964,10 +4973,11 @@ const FY_SHEETS=(()=>{
   loaded=true;errors=Object.entries(STATUS).filter(([,v])=>v.startsWith('UNAVAILABLE')).map(([k,v])=>k+': '+v);
   window.__BV=(window.__BV||0)+1;try{LYCOMPARE.invalidate()}catch(e){}
   if(show)toast(errors.length?'Published source warning — see Office Daily Audit':'Office-wise April–October source updated from Google Sheets');
-  const b=document.getElementById('fyLiveStatus');if(b)b.innerHTML=reportAudit();return STATUS;
+  const b=document.getElementById('fyLiveStatus');if(b)b.textContent='Office-wise Sheet: '+STATUS.office+' | ID Merge: '+STATUS.merge;return STATUS;
  })();try{return await busy}finally{busy=null}}
+ const ensure=()=>{if(loaded||busy)return busy||Promise.resolve(STATUS);STATUS.office='Downloading Google Sheet (first visit only)…';const b=document.getElementById('fyLiveStatus');if(b)b.textContent=STATUS.office;return refresh(false).then(()=>{try{if(document.getElementById('p-sdh').style.display!=='none')SDH.render()}catch(e){console.warn('Sub Division re-render',e)}})};
  const get=(d,sd,v,m)=>{if(!hasMonth(m))return null;const n=rows(m).find(x=>SD_NAME_RESOLVE.d(x.d)===SD_NAME_RESOLVE.d(d)&&SD_NAME_RESOLVE.norm(x.sd)===SD_NAME_RESOLVE.norm(sd));return n?(v==='MO'?n.mo:v==='IRGB'?n.irgb:n.par):0};
- return {URL,MONTHS,mode,months,hasMonth,values,sums,rows,periodRows:ms=>ms.flatMap(rows),get,refresh,reportAudit,aliases:()=>aliases,resolve,ready:()=>loaded,errors:()=>errors,status:()=>STATUS.office+' | '+STATUS.merge,day:()=>DAY};
+ return {URL,MONTHS,mode,months,hasMonth,values,sums,rows,periodRows:ms=>ms.flatMap(rows),get,refresh,ensure,reportAudit,aliases:()=>aliases,resolve,ready:()=>loaded,errors:()=>errors,status:()=>STATUS.office+' | '+STATUS.merge,day:()=>DAY};
 })();
 // The Sheet is already ID-merged, but fresh uploads can still contain an old office ID.
 {const prev=NB.res;NB.res=function(id){const dest=FY_SHEETS.resolve(id);return dest!==String(id)?dest:prev.call(this,id)}}
@@ -4996,9 +5006,15 @@ const FY_SHEETS=(()=>{
  return [...new Set([...prev(ym).filter(m=>!FY_SHEETS.MONTHS.includes(m)),...selected.filter(m=>FY_SHEETS.hasMonth(m))])].sort();
  }}
 // Show source and mapping diagnostics in the hub, including missing Office IDs.
-{const prev=SD_FULL_AUDIT.view;SD_FULL_AUDIT.view=function(){const m=typeof SDH!=='undefined'&&SDH.period?SDH.period():null;return FY_SHEETS.reportAudit()+(NB.months().some(x=>x>'2026-10')?prev.call(this):'<div class="hint">Browser cache is not the historical booking source; April–October is audited above using the published Office-Date sheet.</div>')}}
+{const prev=SD_FULL_AUDIT.view;SD_FULL_AUDIT.view=function(){
+ const auditButton='<div class="msg"><b>Office-wise Google Sheet:</b> '+esc(FY_SHEETS.status())+' <button class="b sm" onclick="document.getElementById(\'sdhAuditBox\').innerHTML=FY_SHEETS.reportAudit()">Run Full Office ID Audit</button></div>';
+ return auditButton+(NB.months().some(x=>'2026-10')?prev.call(this):'<div class="hint">April–October counts load on demand from the published Office-Date CSV. No full audit is run automatically.</div>');
+}}
+
 // Load once when opening, never on every checkbox click.
-FY_SHEETS.refresh(false).then(()=>{try{const el=document.getElementById('fyLiveStatus');if(el)el.innerHTML=FY_SHEETS.reportAudit()}catch(e){}try{const p=document.getElementById('p-sdh');if(p&&p.style.display!=='none')SDH.render()}catch(e){console.warn(e)}});
+// Deliberately NOT fetching 86k rows at startup: daily report must open instantly.
+// First Sub Division Hub visit triggers lazy, chunked loading.
+
 
 LYCOMPARE.refresh(false);
 UPM.render();
