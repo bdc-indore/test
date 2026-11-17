@@ -265,7 +265,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div class="card"><h3>Sub Division Reports — PDF Page Selection &amp; Full Preview</h3>
   <div class="hint">Choose report types, divisions and sub divisions. Preview follows the exact selected PDF page order. New mapping excludes Sehore and RMS unless expressly included.</div>
   <div id="sdHubBody"></div><div id="sdhAuditBox"></div></div>
-  <div class="card"><h3>Selected PDF — Overall Preview</h3><div id="sdHubPreview"></div></div>
+  <div class="card"><h3>Selected PDF — Overall Preview</h3><div id="sdhPreviewNotice" class="msg warn">Select report pages above, then click Done — Generate Preview. Selections will not generate PDF pages until you click Done.</div><div id="sdHubPreview"></div></div>
 </section>
 <!-- ============ TARGET vs ACHIEVEMENT ============ -->
 <section id="p-tgt" style="display:none">
@@ -4471,6 +4471,14 @@ RP.G.sdly='Sub Division Last Year Compare (FY 2025–26 vs 2026–27)';
 const SDH=(()=>{
  const TYPES=[['sdrep','Sub Division Report','Office-wise detail pages'],['sdtarget','Sub Division Article Count Target','Current-month and FY target, achievement and percentages'],['sdsum','Sub Division Monthly Summary','Month-wise MO / Parcel / IRGB booking summary'],['sdly','Sub Division Last Year Compare','FY 2025–26 versus FY 2026–27']];
  const S={period:'',div:'',sub:'',allowSehore:false,allowRMS:false,enabled:{sdrep:true,sdtarget:true,sdsum:true,sdly:true},divExcluded:{},subExcluded:{},options:{targetCurrent:true,targetFY:true,targetDivision:true,targetSub:false,targetRegionDivision:true,targetRegionDetail:false,summarySub:true,summaryRegion:true,summaryRegionDivision:true,lyDivision:true,lyOverall:false,lyRegionDivision:true,lyRegionDetail:false,reportSub:true},expanded:{sdrep:false,sdtarget:true,sdsum:false,sdly:false}};
+ let dirty=true, rendering=false, observer=null;
+ const markDirty=()=>{
+  dirty=true;
+  const info=document.getElementById('sdhCount');
+  if(info)info.textContent='Selection changed · click Done to update preview';
+  const root=document.getElementById('sdHubPreview');if(root)root.style.display='none';
+  const note=document.getElementById('sdhPreviewNotice');if(note){note.style.display='block';note.className='msg warn';note.textContent='Selection is ready. Click Done — Generate Preview to apply all changes together. No report processing runs while ticking boxes.'}
+ };
  const E=v=>esc(String(v==null?'':v));
  const key=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/ DIVISION$/,'');
  const rms=d=>/^(INDORE RMS|ID DIVISION|ID DIVISION INDORE|RMS|INDORE RMS DIVISION)$/.test(key(d));
@@ -4566,15 +4574,15 @@ const SDH=(()=>{
  const checkbox=(field,title,detail='')=>`<label class="sdh-check"><input type="checkbox" ${S.options[field]?'checked':''} onchange="SDH.opt('${field}',this.checked)"><span>${E(title)}${detail?`<small>${E(detail)}</small>`:''}</span></label>`;
  const divMatrix=(type)=>{const ds=divisions(),subs=sdMap();let s=`<div class="sdh-matrix-scroll"><table class="sdh-matrix"><thead><tr><th>Division / Sub Division</th><th>Include Division pages</th><th>Include Sub Division pages</th></tr></thead><tbody>`;
    for(const d of ds){const k=key(d),ok=allowed(d),dvOn=lookupDiv(type,d);s+=`<tr class="sdh-division-row"><th>${E(d)}${ok?'':' · excluded'}</th><td><input type="checkbox" ${ok&&dvOn?'checked':''} ${ok?'':'disabled'} onchange="SDH.divTick('${type}','${E(k)}',this.checked)"></td><td><button class="b sm gray" onclick="SDH.allSubs('${type}','${E(k)}',true)">All</button> <button class="b sm gray" onclick="SDH.allSubs('${type}','${E(k)}',false)">None</button></td></tr>`;
-    for(const sd of subs[k]||[]){const on=lookupSub(d,sd,type);s+=`<tr class="sdh-sub-row"><td>↳ ${E(sd===SDR_OTHER_KEY?'Other Units':sd)}</td><td class="hint">Sub Division page</td><td><input type="checkbox" ${ok&&on?'checked':''} ${ok?'':'disabled'} onchange="SDH.subTick('${type}','${E(k)}','${E(key(sd))}',this.checked)"></td></tr>`}
+    for(const sd of subs[k]||[]){const on=lookupSub(d,sd,type);s+=`<tr class="sdh-sub-row"><td>↳ ${E(sd===SDR_OTHER_KEY?'Other Units':sd)}</td><td class="hint">Sub Division page</td><td><input type="checkbox" ${ok&&on?'checked':''} ${ok?'':'disabled'} data-sdh-type="${E(type)}" data-sdh-div="${E(k)}" onchange="SDH.subTick('${type}','${E(k)}','${E(key(sd))}',this.checked)"></td></tr>`}
    }return s+'</tbody></table></div>';
  };
  const render=()=>{
   const root=document.getElementById('sdHubBody');if(!root)return;
   if(!S.period||!periods().includes(S.period))S.period=NB.months().filter(m=>m>='2026-04'&&m<='2027-03').at(-1)||'2026-11';
-  const ds=divisions(),subs=sdMap();if(S.div&&!ds.some(d=>key(d)===key(S.div)))S.div='';const list=S.div?(subs[key(S.div)]||[]):[...new Set(Object.values(subs).flat())].sort();if(S.sub&&!list.includes(S.sub))S.sub='';
+  const ds=divisions(),subs=sdMap();S._subs=subs;S._divs=ds;if(S.div&&!ds.some(d=>key(d)===key(S.div)))S.div='';const list=S.div?(subs[key(S.div)]||[]):[...new Set(Object.values(subs).flat())].sort();if(S.sub&&!list.includes(S.sub))S.sub='';
   const option=(v,t,s)=>`<option value="${E(v)}" ${v===s?'selected':''}>${E(t)}</option>`;
-  let html=`<div class="sdh-controls"><label><b>Month / FY / Overall</b><select onchange="SDH.period(this.value)">${periods().map(x=>option(x,label(x),S.period)).join('')}</select></label><label><b>Division (detail pages)</b><select onchange="SDH.division(this.value)">${option('','All Divisions',S.div)}${ds.map(x=>option(x,x,S.div)).join('')}</select></label><label><b>Sub Division (detail pages)</b><select onchange="SDH.sub(this.value)">${option('','All Sub Divisions',S.sub)}${list.map(x=>option(x,x===SDR_OTHER_KEY?'Other Units':x,S.sub)).join('')}</select></label></div>`;
+  let html=`<div class="sdh-controls"><label><b>Month / FY / Overall</b><select onchange="SDH.period(this.value)">${periods().map(x=>option(x,label(x),S.period)).join('')}</select></label><label><b>Division (detail pages)</b><select id="sdhDivSelect" onchange="SDH.division(this.value)">${option('','All Divisions',S.div)}${ds.map(x=>option(x,x,S.div)).join('')}</select></label><label><b>Sub Division (detail pages)</b><select id="sdhSubSelect" onchange="SDH.sub(this.value)">${option('','All Sub Divisions',S.sub)}${list.map(x=>option(x,x===SDR_OTHER_KEY?'Other Units':x,S.sub)).join('')}</select></label></div>`;
   if(NM)html+=`<div class="sdh-exclusions"><b>Region total inclusion:</b> <label><input type="checkbox" ${S.allowSehore?'checked':''} onchange="SDH.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${S.allowRMS?'checked':''} onchange="SDH.extra('rms',this.checked)"> Include RMS / ID Division</label><small>Only these two switches affect Region totals. Division / Sub Division page selection does not.</small></div>`;
   html+='<div class="sdh-selector-table"><table class="sdh-main-table"><thead><tr><th style="width:25%">Report group</th><th>PDF pages to include</th><th style="width:95px">Selection</th></tr></thead><tbody>';
   const section=(k,title,desc,body)=>`<tr class="sdh-group-head"><th><label><input type="checkbox" ${S.enabled[k]?'checked':''} onchange="SDH.group('${k}',this.checked)"> ${E(title)}</label><small>${E(desc)}</small></th><td>${body}</td><td><button class="b sm gray" onclick="SDH.expand('${k}')">${S.expanded[k]?'Hide':'Choose'} divisions</button></td></tr>${S.expanded[k]?`<tr><td colspan="3">${divMatrix(k)}</td></tr>`:''}`;
@@ -4583,20 +4591,56 @@ const SDH=(()=>{
   html+=section('sdsum','Sub Division Monthly Summary','Month-by-month totals',checkbox('summarySub','Sub Division Monthly Summary PDFs','Choose the required divisions and subdivisions')+checkbox('summaryRegionDivision','Indore Region — Division Summary','All included regional divisions')+checkbox('summaryRegion','Indore Region — Overall Monthly Summary','Always at the end of this report group'));
   html+=section('sdly','Sub Division Last Year Compare','Previous FY vs current FY',checkbox('lyDivision','Division-wise Last Year Comparison','All included Sub Divisions within each Division')+checkbox('lyOverall','Overall Individual Sub Division PDFs','Available for Overall period')+checkbox('lyRegionDivision','Indore Region — Division-wise Comparison','Independent of detail selection')+checkbox('lyRegionDetail','Indore Region — Division + SD Comparison','Independent of detail selection'));
   html+='</tbody></table></div>';
-  html+=`<div class="row" style="margin-top:14px"><button class="b" onclick="SDH.download()">Download Selected PDF</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Google Sheets</button><button class="b alt" onclick="SDH.preview()">Preview All Selected PDF Pages</button><button class="b gray" onclick="SDH.all(true)">Select all types</button><button class="b gray" onclick="SDH.all(false)">Clear types</button><span id="sdhCount" class="hint"></span></div><p class="hint">Regional figures are never recalculated using the ticked Division/Sub Division PDF pages. Only New Mapping’s Include Sehore / Include RMS switches change regional scope. Google Sheets remain the source of historical target/count data.</p>`;
-  root.innerHTML=html;preview();const auditing=document.getElementById('sdhAuditBox');if(auditing)auditing.innerHTML=SD_AUDIT.view(effective());
+  html+=`<div class="row" style="margin-top:14px"><button class="b" style="background:#187447" onclick="SDH.done()">✓ Done — Generate Preview</button><button class="b" onclick="SDH.download()">Download Selected PDF</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Google Sheets</button><button class="b alt" onclick="SDH.done()">Regenerate Preview</button><button class="b gray" onclick="SDH.all(true)">Select all types</button><button class="b gray" onclick="SDH.all(false)">Clear types</button><span id="sdhCount" class="hint"></span></div><p class="hint">Regional figures are never recalculated using the ticked Division/Sub Division PDF pages. Only New Mapping’s Include Sehore / Include RMS switches change regional scope. Google Sheets remain the source of historical target/count data.</p>`;
+  root.innerHTML=html;markDirty();
  };
- let observer=null;
+ const done=()=>{
+  if(rendering)return;
+  rendering=true;
+  const note=document.getElementById('sdhPreviewNotice');
+  if(note){note.style.display='block';note.className='msg';note.textContent='Generating selected report preview…';}
+  const button=document.querySelector('#sdHubBody button[onclick="SDH.done()"]');
+  if(button)button.disabled=true;
+  // Yield to the browser so the Done click is painted before expensive report generation.
+  setTimeout(()=>{
+   try{preview();dirty=false;
+    const audit=document.getElementById('sdhAuditBox');
+    if(audit)try{audit.innerHTML=SD_AUDIT.view(effective())}catch(err){console.error('SD audit',err)}
+    if(note)note.style.display='none';
+    const root=document.getElementById('sdHubPreview');if(root)root.style.display='';
+   }catch(err){console.error('SD preview error',err);if(note){note.className='msg err';note.textContent='Preview could not be generated: '+err.message}}
+   finally{rendering=false;if(button)button.disabled=false;}
+  },30);
+ };
  const preview=()=>{const root=document.getElementById('sdHubPreview');if(!root)return;const a=build();window.__sdhPages=a;const hasLY=!!LYCOMPARE.buildPages(effective()).length;const warning=S.enabled.sdly&&!hasLY?'<div class="msg warn"><b>Last Year Compare:</b> '+E(LYCOMPARE.sourceStatus())+' <button class="b sm" onclick="LYCOMPARE.refresh()">Retry Google Sheets</button></div>':'';const counter=document.getElementById('sdhCount');if(counter)counter.textContent=a.length+' page(s) in PDF · '+a.filter(x=>x.g==='sdly').length+' Last Year Compare';if(observer){observer.disconnect();observer=null}if(!a.length){root.innerHTML=warning+'<div class="msg warn">No matching PDF pages. Choose a report group or check uploaded data and Google Sheets.</div>';return}
   root.innerHTML=warning+`<p class="hint">Full PDF preview — ${a.length} pages in export order. Pages render while scrolling.</p>${a.map((p,i)=>`<article class="sdh-sheet"><div class="sdh-page-title">Page ${i+1} / ${a.length} — ${E(p.t)}</div><div class="sdh-page-content" data-i="${i}"><span class="hint">Preview loading when visible…</span></div></article>`).join('')}`;
   const load=el=>{if(el.dataset.loaded)return;el.dataset.loaded='1';try{el.innerHTML=a[+el.dataset.i].html()}catch(e){el.innerHTML='<div class="msg err">Preview issue: '+E(e.message)+'</div>'}};
   const els=root.querySelectorAll('.sdh-page-content');if('IntersectionObserver' in window){observer=new IntersectionObserver(items=>items.forEach(item=>{if(item.isIntersecting){load(item.target);observer.unobserve(item.target)}}),{rootMargin:'400px'});els.forEach(x=>observer.observe(x))}else els.forEach(load);
  };
- const open=()=>{showTab('sdh');document.querySelectorAll('nav .tabbtn').forEach(b=>b.classList.toggle('on',b.id==='t-sdh'));render()};
- const download=async()=>{const p=build();if(!p.length)return alert('No PDF pages are selected');await rpPDF(p,'Indore_Sub_Division_Reports_'+(NM?'New':'Old')+'_'+S.period)};
+ const open=()=>{showTab('sdh');document.querySelectorAll('nav .tabbtn').forEach(b=>b.classList.toggle('on',b.id==='t-sdh'));if(!document.getElementById('sdHubBody').children.length)render()};
+ const changeDivision=v=>{S.div=v;S.sub='';const x=document.getElementById('sdhSubSelect');if(x){const list=v?(S._subs&&S._subs[key(v)]||[]):[...new Set(Object.values(S._subs||{}).flat())].sort();x.innerHTML='<option value="">All Sub Divisions</option>'+list.map(n=>`<option value="${E(n)}">${E(n===SDR_OTHER_KEY?'Other Units':n)}</option>`).join('')}markDirty()};
+ const download=async()=>{
+  if(rendering)return alert('Preview generation is running. Please use Download after it completes.');
+  const p=(!dirty&&window.__sdhPages)?window.__sdhPages:build();
+  if(!p.length)return alert('No PDF pages are selected');
+  await rpPDF(p,'Indore_Sub_Division_Reports_'+(NM?'New':'Old')+'_'+S.period)
+ };
  const filterMega=pages=>pages.filter(p=>!NM||!['sdrep','sdsum','sdtarget','sdly'].includes(kind(p))||isRegion(p)||allowed(pDiv(p)));
- const allSubs=(type,d,on)=>{const x=sdMap()[d]||[];x.forEach(s=>S.subExcluded[type+'|'+d+'|'+key(s)]=!on);render()};
- return {open,render,preview,download,allowed,filterMega,period(v){S.period=v;render()},division(v){S.div=v;S.sub='';render()},sub(v){S.sub=v;render()},extra(k,v){if(k==='sehore')S.allowSehore=v;else S.allowRMS=v;render()},group(k,v){S.enabled[k]=v;render()},expand(k){S.expanded[k]=!S.expanded[k];render()},opt(k,v){S.options[k]=v;render()},divTick(t,d,v){S.divExcluded[t+'|'+d]=!v;render()},subTick(t,d,s,v){S.subExcluded[t+'|'+d+'|'+s]=!v;render()},allSubs,all(v){TYPES.forEach(([k])=>S.enabled[k]=v);render()}};
+ const allSubs=(type,d,on)=>{
+  const x=(S._subs&&S._subs[d])||[];
+  x.forEach(s=>S.subExcluded[type+'|'+d+'|'+key(s)]=!on);
+  document.querySelectorAll('input[data-sdh-type="'+type+'"][data-sdh-div="'+d+'"]').forEach(el=>{if(!el.disabled)el.checked=on});
+  markDirty();
+ };
+ return {open,render,preview:done,done,download,allowed,filterMega,
+  period(v){S.period=v;render()},division:changeDivision,sub(v){S.sub=v;markDirty()},
+  extra(k,v){if(k==='sehore')S.allowSehore=v;else S.allowRMS=v;render()},
+  group(k,v){S.enabled[k]=v;markDirty()},expand(k){S.expanded[k]=!S.expanded[k];render()},
+  opt(k,v){S.options[k]=v;markDirty()},
+  divTick(t,d,v){S.divExcluded[t+'|'+d]=!v;markDirty()},
+  subTick(t,d,s,v){S.subExcluded[t+'|'+d+'|'+s]=!v;markDirty()},
+  allSubs,all(v){TYPES.forEach(([k])=>S.enabled[k]=v);document.querySelectorAll('.sdh-group-head input[type=checkbox]').forEach(el=>{if(el.getAttribute('onchange')?.includes('SDH.group('))el.checked=v});markDirty()}
+ };
 })();
 // Preserve Mega PDF / PPT selection, independently excluding optional New Mapping divisions.
 {const original=RP.pages;RP.pages=function(){return SDH.filterMega(original.apply(this,arguments))}}
