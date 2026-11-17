@@ -222,11 +222,51 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 .sdh-region-page .sdh-region-table tbody td:first-child{font-weight:700;color:#153654}
 .sdh-region-page .sdh-region-table tbody tr.sdh-grand td{color:#173b23}
 
-.sdh-region-page .sdh-region-table tr.sdh-division-band td{background:#e6edf6!important;color:#173451!important;font-size:15px;font-weight:900!important;text-align:center!important;border-top:2px solid #527594}
-.sdh-region-page .sdh-region-table tr.sdh-division-total td{background:#e3f0dd!important;color:#214c2f!important;font-weight:900!important;text-align:center!important}
+/* ---- Professional tables: Sub Division Booking Summary (all divisions) ---- */
+.sdh-region-page .sdh-sdsum{font-size:15px;border:1px solid #b7c4d3}
+.sdh-region-page .sdh-sdsum th{background:#183557;color:#fff;padding:12px 14px;border:1px solid #2c4a70;font-size:14px;letter-spacing:.5px}
+.sdh-region-page .sdh-sdsum th:first-child{text-align:left;padding-left:22px}
+.sdh-region-page .sdh-sdsum td{padding:9px 14px;border:1px solid #d3dce7;text-align:right!important;font-variant-numeric:tabular-nums;font-weight:500;color:#1d2b3a}
+.sdh-region-page .sdh-sdsum td:first-child{text-align:left!important;padding-left:36px;font-weight:600;color:#153654}
+.sdh-region-page .sdh-sdsum tr.sdh-sdrow.alt td{background:#f5f8fc}
+.sdh-region-page .sdh-sdsum tr.sdh-division-band td{background:#17365d!important;color:#fff!important;text-align:left!important;padding:10px 22px;border:0;border-left:6px solid #fdb913;border-top:6px solid #fff;font-weight:800;font-size:17px;letter-spacing:2px}
+.sdh-region-page .sdh-sdsum tr.sdh-division-band small{font-size:11px;letter-spacing:3px;color:#fdd36a;font-weight:700;margin-right:14px}
+.sdh-region-page .sdh-sdsum tr.sdh-division-band b{font-weight:800}
+.sdh-region-page .sdh-sdsum tr.sdh-division-total td{background:#e3f0dd!important;color:#1f4d2b!important;font-weight:800!important;border-top:2px solid #7fb069;border-bottom:2px solid #7fb069}
+.sdh-region-page .sdh-sdsum tr.sdh-division-total td:first-child{padding-left:22px}
+.sdh-region-page .sdh-sdsum tr.sdh-final td{background:#a50e19;color:#fff;font-weight:800;font-size:16px;border:0;border-top:5px solid #fdb913;padding:13px 14px;letter-spacing:.4px}
+.sdh-region-page .sdh-sdsum tr.sdh-final td:first-child{padding-left:22px}
+.sdh-region-page .sdh-region-table:not(.sdh-sdsum) td{border-color:#cdd6e1;font-variant-numeric:tabular-nums}
+.sdh-region-page .sdh-region-table:not(.sdh-sdsum) tbody tr:nth-child(even):not(.sdh-grand) td{background:#f6f9fc}
 .sd-prof-page > div:first-child{text-align:center}
 .sd-prof-page > div:nth-child(2){justify-content:center!important;text-align:center}
 .sd-prof-page > div:nth-child(2) > div:last-child{text-align:center!important}
+/* ---- Professional Sub Division wise Booking Report ---- */
+.sdp-banner{background:#a50e19;color:#fff;text-align:center;padding:18px 24px;border-bottom:7px solid #fdb913;font-family:Arial,sans-serif}
+.sdp-banner small{display:block;font-size:12px;font-weight:700;letter-spacing:3px}
+.sdp-banner h1{margin:8px 0 0;font-size:28px;font-weight:800;letter-spacing:1px}
+.sdp-period{display:flex;justify-content:center;align-items:center;gap:24px;background:#f1f5f9;border-left:6px solid #a50e19;border-right:6px solid #fdb913;margin:14px 0 16px;padding:12px 18px;font-family:Arial,sans-serif}
+.sdp-period strong{font-size:24px;color:#a50e19;font-weight:900;letter-spacing:.8px}
+.sdp-period span{font-size:12px;color:#586579;font-weight:700;letter-spacing:1px}
+table.rep.sdp{border-collapse:collapse;width:100%;table-layout:fixed;font:14px Arial,sans-serif;color:#1d2b3a;border:1px solid #b7c4d3;min-width:0}
+table.rep.sdp td,table.rep.sdp th{border:1px solid #cdd6e1;padding:6px 12px;text-align:right;font-variant-numeric:tabular-nums}
+table.rep.sdp td.n{text-align:left;padding-left:18px}
+table.rep.sdp td.c{text-align:center;color:#5b6676;font-size:12px}
+table.rep.sdp tr.sdp-hdr td{background:#183557;color:#fff;font-weight:700;text-align:center;border-color:#2c4a70;padding:9px 10px;font-size:13px;letter-spacing:.5px}
+table.rep.sdp td.sdp-div{background:#17365d;color:#fff;text-align:center;padding:10px;border:0;border-bottom:5px solid #fdb913}
+table.rep.sdp td.sdp-div small{display:block;font-size:11px;letter-spacing:4px;color:#fdd36a;font-weight:700}
+table.rep.sdp td.sdp-div b{font-size:26px;letter-spacing:2.5px;font-weight:800}
+table.rep.sdp td.sdp-sd{background:#eef3f9;border:0;border-left:6px solid #a50e19;border-right:6px solid #fdb913;text-align:center;padding:9px 10px}
+table.rep.sdp td.sdp-sd small{display:block;font-size:11px;letter-spacing:3px;color:#64748b;font-weight:700}
+table.rep.sdp td.sdp-sd b{font-size:20px;color:#a50e19;font-weight:800;letter-spacing:.8px}
+table.rep.sdp tr.sdp-sub td{background:#f2f5f9;font-weight:700}
+table.rep.sdp tr.sdp-tot td{background:#dcedd0;font-weight:800;color:#1f4d2b;border-top:2px solid #6aa84f}
+table.rep.sdp tr.sdp-dtot td{background:#fff2cc;font-weight:800;color:#6b4e00;border-top:2px solid #fdb913;border-bottom:2px solid #fdb913}
+table.rep.sdp tr.sdp-gtot td{background:#dbe6f3;font-weight:800;color:#183557}
+table.sdp-sum.sdp-sum th,table.sdp-sum.sdp-sum td{border:1px solid #cdd6e1;padding:5px 10px;text-align:center}
+table.sdp-sum.sdp-sum th.sdp-sumh{background:#183557;color:#fff;text-align:left;font-size:13px;letter-spacing:.5px;padding:7px 12px}
+table.sdp-sum.sdp-sum tr.sdp-sumc td{background:#e8eef6;font-weight:700}
+table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
 </style>
 </head>
 <body>
@@ -2883,17 +2923,18 @@ function sdrRows(ym,dvSel,sdSel){
 function sdrHTML(ym,dvSel=SDR.dv,sdSel){
  const {R,unm}=sdrRows(ym,dvSel,sdSel),f=n=>Number(n).toLocaleString('en-IN');
  const usedMonths=sdrSelectedMonths(ym).length;
- const st={div:'background:#1f4e79;color:#fff;font-weight:800;text-align:center;font-size:17px;padding:6px 10px',sd:'background:#fde4d6;font-weight:800;text-align:center;font-size:16px;padding:5px 10px',off:'',sub:'background:#f2f2f2;font-weight:600',tot:'background:#92d050;font-weight:700',dtot:'background:#ffd966;font-weight:700',gtot:'background:#bdd7ee;font-weight:700;font-size:14px'};
- const sumBlk=(ttl,items)=>`<td style="vertical-align:top;border:none;padding:0 8px 0 0;width:50%"><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px"><colgroup><col style="width:62%"><col style="width:16%"><col style="width:22%"></colgroup><tr><th colspan="3" style="background:#1f4e79;color:#fff;text-align:left;padding:4px 10px">${ttl}</th></tr><tr style="background:#dce6f1;font-weight:700"><td style="text-align:left">Particulars</td><td>Nos</td><td>% of Total</td></tr>${items.map((i,k)=>`<tr style="${k===0?'background:#f2f2f2;font-weight:700':''}"><td style="text-align:left">${esc(i[0])}</td><td style="font-weight:700">${i[1]}</td><td>${i[2]==null?'-':sdrPc(i[1],i[2])}</td></tr>`).join('')}</table></td>`;
- let h=`<table class="rep" style="width:100%;table-layout:fixed"><colgroup><col style="width:40%"><col style="width:8%"><col style="width:13%"><col style="width:13%"><col style="width:13%"><col style="width:13%"></colgroup><tr><th class="title" colspan="6">Sub Division wise Booking Report - Parcel, MO &amp; IRGB (${esc(isCombo(ym)?comboLbl(ym):mFull(ym))})${NM?' - New Mapping':' - Old Mapping'}</th></tr>`;
+ const lab=x=>{x=String(x==null?'':x);const k=x.indexOf(':');return(k>0&&k<20)?[x.slice(0,k).trim().toUpperCase(),x.slice(k+1).trim()]:['',x]};
+ const sumBlk=(ttl,items)=>`<td style="vertical-align:top;border:none;padding:0 8px 0 0;width:50%"><table class="sdp-sum" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px"><colgroup><col style="width:62%"><col style="width:16%"><col style="width:22%"></colgroup><tr><th colspan="3" class="sdp-sumh">${ttl}</th></tr><tr class="sdp-sumc"><td style="text-align:left">Particulars</td><td>Nos</td><td>% of Total</td></tr>${items.map((i,k)=>`<tr class="${k===0?'sdp-sumt':''}"><td style="text-align:left">${esc(i[0])}</td><td style="font-weight:700">${i[1]}</td><td>${i[2]==null?'-':sdrPc(i[1],i[2])}</td></tr>`).join('')}</table></td>`;
+ const perLbl=(isCombo(ym)?comboLbl(ym):mFull(ym));
+ let h=`<div class="sdp-banner"><small>INDIA POST &middot; INDORE REGION</small><h1>SUB DIVISION WISE BOOKING REPORT</h1></div><div class="sdp-period"><strong>${esc(String(perLbl).toUpperCase())}</strong><span>PARCEL &middot; MO &amp; IRGB &nbsp;|&nbsp; ${NM?'NEW':'OLD'} MAPPING</span></div><table class="rep sdp"><colgroup><col style="width:40%"><col style="width:8%"><col style="width:13%"><col style="width:13%"><col style="width:13%"><col style="width:13%"></colgroup>`;
  R.forEach(r=>{
-  if(r.t==='div')h+=`<tr><td colspan="6" style="${st.div}">${esc(r.label)}</td></tr>`;
-  else if(r.t==='sd')h+=`<tr><td colspan="6" style="${st.sd}">${esc(r.label)}</td></tr>`;
-  else if(r.t==='hdr')h+='<tr style="background:#dce6f1;font-weight:700"><td style="text-align:center">Name</td><td>Class</td><td>Parcel</td><td>MO</td><td>IRGB</td><td>Total</td></tr>';
-  else if(r.t==='gap')h+='<tr><td colspan="6" style="border:none;height:10px;background:#fff"></td></tr>';
-  else if(r.t==='sum')h+=`<tr><td colspan="6" style="padding:8px 0 16px;border:none;background:#fff"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr>${sumBlk('BO Summary',r.bo)}${sumBlk('SO Summary',r.so)}</tr></table></td></tr>`;
+  if(r.t==='div'){const [a,b]=lab(r.label);h+=`<tr><td colspan="6" class="sdp-div">${a?`<small>${esc(a)}</small>`:''}<b>${esc(b)}</b></td></tr>`}
+  else if(r.t==='sd'){const [a,b]=lab(r.label);h+=`<tr><td colspan="6" class="sdp-sd">${a?`<small>${esc(a)}</small>`:''}<b>${esc(b)}</b></td></tr>`}
+  else if(r.t==='hdr')h+='<tr class="sdp-hdr"><td>Name</td><td>Class</td><td>Parcel</td><td>MO</td><td>IRGB</td><td>Total</td></tr>';
+  else if(r.t==='gap')h+='<tr><td colspan="6" style="border:none;height:12px;background:#fff"></td></tr>';
+  else if(r.t==='sum')h+=`<tr><td colspan="6" style="padding:10px 0 18px;border:none;background:#fff"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><tr>${sumBlk('BO Summary',r.bo)}${sumBlk('SO Summary',r.so)}</tr></table></td></tr>`;
   else{const s=r.s,c=r.t==='off'?esc(r.cl):'';
-   h+=`<tr style="${st[r.t]}"><td style="text-align:center">${esc(r.label)}</td><td>${c}</td><td>${f(s.par)}</td><td>${f(s.mo)}</td><td>${f(s.irgb)}</td><td>${f(s.tot)}</td></tr>`}});
+   h+=`<tr class="sdp-${r.t}"><td class="n">${esc(r.label)}</td><td class="c">${c}</td><td>${f(s.par)}</td><td>${f(s.mo)}</td><td>${f(s.irgb)}</td><td>${f(s.tot)}</td></tr>`}});
  h+='</table>';
  if(isCombo(ym))h+=`<div style="font:12px Arial;padding:7px 4px;color:#555">Combined threshold uses ${usedMonths} uploaded month(s): BO &gt; ${SDR.th.bo} × ${usedMonths}; SO &gt; ${SDR.th.so} × ${usedMonths} booking; SO &gt; ${SDR.th.sop} × ${usedMonths} parcel. Total office counts are unchanged.</div>`;
  if(unm)h+=`<div class="msg warn">${unm} office-id(s) with booking data are not in the office master, so they are not counted here (Settings &rarr; Nil Booking / office-wise settings).</div>`;
@@ -4689,12 +4730,13 @@ const SDH=(()=>{
   let trs='',i=0;
   while(i<groups.length){const d=groups[i].d,children=[];
    while(i<groups.length&&groups[i].d===d)children.push(groups[i++]);
-   trs+=`<tr class="sdh-division-band"><td>${E(d)}</td><td colspan="5">DIVISION · ${E(d)}</td></tr>`;
-   for(const r of children)trs+=`<tr><td></td><td>${E(r.sd===SDR_OTHER_KEY?'Other Units of Division':r.sd)}</td><td>${fmt(r.z.mo)}</td><td>${fmt(r.z.par)}</td><td>${fmt(r.z.irgb)}</td><td>${fmt(r.z.tot)}</td></tr>`;
+   trs+=`<tr class="sdh-division-band"><td colspan="5"><small>DIVISION</small><b>${E(d)}</b></td></tr>`;
+   children.forEach((r,k)=>{trs+=`<tr class="sdh-sdrow${k%2?' alt':''}"><td>${E(r.sd===SDR_OTHER_KEY?'Other Units of Division':r.sd)}</td><td>${fmt(r.z.mo)}</td><td>${fmt(r.z.par)}</td><td>${fmt(r.z.irgb)}</td><td>${fmt(r.z.tot)}</td></tr>`});
    const z=sumFields(children.map(x=>x.z));
-   trs+=`<tr class="sdh-division-total"><td colspan="2">${E(d)} · DIVISION TOTAL</td><td>${fmt(z.mo)}</td><td>${fmt(z.par)}</td><td>${fmt(z.irgb)}</td><td>${fmt(z.tot)}</td></tr>`;
+   trs+=`<tr class="sdh-division-total"><td>${E(d)} &middot; DIVISION TOTAL</td><td>${fmt(z.mo)}</td><td>${fmt(z.par)}</td><td>${fmt(z.irgb)}</td><td>${fmt(z.tot)}</td></tr>`;
   }
-  return {g:'sdsum',d:'Indore Region',pd:'Indore Region',_auditSummary:groups.map(x=>({d:x.d,sd:x.sd})),_auditValues:totals,_auditAll:allNames,t:(allNames?'ALL Sub Divisions':'Selected Sub Divisions')+' · '+label(m),html:()=>`<div class="sdh-region-page" style="width:1200px"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>SUB DIVISION BOOKING SUMMARY</h1></div><div class="sdh-report-subtitle"><strong>${E(mFull(m))} · ${NM?'NEW':'OLD'} MAPPING</strong><span>${groups.length} ${allNames?'Sub Divisions':'selected Sub Divisions'}</span></div><table class="sdh-region-table"><thead><tr><th>Division</th><th>Sub Division</th><th>MO</th><th>Parcel</th><th>IRGB</th><th>Grand Total</th></tr></thead><tbody>${trs}<tr class="sdh-grand"><td colspan="2">${allNames?'ALL SUB DIVISIONS GRAND TOTAL':'SELECTED GRAND TOTAL'}</td><td>${fmt(totals.mo)}</td><td>${fmt(totals.par)}</td><td>${fmt(totals.irgb)}</td><td>${fmt(totals.tot)}</td></tr></tbody></table><p class="sdh-note">Only the Sub Divisions ticked above are included; no other Division / Sub Division contributes to this report.</p></div>`};
+  
+ return {g:'sdsum',d:'Indore Region',pd:'Indore Region',_auditSummary:groups.map(x=>({d:x.d,sd:x.sd})),_auditValues:totals,_auditAll:allNames,t:(allNames?'ALL Sub Divisions':'Selected Sub Divisions')+' · '+label(m),html:()=>`<div class="sdh-region-page" style="width:1200px"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>SUB DIVISION BOOKING SUMMARY</h1></div><div class="sdh-report-subtitle"><strong>${E(mFull(m))} · ${NM?'NEW':'OLD'} MAPPING</strong><span>${groups.length} ${allNames?'Sub Divisions':'selected Sub Divisions'}</span></div><table class="sdh-region-table sdh-sdsum"><colgroup><col style="width:36%"><col style="width:16%"><col style="width:16%"><col style="width:16%"><col style="width:16%"></colgroup><thead><tr><th>Sub Division</th><th>MO</th><th>Parcel</th><th>IRGB</th><th>Grand Total</th></tr></thead><tbody>${trs}<tr class="sdh-final"><td>${allNames?'ALL SUB DIVISIONS GRAND TOTAL':'SELECTED GRAND TOTAL'}</td><td>${fmt(totals.mo)}</td><td>${fmt(totals.par)}</td><td>${fmt(totals.irgb)}</td><td>${fmt(totals.tot)}</td></tr></tbody></table><p class="sdh-note">Only the Sub Divisions ticked above are included; no other Division / Sub Division contributes to this report.</p></div>`};
  };
  // Compare the actual totals in generated pages with booking totals, not just CSV vs Office Mapping.
  const auditGenerated=(pages)=>{
