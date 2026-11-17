@@ -240,7 +240,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <section id="p-report">
   <div class="card noprint">
     <div class="row">
-      <b>Month:</b> <select id="monthSel" onchange="renderReport()"></select>
+      <b>Month:</b> <select id="monthSel" onchange="renderMonthOnly()"></select>
       <label><input type="checkbox" id="showIRGB" onchange="renderReport()"> Show IRGB column</label>
       <label title="Removes Machines / Total Trans. / Per day average and the ADHAR heading from the report, Excel, JPG and PDF"><input type="checkbox" id="hideAad" onchange="renderReport()"> Remove Aadhaar data</label>
       <label title="Data for this date stays blank in the report and is not added to the totals"><input type="checkbox" id="exclOn" onchange="setExcl()"> Exclude data for this date:</label>
@@ -1514,8 +1514,15 @@ function savePend(){
 }
 function delOff(id){delete DB.offMap[id];save();renderPend();toast('Removed')}
 
-function renderReport(){
-  const ms=monthsAvail(),sel=document.getElementById('monthSel');
+let monthRenderTimer=null;
+function renderMonthOnly(){
+  if(monthRenderTimer!==null)clearTimeout(monthRenderTimer);
+  monthRenderTimer=setTimeout(()=>{monthRenderTimer=null;renderReport(true)},90);
+}
+function renderReport(monthOnly=false){
+  const sel=document.getElementById('monthSel');
+  if(!monthOnly){
+  const ms=monthsAvail();
   const prev=sel.value;
   sel.innerHTML=ms.map(m=>`<option value="${m}">${mFull(m)}</option>`).join('')+(ms.length?'<option disabled>──────────</option>'+[...new Set(ms.map(fyOf))].map(y=>`<option value="FY${y}">${fyLbl(y)} - Combined</option>`).join('')+'<option value="ALL">All months - Combined</option>':'');
   document.getElementById('curDivName').textContent=isCmp(curDiv)?cmpName(curDiv):curDiv;
@@ -1530,6 +1537,7 @@ function renderReport(){
   sel.value=(ms.includes(prev)||(isCombo(prev)&&[...sel.options].some(o=>o.value===prev)))?prev:ms[ms.length-1];
   const tabs=['Region Total',RXT,RXR].concat(DIVS).concat(CMP_TABS).concat(CMP_TABS_X).concat(CMP_TABS_R).concat([]);
   document.getElementById('divTabs').innerHTML=tabs.map(t=>`<button class="${t===curDiv?'on':''}" ${t==='CMP_MO'||t==='SDREP'||t==='SDTARGET'||t==='SDSUM'||t==='SDLY'?'style="margin-left:14px"':''} onclick="curDiv='${t}';renderReport()">${tabLbl(t)}</button>`).join('');
+  } // End full UI refresh; month switching reuses controls and tabs.
   if(curDiv==='SDREP'){sdrRender();return}
   if(curDiv==='SDTARGET'){SDTGT.render();return}
   if(curDiv==='SDLY'){LYCOMPARE.render();return}
