@@ -270,6 +270,13 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
 /* Essential Reports UI */
 .ess-picker{border-collapse:collapse;width:100%;font:13px Arial}.ess-picker th{background:#183557;color:white}.ess-picker th,.ess-picker td{border:1px solid #d0dae6;padding:9px 12px;text-align:left}.ess-picker th:first-child,.ess-picker td:first-child{text-align:center}.ess-picker tbody tr:nth-child(even){background:#f5f8fc}.ess-picker input[type=checkbox]{accent-color:#b3121b;transform:scale(1.15)}.ess-table td{text-align:center!important}
 </style>
+<style>
+/* Prevent column shifts and keep official division labels in one vertically merged cell. */
+.ess-target-table{table-layout:fixed;width:100%;border-collapse:collapse}
+.ess-target-table th,.ess-target-table td{text-align:center!important;vertical-align:middle!important;overflow-wrap:break-word;padding:7px 5px!important}
+.ess-target-table .ess-merged-division{font-weight:800;color:#173451;background:#e7eef7!important;border-right:2px solid #b8c7d9}
+.ess-target-table tr.sdh-grand td{background:#d9edcf!important;font-weight:800;color:#14502c}
+</style>
 </head>
 <body>
 <header>
@@ -4545,14 +4552,19 @@ const SDTGT=(()=>{
  const prettyV=v=>v==='MO'?'MO':v==='IRGB'?'IRGB':'PARCEL';
  const periodName=(mo,period)=>mo.length===1?mFull(mo[0]):period==='ALL'?'ALL MONTHS · THROUGH '+mFull(mo.at(-1)):/^FY/.test(period)?fyLbl(+period.slice(2))+' · THROUGH '+mFull(mo.at(-1)):mFull(mo.at(-1));
  const wrapper=(title,division,period,body,note,kind='DIVISION REPORT')=>`<div class="sd-prof-page" style="background:#fff;color:#1b293b;width:1100px;min-height:650px;padding:28px 34px;box-sizing:border-box;font-family:Arial,sans-serif;font-size:14px"><div style="background:#a80e19;color:#fff;padding:20px 24px 17px;border-bottom:7px solid #fdb913"><div style="font-size:13px;letter-spacing:2px;font-weight:700;opacity:.95">INDIA POST  |  INDORE REGION  |  FY 2026–27</div><div style="font-size:26px;line-height:1.28;font-weight:800;letter-spacing:.35px;margin-top:9px">${esc(title)}</div></div><div style="padding:15px 18px;background:#f2f5f9;border-left:5px solid #a80e19;margin:16px 0 18px;display:flex;align-items:center;justify-content:space-between;gap:20px"><div><div style="font-size:11px;color:#64748b;letter-spacing:1px;font-weight:700">${esc(kind)}</div><div style="font-size:23px;font-weight:800;color:#183557;margin-top:3px">${esc(division)}</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:#a80e19">${esc(period)}</div><div style="font-size:11px;color:#475569;margin-top:5px">${NM?'NEW MAPPING':'OLD MAPPING'}</div></div></div>${body}<div style="font-size:11px;color:#64748b;margin-top:20px;border-top:1px solid #dce3ec;padding-top:10px">${esc(note)}</div><div style="text-align:right;font-size:10px;color:#94a3b8;margin-top:8px">INDORE REGION • ARTICLE COUNT PERFORMANCE</div></div>`;
- const tbl=(head,rows)=>`<table style="border-collapse:collapse;width:100%;font-size:${head.length>7?'12':'14'}px;table-layout:fixed;margin-top:8px"><thead><tr>${head.map((h,i)=>`<th style="border:1px solid #9aa7b6;background:#183557;color:#fff;padding:11px ${head.length>7?'4':'8'}px;text-align:center;font-weight:700;line-height:1.4;overflow-wrap:anywhere">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r,j)=>`<tr style="background:${r.total?'#d9edcf':r.group?'#e5edf7':j%2?'#f1f5f9':'#fff'};font-weight:${r.total||r.group?'800':'400'}">${r.cells.map((c,i)=>`<td style="border:1px solid #bdc7d2;padding:10px ${head.length>7?'5':'8'}px;text-align:center;${r.group?'color:#173451;':r.total?'color:#13502e;':''}overflow-wrap:anywhere">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+ const tbl=(head,rows)=>`<table style="border-collapse:collapse;width:100%;font-size:${head.length>7?'12':'14'}px;table-layout:fixed;margin-top:8px"><thead><tr>${head.map((h,i)=>`<th style="border:1px solid #9aa7b6;background:#183557;color:#fff;padding:11px ${head.length>7?'4':'8'}px;text-align:center;font-weight:700;line-height:1.4;overflow-wrap:anywhere">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r,j)=>`<tr style="background:${r.total?'#d9edcf':r.group?'#e5edf7':j%2?'#f1f5f9':'#fff'};font-weight:${r.total||r.group?'800':'400'}">${r.cells.map((c,i)=>c===null?'':`<td ${c&&typeof c==='object'?(c.rowspan?'rowspan="'+c.rowspan+'" ':'')+(c.colspan?'colspan="'+c.colspan+'" ':''):''}style="border:1px solid #bdc7d2;padding:10px ${head.length>7?'5':'8'}px;text-align:center;vertical-align:middle;${r.group?'color:#173451;':r.total?'color:#13502e;':''}${c&&typeof c==='object'?'background:#e6edf5;color:#183557;font-weight:800;':''}overflow-wrap:anywhere">${esc(c&&typeof c==='object'?c.text:c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
  // One highlighted division label, its child subdivisions and a calculated subtotal.
+ // One real Division label, vertically merged across its actual Sub Division rows.
+ // Subtotals always use EXACTLY the same number of columns as the table heading.
  const groupedTargetRows=(collection,one,detailed)=>{
-  if(!detailed)return collection.map(({dv,r})=>({cells:cells(r,one)}));
-  const out=[];let current=null,block=[];
-  const flush=()=>{if(!block.length)return;out.push({total:true,cells:[current+' TOTAL',...totalCells('DIVISION TOTAL',block,one).slice(1)]});block=[]};
-  for(const {dv,r} of collection){if(dv!==current){flush();current=dv;out.push({group:true,cells:[dv,'',...Array(one?3:8).fill('')]})}out.push({cells:['',...cells(r,one)]});block.push(r)}
-  flush();return out;
+  if(!detailed)return collection.map(({r})=>({cells:cells(r,one)}));
+  const out=[];let i=0;
+  while(i<collection.length){const dv=collection[i].dv,grp=[];
+   while(i<collection.length&&collection[i].dv===dv)grp.push(collection[i++].r);
+   grp.forEach((r,j)=>out.push({cells:[j===0?{text:dv,rowspan:grp.length}:null,...cells(r,one)]}));
+   out.push({total:true,cells:[dv+' TOTAL','',...totalCells('DIVISION TOTAL',grp,one).slice(1)]});
+  }
+  return out;
  };
  const columns=(mo)=>{const last=mo.at(-1),previous=mo.slice(0,-1),prevLabel=previous.length?mFull(previous[0])+' – '+mFull(previous.at(-1)):'PREVIOUS MONTHS';return ['Sub Division',prevLabel+' Target',prevLabel+' Achievement',mFull(last)+' Target',mFull(last)+' Achievement','Cumulative Target Till Date','Cumulative Achievement Till Date','Cumulative %',mFull(last)+' Achievement %']};
  const cells=(r,one)=>one?[r.sd,r.hasCur?fmt(r.curT):'—',fmt(r.curA),r.hasCur?pct(r.curA,r.curT):'—']:[r.sd,r.hasPrev?fmt(r.prevT):'—',fmt(r.prevA),r.hasCur?fmt(r.curT):'—',fmt(r.curA),fmt(r.t),fmt(r.a),pct(r.a,r.t),r.hasCur?pct(r.curA,r.curT):'—'];
@@ -5449,38 +5461,41 @@ const ESS=(()=>{
  const table=(headers,rows,opts={})=>`<table class="sdh-region-table ess-table"><thead><tr>${headers.map(x=>'<th>'+escv(x)+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map((r,i)=>`<tr class="${r._total?'sdh-grand':''}">${r.cells.map((c,j)=>`<td>${typeof c==='number'?fmt(c):escv(c)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}">No data available in the selected period</td></tr>`}</tbody></table>`;
  const pg=(id,title,html,meta={})=>({g:'essential',t:title,d:'Indore Region',pd:'Indore Region',eid:id,html:()=>html,...meta});
  const metric=(o,v,m)=>m?(o.monthly[m]?.[v]||0):(o[v]||0);
- const target= (id)=>{
-  const m=current(),fy=id.startsWith('fy_'),sd=id.endsWith('_sd'),ms=fy?months():[m],roll=new Map();
+ // Each cumulative page has previous FY months, current month, and cumulative totals separately.
+ // Build from the identical official targets and verified Office ID booking allocations.
+ const target=(id)=>{
+  const m=current(),fy=id.startsWith('fy_'),sd=id.endsWith('_sd'),ms=fy?months():[m];
+  const prev=ms.filter(x=>x!==m),roll=new Map();
   const targetRows=typeof SDTGT.essentialRows==='function'?SDTGT.essentialRows():[];
   const targetMonth=x=>{const z=String(x).match(/(20\d{2})-(\d{1,2})/);if(z)return z[1]+'-'+z[2].padStart(2,'0');const a=String(x).match(/([A-Za-z]{3,9})[\s\-/]*(\d{2,4})/);if(!a)return '';const idx=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(a[1].slice(0,3).toLowerCase());return idx<0?'':(a[2].length===2?'20':'')+a[2]+'-'+String(idx+1).padStart(2,'0')};
-  for(const r of targetRows){const [d,s,v,m0,t]=r,dk=norm(d),sk=SD_NAME_RESOLVE.norm(s);if(ignore(dk)||!ms.includes(targetMonth(m0)))continue;
-   const vert=/PARCEL/i.test(v)?'Parcel':/IRGB|INTERNATIONAL/i.test(v)?'IRGB':/MO|MAIL/i.test(v)?'MO':null;if(!vert)continue;const k=sd?dk+'|'+sk+'|'+vert:dk+'|'+vert;
-   const a=roll.get(k)||{d:dk,s:sd?SD_NAME_RESOLVE.sd(dk,s):'',v:vert,t:0,a:0};a.t+=Number(t)||0;roll.set(k,a);
+  const make=(dk,sk,vert)=>{const k=sd?dk+'|'+sk+'|'+vert:dk+'|'+vert;let a=roll.get(k);if(!a){a={d:dk,s:sd?sk:'',v:vert,prevT:0,prevA:0,curT:0,curA:0,t:0,a:0};roll.set(k,a)}return a};
+  for(const r of targetRows){const [d,s,v,m0,t]=r,dk=norm(d),sk=SD_NAME_RESOLVE.sd(dk,s),tm=targetMonth(m0);if(ignore(dk)||!ms.includes(tm))continue;
+   const vert=/PARCEL/i.test(v)?'Parcel':/IRGB|INTERNATIONAL/i.test(v)?'IRGB':/MO|MAIL/i.test(v)?'MO':null;if(!vert)continue;
+   const a=make(dk,sk,vert),n=Number(t)||0;a[tm===m?'curT':'prevT']+=n;a.t+=n;
   }
-  const dmap={};for(const o of aggregate()){const d=norm(o.div),s=SD_NAME_RESOLVE.norm(o.sd);for(const [v,field] of [['MO','mo'],['Parcel','par'],['IRGB','irgb']]){
-   const k=sd?d+'|'+s+'|'+v:d+'|'+v;const a=roll.get(k)||{d,s:sd?o.sd:'',v,t:0,a:0};a.a+=ms.reduce((x,m0)=>x+metric(o,field,m0),0);roll.set(k,a);
+  for(const o of aggregate()){const d=norm(o.div),s=SD_NAME_RESOLVE.sd(d,o.sd);for(const [v,field] of [['MO','mo'],['Parcel','par'],['IRGB','irgb']]){
+   const a=make(d,s,v);const now=metric(o,field,m),older=prev.reduce((z,mo)=>z+metric(o,field,mo),0);
+   a.curA+=now;a.prevA+=older;a.a+=now+older;
   }}
   const groups=[...roll.values()].sort((a,b)=>a.d.localeCompare(b.d)||a.v.localeCompare(b.v)||a.s.localeCompare(b.s));
-  const rows=[],allT={t:0,a:0};let last='';const divT={t:0,a:0};
-  const pushTotal=(label,T)=>rows.push({_total:true,cells:[label,...(sd?['']:[]),'TOTAL',T.t,T.a,T.t?((100*T.a/T.t).toFixed(2)+'%'):'—']});
-  for(const x of groups){if(last&&x.d!==last){pushTotal(last+' TOTAL',divT);divT.t=0;divT.a=0}last=x.d;rows.push({cells:[x.d,...(sd?[x.s]:[]),x.v,x.t,x.a,x.t?((100*x.a/x.t).toFixed(2)+'%'):'—']});divT.t+=x.t;divT.a+=x.a;allT.t+=x.t;allT.a+=x.a}
-  if(last)pushTotal(last+' TOTAL',divT);pushTotal('INDORE REGION GRAND TOTAL',allT);
-  const title=names[id],hdr=['Division',...(sd?['Sub Division']:[]),'Vertical','Target','Achievement','Achievement %'];
-  const verticalPages=['MO','Parcel','IRGB'].map(v=>{const r=[],vTotal={t:0,a:0};let d='',dTotal={t:0,a:0};
-    const add=(label,z)=>r.push({_total:true,cells:[label,...(sd?['']:[]),z.t,z.a,z.t?(100*z.a/z.t).toFixed(2)+'%':'—']});
-    for(const x of groups.filter(x=>x.v===v)){
-      if(sd&&d&&d!==x.d){add(d+' TOTAL',dTotal);dTotal={t:0,a:0}}d=x.d;
-      r.push({cells:[x.d,...(sd?[x.s]:[]),x.t,x.a,x.t?(100*x.a/x.t).toFixed(2)+'%':'—']});
-      dTotal.t+=x.t;dTotal.a+=x.a;vTotal.t+=x.t;vTotal.a+=x.a;
-    }
-    if(sd&&d)add(d+' TOTAL',dTotal);
-    add('INDORE REGION GRAND TOTAL',vTotal);
-    const hdr=['Division',...(sd?['Sub Division']:[]),'Target','Achievement','Achievement %'];
-    return pg(id,title+' · '+v,wrapper(title+' · '+v,table(hdr,r),fy?'Cumulative April to '+mFull(m):mFull(m)),{targetAudit:{v,sd,groups:groups.filter(x=>x.v===v),t:vTotal.t,a:vTotal.a}});
+  const calcPercent=(a,t)=>t>0?(100*a/t).toFixed(2)+'%':'—';
+  const asCells=x=>fy?[x.prevT,x.prevA,x.curT,x.curA,x.t,x.a,calcPercent(x.a,x.t),calcPercent(x.curA,x.curT)]:[x.curT,x.curA,calcPercent(x.curA,x.curT)];
+  const addTotals=xs=>{const out={prevT:0,prevA:0,curT:0,curA:0,t:0,a:0};for(const x of xs)for(const key of ['prevT','prevA','curT','curA','t','a'])out[key]+=x[key]||0;return out};
+  const interval=prev.length?mFull(prev[0])+'–'+mFull(prev.at(-1)):'Prior FY Months';
+  const columns=fy?[interval+' Target',interval+' Achievement',mFull(m)+' Target',mFull(m)+' Achievement','Cumulative Target Till Date','Cumulative Achievement Till Date','Cumulative %',mFull(m)+' Achievement %']:[mFull(m)+' Target',mFull(m)+' Achievement','Achievement %'];
+  const verticalPages=['MO','Parcel','IRGB'].map(v=>{
+   const vr=groups.filter(x=>x.v===v),r=[],all=addTotals(vr);
+   if(sd){let i=0;while(i<vr.length){const d=vr[i].d,children=[];while(i<vr.length&&vr[i].d===d)children.push(vr[i++]);
+     children.forEach((x,j)=>r.push({cells:[j===0?{_merge:d,rows:children.length}:null,x.s,...asCells(x)]}));
+     r.push({_total:true,cells:[d+' TOTAL','',...asCells(addTotals(children))]});
+   }}else vr.forEach(x=>r.push({cells:[x.d,...asCells(x)]}));
+   r.push({_total:true,cells:['INDORE REGION GRAND TOTAL',...(sd?['']:[]),...asCells(all)]});
+   const head=['Division',...(sd?['Sub Division']:[]),...columns];
+   // rowspan appears only on the Division heading, not on its subtotal.
+   const tableHtml=`<table class="sdh-region-table ess-table ess-target-table"><thead><tr>${head.map(h=>'<th>'+escv(h)+'</th>').join('')}</tr></thead><tbody>${r.map(row=>'<tr class="'+(row._total?'sdh-grand':'')+'">'+row.cells.map(c=>c===null?'':(c&&typeof c==='object'&&c._merge?'<td rowspan="'+c.rows+'" class="ess-merged-division">'+escv(c._merge)+'</td>':'<td>'+ (typeof c==='number'?fmt(c):escv(c))+'</td>')).join('')+'</tr>').join('')}</tbody></table>`;
+   return pg(id,names[id]+' · '+v,wrapper(names[id]+' · '+v,tableHtml,fy?'Cumulative April through '+mFull(m):mFull(m)),{targetAudit:{v,sd,groups:vr,t:all.t,a:all.a}});
   });
-
   return verticalPages;
-
  };
  const ly=(id)=>{
   const detailed=id==='ly_sd',m=current(),off=allOff(),valid=[...new Set(Object.values(off).filter(o=>!ignore(o.dv)&&o.sd).map(o=>norm(o.dv)))].sort();
