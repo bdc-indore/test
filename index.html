@@ -4397,17 +4397,19 @@ const LYCOMPARE=(()=>{
  e.innerHTML=`<div class="row noprint" style="gap:10px"><b>Month / FY:</b><select onchange="LYCOMPARE.selectPeriod(this.value)">${periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')}</select><b>Division:</b><select onchange="LYCOMPARE.selectDiv(this.value)">${option('','All Divisions',STATE.div)}${divisions.map(d=>option(d,d,STATE.div)).join('')}</select><b>Sub Division:</b><select onchange="LYCOMPARE.selectSub(this.value)">${option('','All Sub Divisions',STATE.sd)}${sds.map(s=>option(s,s,STATE.sd)).join('')}</select><button class="b alt" onclick="LYCOMPARE.download()">Download Last Year Comparison PDF</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Sheets</button></div><div class="hint noprint">${esc(ORIGIN[NM?'n':'o'])} · ${all.length} pages total. Last-year CSV uploaded for a month overrides Sheet values only in calculations. The online Sheet is never edited.</div><div class="row noprint"><b>Preview page:</b><select id="lycompPage" onchange="LYCOMPARE.preview()" style="max-width:660px">${filtered.map((x,i)=>option(String(i),x.t,'0')).join('')}</select></div><div id="lycompView" class="wrap"></div><div id="lycompIssues" class="noprint"></div>`;
  window.__lycompPreview=filtered;preview();let issues=[];for(const d of divisions)for(const sd of allSubs(d))for(const v of VERT)for(const m of periodMonths(STATE.period))issues.push(...reduce(d,sd,v,[m]).adjust);const warn=document.getElementById('lycompIssues');if(warn)warn.innerHTML=issueHTML(issues)};
  const preview=()=>{const box=document.getElementById('lycompView'),p=(window.__lycompPreview||[])[+(document.getElementById('lycompPage')||{}).value||0];if(box)box.innerHTML=p?p.html():'<div class="msg warn">No page available for this selection.</div>'};
- const refresh=async(show=true)=>{const results=[];for(const m of MODES){try{const newRows=parse(await irFetchCSV(URL[m],`Last year ${m==='o'?'Old':'New'} mapping count`));SRC[m]=newRows;data[m]=merge(m);ORIGIN[m]=`Live published Google Sheet (${newRows.length} month cells)`;results.push(`${m}: ${newRows.length} cells loaded`)}catch(e){SRC[m]=[];data[m]={};ORIGIN[m]=`Google Sheet unavailable: ${e.message}`;results.push(`${m}: Google Sheet not loaded (${e.message})`)}}invalidate();try{applyLyCnt();rpRender()}catch(e){console.error(e)}if(show){toast(results.join(' | '));render()}return results};
- const cache=()=>{for(const m of MODES)try{const arr=JSON.parse(localStorage.getItem('LYCOMPARE_SHEET_'+m)||'null');if(Array.isArray(arr)&&arr.length){SRC[m]=arr;ORIGIN[m]='Live published Google Sheet';data[m]=merge(m)}}catch(e){}};
+ const refresh=async(show=true)=>{const results=[];for(const m of MODES){try{const newRows=parse(await irFetchCSV(URL[m],`Last year ${m==='o'?'Old':'New'} mapping count`));SRC[m]=newRows;data[m]=merge(m);ORIGIN[m]=`Live published Google Sheet (${newRows.length} month cells)`;try{localStorage.setItem('LYCOMPARE_SHEET_'+m,JSON.stringify(newRows))}catch(e){}results.push(`${m}: ${newRows.length} cells loaded`)}catch(e){ORIGIN[m]=`${rows(m).length?'Using saved last-year data; live refresh failed':'Google Sheet unavailable'}: ${e.message}`;results.push(`${m}: ${rows(m).length?'saved data retained':'no comparison data'} (${e.message})`)}}invalidate();try{applyLyCnt();rpRender()}catch(e){console.error(e)}if(show){toast(results.join(' | '));render()}try{if(typeof SDH!=='undefined'&&document.getElementById('p-sdh')?.style.display!=='none')SDH.render()}catch(e){console.error('SD hub last-year refresh',e)}return results};
+ const cache=()=>{for(const m of MODES)try{const arr=JSON.parse(localStorage.getItem('LYCOMPARE_SHEET_'+m)||'null');if(Array.isArray(arr)&&arr.length){SRC[m]=arr;ORIGIN[m]='Saved last-year Google Sheet snapshot';data[m]=merge(m)}}catch(e){}};
  const divisionData=()=>{const out={};for(const v of VERT){const k=v==='MO'?'MAIL':v;out[k]={}}for(const d of allDiv())for(const v of VERT)for(const m of M24){const z=group(d,v,[m]),x=fyPrev(m),t=v==='MO'?'MAIL':v;const n=norm(d).split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ');if(z.last!==null){out[t][n]=out[t][n]||{};out[t][n][x]=z.last}}return out};
  const download=async()=>{const all=buildPages();if(!all.length)return alert('No last-year comparison data');await rpPDF(all,'Sub_Division_Last_Year_Compare_'+STATE.period)};
+ cache();
  return {divisionData,buildPages,render,preview,refresh,download,selectPeriod(v){STATE.period=v;render()},selectDiv(v){STATE.div=v;STATE.sd='';render()},selectSub(v){STATE.sd=v;render()},get,invalidate,period:()=>STATE.period,setMega(v){STATE.period=v;rpRender()},megaControl(){return '<b>Last Year Compare Period:</b> <select onchange="LYCOMPARE.setMega(this.value)">'+periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')+'</select>'}};
 })();
 RP.G.sdly='Sub Division Last Year Compare (FY 2025–26 vs 2026–27)';
 {const oldPages=RP.pages;RP.pages=function(){const p=oldPages.apply(this,arguments);try{LYCOMPARE.buildPages().forEach(x=>p.push(x))}catch(e){console.error('Last-year pages',e)}return p}}
 {const oldRefresh=loadIndoreReferenceSheets;loadIndoreReferenceSheets=async function(){const r=await oldRefresh.apply(this,arguments);await LYCOMPARE.refresh(false);return r}}
 {const oldR=rpRender;rpRender=function(){oldR.apply(this,arguments);const el=document.getElementById('sdMegaPeriodBox');if(el&&!el.querySelector('#sdLYmega'))el.insertAdjacentHTML('beforeend',' <span id="sdLYmega">'+LYCOMPARE.megaControl()+'</span>')};}
-try{localStorage.removeItem('LYCOMPARE_SHEET_o');localStorage.removeItem('LYCOMPARE_SHEET_n')}catch(e){}
+// Render saved sheet data immediately; replace it with fresh online data when available.
+// A temporary Google Sheets failure must not remove last-year comparison pages.
 LYCOMPARE.refresh(false);
 
 
@@ -4469,9 +4471,9 @@ const SDH=(()=>{
   return a;
  };
  const matchDivPage=(p,k,sdMap)=>{
-  const d=pDiv(p);if(!allowed(d)||!lookupDiv(k,d)||!matchFocus(p))return false;
+  const d=pDiv(p);if(!allowed(d)||!lookupDiv(k,d)||(!(k==='sdly'&&S.sub&&!p.sdName)&&!matchFocus(p)))return false;
   if(p.sdName)return lookupSub(d,p.sdName,k);
-  if(S.sub)return false;
+  if(S.sub && k!=='sdly')return false;
   if(k==='sdtarget')return S.options.targetDivision;
   if(k==='sdly')return S.options.lyDivision;
   return false;
@@ -4532,8 +4534,8 @@ const SDH=(()=>{
   root.innerHTML=html;preview();
  };
  let observer=null;
- const preview=()=>{const root=document.getElementById('sdHubPreview');if(!root)return;const a=build();window.__sdhPages=a;const counter=document.getElementById('sdhCount');if(counter)counter.textContent=a.length+' page(s) in PDF';if(observer){observer.disconnect();observer=null}if(!a.length){root.innerHTML='<div class="msg warn">No matching PDF pages. Choose a report group or check uploaded data and Google Sheets.</div>';return}
-  root.innerHTML=`<p class="hint">Full PDF preview — ${a.length} pages in export order. Pages render while scrolling.</p>${a.map((p,i)=>`<article class="sdh-sheet"><div class="sdh-page-title">Page ${i+1} / ${a.length} — ${E(p.t)}</div><div class="sdh-page-content" data-i="${i}"><span class="hint">Preview loading when visible…</span></div></article>`).join('')}`;
+ const preview=()=>{const root=document.getElementById('sdHubPreview');if(!root)return;const a=build();window.__sdhPages=a;const hasLY=!!LYCOMPARE.buildPages(effective()).length;const warning=S.enabled.sdly&&!hasLY?'<div class="msg warn"><b>Last Year Compare:</b> Google Sheet data is not loaded. <button class="b sm" onclick="LYCOMPARE.refresh()">Refresh Last Year Sheets</button> Comparison pages cannot be generated until the sheet is available.</div>':'';const counter=document.getElementById('sdhCount');if(counter)counter.textContent=a.length+' page(s) in PDF · '+a.filter(x=>x.g==='sdly').length+' Last Year Compare';if(observer){observer.disconnect();observer=null}if(!a.length){root.innerHTML=warning+'<div class="msg warn">No matching PDF pages. Choose a report group or check uploaded data and Google Sheets.</div>';return}
+  root.innerHTML=warning+`<p class="hint">Full PDF preview — ${a.length} pages in export order. Pages render while scrolling.</p>${a.map((p,i)=>`<article class="sdh-sheet"><div class="sdh-page-title">Page ${i+1} / ${a.length} — ${E(p.t)}</div><div class="sdh-page-content" data-i="${i}"><span class="hint">Preview loading when visible…</span></div></article>`).join('')}`;
   const load=el=>{if(el.dataset.loaded)return;el.dataset.loaded='1';try{el.innerHTML=a[+el.dataset.i].html()}catch(e){el.innerHTML='<div class="msg err">Preview issue: '+E(e.message)+'</div>'}};
   const els=root.querySelectorAll('.sdh-page-content');if('IntersectionObserver' in window){observer=new IntersectionObserver(items=>items.forEach(item=>{if(item.isIntersecting){load(item.target);observer.unobserve(item.target)}}),{rootMargin:'400px'});els.forEach(x=>observer.observe(x))}else els.forEach(load);
  };
