@@ -4472,12 +4472,21 @@ const SDH=(()=>{
  const TYPES=[['sdrep','Sub Division Report','Office-wise detail pages'],['sdtarget','Sub Division Article Count Target','Current-month and FY target, achievement and percentages'],['sdsum','Sub Division Monthly Summary','Month-wise MO / Parcel / IRGB booking summary'],['sdly','Sub Division Last Year Compare','FY 2025–26 versus FY 2026–27']];
  const S={period:'',div:'',sub:'',allowSehore:false,allowRMS:false,enabled:{sdrep:true,sdtarget:true,sdsum:true,sdly:true},divExcluded:{},subExcluded:{},options:{targetCurrent:true,targetFY:true,targetDivision:true,targetSub:false,targetRegionDivision:true,targetRegionDetail:false,summarySub:true,summaryRegion:true,summaryRegionDivision:true,lyDivision:true,lyOverall:false,lyRegionDivision:true,lyRegionDetail:false,reportSub:true},expanded:{sdrep:false,sdtarget:true,sdsum:false,sdly:false}};
  let dirty=true, rendering=false, observer=null;
+ // One common mapping-based selection, shared by ALL report groups.
+ const common={excluded:{},expanded:true};
+ const canonSub=sd=>sdrOther(sd)?'OTHER UNITS':key(sd);
+ const selectedSD=(d,sd)=>!common.excluded[key(d)+'|'+canonSub(sd)];
+ const selectedDiv=d=>{const list=(S._subs||sdMap())[key(d)]||[];return allowed(d)&&list.some(sd=>selectedSD(d,sd))};
+ const selectedPairs=()=>{const m=S._subs||sdMap(),out=[];for(const d of S._divs||divisions())if(allowed(d))for(const sd of m[key(d)]||[])if(selectedSD(d,sd))out.push({d,sd});return out};
+ const selectedCount=()=>selectedPairs().length;
+ const commonChanged=()=>{const e=document.getElementById('sdhSelectedCount');if(e)e.textContent=selectedCount()+' Sub Divisions selected';markDirty()};
+
  const markDirty=()=>{
   dirty=true;
   const info=document.getElementById('sdhCount');
   if(info)info.textContent='Selection changed · click Done to update preview';
-  const root=document.getElementById('sdHubPreview');if(root)root.style.display='none';
-  const note=document.getElementById('sdhPreviewNotice');if(note){note.style.display='block';note.className='msg warn';note.textContent='Selection is ready. Click Done — Generate Preview to apply all changes together. No report processing runs while ticking boxes.'}
+  // Keep the existing preview DOM untouched while selecting; hiding thousands of nodes triggers layout stalls.
+  const note=document.getElementById('sdhPreviewNotice');if(note){note.style.display='block';note.className='msg warn';note.textContent='Selection changed. The preview below shows the previous selection until you click Done — Generate Preview.'}
  };
  const E=v=>esc(String(v==null?'':v));
  const key=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/ DIVISION$/,'');
@@ -4490,21 +4499,26 @@ const SDH=(()=>{
  const periods=()=>[...new Set([...NB.months(),...monthList()])].sort().concat(['FY2026','ALL','OVERALL']);
  const label=m=>m==='OVERALL'?'Overall monthly comparison (April–March)':m==='ALL'?'All available months till current month':/^FY/.test(m)?'Financial year 2026–27 till date':mFull(m);
  const effective=()=>S.period==='OVERALL'?'ALL':S.period;
- const divisions=()=>{const a=new Map();for(const d of [...sdrDivs(),...SDTGT.pages(effective()).map(pDiv),...LYCOMPARE.buildPages(effective()).map(pDiv)]){if(!d||/^INDORE REGION/.test(key(d)))continue;if(!a.has(key(d)))a.set(key(d),d)}return [...a.values()]};
- const sdMap=()=>{const map={};try{const b=sdrBuild(effective(),'');for(const d of b.order){map[key(d)]=Object.keys(b.D[d]||{}).filter(n=>!sdrOther(n)).sort();if(Object.keys(b.D[d]||{}).some(sdrOther))map[key(d)].push(SDR_OTHER_KEY)}}catch(e){};for(const d of divisions()){const k=key(d);map[k]=map[k]||[];for(const lyD of LYCOMPARE.sourceDivisions())if(key(lyD)===k){for(const sd of LYCOMPARE.sourceSubs(lyD))if(!map[k].some(v=>key(v)===key(sd)))map[k].push(sd)}map[k].sort()}return map};
+ // Selection UI uses office mapping metadata only; report generation runs on Done.
+ const divisions=()=>{const a=new Map();for(const d of [...sdrDivs(),...LYCOMPARE.sourceDivisions()]){if(!d||/^INDORE REGION/.test(key(d)))continue;if(!a.has(key(d)))a.set(key(d),d)}return [...a.values()]};
+ const sdMap=()=>{const map={};
+  // NO sdrBuild() or NB.vals() in checkbox selection UI.
+  try{const offices=sdrOffs();for(const id in offices){const o=offices[id];if(!o||!o.dv||!o.sd)continue;const d=key(o.dv),sd=sdrOther(o.sd)?SDR_OTHER_KEY:o.sd;(map[d]=map[d]||[]);if(!map[d].some(x=>key(x)===key(sd)))map[d].push(sd)}}catch(e){console.warn('Mapping list',e)}
+  const oldDivs=LYCOMPARE.sourceDivisions();for(const d of oldDivs){const k=key(d);map[k]=map[k]||[];for(const sd of LYCOMPARE.sourceSubs(d)){const normalized=sdrOther(sd)?SDR_OTHER_KEY:sd;if(!map[k].some(x=>key(x)===key(normalized)))map[k].push(normalized)}}
+  for(const d of divisions()){const k=key(d);map[k]=map[k]||[];map[k].sort((a,b)=>a===SDR_OTHER_KEY?1:b===SDR_OTHER_KEY?-1:a.localeCompare(b))}return map};
  const lookupSub=(d,sd,t)=>!S.subExcluded[t+'|'+key(d)+'|'+key(sd)];
  const lookupDiv=(type,d)=>!S.divExcluded[type+'|'+key(d)];
- const matchFocus=p=>{if(S.div&&key(pDiv(p))!==key(S.div))return false;if(S.sub&&key(p.sdName||'')!==key(S.sub))return false;return true};
+ const matchFocus=p=>{const d=pDiv(p);return p.sdName?selectedSD(d,p.sdName)&&selectedDiv(d):selectedDiv(d)};
  const sumFields=(a)=>a.reduce((s,x)=>({par:s.par+x.par,mo:s.mo+x.mo,irgb:s.irgb+x.irgb,tot:s.tot+x.tot}),{par:0,mo:0,irgb:0,tot:0});
  const regionSummaryPage=()=>{
-  const ms=sdrSelectedMonths(effective()),rows=ms.map(m=>{const b=sdrBuild(m,''),divs=b.order.filter(allowed);const dr=divs.map(d=>({d,z:sdrSum(Object.values(b.D[d]||{}).flat())}));return{m,dr,z:sumFields(dr.map(x=>x.z))}});
-  const allDiv=divisions().filter(allowed);const divisionRows=allDiv.map(d=>({d,z:sumFields(rows.flatMap(r=>r.dr.filter(x=>key(x.d)===key(d)).map(x=>x.z)))}));const totals=sumFields(rows.map(r=>r.z));
+  const ms=sdrSelectedMonths(effective()),rows=ms.map(m=>{const b=sdrBuild(m,''),divs=b.order.filter(selectedDiv);const dr=divs.map(d=>({d,z:sdrSum(Object.keys(b.D[d]||{}).filter(sd=>selectedSD(d,sd)).flatMap(sd=>b.D[d][sd]))}));return{m,dr,z:sumFields(dr.map(x=>x.z))}});
+  const allDiv=divisions().filter(selectedDiv);const divisionRows=allDiv.map(d=>({d,z:sumFields(rows.flatMap(r=>r.dr.filter(x=>key(x.d)===key(d)).map(x=>x.z)))}));const totals=sumFields(rows.map(r=>r.z));
   const fmt=n=>Number(n||0).toLocaleString('en-IN');const row=(name,z,total=false)=>`<tr style="background:${total?'#dbefdb':'#fff'};font-weight:${total?800:400}"><td>${E(name)}</td><td>${fmt(z.mo)}</td><td>${fmt(z.par)}</td><td>${fmt(z.irgb)}</td><td>${fmt(z.tot)}</td></tr>`;
   const tb=(rs)=>`<table class="sdh-region-table"><thead><tr><th>Division / Month</th><th>MO Booked</th><th>Parcel Booked</th><th>IRGB Booked</th><th>Total Articles</th></tr></thead><tbody>${rs}</tbody></table>`;
-  const html=()=>`<div class="sdh-region-page"><div class="sdh-banner"><small>INDIA POST • INDORE REGION</small><h1>SUB DIVISION MONTHLY SUMMARY</h1></div><div class="sdh-report-subtitle"><strong>INDORE REGION · CONSOLIDATED</strong><span>${E(label(S.period))} · ${NM?'NEW':'OLD'} MAPPING</span></div><h2>MONTH-WISE ACHIEVEMENT</h2>${tb(rows.map(r=>row(mFull(r.m),r.z)).join('')+row('REGION GRAND TOTAL',totals,true))}<h2>DIVISION-WISE CONSOLIDATED BOOKING</h2>${tb(divisionRows.map(r=>row(r.d,r.z)).join('')+row('INDORE REGION GRAND TOTAL',totals,true))}<p class="sdh-note">Region figures include all regular divisions independently of the PDF page selection. Sehore and RMS are controlled only by the include checkboxes above.</p></div>`;
+  const html=()=>`<div class="sdh-region-page"><div class="sdh-banner"><small>INDIA POST • INDORE REGION</small><h1>SUB DIVISION MONTHLY SUMMARY</h1></div><div class="sdh-report-subtitle"><strong>INDORE REGION · CONSOLIDATED</strong><span>${E(label(S.period))} · ${NM?'NEW':'OLD'} MAPPING</span></div><h2>MONTH-WISE ACHIEVEMENT</h2>${tb(rows.map(r=>row(mFull(r.m),r.z)).join('')+row('REGION GRAND TOTAL',totals,true))}<h2>DIVISION-WISE CONSOLIDATED BOOKING</h2>${tb(divisionRows.map(r=>row(r.d,r.z)).join('')+row('INDORE REGION GRAND TOTAL',totals,true))}<p class="sdh-note">Figures use only the Division and Sub Division names selected in the common selection above.</p></div>`;
   return{g:'sdsum',d:'Indore Region',pd:'Indore Region',t:'INDORE REGION · Monthly Summary · '+label(S.period),html};
  };
- const regionSummaryDivisionPages=()=>{const ms=sdrSelectedMonths(effective()),fmt=n=>Number(n||0).toLocaleString('en-IN');return [0].map(()=>{const records=divisions().filter(allowed).map(d=>{let z={mo:0,par:0,irgb:0,tot:0};for(const m of ms){const b=sdrBuild(m,'');const s=sdrSum(Object.values(b.D[d]||{}).flat());for(const k in z)z[k]+=s[k]}return {d,z}});const grand=sumFields(records.map(r=>r.z));const tr=(n,z,total)=>`<tr class="${total?'sdh-grand':''}"><td>${E(n)}</td><td>${fmt(z.mo)}</td><td>${fmt(z.par)}</td><td>${fmt(z.irgb)}</td><td>${fmt(z.tot)}</td></tr>`;return{g:'sdsum',d:'Indore Region',pd:'Indore Region',t:'INDORE REGION · Division-wise Monthly Summary',html:()=>`<div class="sdh-region-page"><div class="sdh-banner"><small>INDIA POST • INDORE REGION</small><h1>DIVISION-WISE BOOKING SUMMARY</h1></div><div class="sdh-report-subtitle"><strong>INDORE REGION · GRAND TOTAL</strong><span>${E(label(S.period))}</span></div><table class="sdh-region-table"><thead><tr><th>Division</th><th>MO</th><th>Parcel</th><th>IRGB</th><th>Total</th></tr></thead><tbody>${records.map(r=>tr(r.d,r.z)).join('')}${tr('INDORE REGION',grand,true)}</tbody></table></div>`}})};
+ const regionSummaryDivisionPages=()=>{const ms=sdrSelectedMonths(effective()),fmt=n=>Number(n||0).toLocaleString('en-IN');return [0].map(()=>{const records=divisions().filter(selectedDiv).map(d=>{let z={mo:0,par:0,irgb:0,tot:0};for(const m of ms){const b=sdrBuild(m,'');const s=sdrSum(Object.keys(b.D[d]||{}).filter(sd=>selectedSD(d,sd)).flatMap(sd=>b.D[d][sd]));for(const k in z)z[k]+=s[k]}return {d,z}});const grand=sumFields(records.map(r=>r.z));const tr=(n,z,total)=>`<tr class="${total?'sdh-grand':''}"><td>${E(n)}</td><td>${fmt(z.mo)}</td><td>${fmt(z.par)}</td><td>${fmt(z.irgb)}</td><td>${fmt(z.tot)}</td></tr>`;return{g:'sdsum',d:'Indore Region',pd:'Indore Region',t:'INDORE REGION · Division-wise Monthly Summary',html:()=>`<div class="sdh-region-page"><div class="sdh-banner"><small>INDIA POST • INDORE REGION</small><h1>DIVISION-WISE BOOKING SUMMARY</h1></div><div class="sdh-report-subtitle"><strong>INDORE REGION · GRAND TOTAL</strong><span>${E(label(S.period))}</span></div><table class="sdh-region-table"><thead><tr><th>Division</th><th>MO</th><th>Parcel</th><th>IRGB</th><th>Total</th></tr></thead><tbody>${records.map(r=>tr(r.d,r.z)).join('')}${tr('INDORE REGION',grand,true)}</tbody></table></div>`}})};
  const lastYearSpecificPages=()=>{
   if(!S.div||!S.sub||!allowed(S.div)||!lookupDiv('sdly',S.div)||!lookupSub(S.div,S.sub,'sdly'))return[];
   const ms=S.period==='OVERALL'?monthList():/^FY/.test(S.period)||S.period==='ALL'?monthList().filter(x=>x<=new Date().toISOString().slice(0,7)):[S.period];
@@ -4523,6 +4537,43 @@ const SDH=(()=>{
   }
   return report;
  };
+ // A single selected-month sheet displays all selected Division / SD values together.
+ const oneMonthSummary=()=>{const m=effective(),b=sdrBuild(m,''),fmt=n=>Number(n||0).toLocaleString('en-IN');let groups=[];
+  for(const {d,sd} of selectedPairs()){
+   const G=b.D[d]||{},off=sdrOther(sd)?Object.keys(G).filter(sdrOther).flatMap(k=>G[k]):(G[sd]||[]);
+   groups.push({d,sd,z:sdrSum(off)});
+  }
+  const totals=sumFields(groups.map(r=>r.z));let last='';
+  const trs=groups.map(r=>{const name=key(r.d)===last?'':r.d;last=key(r.d);return `<tr><td>${E(name)}</td><td>${E(r.sd===SDR_OTHER_KEY?'Other Units of Division':r.sd)}</td><td>${fmt(r.z.mo)}</td><td>${fmt(r.z.par)}</td><td>${fmt(r.z.irgb)}</td><td>${fmt(r.z.tot)}</td></tr>`}).join('');
+  return {g:'sdsum',d:'Indore Region',pd:'Indore Region',t:'Selected Division & Sub Division · '+label(m),html:()=>`<div class="sdh-region-page" style="width:1200px"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>SUB DIVISION BOOKING SUMMARY</h1></div><div class="sdh-report-subtitle"><strong>${E(mFull(m))} · ${NM?'NEW':'OLD'} MAPPING</strong><span>${groups.length} selected Sub Divisions</span></div><table class="sdh-region-table"><thead><tr><th>Division</th><th>Sub Division</th><th>MO</th><th>Parcel</th><th>IRGB</th><th>Grand Total</th></tr></thead><tbody>${trs}<tr class="sdh-grand"><td colspan="2">SELECTED GRAND TOTAL</td><td>${fmt(totals.mo)}</td><td>${fmt(totals.par)}</td><td>${fmt(totals.irgb)}</td><td>${fmt(totals.tot)}</td></tr></tbody></table><p class="sdh-note">Only the Sub Divisions ticked above are included; no other Division / Sub Division contributes to this report.</p></div>`};
+ };
+ const lyFilteredPage=(p)=>{
+  if(!p||p.sdName)return p;
+  return {...p,html:()=>{
+   // Original last-year page is generated once; hide unselected rows and recalculate its numeric grand total.
+   const wrapper=document.createElement('div');wrapper.innerHTML=p.html();const tables=wrapper.querySelectorAll('table');
+   for(const table of tables){const trs=Array.from(table.querySelectorAll('tbody tr'));let sums=[0,0],has=false;
+    for(const tr of trs){const cells=tr.querySelectorAll('td');if(!cells.length)continue;const name=cells[0].textContent.trim();
+     if(/TOTAL|GRAND/i.test(name))continue;
+     const match=selectedPairs().some(x=>key(x.d)===key(pDiv(p))&&canonSub(x.sd)===canonSub(name));
+     if(!match){tr.remove();continue}has=true;
+     for(let j=1;j<3&&j<cells.length;j++){const v=Number(cells[j].textContent.replace(/,/g,''));if(Number.isFinite(v))sums[j-1]+=v}
+    }
+    if(has){const t=trs.find(tr=>/TOTAL|GRAND/i.test(tr.querySelector('td')?.textContent||''));if(t){const c=t.querySelectorAll('td');for(let j=1;j<3&&j<c.length;j++)c[j].textContent=sums[j-1].toLocaleString('en-IN');if(c.length>3)c[3].textContent=sums[0]===0?(sums[1]===0?'0.00%':'New / N.A.'):(((sums[1]-sums[0])/sums[0])*100).toFixed(2)+'%'}}
+   }return wrapper.innerHTML;
+  }};
+ };
+ const targetFilteredPage=p=>({...p,html:()=>{
+  const holder=document.createElement('div');holder.innerHTML=p.html();
+  for(const tbl of holder.querySelectorAll('table')){
+   for(const tr of Array.from(tbl.querySelectorAll('tbody tr'))){const cells=tr.querySelectorAll('td');if(!cells.length)continue;const name=cells[0].textContent.trim();if(/TOTAL|GRAND/i.test(name))continue;
+    if(!selectedPairs().some(x=>key(x.d)===key(pDiv(p))&&canonSub(x.sd)===canonSub(name)))tr.remove();
+   }
+   // Target totals / percentages are not carried over from the unfiltered division.
+   for(const tr of Array.from(tbl.querySelectorAll('tbody tr'))){if(/TOTAL|GRAND/i.test(tr.querySelector('td')?.textContent||''))tr.remove()}
+  }
+  return holder.innerHTML;
+ }});
  const getPageTypes=()=>{
   const p=effective(),a={sdrep:[],sdsum:[],sdtarget:[],sdly:[]};
   try{for(const x of sdrExportPages(p))if(!String(x.t).startsWith('Month-wise Summary:'))a.sdrep.push(x)}catch(e){console.error('SD detail',e)}
@@ -4540,58 +4591,66 @@ const SDH=(()=>{
   return false;
  };
  const build=()=>{
-  const p=effective(),a=getPageTypes(),out=[];
-  const addDetail=(k)=>{if(!S.enabled[k])return;for(const item of a[k])if(!isRegion(item)&&matchDivPage(item,k)){
-    if(k==='sdly'&&S.period==='OVERALL'&&!S.options.lyOverall)continue;
-    if(k==='sdsum'&&!S.options.summarySub||k==='sdrep'&&!S.options.reportSub)continue;
-    out.push(item);
+  const p=effective(),a=getPageTypes(),out=[],one=/^202[67]-\d{2}$/.test(S.period);
+  const addDetail=k=>{if(!S.enabled[k])return;for(const item of a[k]){
+   if(isRegion(item))continue;
+   if(!allowed(pDiv(item))||!selectedDiv(pDiv(item)))continue;
+   if(item.sdName&&!selectedSD(pDiv(item),item.sdName))continue;
+   if(k==='sdrep'&&!S.options.reportSub)continue;
+   if(k==='sdly'){
+    if(!S.options.lyDivision)continue;
+    if(S.period==='OVERALL'&&!S.options.lyOverall)continue;
+    out.push(lyFilteredPage(item));continue;
+   }
+   if(k==='sdsum'&&!S.options.summarySub)continue;
+   if(k==='sdtarget'&&!S.options.targetDivision)continue;
+   out.push(k==='sdtarget'&&!item.sdName?targetFilteredPage(item):item);
   }};
   addDetail('sdrep');
-  if(S.enabled.sdtarget){
-   const selected=a.sdtarget.filter(x=>!isRegion(x)&&matchDivPage(x,'sdtarget'));
-   out.push(...selected);
-   if(S.options.targetSub&&S.div&&S.sub&&allowed(S.div)&&lookupDiv('sdtarget',S.div)&&lookupSub(S.div,S.sub,'sdtarget'))try{out.push(...SDTGT.subPages(S.div,S.sub,p))}catch(e){console.error(e)}
-   // Regional summaries are calculated from the entire mapped region, not from selected detail pages.
-   const targetRegions=(arr)=>arr.filter(isRegion);
-   if(S.options.targetCurrent){const m=/^202[67]-\d{2}$/.test(S.period)?S.period:monthList().filter(x=>x<=new Date().toISOString().slice(0,7)).at(-1);if(m){const reg=targetRegions(SDTGT.pages(m));out.push(...reg.filter(x=>!(/Division \+ Sub Division/i).test(x.t)))}}
-   if(S.options.targetFY){const reg=targetRegions(SDTGT.pages('FY2026'));out.push(...reg.filter(x=>!(/Division \+ Sub Division/i).test(x.t)))}
-   if(S.options.targetRegionDetail)out.push(...targetRegions(a.sdtarget).filter(x=>/Division \+ Sub Division/i.test(x.t)));
-   if(S.options.targetRegionDivision)out.push(...targetRegions(a.sdtarget).filter(x=>/Division-wise/i.test(x.t)));
+  if(S.enabled.sdtarget){addDetail('sdtarget');
+   if(S.options.targetSub)for(const {d,sd} of selectedPairs())try{out.push(...SDTGT.subPages(d,sd,p))}catch(e){console.error(e)}
+   // Avoid publishing unfiltered Region Target PDFs for a partial SD selection.
+   // The same selected names are always respected across every emitted report.
   }
-  addDetail('sdsum');
-  if(S.enabled.sdsum&&S.options.summaryRegionDivision)out.push(...regionSummaryDivisionPages());
-  if(S.enabled.sdsum&&S.options.summaryRegion)out.push(regionSummaryPage());
+  if(S.enabled.sdsum){
+   if(one){if(S.options.summarySub||S.options.summaryRegion)out.push(oneMonthSummary())}
+   else {addDetail('sdsum');if(S.options.summaryRegionDivision)out.push(...regionSummaryDivisionPages());if(S.options.summaryRegion)out.push(regionSummaryPage())}
+  }
   addDetail('sdly');
-  if(S.enabled.sdly && S.sub && S.div)out.push(...lastYearSpecificPages());
-  if(S.enabled.sdly){
-   const r=a.sdly.filter(isRegion);
-   if(S.options.lyRegionDivision)out.push(...r.filter(x=>/Division-wise|divisions/i.test(x.t)));
-   if(S.options.lyRegionDetail)out.push(...r.filter(x=>/Division \+ SD|sub divisions/i.test(x.t)));
+  // Regional Last Year comparison rows are rebuilt from the selected SD rows.
+  if(S.enabled.sdly&&(S.options.lyRegionDivision||S.options.lyRegionDetail)){
+   const months=sdrSelectedMonths(p),vs=['PARCEL','MO','IRGB'];
+   for(const v of vs){const rec=selectedPairs().map(({d,sd})=>{let last=0,now=0,missing=false;for(const m of months){const x=LYCOMPARE.get(d,sd===SDR_OTHER_KEY?'OTHER UNITS OF DIVISION':sd,v,m);if(x.last==null||x.now==null)missing=true;last+=Number(x.last||0);now+=Number(x.now||0)}return{d,sd,last,now,missing}});
+    const fmt=n=>Number(n||0).toLocaleString('en-IN');
+    const body=()=>{const rows=S.options.lyRegionDetail?rec:divisions().filter(selectedDiv).map(d=>({d,sd:'',last:rec.filter(x=>key(x.d)===key(d)).reduce((s,x)=>s+x.last,0),now:rec.filter(x=>key(x.d)===key(d)).reduce((s,x)=>s+x.now,0),missing:rec.some(x=>key(x.d)===key(d)&&x.missing)}));let totalLast=0,totalNow=0;const missingAny=rows.some(x=>x.missing);const trs=rows.map(x=>{totalLast+=x.last;totalNow+=x.now;return `<tr><td>${E(x.d)}</td>${S.options.lyRegionDetail?`<td>${E(x.sd)}</td>`:''}<td>${x.missing?'—':fmt(x.last)}</td><td>${x.missing?'—':fmt(x.now)}</td></tr>`}).join('');return `<div class="sdh-region-page"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>${v} · LAST YEAR COMPARE</h1></div><div class="sdh-report-subtitle"><strong>SELECTED DIVISIONS / SUB DIVISIONS</strong><span>${E(label(S.period))}</span></div><table class="sdh-region-table"><thead><tr><th>Division</th>${S.options.lyRegionDetail?'<th>Sub Division</th>':''}<th>FY 2025–26</th><th>FY 2026–27</th></tr></thead><tbody>${trs}<tr class="sdh-grand"><td ${S.options.lyRegionDetail?'colspan="2"':''}>SELECTED TOTAL</td><td>${missingAny?'—':fmt(totalLast)}</td><td>${missingAny?'—':fmt(totalNow)}</td></tr></tbody></table></div>`};
+    out.push({g:'sdly',d:'Indore Region',pd:'Indore Region',t:v+' · Selected Region Last Year Compare',html:body});
+   }
   }
-  // Deduplicate pages only when they are genuinely the same report/period.
   const seen=new Set();return out.filter(x=>{const k=String(x.g)+'|'+String(x.t);if(seen.has(k))return false;seen.add(k);return true});
  };
  const checkbox=(field,title,detail='')=>`<label class="sdh-check"><input type="checkbox" ${S.options[field]?'checked':''} onchange="SDH.opt('${field}',this.checked)"><span>${E(title)}${detail?`<small>${E(detail)}</small>`:''}</span></label>`;
- const divMatrix=(type)=>{const ds=divisions(),subs=sdMap();let s=`<div class="sdh-matrix-scroll"><table class="sdh-matrix"><thead><tr><th>Division / Sub Division</th><th>Include Division pages</th><th>Include Sub Division pages</th></tr></thead><tbody>`;
-   for(const d of ds){const k=key(d),ok=allowed(d),dvOn=lookupDiv(type,d);s+=`<tr class="sdh-division-row"><th>${E(d)}${ok?'':' · excluded'}</th><td><input type="checkbox" ${ok&&dvOn?'checked':''} ${ok?'':'disabled'} onchange="SDH.divTick('${type}','${E(k)}',this.checked)"></td><td><button class="b sm gray" onclick="SDH.allSubs('${type}','${E(k)}',true)">All</button> <button class="b sm gray" onclick="SDH.allSubs('${type}','${E(k)}',false)">None</button></td></tr>`;
-    for(const sd of subs[k]||[]){const on=lookupSub(d,sd,type);s+=`<tr class="sdh-sub-row"><td>↳ ${E(sd===SDR_OTHER_KEY?'Other Units':sd)}</td><td class="hint">Sub Division page</td><td><input type="checkbox" ${ok&&on?'checked':''} ${ok?'':'disabled'} data-sdh-type="${E(type)}" data-sdh-div="${E(k)}" onchange="SDH.subTick('${type}','${E(k)}','${E(key(sd))}',this.checked)"></td></tr>`}
-   }return s+'</tbody></table></div>';
+ const commonMatrix=()=>{const ds=S._divs||divisions(),subs=S._subs||sdMap();let h='<div class="sdh-matrix-scroll"><table class="sdh-matrix"><thead><tr><th style="text-align:left">Division / Sub Division</th><th>Select</th></tr></thead><tbody>';
+  for(const d of ds){if(!allowed(d))continue;const k=key(d),ss=subs[k]||[];const all=ss.length&&ss.every(sd=>selectedSD(d,sd));
+   h+=`<tr class="sdh-division-row"><th>${E(d)}</th><td><input type="checkbox" data-common-div="${E(k)}" ${all?'checked':''} onchange="SDH.commonDivision('${E(k)}',this.checked)"> <span class="hint">All Sub Divisions</span></td></tr>`;
+   for(const sd of ss)h+=`<tr class="sdh-sub-row"><td>↳ ${E(sd===SDR_OTHER_KEY?'Other Units of Division':sd)}</td><td><input type="checkbox" data-common-sd="${E(k)}|${E(canonSub(sd))}" ${selectedSD(d,sd)?'checked':''} onchange="SDH.commonSub('${E(k)}','${E(canonSub(sd))}',this.checked)"></td></tr>`;
+  }return h+'</tbody></table></div>';
  };
  const render=()=>{
   const root=document.getElementById('sdHubBody');if(!root)return;
   if(!S.period||!periods().includes(S.period))S.period=NB.months().filter(m=>m>='2026-04'&&m<='2027-03').at(-1)||'2026-11';
   const ds=divisions(),subs=sdMap();S._subs=subs;S._divs=ds;if(S.div&&!ds.some(d=>key(d)===key(S.div)))S.div='';const list=S.div?(subs[key(S.div)]||[]):[...new Set(Object.values(subs).flat())].sort();if(S.sub&&!list.includes(S.sub))S.sub='';
   const option=(v,t,s)=>`<option value="${E(v)}" ${v===s?'selected':''}>${E(t)}</option>`;
-  let html=`<div class="sdh-controls"><label><b>Month / FY / Overall</b><select onchange="SDH.period(this.value)">${periods().map(x=>option(x,label(x),S.period)).join('')}</select></label><label><b>Division (detail pages)</b><select id="sdhDivSelect" onchange="SDH.division(this.value)">${option('','All Divisions',S.div)}${ds.map(x=>option(x,x,S.div)).join('')}</select></label><label><b>Sub Division (detail pages)</b><select id="sdhSubSelect" onchange="SDH.sub(this.value)">${option('','All Sub Divisions',S.sub)}${list.map(x=>option(x,x===SDR_OTHER_KEY?'Other Units':x,S.sub)).join('')}</select></label></div>`;
+  let html=`<div class="sdh-controls"><label><b>Month / FY / Overall</b><select onchange="SDH.period(this.value)">${periods().map(x=>option(x,label(x),S.period)).join('')}</select></label></div>`;
+  html+=`<div class="card" style="background:#f8fafc;border:1px solid #d4dce6"><div class="row" style="justify-content:space-between"><div><b style="font-size:16px">Common Division / Sub Division Selection</b><div class="hint">Only selected names will appear in every checked report type. No preview refresh until Done.</div></div><div class="row"><button class="b sm gray" onclick="SDH.commonAll(true)">Select All</button><button class="b sm gray" onclick="SDH.commonAll(false)">Clear All</button><button class="b sm gray" onclick="SDH.commonOpen()">${common.expanded?'Hide':'Show'} List</button></div></div><b id="sdhSelectedCount" class="hint">${selectedCount()} Sub Divisions selected</b>${common.expanded?commonMatrix():''}</div>`;
   if(NM)html+=`<div class="sdh-exclusions"><b>Region total inclusion:</b> <label><input type="checkbox" ${S.allowSehore?'checked':''} onchange="SDH.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${S.allowRMS?'checked':''} onchange="SDH.extra('rms',this.checked)"> Include RMS / ID Division</label><small>Only these two switches affect Region totals. Division / Sub Division page selection does not.</small></div>`;
-  html+='<div class="sdh-selector-table"><table class="sdh-main-table"><thead><tr><th style="width:25%">Report group</th><th>PDF pages to include</th><th style="width:95px">Selection</th></tr></thead><tbody>';
-  const section=(k,title,desc,body)=>`<tr class="sdh-group-head"><th><label><input type="checkbox" ${S.enabled[k]?'checked':''} onchange="SDH.group('${k}',this.checked)"> ${E(title)}</label><small>${E(desc)}</small></th><td>${body}</td><td><button class="b sm gray" onclick="SDH.expand('${k}')">${S.expanded[k]?'Hide':'Choose'} divisions</button></td></tr>${S.expanded[k]?`<tr><td colspan="3">${divMatrix(k)}</td></tr>`:''}`;
-  html+=section('sdrep','Sub Division Report','Individual office-wise detail report',checkbox('reportSub','Individual Sub Division PDF pages','Choose divisions and subdivisions below'));
-  html+=section('sdtarget','Sub Division Article Count Target','Target / achievement / percentage',checkbox('targetCurrent','Region Target PDF — Current Month','All regular divisions, current reporting month')+checkbox('targetFY','Region Target — Till Date in Current FY','April to current month; cumulative')+checkbox('targetDivision','Division-wise Target Tables','Include only selected division pages')+checkbox('targetSub','Specific Sub Division Target','Applicable when one Sub Division is selected')+checkbox('targetRegionDivision','Region Consolidated — Division-wise','For selected period')+checkbox('targetRegionDetail','Region Consolidated — Division + Sub Division','For selected period'));
-  html+=section('sdsum','Sub Division Monthly Summary','Month-by-month totals',checkbox('summarySub','Sub Division Monthly Summary PDFs','Choose the required divisions and subdivisions')+checkbox('summaryRegionDivision','Indore Region — Division Summary','All included regional divisions')+checkbox('summaryRegion','Indore Region — Overall Monthly Summary','Always at the end of this report group'));
-  html+=section('sdly','Sub Division Last Year Compare','Previous FY vs current FY',checkbox('lyDivision','Division-wise Last Year Comparison','All included Sub Divisions within each Division')+checkbox('lyOverall','Overall Individual Sub Division PDFs','Available for Overall period')+checkbox('lyRegionDivision','Indore Region — Division-wise Comparison','Independent of detail selection')+checkbox('lyRegionDetail','Indore Region — Division + SD Comparison','Independent of detail selection'));
+  html+='<div class="sdh-selector-table"><table class="sdh-main-table"><thead><tr><th style="width:29%">Report group</th><th>Report pages to include (common selection applies)</th></tr></thead><tbody>';
+  const section=(k,title,desc,body)=>`<tr class="sdh-group-head"><th><label><input type="checkbox" ${S.enabled[k]?'checked':''} onchange="SDH.group('${k}',this.checked)"> ${E(title)}</label><small>${E(desc)}</small></th><td>${body}</td></tr>`;
+  html+=section('sdrep','Sub Division Report','Office-wise detail report',checkbox('reportSub','Selected Sub Division detailed PDFs'));
+  html+=section('sdtarget','Sub Division Article Count Target','Target / achievement',checkbox('targetDivision','Division-wise targets (selected SD rows)')+checkbox('targetSub','Individual selected SD target PDFs'));
+  html+=section('sdsum','Sub Division Monthly Summary','One month = one consolidated page; FY / multiple months = month-wise selected SD pages',checkbox('summarySub','Selected Sub Division Monthly Summary')+checkbox('summaryRegionDivision','Selected Division consolidated summary')+checkbox('summaryRegion','Selected overall summary'));
+  html+=section('sdly','Sub Division Last Year Compare','Same selected names only',checkbox('lyDivision','Selected Division comparisons')+checkbox('lyRegionDivision','Selected Region division-wise comparison')+checkbox('lyRegionDetail','Selected Region Sub Division-wise comparison')+checkbox('lyOverall','Overall comparison (April–March)'));
   html+='</tbody></table></div>';
-  html+=`<div class="row" style="margin-top:14px"><button class="b" style="background:#187447" onclick="SDH.done()">✓ Done — Generate Preview</button><button class="b" onclick="SDH.download()">Download Selected PDF</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Google Sheets</button><button class="b alt" onclick="SDH.done()">Regenerate Preview</button><button class="b gray" onclick="SDH.all(true)">Select all types</button><button class="b gray" onclick="SDH.all(false)">Clear types</button><span id="sdhCount" class="hint"></span></div><p class="hint">Regional figures are never recalculated using the ticked Division/Sub Division PDF pages. Only New Mapping’s Include Sehore / Include RMS switches change regional scope. Google Sheets remain the source of historical target/count data.</p>`;
+  html+=`<div class="row" style="margin-top:14px"><button class="b" style="background:#187447" onclick="SDH.done()">✓ Done — Generate Preview</button><button class="b" onclick="SDH.download()">Download Selected PDF</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Google Sheets</button><button class="b alt" onclick="SDH.done()">Regenerate Preview</button><button class="b gray" onclick="SDH.all(true)">Select all types</button><button class="b gray" onclick="SDH.all(false)">Clear types</button><span id="sdhCount" class="hint"></span></div><p class="hint">All reports follow the common selected Division and Sub Division names. Historical comparison remains linked to Google Sheets; nothing is embedded offline.</p>`;
   root.innerHTML=html;markDirty();
  };
  const done=()=>{
@@ -4632,7 +4691,13 @@ const SDH=(()=>{
   document.querySelectorAll('input[data-sdh-type="'+type+'"][data-sdh-div="'+d+'"]').forEach(el=>{if(!el.disabled)el.checked=on});
   markDirty();
  };
- return {open,render,preview:done,done,download,allowed,filterMega,
+ const commonDivision=(d,v)=>{for(const sd of S._subs?.[d]||[])common.excluded[d+'|'+canonSub(sd)]=!v;
+  document.querySelectorAll('input[data-common-sd]').forEach(el=>{if(el.dataset.commonSd.startsWith(d+'|'))el.checked=v});commonChanged()};
+ const commonSub=(d,sd,v)=>{common.excluded[d+'|'+canonSub(sd)]=!v;const divEl=document.querySelector(`input[data-common-div="${d}"]`);if(divEl)divEl.checked=(S._subs?.[d]||[]).every(x=>selectedSD(d,x));commonChanged()};
+ const commonAll=v=>{for(const d of S._divs||divisions())for(const sd of S._subs?.[key(d)]||[])common.excluded[key(d)+'|'+canonSub(sd)]=!v;
+  document.querySelectorAll('input[data-common-sd],input[data-common-div]').forEach(el=>el.checked=v);commonChanged()};
+ const commonOpen=()=>{common.expanded=!common.expanded;render()};
+ return {open,render,preview:done,done,download,allowed,filterMega,commonDivision,commonSub,commonAll,commonOpen,
   period(v){S.period=v;render()},division:changeDivision,sub(v){S.sub=v;markDirty()},
   extra(k,v){if(k==='sehore')S.allowSehore=v;else S.allowRMS=v;render()},
   group(k,v){S.enabled[k]=v;markDirty()},expand(k){S.expanded[k]=!S.expanded[k];render()},
@@ -4655,7 +4720,12 @@ D0.fetchMonths();
 (function(){
  window.__BV=window.__BV||0;
  const bump=()=>{window.__BV++};
- ['click','change','input'].forEach(ev=>document.addEventListener(ev,bump,true));
+ ['click','change','input'].forEach(ev=>document.addEventListener(ev,function(e){
+  // Selecting a Division/Sub Division never modifies underlying article data.
+  // Do not throw away expensive NB.vals / sdrOffs / RP caches for UI-only clicks.
+  if(e.target&&e.target.closest&&e.target.closest('#p-sdh'))return;
+  bump();
+ },true));
  const now=()=>Date.now();
  /* NB.vals: per-month aggregation cache */
  {const _v=NB.vals;let vk=null,vc={};
