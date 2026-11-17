@@ -648,6 +648,7 @@ function load(){
 /* ---- global undo / redo for report data and settings ---- */
 const GH={u:[],r:[],last:JSON.stringify(DB),max:15};
 function save(){
+  window.__BV=(window.__BV||0)+1;
   try{
     const cur=JSON.stringify(DB);
     if(GH.last!==cur){GH.u.push(GH.last);if(GH.u.length>GH.max)GH.u.shift();GH.r=[]}
@@ -1697,7 +1698,7 @@ async function exportPDF(all,listOvr){
       else{
        const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:1100px';
        document.body.appendChild(host);
-       try{host.innerHTML=item.html();c=await html2canvas(host.firstChild,{scale:1.25,backgroundColor:'#ffffff'});}finally{host.remove()}
+       try{c=await H2C.shot(item.html(),1.25);}finally{host.remove()}
       }
       const orient=c.width>c.height*1.15?'l':'p';
       if(!pdf)pdf=new jsPDF({orientation:orient,unit:'mm',format:'a4'});else pdf.addPage('a4',orient);
@@ -2512,7 +2513,7 @@ NB.S=(()=>{let s={};try{s=JSON.parse(DBLS.getItem(NB.K)||'{}')}catch(e){}
  s.offD=s.offD||{};s.offM=s.offM||{};s.alias=s.alias||{};s.pm=s.pm||{};s.th=Object.assign({bo_all:10,bo_par:5,so_par:50,so_all:100},s.th||{});s.month=s.month||'';return s})();
 NB.db=()=>new Promise((res,rej)=>{if(!window.indexedDB)return rej();const r=indexedDB.open('nilBookDB',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej()});
 NB.load=async()=>{try{const db=await NB.db(),g=k=>new Promise(r=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r()});const d=await g('offD'),m=await g('offM');if(d)NB.S.offD=d;if(m)NB.S.offM=m}catch(e){}nbFillMs()};
-NB.save=()=>{const o=Object.assign({},NB.S);delete o.offD;delete o.offM;try{DBLS.setItem(NB.K,JSON.stringify(o))}catch(e){}NB.db().then(db=>{const t=db.transaction('kv','readwrite').objectStore('kv');t.put(NB.S.offD,'offD');t.put(NB.S.offM,'offM')}).catch(()=>{})};
+NB.save=()=>{window.__BV=(window.__BV||0)+1;const o=Object.assign({},NB.S);delete o.offD;delete o.offM;try{DBLS.setItem(NB.K,JSON.stringify(o))}catch(e){}NB.db().then(db=>{const t=db.transaction('kv','readwrite').objectStore('kv');t.put(NB.S.offD,'offD');t.put(NB.S.offM,'offM')}).catch(()=>{})};
 NB.catOf=p=>{const n=norm(p);if(n.includes('international'))return'IRGB';if(NB.S.pm[n])return NB.S.pm[n];if(NB.DEFPM[n])return NB.DEFPM[n];const c=catOf(p);return c==='MO'?'Other':c||null};
 NB.act=id=>!NB.S.alias[id];
 NB.S.extra=NB.S.extra||{};NB.S.unk=NB.S.unk||{};
@@ -2860,6 +2861,10 @@ const EXPORT_UI={
   },
   hide(){let e=document.getElementById('exportProgressHud');if(e)e.style.display='none'}
 };
+const H2C={fr:null,
+ get(){if(!this.fr||!this.fr.isConnected){const f=document.createElement('iframe');f.setAttribute('aria-hidden','true');f.style.cssText='position:fixed;left:-12000px;top:0;width:1100px;height:900px;border:0;pointer-events:none';document.body.appendChild(f);const d=f.contentDocument;d.open();d.write('<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#fff;width:1100px"></body></html>');d.close();document.querySelectorAll('head style,head link[rel=stylesheet]').forEach(x=>d.head.appendChild(x.cloneNode(true)));this.fr=f}return this.fr},
+ async shot(html,scale){clearTimeout(this.t);this.t=setTimeout(()=>H2C.done(),25000);const d=this.get().contentDocument;d.body.innerHTML=html;const el=d.body.firstElementChild;if(!el)throw Error('Empty page');return html2canvas(el,{scale,backgroundColor:'#ffffff',logging:false,imageTimeout:0,useCORS:false})},
+ done(){if(this.fr){this.fr.remove();this.fr=null}}};
 const exportFrame=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
 const exportJpeg=async(cv,quality)=>{
   const b=await new Promise((resolve,reject)=>cv.toBlob(x=>x?resolve(x):reject(Error('Image encoding failed')),'image/jpeg',quality));
@@ -2892,11 +2897,9 @@ async function sdrOriginalLayoutPDF(summaryOnly){
    EXPORT_UI.show('Sub-Division PDF',Math.round(i/pages.length*94),'Rendering page '+(i+1)+' of '+pages.length);await exportFrame();
    buttons.forEach(b=>b.textContent='Preparing '+(i+1)+'/'+pages.length+'…');
    // The same DOM markup that the original good-quality PDF exported.
-   host.innerHTML=p.html();
-   const root=host.firstElementChild;
-   if(!root)throw Error('Empty report page: '+p.t);
+   const _h=p.html();if(!_h)throw Error('Empty report page: '+p.t);
    // Keeping CSS width/height intact prevents split columns and blank extra pages.
-   const cv=await html2canvas(root,{scale:1.15,backgroundColor:'#fff',logging:false});
+   const cv=await H2C.shot(_h,1.15);
    const w=cv.width,h=cv.height;
    const im=await exportJpeg(cv,0.86);
    if(!doc)doc=new window.jspdf.jsPDF({orientation:w>h?'l':'p',unit:'px',format:[w,h],hotfixes:['px_scaling'],compress:true});
@@ -3181,7 +3184,7 @@ function rpRender(){if(!rpInit())return;try{if(!document.getElementById('monthSe
  const ms=document.getElementById('rpMonth');ms.innerHTML=NB.months().map(m=>`<option value="${m}" ${m===NB.S.month?'selected':''}>${mFull(m)}</option>`).join('')||'<option value="">no data</option>';nbFillMs();try{renderTgt()}catch(e){}
  document.getElementById('rpInfo').innerHTML=`<div class="msg">Last month with data: ${RP.VS.map(v=>rpVn(v)+' '+(RP.last[v]?rpMn(RP.last[v]):'-')).join(' | ')}\nCombined TOTAL is shown up to <b>${rpMn(RP.common)}</b>. Article count shown up to ${rpMn(RP.CML[RP.CML.length-1]||'2026-04')}.\nWhich pages go into the mega PPT / PDF, the cover title and the good-booking limits: Settings tab.</div>${lyWarnHTML()}`;rpShow()}
 function rpShow(){const P=RP.pages(),p=P[+document.getElementById('rpSel').value||0],v=document.getElementById('rpView');v.innerHTML='';if(!p)return;if(p.canvas){const c=p.canvas();c.style.maxWidth='100%';v.appendChild(c)}else v.innerHTML=p.html()}
-async function rpCv(p,host,scale=1.4){if(p.canvas)return p.canvas();let hh;RGX.set(p.rx||false);try{hh=p.html();if(p.rx)hh=RGX.str(hh)}finally{RGX.set(false)}host.innerHTML=hh;return html2canvas(host.firstChild,{scale,backgroundColor:'#fff',logging:false})}
+async function rpCv(p,host,scale=1.4){if(p.canvas)return p.canvas();let hh;RGX.set(p.rx||false);try{hh=p.html();if(p.rx)hh=RGX.str(hh)}finally{RGX.set(false)}return H2C.shot(hh,scale)}
 async function rpJPG(p,fn){p=p||RP.pages()[+document.getElementById('rpSel').value||0];if(!p)return;if(!p.canvas&&!(await needLib2('html2canvas')))return;const h=document.createElement('div');h.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(h);const c=await rpCv(p,h);h.remove();c.toBlob(b=>saveBlob(b,(fn||p.t).replace(/[^\w]+/g,'_')+'.jpg'),'image/jpeg',.95)}
 function rpXLSX(){const t=document.querySelector('#rpView table');if(!t)return alert('This page has no table');const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.table_to_sheet(t),'Report');XLSX.writeFile(wb,'Report.xlsx')}
 function rpSaveCover(){const c=rpCfg();c.title=document.getElementById('rpT').value;c.sub=document.getElementById('rpS').value;c.badge=document.getElementById('rpB').value;NB.save();toast('Saved')}
@@ -3341,7 +3344,7 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
   if(pg.g==='sdrep'){
    if(!(await needLib2('html2canvas')))throw Error('html2canvas is required for Sub Division PPT');
    const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:1100px';document.body.appendChild(host);
-   try{host.innerHTML=pg.html();const cv=await html2canvas(host.firstChild,{scale:1.05,backgroundColor:'#ffffff',logging:false});
+   try{const cv=await H2C.shot(pg.html(),1.05);
     const slide=p.addSlide(),k=Math.min(12.8/cv.width,7.15/cv.height);
     slide.background={color:'FFFFFF'};slide.addImage({data:cv.toDataURL('image/jpeg',.88),x:(13.33-cv.width*k)/2,y:(7.5-cv.height*k)/2,w:cv.width*k,h:cv.height*k});
    }finally{host.remove()}
@@ -4041,7 +4044,7 @@ function tblFor(rep,basis,scope,dv,sel){
 function pages(){
   const labs=labels();if(!labs.length||!window.SBX)return[];
   const sel=S.sel&&S.months[S.sel]?S.sel:(S.cur||labs[labs.length-1]),out=[];
-  const P=(g,rep,basis,scope,dv)=>{const b=()=>tblFor(rep,basis,scope,dv,sel);out.push({g,t:b().title,sb:'tbl',sel:'',build:b,pd:dvPage(dv),html:()=>SBX.tblHTML(b())})};
+  const P=(g,rep,basis,scope,dv)=>{let _c;const b=()=>_c||(_c=tblFor(rep,basis,scope,dv,sel));out.push({g,get t(){return b().title},sb:'tbl',sel:'',build:b,pd:dvPage(dv),html:()=>SBX.tblHTML(b())})};
   const dvs=['REGION',...DIVO.filter(d=>labs.some(l=>Object.keys(S.months[l]).some(id=>S.meta[id]&&S.meta[id].div===d)))];
   ['b','p','m'].forEach(b=>['x','a','b'].forEach(s=>{dvs.forEach(dv=>P('d0s','sum_sd',b,s,dv));P('d0v','sum_dv',b,s,'REGION')}));
   [['d0a','m_a'],['d0r','m_r'],['d0d','m_d'],['d0x','m_x']].forEach(([g,rep])=>['b','p','m'].forEach(b=>['x','a','b'].forEach(s=>dvs.forEach(dv=>P(g,rep,b,s,dv)))));
@@ -4440,7 +4443,7 @@ const LYCOMPARE=(()=>{
  const divisionalPage=(d,v,ms,p)=>{const rec=allSubs(d).map(s=>({s,z:reduce(d,s,v,ms)})),total=add(rec.map(x=>x.z)),allAdj=rec.flatMap(x=>x.z.adjust);return wrap(`${v} ARTICLE COUNT · LAST YEAR COMPARISON`,`${d} · ${monthTitle(p)}`,table(rec.map(x=>tr(x.s,x.z)).join('')+tr('DIVISION TOTAL',total,'total'),'Sub Division',ms.length===1?dateLabel(ms[0]):'Selected Period'),`Last year refers exclusively to FY 2025–26; current year refers exclusively to FY 2026–27. ${allAdj.length} local CSV adjustment(s) detected.`)};
  const regionPage=(v,ms,p,detailed=false)=>{const divisions=allDiv().filter(d=>typeof SDH==="undefined"||SDH.allowed(d)),r=[];if(detailed){for(const d of divisions){for(const s of allSubs(d)){r.push({name:d+' · '+s,z:reduce(d,s,v,ms)})}}}else for(const d of divisions)r.push({name:d,z:group(d,v,ms)});const total=add(r.map(x=>x.z));return wrap(`${v} · INDORE REGION GRAND TOTAL`,`${detailed?'DIVISION + SUB DIVISION':'DIVISION-WISE'} · ${monthTitle(p)}`,table(r.map(x=>tr(x.name,x.z)).join('')+tr('INDORE REGION GRAND TOTAL',total,'total'),detailed?'Division / Sub Division':'Division',ms.length===1?dateLabel(ms[0]):'Selected Period'))};
  const overallPage=(d,s,v)=>{const rs=M24.map(m=>({m,z:reduce(d,s,v,[m])}));const t=add(rs.map(x=>x.z));const issues=rs.flatMap(x=>x.z.adjust);const body=`<div style="font-weight:900;color:#a60e1c;font-size:19px;border-bottom:3px solid #fdb913;margin:14px 0 4px">${v} · APRIL TO MARCH</div>`+table(rs.map(x=>tr(dateLabel(fyPrev(x.m))+' vs '+dateLabel(x.m),x.z)).join('')+tr('FULL YEAR TOTAL',t,'total'),'Month-wise Comparison');return wrap(v+' · OVERALL ARTICLE COUNT COMPARISON',`${d} · ${s} · FY 2025–26 vs FY 2026–27`,body,`${issues.length} local adjustment(s); future/unuploaded current months shown as —, not zero.`)};
- const buildPages=(p=STATE.period)=>{invalidate();if(!p)p=M24.filter(m=>m<=now()).at(-1)||M24[0];const out=[],ms=periodMonths(p),mapD=d=>RP.DMAP[d]||RP.DV.find(x=>x.toUpperCase()===d)||d,mode=NM?'n':'o';if(!rows(mode).length)return out;
+ const buildPages=(p=STATE.period)=>{if(CACHED.__bv!==window.__BV){invalidate();CACHED.__bv=window.__BV}if(!p)p=M24.filter(m=>m<=now()).at(-1)||M24[0];const out=[],ms=periodMonths(p),mapD=d=>RP.DMAP[d]||RP.DV.find(x=>x.toUpperCase()===d)||d,mode=NM?'n':'o';if(!rows(mode).length)return out;
  if(p==='OVERALL'){for(const d of allDiv())for(const s of allSubs(d))for(const v of VERT)out.push({g:'sdly',d:mapD(d),pd:mapD(d),t:`Overall: ${d} · ${s} · ${v}`,html:()=>overallPage(d,s,v)});for(const v of VERT)for(const detailed of [false,true])out.push({g:'sdly',d:'Indore Region',pd:'Indore Region',t:`Indore Region Overall ${v} ${detailed?'sub divisions':'divisions'}`,html:()=>regionPage(v,M24,p,detailed)});return out}
  for(const d of allDiv())for(const v of VERT)out.push({g:'sdly',d:mapD(d),pd:mapD(d),t:`${d} · ${v} · ${monthTitle(p)}`,html:()=>divisionalPage(d,v,ms,p)});
  for(const v of VERT)for(const detailed of [false,true])out.push({g:'sdly',d:'Indore Region',pd:'Indore Region',t:`Indore Region · ${v} · ${detailed?'Division + SD':'Division-wise'}`,html:()=>regionPage(v,ms,p,detailed)});
@@ -4602,6 +4605,33 @@ LYCOMPARE.refresh(false);
 UPM.render();
 try{updBadge()}catch(e){}
 D0.fetchMonths();
+</script>
+<script type="text/x-deferred">
+/* ===================== PERFORMANCE PATCH: caching + fewer rebuilds ===================== */
+(function(){
+ window.__BV=window.__BV||0;
+ const bump=()=>{window.__BV++};
+ ['click','change','input'].forEach(ev=>document.addEventListener(ev,bump,true));
+ const now=()=>Date.now();
+ /* NB.vals: per-month aggregation cache */
+ {const _v=NB.vals;let vk=null,vc={};
+  NB.vals=function(ym){const k=window.__BV+'|'+(NB.S.offD?Object.keys(NB.S.offD).length:0);if(vk!==k){vk=k;vc={}}return vc[ym]||(vc[ym]=_v.apply(this,arguments))}}
+ /* sdrOffs cache */
+ {const _o=sdrOffs;let ok=null,ov=null;
+  sdrOffs=function(){const k=window.__BV+'|'+(typeof NM!=='undefined'?NM:'');if(ok!==k||!ov){ov=_o.apply(this,arguments);ok=k}return ov}}
+ /* RP.build: the wrapper builds 3 times; skip if nothing changed */
+ {const _b=RP.build;let bk=null,bt=0;
+  RP.build=function(){const k=window.__BV+'|'+(typeof NM!=='undefined'?NM:'')+'|'+(RP.DV0||[]).join(',');
+   if(bk===k&&RP._A&&now()-bt<4000){try{RGX.on=false}catch(e){}try{SBX.setX(false)}catch(e){}try{if(window.D0)D0.setX(false)}catch(e){}
+    try{NB.DIVO.length=0;RGX.NBD.forEach(d=>NB.DIVO.push(d))}catch(e){}
+    RP.DV=RP.DV0.slice();Object.assign(RP,RP._A);return}
+   const r=_b.apply(this,arguments);bk=k;bt=now();return r}}
+ /* RP.pages: list is rebuilt only when something changed (or after 3s) */
+ {const _p=RP.pages;let pk=null,pv=null,pt=0;
+  RP.pages=function(){const ms=document.getElementById('monthSel'),k=window.__BV+'|'+(ms?ms.value:'')+'|'+(typeof NM!=='undefined'?NM:'')+'|'+(typeof RGX!=='undefined'?RGX.on:'')+'|'+(RP.DV||[]).join(',');
+   if(pk===k&&pv&&now()-pt<3000)return pv.slice();
+   const r=_p.apply(this,arguments);pk=k;pv=r;pt=now();return r.slice()}}
+})();
 </script>
 <script type="text/x-deferred">document.getElementById('mapSel').value=NM?'n':'o';if(NM)setMap('n');
 try{renderReport();updBadge()}catch(e){console.error('renderReport',e);setTimeout(function(){throw e})}
