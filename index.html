@@ -264,7 +264,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <section id="p-sdh" style="display:none">
   <div class="card"><h3>Sub Division Reports — PDF Page Selection &amp; Full Preview</h3>
   <div class="hint">Choose report types, divisions and sub divisions. Preview follows the exact selected PDF page order. New mapping excludes Sehore and RMS unless expressly included.</div>
-  <div id="sdHubBody"></div></div>
+  <div id="sdHubBody"></div><div id="sdhAuditBox"></div></div>
   <div class="card"><h3>Selected PDF — Overall Preview</h3><div id="sdHubPreview"></div></div>
 </section>
 <!-- ============ TARGET vs ACHIEVEMENT ============ -->
@@ -444,6 +444,7 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
 <button class="b" onclick="rpPPT()">Download mega PPT</button><button class="b" onclick="rpPDF()">Download mega PDF</button>
 <div style="overflow:auto;margin-top:10px;border:1px solid #ddd" id="rpView"></div></div></section>
 <section id="p-settings" style="display:none">
+   <div class="card"><h3>Sub Division Report — CSV/PDF Difference &amp; Office Mapping Correction</h3><div id="sdhSettingsAudit"></div></div>
   <div class="card"><h3>D+0 report settings</h3><div class="row">Worst lists show <input type="number" id="d0N" min="1" style="width:60px"> offices &bull; Minimum mail (Received) to count an office: RTS+Redirect lists <input type="number" id="d0MinR" min="0" style="width:70px"> &bull; Total Actioned lists <input type="number" id="d0MinA" min="0" style="width:70px"> <button class="b sm" onclick="D0.setSet()">Save</button></div><div class="hint">Offices with fewer articles received than the minimum are left out of the worst SO / BO lists, so 1 return out of 1 article does not show as 100%.</div></div>
   <div class="card"><h3>D+0: offices not in office master</h3><div id="d0UnmBox"></div><div class="hint" style="margin-top:6px">Offices of the uploaded D+0 "table" file whose Office ID is not in the built-in master. For each one choose: (A) <b>NEW office</b> - select the division first, then the sub-division of that division, then the class, and press Save; or (B) <b>Add its numbers to an existing office ID</b> - write the office ID it belongs to and press Save. The reports are rebuilt immediately and the choice is remembered for the next uploads.</div></div>
   <div class="card"><h3>SB office not mapped</h3><div id="sbMapBox"></div><div class="hint" style="margin-top:6px">BO ID / SOL ID found in the uploaded POSB files but not in the mapping sheet. Until you fix it, its numbers are counted in the division written next to the code (sub-division &ldquo;SB OFFICE NOT MAPPED&rdquo;). Add it as a new office (name, class, sub-division) or add its numbers to another ID.</div></div>
@@ -2646,12 +2647,64 @@ function nbHTML(key,ym){const {G,th}=nbBuild(key,ym),R=NB.REP[key];const pc=(a,b
 const SDR={dv:'',sd:'',ym:'',th:{bo:10,so:200,sop:50}};
 const SDR_DVN=['INDORE','DEWAS','DHAR','KHANDWA','KHARGONE','MANDSAUR','RATLAM','SEHORE','UJJAIN'];
 /* Office list of the ACTIVE mapping: old -> Old Office Mapping (NB_OFF), new -> New Office Mapping (NEW_DSD / NEW_OFFMAP / NEW_CLS) */
+/* ===== SD booking reconciliation and mapping corrections =====
+   Overrides modify REPORT allocation only. Uploaded CSV and published Google Sheets are never changed. */
+const SD_AUDIT={
+ key:'sdOfficeFixV2',fixes:{},
+ load(){try{this.fixes=JSON.parse(localStorage.getItem(this.key)||'{}')||{}}catch(e){this.fixes={}}},
+ save(){try{localStorage.setItem(this.key,JSON.stringify(this.fixes))}catch(e){console.warn('Cannot save mapping',e)}},
+ name(id){return (NB_OFF[id]||[])[0]||(NB.S.unk[id]||{}).n||id},
+ // Two known Indore non-subdivisional booking offices are assigned to Other Units.
+ base(id){if(id==='23250002'||id==='23260014')return {dv:NM?'INDORE':'INDORE CITY',sd:'OTHER UNITS OF DIVISION',cl:'OTHER'};return null},
+ override(id){return this.fixes[(NM?'n:':'o:')+id]||this.base(id)},
+ assign(id){const el=document.getElementById('sda-d-'+id),sl=document.getElementById('sda-s-'+id);if(!el||!sl||!el.value||!sl.value)return alert('Division and Sub Division must be selected');this.fixes[(NM?'n:':'o:')+id]={dv:el.value,sd:sl.value,cl:'OTHER'};this.save();this.changed()},
+ remove(id){delete this.fixes[(NM?'n:':'o:')+id];this.save();this.changed()},
+ changed(){try{LYCOMPARE.invalidate()}catch(e){}try{SDH.render()}catch(e){}try{if(curDiv==='SDLY')LYCOMPARE.render()}catch(e){}try{rpRender()}catch(e){}},
+ norm(s){return String(s||'').toUpperCase().trim().replace(/\s+/g,' ').replace(/ DIVISION$/,'')},
+ div(s){const x=this.norm(s);return x==='INDORE CITY DIVISION'?'INDORE CITY':x==='ID DIVISION INDORE'?'INDORE RMS':x},
+ counts(a){return {Parcel:+a[4]||0,MO:(+a[2]||0)+(+a[6]||0),IRGB:+a[0]||0}},
+ scope(d){const n=this.div(d);if(!n)return false;if(NM&&!((typeof SDH==='undefined')||SDH.allowed(n)))return false;return true},
+ scan(period){const months=period==='OVERALL'||period==='ALL'||/^FY/.test(period)?NB.months().filter(m=>m>='2026-04'&&m<='2027-03'):NB.months().filter(m=>m===period);
+ const offices=sdrOffs(),unassigned={},raw={},mapped={},missing={},records=[];
+ const bump=(dest,d,v,n)=>{const k=d+'|'+v;dest[k]=(dest[k]||0)+n};
+ for(const m of months){const vals=NB.vals(m);for(const id in vals){const c=this.counts(vals[id]);if(!Object.values(c).some(Boolean))continue;const info=offices[id],ref=NB_OFF[id]||[],unknown=NB.S.unk[id]||{},baseDiv=info?.dv||ref[3]||unknown.d||'',d=this.div(baseDiv);
+  // Source totals by effective mapped division (or uploaded office hint when missing); report totals only for valid sub-divisions.
+  const rawDiv=this.div(info?.dv||unknown.d||ref[3]||'');
+  const entry={id,name:this.name(id),month:m,rawDiv,mappedDiv:d,sd:info?.sd||'',counts:c};records.push(entry);
+  for(const v of ['Parcel','MO','IRGB']){if(rawDiv)bump(raw,rawDiv,v,c[v]);if(info&&info.dv&&info.sd&&NB.act(id))bump(mapped,d,v,c[v]);else if(rawDiv)bump(missing,rawDiv,v,c[v])}
+  if(!info||!info.dv||!info.sd||!NB.act(id)){
+   const e=unassigned[id]=unassigned[id]||{id,name:this.name(id),source:rawDiv,reason:!info?'Office ID absent from mapping':!info.sd?'Sub Division not mapped':!NB.act(id)?'Office marked alias/inactive':'Division missing',counts:{Parcel:0,MO:0,IRGB:0}};
+   for(const v in c)e.counts[v]+=c[v];
+  }
+ }}
+ // Source and report mapping may intentionally differ after a reorganisation: flag discrepancies, not silently discard.
+ const diffs=[];for(const k of new Set([...Object.keys(raw),...Object.keys(mapped)])){const [d,v]=k.split('|');if(!this.scope(d))continue;const a=raw[k]||0,b=mapped[k]||0;if(a!==b)diffs.push({d,v,raw:a,mapped:b,diff:a-b})}
+ return {months,unassigned:Object.values(unassigned),diffs,raw,mapped,records};
+ },
+ view(period,compact=false){const r=this.scan(period),fmt=n=>Number(n||0).toLocaleString('en-IN'),e=x=>esc(String(x??''));
+ if(!r.months.length)return '<div class="msg warn"><b>Booking reconciliation:</b> No post-office-wise uploaded booking data for selected period.</div>';
+ const optsD=[...new Set([...sdrDivs(),...LYCOMPARE.sourceDivisions()])].filter(Boolean).sort();
+ const divSelect=(id,selected)=>'<select id="sda-d-'+id+'" onchange="SD_AUDIT.choose(\''+id+'\')"><option value="">Choose division</option>'+optsD.map(d=>'<option value="'+e(d)+'" '+(this.div(d)===this.div(selected)?'selected':'')+'>'+e(d)+'</option>').join('')+'</select>';
+ const subSelect=(id,selected,dv)=>{const subds=LYCOMPARE.sourceSubs(this.div(dv));const arr=[...new Set([...subds,'OTHER UNITS OF DIVISION'])];return '<select id="sda-s-'+id+'"><option value="">Choose Sub Division</option>'+arr.map(x=>'<option value="'+e(x)+'" '+(this.norm(x)===this.norm(selected)?'selected':'')+'>'+e(x)+'</option>').join('')+'</select>'};
+ const rows=r.unassigned.map(x=>'<tr><td>'+e(x.id)+'</td><td>'+e(x.name)+'</td><td>'+e(x.source)+'</td><td>'+fmt(x.counts.Parcel)+'</td><td>'+fmt(x.counts.MO)+'</td><td>'+fmt(x.counts.IRGB)+'</td><td>'+e(x.reason)+'</td><td>'+divSelect(x.id,x.source)+' '+subSelect(x.id,'',x.source)+' <button class="b sm" onclick="SD_AUDIT.assign(\''+x.id+'\')">Save mapping</button></td></tr>').join('');
+ const discrepancies=r.diffs.map(x=>'<tr><td>'+e(x.d)+'</td><td>'+e(x.v)+'</td><td>'+fmt(x.raw)+'</td><td>'+fmt(x.mapped)+'</td><td style="color:#a50e19;font-weight:700">'+fmt(x.diff)+'</td></tr>').join('');
+ let result='<div class="msg '+(r.unassigned.length||r.diffs.length?'warn':'')+'" style="margin:10px 0"><b>Booking CSV vs Sub Division PDF audit:</b> '+r.months.map(e).join(', ')+' · '+(r.diffs.length?'⚠ '+r.diffs.length+' division/vertical total differences':'All source division/vertical totals matched')+' · '+r.unassigned.length+' unmapped/ignored Office IDs. <button class="b sm gray" onclick="SD_AUDIT.changed()">Recheck</button></div>';
+ if(discrepancies)result+='<div style="overflow:auto"><table class="s2" style="width:100%"><tr><th>Division</th><th>Vertical</th><th>Uploaded CSV</th><th>Mapped PDF count</th><th>CSV minus PDF</th></tr>'+discrepancies+'</table></div>';
+ if(rows)result+='<details open style="margin:10px 0"><summary><b>Mapping required: '+r.unassigned.length+' offices</b> — choose the correct Sub Division and Save</summary><div style="overflow:auto"><table class="s2"><tr><th>Office ID</th><th>Office</th><th>Source Division</th><th>Parcel</th><th>MO</th><th>IRGB</th><th>Problem</th><th>Correct mapping</th></tr>'+rows+'</table></div></details>';
+ if(!compact){const fixed=Object.entries(this.fixes).filter(([k])=>k.startsWith(NM?'n:':'o:'));if(fixed.length)result+='<details><summary>Saved office mapping corrections ('+fixed.length+')</summary>'+fixed.map(([k,o])=>'<div>'+e(k.slice(2))+' → '+e(o.dv)+' / '+e(o.sd)+' <button class="b sm gray" onclick="SD_AUDIT.remove(\''+e(k.slice(2))+'\')">Reset</button></div>').join('')+'</details>';
+  result+='<p class="hint">Indore BNPL GPO (23250002) and Indore BPC (23260014) default to Other Units. Assignments here affect only reports, not Google Sheets or uploaded CSV. The audit compares all loaded booking counts against counts allocated to mapped Sub Divisions. For unmapped offices, the source division is taken from available uploaded/master information; verify transfers manually.</p>'}
+ return result;
+ },
+ choose(id){const d=document.getElementById('sda-d-'+id),s=document.getElementById('sda-s-'+id);if(!d||!s)return;const opts=[...new Set([...LYCOMPARE.sourceSubs(this.div(d.value)),'OTHER UNITS OF DIVISION'])];s.innerHTML='<option value="">Choose Sub Division</option>'+opts.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')}
+};
+SD_AUDIT.load();
 function sdrOffs(){
- if(!NM){const L={};for(const id in NB_OFF){const e=NB_OFF[id];L[id]={nm:e[0],cl:e[1],sd:e[2],dv:e[3]}}return L}
+ if(!NM){const L={};for(const id in NB_OFF){const e=NB_OFF[id];L[id]={nm:e[0],cl:e[1],sd:e[2],dv:e[3]}}for(const id of new Set([...Object.keys(L),...Object.keys(SD_AUDIT.fixes).filter(k=>k.startsWith('o:')).map(k=>k.slice(2)),'23250002','23260014'])){const q=SD_AUDIT.override(id);if(q)L[id]={...(L[id]||{}),nm:SD_AUDIT.name(id),...q}}return L}
  const L={},ids=new Set([...Object.keys(NEW_OFFMAP),...Object.keys(NEW_DSD)]);
  ids.forEach(id=>{const q=NEW_DSD[id],o=NB_OFF[id]||[];
   let dv=q?q[0]:(NEW_OFFMAP[id]||'');dv=String(dv).toUpperCase();if(!dv)return;
   L[id]={nm:o[0]||id,cl:String(NEW_CLS[id]||o[1]||'').toUpperCase(),sd:(q&&q[1])||'',dv}});
+ for(const id of new Set([...Object.keys(L),...Object.keys(SD_AUDIT.fixes).filter(k=>k.startsWith('n:')).map(k=>k.slice(2)),'23250002','23260014'])){const q=SD_AUDIT.override(id);if(q)L[id]={...(L[id]||{}),nm:SD_AUDIT.name(id),...q}}
  return L}
 function sdrDivs(){return NM?SDR_DVN.slice():NB.DIVO.slice()}
 function sdrVals(ym){
@@ -2684,7 +2737,7 @@ function sdrSelectedMonths(ym){
  return chosen.filter(m=>uploaded.includes(m));
 }
 const SDR_OTHER_KEY='__SDR_OTHER_UNITS__';
-const sdrOther=sd=>SDR_OTH.test(sd);
+const sdrOther=sd=>SDR_OTH.test(sd)||/OTHER\s*UNITS?/i.test(String(sd));
    /* BPC / BNPL / IDC are NOT sub divisions: shown together as "Other Units of Division" */
 const sdrPc=(a,b)=>b>0?(a*100/b).toFixed(1)+'%':'0.0%';
 function sdrRows(ym,dvSel,sdSel){
@@ -4292,7 +4345,7 @@ const SDTGT=(()=>{
  const fmt=x=>Number(x||0).toLocaleString('en-IN',{maximumFractionDigits:0});
  const pct=(n,d)=>d>0?(100*n/d).toFixed(2)+'%':'—';
  const sum=(arr,field)=>arr.reduce((z,x)=>z+(x[field]||0),0);
- const actuals=()=>{const res={};const O=sdrOffs();for(const m of periodMonths(S.period)){const vals=NB.vals(m)||{};for(const id in vals){if(!NB.act(id))continue;const e=O[id];if(!e||!e.dv||!e.sd)continue;const dv=divKey(e.dv),sd=sdKey(sdrOther(e.sd)?'OTHER UNITS (combined)':e.sd),a=vals[id];const v={Parcel:+a[4]||0,MO:(+a[2]||0)+(+a[6]||0),IRGB:+a[0]||0};for(const vert of V){const key=[dv,sd,vert,m].join('|');res[key]=(res[key]||0)+v[vert]}}}return res};
+ const actuals=()=>{const res={};const O=sdrOffs();for(const m of periodMonths(S.period)){const vals=NB.vals(m)||{};for(const id in vals){if(!NB.act(id))continue;const e=O[id];if(!e||!e.dv||!e.sd)continue;const dv=divKey(e.dv),sd=sdKey(sdrOther(e.sd)?'OTHER UNITS OF DIVISION':e.sd),a=vals[id];const v={Parcel:+a[4]||0,MO:(+a[2]||0)+(+a[6]||0),IRGB:+a[0]||0};for(const vert of V){const key=[dv,sd,vert,m].join('|');res[key]=(res[key]||0)+v[vert]}}}return res};
  // Some office-master names differ in spacing/spelling from target lists; avoid silently allocating unrelated offices.
  const rowsFor=(dv,v,mo,tc,ac)=>{const list=[...new Set(activeRows().filter(r=>divKey(r[0])===dv&&vm(r[2])===v&&mo.includes(month(r[3]))).map(r=>sdKey(r[1])))].sort();return list.map(sd=>{let prevT=0,prevA=0,curT=0,curA=0,hasPrev=false,hasCur=false;for(const m of mo){const key=[dv,sd,v,m].join('|'),has=Object.prototype.hasOwnProperty.call(tc,key);if(m===mo.at(-1)){curT+=tc[key]||0;curA+=ac[key]||0;hasCur ||= has}else{prevT+=tc[key]||0;prevA+=ac[key]||0;hasPrev ||= has}}return {sd,prevT,prevA,curT,curA,hasPrev,hasCur,t:prevT+curT,a:prevA+curA}})};
  const prettyV=v=>v==='MO'?'MO':v==='IRGB'?'IRGB':'PARCEL';
@@ -4352,7 +4405,7 @@ const LYCOMPARE=(()=>{
  const STATE={period:'',div:'',sd:'',vertical:'PARCEL',page:0};
  const norm=s=>String(s==null?'':s).toUpperCase().trim().replace(/\s+/g,' ');
  const div=s=>{let x=norm(s).replace(/\s+DIVISION$/,'');if(x==='INDORE CITY')return x;if(x==='INDORE MFL')return x;if(x==='INDORE')return 'INDORE';return x};
- const sub=s=>norm(s).replace(/[.\-]+/g,' ').replace(/\s+/g,' ').trim();
+ const sub=s=>{const x=norm(s).replace(/[.\-]+/g,' ').replace(/\s+/g,' ').trim();return /OTHER\s*UNITS?/.test(x)||/^(BNPL|BPC|IDC)(\b| )/.test(x)?'OTHER UNITS OF DIVISION':x};
  const vertical=s=>{let v=norm(s);return /PARCEL/.test(v)?'PARCEL':/^(MO|MAIL)/.test(v)?'MO':/IRGB|INTERNATIONAL/.test(v)?'IRGB':''};
  const fmt=n=>Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:0});
  const dateLabel=m=>mFull(m);
@@ -4366,7 +4419,7 @@ const LYCOMPARE=(()=>{
  const parse=t=>{const grid=irGrid(t),ix=grid.findIndex(r=>r.some(x=>/^division$/i.test(String(x).trim())));if(ix<0)throw Error('Division header not found');const h=grid[ix].map(x=>norm(x));const dc=h.indexOf('DIVISION'),sc=h.indexOf('SUB DIVISION'),vc=h.indexOf('VERTICAL');if(dc<0||sc<0||vc<0)throw Error('Division, Sub Division, Vertical missing');const monthCols=h.map((n,i)=>{let z=n.match(/^(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*[- /]*(25|26|2025|2026)$/),rev=n.match(/^(25|26|2025|2026)[- /]*(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*$/);if(!z&&!rev)return null;const yearPart=z?z[2]:rev[1],monthPart=z?z[1]:rev[2];const y=yearPart.length===2?+('20'+yearPart):+yearPart,m=({JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12})[monthPart];return [i,`${y}-${String(m).padStart(2,'0')}`]}).filter(Boolean);if(monthCols.length!==12||!['2025-04','2025-05','2025-06','2025-07','2025-08','2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03'].every(m=>monthCols.some(x=>x[1]===m)))throw Error('Expected 25-Apr through 26-Mar (or Apr-25 through Mar-26) columns');const out=[];for(const r of grid.slice(ix+1)){const d=div(r[dc]),s=sub(r[sc]),v=vertical(r[vc]);if(!d||!s||!v)continue;for(const [i,m] of monthCols){const val=Number(String(r[i]??'').replace(/,/g,''));if(Number.isFinite(val))out.push([d,s,v,m,val])}}if(!out.length)throw Error('No valid last-year numbers found');return out};
  const merge=mode=>{const data={};for(const r of rows(mode))data[key(r[0],r[1],r[2],r[3])]=Number(r[4])||0;return data};
  const data={o:{},n:{}};const rebuild=()=>MODES.forEach(m=>data[m]=merge(m));rebuild();
- const actualByMonth=(ym)=>{const o={};if(!NB.months().includes(ym))return o;const off=sdrOffs(),vals=NB.vals(ym);for(const id in vals){const e=off[id];if(!e||!e.dv||!e.sd||!NB.act(id))continue;const d=div(e.dv),s=sub(sdrOther(e.sd)?'OTHER UNITS (combined)':e.sd),a=vals[id];for(const [v,value] of [['PARCEL',+a[4]||0],['MO',(+a[2]||0)+(+a[6]||0)],['IRGB',+a[0]||0]]){const k=key(d,s,v,ym);o[k]=(o[k]||0)+value}}return o};
+ const actualByMonth=(ym)=>{const o={};if(!NB.months().includes(ym))return o;const off=sdrOffs(),vals=NB.vals(ym);for(const id in vals){const e=off[id];if(!e||!e.dv||!e.sd||!NB.act(id))continue;const d=div(e.dv),s=sub(sdrOther(e.sd)?'OTHER UNITS OF DIVISION':e.sd),a=vals[id];for(const [v,value] of [['PARCEL',+a[4]||0],['MO',(+a[2]||0)+(+a[6]||0)],['IRGB',+a[0]||0]]){const k=key(d,s,v,ym);o[k]=(o[k]||0)+value}}return o};
  const CACHED={};const actual=m=>CACHED[m]|| (CACHED[m]=actualByMonth(m));
  const invalidate=()=>{for(const m in CACHED)delete CACHED[m]};
  const get=(d,s,v,m)=>{const mode=NM?'n':'o',k=key(d,s,v,m),p=fyPrev(m),baseline=data[mode][key(d,s,v,p)],prevUploaded=NB.months().includes(p),curUploaded=NB.months().includes(m),pa=actual(p),ca=actual(m);return {last:baseline===undefined?null:baseline,now:curUploaded?(ca[k]||0):null,baseline,adjust:false,prevUploaded:false,curUploaded}};
@@ -4528,7 +4581,7 @@ const SDH=(()=>{
   html+=section('sdly','Sub Division Last Year Compare','Previous FY vs current FY',checkbox('lyDivision','Division-wise Last Year Comparison','All included Sub Divisions within each Division')+checkbox('lyOverall','Overall Individual Sub Division PDFs','Available for Overall period')+checkbox('lyRegionDivision','Indore Region — Division-wise Comparison','Independent of detail selection')+checkbox('lyRegionDetail','Indore Region — Division + SD Comparison','Independent of detail selection'));
   html+='</tbody></table></div>';
   html+=`<div class="row" style="margin-top:14px"><button class="b" onclick="SDH.download()">Download Selected PDF</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Google Sheets</button><button class="b alt" onclick="SDH.preview()">Preview All Selected PDF Pages</button><button class="b gray" onclick="SDH.all(true)">Select all types</button><button class="b gray" onclick="SDH.all(false)">Clear types</button><span id="sdhCount" class="hint"></span></div><p class="hint">Regional figures are never recalculated using the ticked Division/Sub Division PDF pages. Only New Mapping’s Include Sehore / Include RMS switches change regional scope. Google Sheets remain the source of historical target/count data.</p>`;
-  root.innerHTML=html;preview();
+  root.innerHTML=html;preview();const auditing=document.getElementById('sdhAuditBox');if(auditing)auditing.innerHTML=SD_AUDIT.view(effective());
  };
  let observer=null;
  const preview=()=>{const root=document.getElementById('sdHubPreview');if(!root)return;const a=build();window.__sdhPages=a;const hasLY=!!LYCOMPARE.buildPages(effective()).length;const warning=S.enabled.sdly&&!hasLY?'<div class="msg warn"><b>Last Year Compare:</b> '+E(LYCOMPARE.sourceStatus())+' <button class="b sm" onclick="LYCOMPARE.refresh()">Retry Google Sheets</button></div>':'';const counter=document.getElementById('sdhCount');if(counter)counter.textContent=a.length+' page(s) in PDF · '+a.filter(x=>x.g==='sdly').length+' Last Year Compare';if(observer){observer.disconnect();observer=null}if(!a.length){root.innerHTML=warning+'<div class="msg warn">No matching PDF pages. Choose a report group or check uploaded data and Google Sheets.</div>';return}
@@ -4551,6 +4604,9 @@ try{updBadge()}catch(e){}
 D0.fetchMonths();
 </script>
 <script type="text/x-deferred">document.getElementById('mapSel').value=NM?'n':'o';if(NM)setMap('n');
-try{renderReport();updBadge()}catch(e){console.error('renderReport',e);setTimeout(function(){throw e})}</script>
+try{renderReport();updBadge()}catch(e){console.error('renderReport',e);setTimeout(function(){throw e})}
+/* Keep the Settings mapping correction panel and SD Hub warnings synchronized. */
+{const priorShowTab=showTab;showTab=function(){const out=priorShowTab.apply(this,arguments);if(arguments[0]==='settings'){const b=document.getElementById('sdhSettingsAudit');if(b)b.innerHTML=SD_AUDIT.view(NB.months().at(-1)||'2026-11')}return out}}
+</script>
 </body>
 </html>
