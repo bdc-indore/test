@@ -266,6 +266,11 @@ table.rep input.so{width:54px;text-align:center;border:1px dashed #aaa;padding:1
   <div class="card"><h3>Sub Division Reports — PDF Page Selection &amp; Full Preview</h3>
   <div class="hint">Choose report types, divisions and sub divisions. Preview follows the exact selected PDF page order. New mapping excludes Sehore and RMS unless expressly included.</div>
   <div id="fyLiveStatus" class="hint" style="margin:8px 0">Office-wise Google Sheet: will load when Sub Division Reports is opened</div><div id="sdHubBody"></div><div id="sdhAuditBox"></div></div>
+  <div class="card"><h3>Verify April–October Office-Date Source</h3>
+    <div class="hint">Local official compact CSV uses Date, Office ID, MO Total, Parcel Total, IRGB. Upload it here to replace the current April–October source in this session. Dates are parsed strictly as month/day/year. This does not change Google Sheets.</div>
+    <div class="row"><input type="file" id="fyLocalFile" accept=".csv,text/csv" onchange="FY_SHEETS.localUpload(this.files[0])"><button class="b sm gray" onclick="document.getElementById('sdhAuditBox').innerHTML=FY_SHEETS.reportAudit()">Audit all 7 months</button></div>
+    <div id="fyLocalMessage" class="hint"></div>
+  </div>
   <div class="card"><h3>Selected PDF — Overall Preview</h3><div id="sdhPreviewNotice" class="msg warn">Select report pages above, then click Done — Generate Preview. Selections will not generate PDF pages until you click Done.</div><div id="sdHubPreview"></div></div>
 </section>
 <!-- ============ TARGET vs ACHIEVEMENT ============ -->
@@ -4892,8 +4897,16 @@ const FY_SHEETS=(()=>{
  const number=(x,line)=>{const v=String(x==null?'':x).trim().replace(/,/g,'');if(!/^\d+$/.test(v))throw Error('Invalid count at row '+line+': '+x);const n=+v;if(!Number.isSafeInteger(n))throw Error('Count exceeds safe integer at row '+line);return n};
  const blank=()=>({speed:0,other:0,mo:0,ps:0,business:0,retail:0,par:0,irgb:0,tot:0});
  const add=(a,b)=>{for(const k of Object.keys(a))a[k]+=b[k]||0;return a};
- const isoOf=x=>{const t=String(x||'').trim();if(/^20\d\d-\d\d-\d\d$/.test(t))return t;let m=t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d\d)$/);if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');const z=new Date(t);return Number.isFinite(z.getTime())?z.getFullYear()+'-'+String(z.getMonth()+1).padStart(2,'0')+'-'+String(z.getDate()).padStart(2,'0'):t};
- const monthOf=x=>{const t=String(x||'').trim();if(/^20\d\d-\d\d-\d\d$/.test(t))return t.slice(0,7);const z=new Date(t);return Number.isFinite(z.getTime())?z.getFullYear()+'-'+String(z.getMonth()+1).padStart(2,'0'):''};
+ // FIX 2026-11-18: Source 'Ind - APR-OCT-OFFICE WISE.csv' uses US M/D/YYYY, NOT D/M/YYYY.
+ // Never use Date.parse for ambiguous slash dates. Validate round-trip, and reject invalid dates.
+ const isoOf=x=>{const t=String(x==null?'':x).trim();let y,m,d,z;
+  if((z=t.match(/^(20\d{2})-(\d{1,2})-(\d{1,2})$/))){y=+z[1];m=+z[2];d=+z[3]}
+  else if((z=t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})$/))){m=+z[1];d=+z[2];y=+z[3]}
+  else throw Error('Invalid Office Daily date format: '+t+' (expected M/D/YYYY or YYYY-MM-DD)');
+  const check=new Date(Date.UTC(y,m-1,d));
+  if(m<1||m>12||d<1||d>31||check.getUTCFullYear()!==y||check.getUTCMonth()+1!==m||check.getUTCDate()!==d)throw Error('Invalid Office Daily date: '+t);
+  return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');};
+ const monthOf=x=>{const t=String(x||'').trim();return /^20\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(t)?t.slice(0,7):''};
  // Published compact CSV is created in-house and uses numeric data with no quoted text.
  // Explicit duplicate detection avoids accidentally doubling an office-day booking.
  async function parseOffice(csv){
@@ -4995,9 +5008,18 @@ const FY_SHEETS=(()=>{
   if(show)toast(errors.length?'Published source warning — see Office Daily Audit':'Office-wise April–October source updated from Google Sheets');
   const b=document.getElementById('fyLiveStatus');if(b)b.textContent='Office-wise Sheet: '+STATUS.office+' | ID Merge: '+STATUS.merge;return STATUS;
  })();try{return await busy}finally{busy=null}}
+ async function localUpload(file){if(!file)return;const e=document.getElementById('fyLocalMessage');
+  try{if(e)e.textContent='Reading '+file.name+' and rebuilding daily totals…';
+   const txt=await file.text();const merge=DBLS.getItem('fyMergeCsvV1')||'Old Office ID,New Office ID\n';
+   await refresh(false,{office:txt,merge});
+   if(errors.length)throw Error(errors.join(' | '));
+   if(e)e.textContent='Verified local CSV: '+STATUS.office+' — correct US month/day/year dates applied. Data is active for this session.';
+   try{SDH.render();document.getElementById('sdhAuditBox').innerHTML=reportAudit()}catch(err){console.error(err)}
+   try{renderReport()}catch(err){console.error(err)}
+  }catch(err){if(e)e.textContent='Upload error: '+err.message}finally{document.getElementById('fyLocalFile').value=''} }
  const ensure=()=>{if(loaded||busy)return busy||Promise.resolve(STATUS);STATUS.office='Downloading Google Sheet (first visit only)…';const b=document.getElementById('fyLiveStatus');if(b)b.textContent=STATUS.office;return refresh(false).then(()=>{try{if(document.getElementById('p-sdh').style.display!=='none')SDH.render()}catch(e){console.warn('Sub Division re-render',e)}})};
  const get=(d,sd,v,m)=>{if(!hasMonth(m))return null;const n=rows(m).find(x=>SD_NAME_RESOLVE.d(x.d)===SD_NAME_RESOLVE.d(d)&&SD_NAME_RESOLVE.norm(x.sd)===SD_NAME_RESOLVE.norm(sd));return n?(v==='MO'?n.mo:v==='IRGB'?n.irgb:n.par):0};
- return {URL,MONTHS,mode,months,hasMonth,daily:()=>DAILY,revision:()=>revision,cachedCsv:()=>({office:DBLS.getItem('fyOfficeCsvV1'),merge:DBLS.getItem('fyMergeCsvV1')||'Old Office ID,New Office ID\n'}),values,sums,rows,periodRows:ms=>ms.flatMap(rows),get,refresh,ensure,reportAudit,aliases:()=>aliases,resolve,ready:()=>loaded,errors:()=>errors,status:()=>STATUS.office+' | '+STATUS.merge,day:()=>DAY};
+ return {URL,MONTHS,mode,months,hasMonth,daily:()=>DAILY,revision:()=>revision,localUpload,cachedCsv:()=>({office:DBLS.getItem('fyOfficeCsvV1'),merge:DBLS.getItem('fyMergeCsvV1')||'Old Office ID,New Office ID\n'}),values,sums,rows,periodRows:ms=>ms.flatMap(rows),get,refresh,ensure,reportAudit,aliases:()=>aliases,resolve,ready:()=>loaded,errors:()=>errors,status:()=>STATUS.office+' | '+STATUS.merge,day:()=>DAY};
 })();
 // The Sheet is already ID-merged, but fresh uploads can still contain an old office ID.
 {const prev=NB.res;NB.res=function(id){const dest=FY_SHEETS.resolve(id);return dest!==String(id)?dest:prev.call(this,id)}}
