@@ -306,6 +306,7 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
     <div class="row" id="divExRow" style="margin-top:8px;font-size:13px"></div>
     <div class="row" style="margin-top:8px;align-items:flex-start">
       <button class="b alt" id="rpdfBtn" onclick="exportPDFSel()">&#11015; Download PDF</button>
+      <button class="b alt" id="rpptBtn" onclick="exportPPTSel()">&#11015; Download PPT</button>
       <details id="pdfPick" style="flex:1;min-width:260px"><summary class="hint" style="cursor:pointer">Pages in the PDF &ndash; untick a division to remove it - its numbers are also taken out of Region Total (<span id="pdfCnt"></span>). PDF follows the IRGB / Aadhaar ticks above.</summary><div id="pdfPickBox"></div></details>
       <span class="hint" id="rpdfMsg"></span>
     </div>
@@ -488,11 +489,13 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
       <button class="b alt" id="dlXls" onclick="exportExcel()">Excel</button>
       <button class="b alt" id="dlJpgAll" onclick="exportJPG(true)">JPG (ZIP – one image per division)</button>
       <button class="b alt" id="dlPdfAll" onclick="exportPDF(true)">Combined PDF (one page per division)</button>
+      <button class="b alt" id="dlPptAll" onclick="exportPPT(true)">Combined PPT (one slide per division)</button>
     </div>
     <div class="dl" style="border-top:0;margin-top:0;padding-top:0">
       <b>Current tab only (<span id="curDivName"></span>):</b>
       <button class="b sm" id="dlJpgOne" onclick="exportJPG(false)">JPG</button>
       <button class="b sm" id="dlPdfOne" onclick="exportPDF(false)">PDF</button>
+      <button class="b sm" id="dlPptOne" onclick="exportPPT(false)">PPT</button>
       <span id="dlMsg" class="hint"></span>
     </div>
     </div>
@@ -2957,7 +2960,7 @@ function sdrRender(){
  <label>BO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.bo}" onchange="SDR.th.bo=+this.value||0;sdrRender()"></label>
  <label>SO &gt; <input type="number" min="0" style="width:60px" value="${SDR.th.so}" onchange="SDR.th.so=+this.value||0;sdrRender()"> booking</label>
  <label>SO &gt; <input type="number" min="0" style="width:56px" value="${SDR.th.sop}" onchange="SDR.th.sop=+this.value||0;sdrRender()"> parcel</label>
- <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button> <button class="b alt" onclick="sdrPDF()">&#11015; Download PDF (Detailed + Monthly Summary)</button> <button class="b alt" onclick="sdrSummaryPDF()">&#11015; Month-wise Summary PDF</button></div>
+ <button class="b alt" onclick="sdrExcel()">&#11015; Download Excel</button> <button class="b alt" onclick="sdrPDF()">&#11015; Download PDF (Detailed + Monthly Summary)</button> <button class="b alt" onclick="sdrSummaryPDF()">&#11015; Month-wise Summary PDF</button> <button class="b alt" onclick="sdrPPT(false)">&#11015; Download PPT (Detailed + Monthly Summary)</button> <button class="b alt" onclick="sdrPPT(true)">&#11015; Month-wise Summary PPT</button></div>
  <div class="hint noprint" style="margin-bottom:8px">MO = Mail Ops (Other + Speed Post), Parcel and IRGB come from the uploaded post-office-wise data. Total = Parcel + MO + IRGB. BPC, BNPL and IDC are not treated as sub divisions: their offices are listed together under &ldquo;Other Units of Division&rdquo; of the division they belong to. SO summary counts offices with class SO; the HO / SO list shows both.</div>`;
  const monthsUsed=sdrSelectedMonths(SDR.ym).length;
  const periodNote=isCombo(SDR.ym)?`<div class="hint noprint" style="background:#fff8e1;padding:7px 10px;margin-bottom:8px;border:1px solid #e6d49a"><b>Combined-period threshold:</b> ${monthsUsed} uploaded month(s). BO &gt; ${SDR.th.bo} × ${monthsUsed} = &gt; ${SDR.th.bo*monthsUsed} total booking; SO &gt; ${SDR.th.so} × ${monthsUsed} = &gt; ${SDR.th.so*monthsUsed} total booking; SO Parcel &gt; ${SDR.th.sop} × ${monthsUsed} = &gt; ${SDR.th.sop*monthsUsed}. Office counts stay unchanged.</div>`:'';
@@ -3335,7 +3338,7 @@ function nbSavePm(){document.querySelectorAll('.nbP:not(:disabled)').forEach(s=>
 function nbSyncPend(){for(const id in NB.S.alias){const e=NB_OFF[NB.S.alias[id]],d=e&&RP.DMAP[e[3]];if(d&&!DB.offMap[id]&&!DEF_OFFMAP[id])DB.offMap[id]=d}
  for(const id of Object.keys(DB.pend)){const dv=officeDiv(id);if(!dv)continue;const p=DB.pend[id],Rw=(DB.raw[dv]=DB.raw[dv]||{}),RR=(DB.rev[dv]=DB.rev[dv]||{});for(const dt in p.d){const t=(Rw[dt]=Rw[dt]||{});for(const pn in p.d[dt])t[pn]=(t[pn]||0)+p.d[dt][pn]}for(const dt in(p.r||{})){const t=(RR[dt]=RR[dt]||{});for(const pn in p.r[dt])t[pn]=(t[pn]||0)+p.r[dt][pn]}delete DB.pend[id]}save();updBadge()}
 async function rpDlP(k,i){const p=RP.PL[i];if(k==='ppt')return rpPPT([p],p.t.replace(/[^\w]+/g,'_'));if(k==='pdf')return rpPDF([p],p.t.replace(/[^\w]+/g,'_'));return rpJPG(p)}
-async function rpDlG(k,g){const l=RP.PL.filter(p=>p.g===g),n=RP.G[g].replace(/[^\w]+/g,'_').slice(0,40);return k==='ppt'?rpPPT(l,n):rpPDF(l,n)}
+async function rpDlG(k,g){const l=RP.PL.filter(p=>p.g===g),n=RP.G[g].replace(/[^\w]+/g,'_').slice(0,40);return k==='ppt'?rpPPT(l,n,rpCov(RP.G[g])):rpPDF(l,n)}
 const nbVals=o=>Object.values(NB_OFF).map(x=>x[o]);
 function nbChooser(p,label){const dvs=[...new Set(nbVals(3))].sort(),cl=[...new Set(nbVals(1))].sort(),sd=[...new Set(nbVals(2))].sort();
  return `<div style="margin:6px 0"><b>${label}</b><br><select id="nbc_${p}_dv" onchange="nbSdFill('${p}');nbFilt('${p}')"><option value="">All divisions</option>${dvs.map(x=>`<option>${esc(x)}</option>`).join('')}</select> <select id="nbc_${p}_sd" onchange="nbFilt('${p}')"><option value="">All sub divisions</option>${sd.map(x=>`<option>${esc(x)}</option>`).join('')}</select> <select id="nbc_${p}_cl" onchange="nbFilt('${p}')"><option value="">All classes</option>${cl.map(x=>`<option>${esc(x)}</option>`).join('')}</select> <input id="nbc_${p}_q" placeholder="search name / id" oninput="nbFilt('${p}')"><br><select id="nbc_${p}_l" size="6" style="min-width:460px"></select></div>`}
@@ -3433,7 +3436,7 @@ async function rpPDF(sel,fn){if(!rpInit())return;if(!(await needLib2('html2canva
  }catch(e){console.error(e);setBusy(false,'');alert('PDF error: '+e.message)}
  finally{host.remove();setTimeout(()=>EXPORT_UI.hide(),1400)}
 }
-async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS')))return;const full=!sel,Lp=sel||RP.sel(),c=rpCfg(),p=new PptxGenJS();p.layout='LAYOUT_WIDE';p.title=c.title;
+async function rpPPT(sel,fn,cov){if(!rpInit())return;if(!(await needLib2('PptxGenJS')))return;const full=!sel,Lp=sel||RP.sel(),c=rpCfg(),p=new PptxGenJS(),cT=cov&&cov.title||c.title,cS=cov&&cov.sub||c.sub;p.layout='LAYOUT_WIDE';p.title=c.title;
  EXPORT_UI.show('Mega PPT',0,'Preparing '+Lp.length+' report sections');await exportFrame();
  {const _as=p.addSlide.bind(p),mt=t=>typeof t==='string'?RGX.str(t):t,mo_=x=>(x&&typeof x==='object'&&!Array.isArray(x)&&'text' in x)?Object.assign({},x,{text:mt(x.text)}):mt(x);
   p.addSlide=function(){const s=_as.apply(p,arguments),aT=s.addText.bind(s),aB=s.addTable.bind(s),aC=s.addChart.bind(s);
@@ -3451,7 +3454,7 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
  const bd=(t,i,o={})=>cell(String(t),Object.assign({fill:{color:i%2?ZEB:'FFFFFF'}},o));
  const tt=(t,o={})=>cell(String(t),Object.assign({fill:{color:TOT},bold:true},o));
  const bandO=b=>b?{fill:{color:b.fill},color:b.color,bold:true}:{};
- const s0=full?p.addSlide():{addText(){},addShape(){},background:{}};s0.background={color:'B3121B'};s0.addText('INDIA POST',{x:.9,y:1.4,w:8,h:.4,fontSize:18,bold:true,color:'FDB913',charSpacing:4,fontFace:'Arial'});s0.addText(c.title,{x:.9,y:2,w:11,h:1.2,fontSize:40,bold:true,color:'FFFFFF',fontFace:'Arial'});s0.addText(c.sub,{x:.9,y:3.3,w:11,h:.5,fontSize:20,color:'FFFFFF',fontFace:'Arial'});s0.addShape(p.ShapeType.rect,{x:.9,y:4.8,w:4.6,h:.55,fill:{color:'FDB913'}});s0.addText(c.badge,{x:.9,y:4.8,w:4.6,h:.55,fontSize:15,bold:true,color:'222222',align:'center',fontFace:'Arial'});
+ const s0=(full||cov)?p.addSlide():{addText(){},addShape(){},background:{}};s0.background={color:'B3121B'};s0.addText('INDIA POST',{x:.9,y:1.4,w:8,h:.4,fontSize:18,bold:true,color:'FDB913',charSpacing:4,fontFace:'Arial'});s0.addText(cT,{x:.9,y:2,w:11,h:1.2,fontSize:cT.length>40?32:40,fit:'shrink',bold:true,color:'FFFFFF',fontFace:'Arial'});s0.addText(cS,{x:.9,y:3.3,w:11,h:.5,fontSize:20,color:'FFFFFF',fontFace:'Arial'});s0.addShape(p.ShapeType.rect,{x:.9,y:4.8,w:4.6,h:.55,fill:{color:'FDB913'}});s0.addText(c.badge,{x:.9,y:4.8,w:4.6,h:.55,fontSize:15,bold:true,color:'222222',align:'center',fontFace:'Arial'});
  const sl=(t,sub)=>{const s=p.addSlide();s.background={color:'FFFFFF'};s.addText(t,{x:TX,y:.3,w:TW,h:.65,fontSize:t.length>58?22:26,bold:true,color:RED,fontFace:F,valign:'middle',margin:0});s.addShape(p.ShapeType.rect,{x:TX,y:.98,w:1.3,h:.06,fill:{color:YEL},line:{color:YEL,width:0}});if(sub)s.addText(sub,{x:TX,y:1.1,w:TW,h:.28,fontSize:11,color:'777777',fontFace:F,margin:0,valign:'middle'});s.slideNumber={x:12.1,y:7.0,w:.6,h:.3,fontSize:10,color:'777777',fontFace:F,align:'right'};return s};
  const note=(s,y,t)=>s.addText(t,{x:TX,y,w:TW,h:.28,fontSize:10,color:'777777',fontFace:F,margin:0,valign:'middle'});
  const grid=(s,rows,colW,hH,rH,y)=>{s.addTable(rows,{x:TX,y,w:colW.reduce((a,b)=>a+b,0),colW,rowH:rows.map((r,i)=>i?rH:hH)});return y+hH+(rows.length-1)*rH};
@@ -3481,12 +3484,19 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
      s.addTable([g1,g2,...body],{x:x0,y:1.5,w:tw,colW:cw,rowH:[.3,.42,...body.map(()=>rH)]})});
     note(s,7.02,(hasBase?'Yellow row = same month last year  |  ':'')+'Red date = very few SOs reported that day  |  Per day average = Total transactions ÷ Machines ÷ days')}
    continue}
-  if(pg.g==='sdrep'){
-   if(!(await needLib2('html2canvas')))throw Error('html2canvas is required for Sub Division PPT');
+  if(pg.g==='sdrep'||pg.g==='sdtarget'||pg.g==='sdsum'||pg.g==='sdly'||(pg.html&&!pg.canvas&&!pg.build&&!pg.sb&&!['day','sum','mon','cnt','q','yoy','yoyc','bo'].includes(pg.g))){
+   if(!(await needLib2('html2canvas')))throw Error('html2canvas is required for this PPT');
    const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:1100px';document.body.appendChild(host);
-   try{const cv=await H2C.shot(pg.html(),1.05);
-    const slide=p.addSlide(),k=Math.min(12.8/cv.width,7.15/cv.height);
-    slide.background={color:'FFFFFF'};slide.addImage({data:cv.toDataURL('image/jpeg',.88),x:(13.33-cv.width*k)/2,y:(7.5-cv.height*k)/2,w:cv.width*k,h:cv.height*k});
+   try{const cv=await H2C.shot(pg.html(),1.5),W=cv.width,Hh=cv.height,kw=12.6/W,ttl=String(pg.t||'').slice(0,95);
+    if(Hh*kw<=7.0){const slide=p.addSlide(),k=Math.min(12.8/W,7.15/Hh);slide.background={color:'FFFFFF'};slide.addImage({data:cv.toDataURL('image/jpeg',.9),x:(13.33-W*k)/2,y:(7.5-Hh*k)/2,w:W*k,h:Hh*k})}
+    else{ /* tall page: cut at blank/border lines (never through text) and repeat the heading on every slide */
+     const maxH=Math.floor(5.75/kw),ctx=cv.getContext('2d'),cuts=[0];let y0=0;
+     const blank=y=>{const d=ctx.getImageData(0,y,W,1).data,r=d[0],g=d[1],b=d[2];let bad=0;for(let x=0;x<W;x+=3){const i=x*4;if(Math.abs(d[i]-r)+Math.abs(d[i+1]-g)+Math.abs(d[i+2]-b)>40)bad++}return bad<W/3*.04};
+     while(Hh-y0>maxH){let y=y0+maxH,lim=y0+Math.floor(maxH*.7),cut=y0+maxH;for(;y>lim;y--){if(blank(y)){cut=y;break}}cuts.push(cut);y0=cut}
+     cuts.push(Hh);const n=cuts.length-1;
+     for(let i=0;i<n;i++){const sh=cuts[i+1]-cuts[i],t=document.createElement('canvas');t.width=W;t.height=sh;const tc=t.getContext('2d');tc.fillStyle='#fff';tc.fillRect(0,0,W,sh);tc.drawImage(cv,0,cuts[i],W,sh,0,0,W,sh);
+      const slide=sl(i?ttl+' (contd. '+(i+1)+'/'+n+')':ttl+(n>1?' (1/'+n+')':''));slide.addImage({data:t.toDataURL('image/jpeg',.9),x:(13.33-W*kw)/2,y:1.25,w:W*kw,h:sh*kw})}
+    }
    }finally{host.remove()}
    continue;
   }
@@ -3546,6 +3556,38 @@ async function rpPPT(sel,fn){if(!rpInit())return;if(!(await needLib2('PptxGenJS'
  }
  RGX.set(false);EXPORT_UI.show('Mega PPT',92,'Packaging PowerPoint slides…');await exportFrame();
  try{await p.writeFile({fileName:(fn||'Indore_Region_Mega_Report')+'.pptx'});EXPORT_UI.show('Mega PPT',100,'Download prepared')}catch(e){console.error(e);alert('PPT error: '+e.message)}finally{setTimeout(()=>EXPORT_UI.hide(),1400)}}
+
+/* ===== PPT download next to every PDF button (same red / yellow theme as the mega PPT; first slide = section heading) ===== */
+const rpCov=(t,sub)=>({title:t,sub:sub||('Indore Region \u2022 '+rpCfg().badge)});
+async function rpOut(ppt,P,fn,title,sub){return ppt?rpPPT(P,fn,rpCov(title,sub)):rpPDF(P,fn)}
+async function exportPPT(all,listOvr){
+ const month=curMonth();if(!month){alert('No data available');return}
+ if(!rpInit())return;
+ const list=listOvr||(all?ALL_TABS():[curDiv]);
+ try{
+  let pages=[];
+  for(const t of list.flatMap(t=>t==='SDREP'?sdrExportPages(month):t==='SDTARGET'?SDTGT.pages(month):t==='SDSUM'?sdrSummaryPages(month):t==='SDLY'?LYCOMPARE.buildPages():[t])){
+   if(typeof t==='string')pages.push({g:'day',t,dv:t,mo:month,canvas:()=>drawReport(t,month,irgbOn(),true)});else pages.push(t)}
+  if(typeof SDH!=='undefined')pages=pages.filter(p=>p.g==='day'||SDH.filterMega([p]).length>0);
+  if(!pages.length){alert('No pages to export');return}
+  const lbl=isCombo(month)?comboShort(month):mFull(month);
+  await rpPPT(pages,all?'Daywise_Report_'+month:'Daywise_'+month+'_'+safeName(curDiv),rpCov('Day wise Report','Indore Region \u2022 '+lbl+' \u2022 MO / Parcel / IRGB / Aadhaar'));
+ }catch(e){console.error(e);alert('Unable to create the PPT: '+e.message)}
+}
+async function exportPPTSel(){
+ const list=ALL_TABS_FULL().filter(t=>!pdfExcl().has(t));
+ if(!list.length){alert('Select at least one page for the PPT.');return}
+ const keep=new Set(DIVS.filter(d=>!pdfExcl().has(d)));
+ PDFDIVS=(keep.size&&keep.size<DIVS.length)?keep:null;
+ try{await exportPPT(true,list)}finally{PDFDIVS=null}
+}
+async function sdrPPT(summaryOnly){
+ if(!SDR.ym)return alert('Choose a month or financial-year period first');
+ const pages=(summaryOnly?sdrSummaryPages(SDR.ym,SDR.dv):sdrExportPages(SDR.ym,SDR.dv).concat(sdrSummaryPages(SDR.ym,SDR.dv))).filter(p=>!SDR.sd||p.sdName===SDR.sd);
+ if(!pages.length)return alert('No Sub Division pages are available for this selection');
+ const fn=[summaryOnly?'SubDivision_Monthwise_Summary':'SubDivision_Report',SDR.ym,SDR.dv,SDR.sd].filter(Boolean).join('_').replace(/[^A-Za-z0-9_-]+/g,'_');
+ await rpPPT(pages,fn,rpCov(summaryOnly?'Sub Division \u2013 Month-wise Booking Summary':'Sub Division Booking Report',(SDR.dv||'Indore Region')+' \u2022 '+(isCombo(SDR.ym)?comboShort(SDR.ym):mFull(SDR.ym))));
+}
 
 /* ===================== POSB / SB NET ADDITION MODULE ===================== */
 const SBX=(()=>{
@@ -3939,7 +3981,7 @@ function rpScopeSet(v){const c=rpCfg();c.scope=v||'REGION';NB.save();const r=doc
 function rpSecTog(si,on){const c=rpCfg();rpSecList(si).forEach(x=>{if(on)delete c.ex[RP.pid(x[0])];else c.ex[RP.pid(x[0])]=1});NB.save();rpSecRender()}
 function rpGrp2(g,on){const c=rpCfg();RP.PL.filter(p=>p.g===g).forEach(p=>{if(on)delete c.ex[RP.pid(p)];else c.ex[RP.pid(p)]=1});NB.save();rpSecRender()}
 function rpSecAll(on){const c=rpCfg();RP.PL.forEach(p=>{if(on)delete c.ex[RP.pid(p)];else c.ex[RP.pid(p)]=1});NB.save();rpSecRender()}
-function rpSecDl(k,si){const sc=rpScope(),l=scopeF(rpSecList(si).map(x=>x[0]).filter(p=>!rpCfg().ex[RP.pid(p)]));if(!l.length)return alert('No report is ticked in this section for the chosen '+scName(sc));const n=RPSEC[si][0].replace(/[^\w]+/g,'_')+(sc==='REGION'?'':'_'+(sc==='REGION_X'?'without_Sehore':sc==='REGION_R'?'without_Sehore_RMS':sc).replace(/\W+/g,'_'));return k==='ppt'?rpPPT(l,n):rpPDF(l,n)}
+function rpSecDl(k,si){const sc=rpScope(),l=scopeF(rpSecList(si).map(x=>x[0]).filter(p=>!rpCfg().ex[RP.pid(p)]));if(!l.length)return alert('No report is ticked in this section for the chosen '+scName(sc));const n=RPSEC[si][0].replace(/[^\w]+/g,'_')+(sc==='REGION'?'':'_'+(sc==='REGION_X'?'without_Sehore':sc==='REGION_R'?'without_Sehore_RMS':sc).replace(/\W+/g,'_'));return k==='ppt'?rpPPT(l,n,rpCov(RPSEC[si][0])):rpPDF(l,n)}
 {const _rr=rpRender;rpRender=function(){_rr.apply(this,arguments);try{rpSecRender()}catch(e){console.error(e)}}}
 
 
@@ -4527,18 +4569,18 @@ const SDTGT=(()=>{
  else for(const v of V)for(const detailed of [false,true])out.push({g:'sdtarget',d:'Indore Region',pd:'Indore Region',t:'INDORE REGION GRAND TOTAL - '+v+' - '+(detailed?'Division + Sub Division':'Division-wise'),html:()=>regionPage(v,mo,tc,ac,pagePeriod,detailed)});
  return out}finally{S.period=saved}};
  const subPages=(dv,sd,period)=>{const saved=S.period;S.period=validPeriod(period);try{const pagePeriod=S.period,mo=periodMonths(S.period),tc=targets(),ac=actuals(),res=[];if(!mo.length)return res;const keyDv=divKey(dv),keySd=sdKey(sd),single=mo.length===1;const groups=single?[V]:V.map(v=>[v]);for(const group of groups){let body='';for(const v of group){const rr=rowsFor(keyDv,v,mo,tc,ac).filter(r=>r.sd===keySd);if(!rr.length)continue;body+=`<h3 style="color:#a80e19;border-bottom:3px solid #fdb913;padding-bottom:6px">${esc(prettyV(v))} ARTICLE COUNT TARGET — ${esc(periodName(mo,S.period))}</h3>`+tbl(single?['Sub Division',mFull(mo[0])+' Target',mFull(mo[0])+' Achievement','% Achievement']:columns(mo),rr.map(r=>({cells:cells(r,single)})))}if(!body)continue;const vName=single?'ALL VERTICALS':group[0];res.push({g:'sdtarget',d:dv,pd:dv,t:'Article Count Target: '+dv+' / '+sd+' - '+vName,sdName:sd,sdDiv:dv,html:()=>wrapper('SUB DIVISION ARTICLE COUNT TARGET',dv+' · '+sd,periodName(mo,pagePeriod),body,note,'SELECTED SUB DIVISION')})}return res}finally{S.period=saved}};
- const render=()=>{const e=document.getElementById('reportBox');if(!e)return;if(!rows(NM?'n':'o').length){e.innerHTML='<div class="msg warn"><b>Last Year comparison data is not available.</b><p>'+esc(ORIGIN[NM?'n':'o'])+'</p><button class="b" onclick="LYCOMPARE.refresh()">Retry Google Sheets</button></div>';return;}S.period=validPeriod(S.period);const P=pages(S.period);const dvs=divisions();if(!P.length){e.innerHTML='<div class="msg warn">No subdivision target data for this period.</div>';return}if(S.dv&&!dvs.includes(S.dv))S.dv='';let use=P.filter(p=>(!S.dv||p.d.toUpperCase()===S.dv)&&(!isCombo(S.period)||p.t.includes(' - '+S.vertical+' (')||p.t.includes(' - '+S.vertical+' - ')));if(!use.length)use=P;const periodCtl=select(S.period,'SDTGT.period(this.value)'),dsel=`<select onchange="SDTGT.division(this.value)"><option value="">All divisions</option>${dvs.map(d=>`<option ${d===S.dv?'selected':''}>${esc(d)}</option>`).join('')}</select>`,vsel=`<select onchange="SDTGT.vertical(this.value)">${V.map(v=>`<option ${v===S.vertical?'selected':''}>${v}</option>`).join('')}</select>`;e.innerHTML=`<div class="row noprint"><b>Period:</b>${periodCtl}<b>Division:</b>${dsel}${isCombo(S.period)?'<b>Vertical:</b>'+vsel:''}<button class="b alt" onclick="SDTGT.download()">Download Target PDF</button><button class="b gray" onclick="SDTGT.refresh()">Refresh SD Targets</button></div><p class="hint noprint">${esc(S.origin[NM?'n':'o'])} · ${P.length} PDF pages for this period. Select a division / vertical for preview. PDF download includes all divisions and verticals.</p><div class="row noprint"><b>Preview page:</b><select id="sdtgtPreview" onchange="SDTGT.preview()">${use.map((p,i)=>`<option value="${i}">${esc(p.t)}</option>`).join('')}</select></div><div id="sdtgtPage" class="wrap"></div>`;window.__sdtgtPages=use;preview()};
+ const render=()=>{const e=document.getElementById('reportBox');if(!e)return;if(!rows(NM?'n':'o').length){e.innerHTML='<div class="msg warn"><b>Last Year comparison data is not available.</b><p>'+esc(ORIGIN[NM?'n':'o'])+'</p><button class="b" onclick="LYCOMPARE.refresh()">Retry Google Sheets</button></div>';return;}S.period=validPeriod(S.period);const P=pages(S.period);const dvs=divisions();if(!P.length){e.innerHTML='<div class="msg warn">No subdivision target data for this period.</div>';return}if(S.dv&&!dvs.includes(S.dv))S.dv='';let use=P.filter(p=>(!S.dv||p.d.toUpperCase()===S.dv)&&(!isCombo(S.period)||p.t.includes(' - '+S.vertical+' (')||p.t.includes(' - '+S.vertical+' - ')));if(!use.length)use=P;const periodCtl=select(S.period,'SDTGT.period(this.value)'),dsel=`<select onchange="SDTGT.division(this.value)"><option value="">All divisions</option>${dvs.map(d=>`<option ${d===S.dv?'selected':''}>${esc(d)}</option>`).join('')}</select>`,vsel=`<select onchange="SDTGT.vertical(this.value)">${V.map(v=>`<option ${v===S.vertical?'selected':''}>${v}</option>`).join('')}</select>`;e.innerHTML=`<div class="row noprint"><b>Period:</b>${periodCtl}<b>Division:</b>${dsel}${isCombo(S.period)?'<b>Vertical:</b>'+vsel:''}<button class="b alt" onclick="SDTGT.download()">Download Target PDF</button> <button class="b alt" onclick="SDTGT.download(true)">Download Target PPT</button><button class="b gray" onclick="SDTGT.refresh()">Refresh SD Targets</button></div><p class="hint noprint">${esc(S.origin[NM?'n':'o'])} · ${P.length} PDF pages for this period. Select a division / vertical for preview. PDF download includes all divisions and verticals.</p><div class="row noprint"><b>Preview page:</b><select id="sdtgtPreview" onchange="SDTGT.preview()">${use.map((p,i)=>`<option value="${i}">${esc(p.t)}</option>`).join('')}</select></div><div id="sdtgtPage" class="wrap"></div>`;window.__sdtgtPages=use;preview()};
  const preview=()=>{const e=document.getElementById('sdtgtPage');if(!e)return;const p=(window.__sdtgtPages||[])[+(document.getElementById('sdtgtPreview')||{}).value||0];e.innerHTML=p?p.html():''};
  const summaryRender=()=>{const e=document.getElementById('reportBox');if(!e)return;const months=[...new Set([...NB.months(),...FY_SHEETS.MONTHS.filter(m=>FY_SHEETS.hasMonth(m))])].sort();if(!months.length){e.innerHTML='<div class="msg warn">Upload booking data or load Google Sheets first.</div>';return}const years=[...new Set(months.map(fyOf))];const opts=[...months,...years.map(y=>'FY'+y),'ALL'];if(!opts.includes(S.summaryPeriod))S.summaryPeriod=months.at(-1);const built=sdrBuild(S.summaryPeriod,''),dvs=built.order;
  if(S.summaryDV&&!dvs.includes(S.summaryDV))S.summaryDV='';const dv=S.summaryDV;const chosenDvs=dv?[dv]:dvs;
  const allSD=[...new Set(chosenDvs.flatMap(d=>Object.keys(built.D[d]||{}).map(sd=>sdrOther(sd)?SDR_OTHER_KEY:sd)))].sort();if(S.summarySD&&!allSD.includes(S.summarySD))S.summarySD='';
  const picked=sdrSummaryPages(S.summaryPeriod).filter(p=>(!dv||p.sdDiv===dv)&&(!S.summarySD||p.sdName===S.summarySD));
  const option=(val,txt,selected)=>`<option value="${esc(val)}" ${val===selected?'selected':''}>${esc(txt)}</option>`;
- e.innerHTML=`<div class="row noprint" style="gap:12px;align-items:center"><b>Period:</b><select onchange="SDTGT.sumPeriod(this.value)">${opts.map(m=>option(m,m==='ALL'?'All Months':/^FY/.test(m)?fyLbl(+m.slice(2)):mFull(m),S.summaryPeriod)).join('')}</select><b>Division:</b><select onchange="SDTGT.sumDiv(this.value)">${option('','All Divisions',dv)}${dvs.map(d=>option(d,d,dv)).join('')}</select><b>Sub Division:</b><select onchange="SDTGT.sumSD(this.value)">${option('','All Sub Divisions',S.summarySD)}${allSD.map(sd=>option(sd,sd===SDR_OTHER_KEY?'Other Units of Division':sd,S.summarySD)).join('')}</select><button class="b alt" onclick="SDTGT.summaryPDF()">Download Monthly Summary PDF</button></div><div class="hint noprint" style="padding:7px 0">${picked.length} matching sub-division report pages. All Divisions / All Sub Divisions includes every matching unit in the PDF.</div><div class="row noprint"><b>Preview:</b><select id="sdMonthlyPreviewSelect" onchange="SDTGT.summaryPreview()" style="min-width:280px;max-width:620px">${picked.map((p,i)=>option(String(i),p.sdDiv+' — '+(p.sdName===SDR_OTHER_KEY?'Other Units of Division':p.sdName),String(0))).join('')}</select></div><div id="sdtgtMonthlyView" class="wrap"></div>`;
+ e.innerHTML=`<div class="row noprint" style="gap:12px;align-items:center"><b>Period:</b><select onchange="SDTGT.sumPeriod(this.value)">${opts.map(m=>option(m,m==='ALL'?'All Months':/^FY/.test(m)?fyLbl(+m.slice(2)):mFull(m),S.summaryPeriod)).join('')}</select><b>Division:</b><select onchange="SDTGT.sumDiv(this.value)">${option('','All Divisions',dv)}${dvs.map(d=>option(d,d,dv)).join('')}</select><b>Sub Division:</b><select onchange="SDTGT.sumSD(this.value)">${option('','All Sub Divisions',S.summarySD)}${allSD.map(sd=>option(sd,sd===SDR_OTHER_KEY?'Other Units of Division':sd,S.summarySD)).join('')}</select><button class="b alt" onclick="SDTGT.summaryPDF()">Download Monthly Summary PDF</button> <button class="b alt" onclick="SDTGT.summaryPDF(true)">Download Monthly Summary PPT</button></div><div class="hint noprint" style="padding:7px 0">${picked.length} matching sub-division report pages. All Divisions / All Sub Divisions includes every matching unit in the PDF.</div><div class="row noprint"><b>Preview:</b><select id="sdMonthlyPreviewSelect" onchange="SDTGT.summaryPreview()" style="min-width:280px;max-width:620px">${picked.map((p,i)=>option(String(i),p.sdDiv+' — '+(p.sdName===SDR_OTHER_KEY?'Other Units of Division':p.sdName),String(0))).join('')}</select></div><div id="sdtgtMonthlyView" class="wrap"></div>`;
  window.__sdMonthlyPages=picked;summaryPreview()};
  const summaryPreview=()=>{const e=document.getElementById('sdtgtMonthlyView');if(!e)return;const idx=+(document.getElementById('sdMonthlyPreviewSelect')||{}).value||0;const p=(window.__sdMonthlyPages||[])[idx];e.innerHTML=p?p.html():'<p>No matching sub-division data.</p>'};
- const download=async()=>{const P=pages(S.period);if(!P.length)return alert('No target pages for selected period');await rpPDF(P,'Sub_Division_Article_Count_Target_'+(NM?'New':'Old')+'_'+S.period)};
- const summaryPDF=async()=>{const p=sdrSummaryPages(S.summaryPeriod).filter(p=>(!S.summaryDV||p.sdDiv===S.summaryDV)&&(!S.summarySD||p.sdName===S.summarySD));if(!p.length)return alert('No monthly summary pages');await rpPDF(p,'Sub_Division_Monthly_Summary_'+S.summaryPeriod)};
+ const download=async(ppt)=>{const P=pages(S.period);if(!P.length)return alert('No target pages for selected period');await rpOut(ppt,P,'Sub_Division_Article_Count_Target_'+(NM?'New':'Old')+'_'+S.period,'Sub Division Article Count Target')};
+ const summaryPDF=async(ppt)=>{const p=sdrSummaryPages(S.summaryPeriod).filter(p=>(!S.summaryDV||p.sdDiv===S.summaryDV)&&(!S.summarySD||p.sdName===S.summarySD));if(!p.length)return alert('No monthly summary pages');await rpOut(ppt,p,'Sub_Division_Monthly_Summary_'+S.summaryPeriod,'Sub Division \u2013 Monthly Booking Summary')};
  // No embedded last-year cache: live Google Sheets are loaded by LYCOMPARE.refresh().
  return {refresh,pages,subPages,render,preview,summaryRender,summaryPreview,download,summaryPDF,period(v){S.period=v;render()},division(v){S.dv=v;render()},vertical(v){S.vertical=v;render()},sumPeriod(v){S.summaryPeriod=v;summaryRender()},sumDiv(v){S.summaryDV=v;S.summarySD='';summaryRender()},sumSD(v){S.summarySD=v;summaryRender()},source:()=>S.origin[NM?'n':'o'],megaPeriod:()=>S.period,megaSummaryPeriod:()=>S.summaryPeriod,megaSet(v){S.period=v;rpRender()},megaSumSet(v){S.summaryPeriod=v;rpRender()},megaOptions(){const opts=availablePeriods(),a=validPeriod(S.period);return '<b>SD Target period:</b> <select onchange="SDTGT.megaSet(this.value)">'+opts.map(m=>'<option value="'+esc(m)+'" '+(m===a?'selected':'')+'>'+esc(label(m))+'</option>').join('')+'</select> <b>SD Monthly Summary period:</b> <select onchange="SDTGT.megaSumSet(this.value)">'+[...new Set([...NB.months(),...FY_SHEETS.MONTHS.filter(m=>FY_SHEETS.hasMonth(m))]),'ALL'].map(m=>'<option value="'+esc(m)+'" '+(m===S.summaryPeriod?'selected':'')+'>'+esc(m==='ALL'?'All months':mFull(m))+'</option>').join('')+'</select>'}};
 })();
@@ -4602,13 +4644,13 @@ const LYCOMPARE=(()=>{
  return out};
  const option=(v,t,selected)=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(t)}</option>`;
  const render=()=>{const e=document.getElementById('reportBox');if(!e)return;if(!rows(NM?'n':'o').length){e.innerHTML='<div class="msg warn"><b>Last Year comparison data is not available.</b><p>'+esc(ORIGIN[NM?'n':'o'])+'</p><button class="b" onclick="LYCOMPARE.refresh()">Retry Google Sheets</button></div>';return;}STATE.period=periods().includes(STATE.period)?STATE.period:(M24.filter(m=>m<=now()).at(-1)||M24[0]);const all=buildPages(STATE.period);const divisions=allDiv(),selectedDiv=STATE.div,selectedSub=STATE.sd;const sds=selectedDiv?allSubs(selectedDiv):[...new Set(divisions.flatMap(allSubs))].sort();const filtered=all.filter(p=>(!selectedDiv||p.t.includes(selectedDiv)||p.d==='Indore Region')&&(!selectedSub||p.t.includes(selectedSub)||!p.t.startsWith('Overall:')));
- e.innerHTML=`<div class="row noprint" style="gap:10px"><b>Month / FY:</b><select onchange="LYCOMPARE.selectPeriod(this.value)">${periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')}</select><b>Division:</b><select onchange="LYCOMPARE.selectDiv(this.value)">${option('','All Divisions',STATE.div)}${divisions.map(d=>option(d,d,STATE.div)).join('')}</select><b>Sub Division:</b><select onchange="LYCOMPARE.selectSub(this.value)">${option('','All Sub Divisions',STATE.sd)}${sds.map(s=>option(s,s,STATE.sd)).join('')}</select><button class="b alt" onclick="LYCOMPARE.download()">Download Last Year Comparison PDF</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Sheets</button></div><div class="hint noprint">${esc(ORIGIN[NM?'n':'o'])} · ${all.length} pages total. FY 2025–26 article counts come exclusively from SDACCOM / SDACCNM Google Sheets. The online Sheet is never edited.</div><div class="row noprint"><b>Preview page:</b><select id="lycompPage" onchange="LYCOMPARE.preview()" style="max-width:660px">${filtered.map((x,i)=>option(String(i),x.t,'0')).join('')}</select></div><div id="lycompView" class="wrap"></div><div id="lycompIssues" class="noprint"></div>`;
+ e.innerHTML=`<div class="row noprint" style="gap:10px"><b>Month / FY:</b><select onchange="LYCOMPARE.selectPeriod(this.value)">${periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')}</select><b>Division:</b><select onchange="LYCOMPARE.selectDiv(this.value)">${option('','All Divisions',STATE.div)}${divisions.map(d=>option(d,d,STATE.div)).join('')}</select><b>Sub Division:</b><select onchange="LYCOMPARE.selectSub(this.value)">${option('','All Sub Divisions',STATE.sd)}${sds.map(s=>option(s,s,STATE.sd)).join('')}</select><button class="b alt" onclick="LYCOMPARE.download()">Download Last Year Comparison PDF</button> <button class="b alt" onclick="LYCOMPARE.download(true)">Download Last Year Comparison PPT</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Sheets</button></div><div class="hint noprint">${esc(ORIGIN[NM?'n':'o'])} · ${all.length} pages total. FY 2025–26 article counts come exclusively from SDACCOM / SDACCNM Google Sheets. The online Sheet is never edited.</div><div class="row noprint"><b>Preview page:</b><select id="lycompPage" onchange="LYCOMPARE.preview()" style="max-width:660px">${filtered.map((x,i)=>option(String(i),x.t,'0')).join('')}</select></div><div id="lycompView" class="wrap"></div><div id="lycompIssues" class="noprint"></div>`;
  window.__lycompPreview=filtered;preview();let issues=[];for(const d of divisions)for(const sd of allSubs(d))for(const v of VERT)for(const m of periodMonths(STATE.period))issues.push(...reduce(d,sd,v,[m]).adjust);const warn=document.getElementById('lycompIssues');if(warn)warn.innerHTML=issueHTML(issues)};
  const preview=()=>{const box=document.getElementById('lycompView'),p=(window.__lycompPreview||[])[+(document.getElementById('lycompPage')||{}).value||0];if(box)box.innerHTML=p?p.html():'<div class="msg warn">No page available for this selection.</div>'};
  const refresh=async(show=true)=>{const results=[];for(const m of MODES){try{const newRows=parse(await irFetchCSV(URL[m],`Last year ${m==='o'?'Old':'New'} mapping count`));SRC[m]=newRows;data[m]=merge(m);ORIGIN[m]=`Live published Google Sheet (${newRows.length} month cells)`;results.push(`${m}: ${newRows.length} cells loaded`)}catch(e){ORIGIN[m]=`${rows(m).length?'Previously loaded live data retained':'Google Sheet unavailable'}: ${e.message}`;results.push(`${m}: ${rows(m).length?'current-session live data retained':'no comparison data'} (${e.message})`)}try{window.RF&&RF.inc('ref',5)}catch(e){}}invalidate();try{applyLyCnt();rpRender()}catch(e){console.error(e)}if(show){toast(results.join(' | '));render()}try{if(typeof SDH!=='undefined'&&document.getElementById('p-sdh')?.style.display!=='none')SDH.render()}catch(e){console.error('SD hub last-year refresh',e)}return results};
 
  const divisionData=()=>{const out={};for(const v of VERT){const k=v==='MO'?'MAIL':v;out[k]={}}for(const d of allDiv())for(const v of VERT)for(const m of M24){const z=group(d,v,[m]),x=fyPrev(m),t=v==='MO'?'MAIL':v;const n=norm(d).split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ');if(z.last!==null){out[t][n]=out[t][n]||{};out[t][n][x]=z.last}}return out};
- const download=async()=>{const all=buildPages();if(!all.length)return alert('No last-year comparison data');await rpPDF(all,'Sub_Division_Last_Year_Compare_'+STATE.period)};
+ const download=async(ppt)=>{const all=buildPages();if(!all.length)return alert('No last-year comparison data');await rpOut(ppt,all,'Sub_Division_Last_Year_Compare_'+STATE.period,'Sub Division Last Year Comparison')};
  return {divisionData,buildPages,sourceDivisions:allDiv,sourceSubs:allSubs,sourceStatus:()=>ORIGIN[NM?'n':'o'],sourceReady:()=>rows(NM?'n':'o').length>0,render,preview,refresh,download,selectPeriod(v){STATE.period=v;render()},selectDiv(v){STATE.div=v;STATE.sd='';render()},selectSub(v){STATE.sd=v;render()},get,invalidate,period:()=>STATE.period,setMega(v){STATE.period=v;rpRender()},megaControl(){return '<b>Last Year Compare Period:</b> <select onchange="LYCOMPARE.setMega(this.value)">'+periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')+'</select>'}};
 })();
 RP.G.sdly='Sub Division Last Year Compare (FY 2025–26 vs 2026–27)';
@@ -4891,7 +4933,7 @@ const SDH=(()=>{
   html+=section('sdsum','Sub Division Monthly Summary','Selected SD summary or complete Division/Region summary',checkbox('summarySub','Selected Sub Divisions · booking summary','','sdsum')+checkbox('summaryAll','ALL Sub Divisions · booking summary','','sdsum')+checkbox('summaryRegionDivision','ALL Divisions · consolidated division-wise summary','','sdsum')+checkbox('summaryRegion','ALL Region · monthly summary','','sdsum'));
   html+=section('sdly','Sub Division Last Year Compare','Selected SD or complete Division/Region',checkbox('lySelected','Selected Sub Divisions · last-year comparison','','sdly')+checkbox('lyDivision','ALL Sub Divisions · complete Division comparison','','sdly')+checkbox('lyRegionDivision','ALL Divisions · Region comparison','','sdly')+checkbox('lyRegionDetail','ALL Region Sub Divisions · detailed comparison','','sdly')+checkbox('lyOverall','Overall April–March pages (only for Overall period)','','sdly'));
   html+='</tbody></table></div>';
-  html+=`<div class="row" style="margin-top:14px"><button class="b" style="background:#187447" onclick="SDH.done()">✓ Done — Generate Preview</button><button class="b" onclick="SDH.download()">Download Selected PDF</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Google Sheets</button><button class="b alt" onclick="SDH.done()">Regenerate Preview</button><button class="b gray" onclick="SDH.all(true)">Select all types</button><button class="b gray" onclick="SDH.all(false)">Clear types</button><span id="sdhCount" class="hint"></span></div><p class="hint">Selected SD pages use the checklist above. ALL Division and ALL Region pages contain their complete subdivisions regardless of the checklist. Historical data loads live from Google Sheets.</p>`;
+  html+=`<div class="row" style="margin-top:14px"><button class="b" style="background:#187447" onclick="SDH.done()">✓ Done — Generate Preview</button><button class="b" onclick="SDH.download()">Download Selected PDF</button> <button class="b" onclick="SDH.download(true)">Download Selected PPT</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Google Sheets</button><button class="b alt" onclick="SDH.done()">Regenerate Preview</button><button class="b gray" onclick="SDH.all(true)">Select all types</button><button class="b gray" onclick="SDH.all(false)">Clear types</button><span id="sdhCount" class="hint"></span></div><p class="hint">Selected SD pages use the checklist above. ALL Division and ALL Region pages contain their complete subdivisions regardless of the checklist. Historical data loads live from Google Sheets.</p>`;
   root.innerHTML=html;markDirty();
  };
  const done=()=>{
@@ -4919,7 +4961,7 @@ const SDH=(()=>{
  };
  const open=()=>{showTab('sdh');document.querySelectorAll('nav .tabbtn').forEach(b=>b.classList.toggle('on',b.id==='t-sdh'));if(!document.getElementById('sdHubBody').children.length)render();FY_SHEETS.ensure()};
  const changeDivision=v=>{S.div=v;S.sub='';const x=document.getElementById('sdhSubSelect');if(x){const list=v?(S._subs&&S._subs[key(v)]||[]):[...new Set(Object.values(S._subs||{}).flat())].sort();x.innerHTML='<option value="">All Sub Divisions</option>'+list.map(n=>`<option value="${E(n)}">${E(n===SDR_OTHER_KEY?'Other Units':n)}</option>`).join('')}markDirty()};
- const download=async()=>{
+ const download=async(ppt)=>{
   if(rendering)return alert('Preview generation is running. Please use Download after it completes.');
   if(dirty)return alert('Selection changed. Please click Done — Generate Preview first so the booking reconciliation can be checked.');
   const p=window.__sdhPages||[];
@@ -4929,7 +4971,7 @@ const SDH=(()=>{
    const msg='WARNING: Booking mismatch detected!\n'+fyAudit.issues.length+' FY-wide office / sub division / division / region discrepancies.\n'+problems.length+' differences between generated report pages and booking source.\n'+sourceAudit.diffs.length+' CSV vs mapping differences.\n'+sourceAudit.unassigned.length+' unmapped/ignored offices.\n\nReview the audit table and correct mapping in Settings. Download anyway?';
    if(!confirm(msg))return;
   }
-  await rpPDF(p,'Indore_Sub_Division_Reports_'+(NM?'New':'Old')+'_'+S.period)
+  await rpOut(ppt,p,'Indore_Sub_Division_Reports_'+(NM?'New':'Old')+'_'+S.period,'Sub Division Reports')
  };
  const filterMega=pages=>pages.filter(p=>!NM||!['sdrep','sdsum','sdtarget','sdly'].includes(kind(p))||isRegion(p)||allowed(pDiv(p)));
  const allSubs=(type,d,on)=>{
