@@ -1481,11 +1481,7 @@ const cmpName=t=>cmpCat(t)+' Comparison'+(/@X$/.test(t)?' (no Sehore)':/@R$/.tes
 const tabLbl=t=>t==='SDLY'?'Sub Division Last Year Compare':t==='SDTARGET'?'Sub Division Article Count Target':t==='SDSUM'?'Sub Division Monthly Summary':t==='SDREP'?'Sub Division Report':isCmp(t)?cmpName(t).replace('(no Sehore)','(without Sehore)').replace('(no Sehore & RMS)','(without Sehore & RMS)'):t;
 const monthLbl=m=>mFull(m);
 function centralLastYearDivision(d,v,m){
-  if(!LYCOMPARE.sourceReady())return null;
-  const subs=LYCOMPARE.sourceSubs(d);if(!subs.length)return null;
-  let total=0;
-  for(const sub of subs){const a=CENTRAL_ARTICLES.lastYear(d,sub,v,m);if(a.last==null)return null;total+=a.last}
-  return total;
+  return LYCOMPARE.divisionBaseline(d,v,m);
 }
 {const legacy=baseFor;baseFor=function(dv,month){
   const out=legacy.apply(this,arguments);if(!out)return out;
@@ -1493,7 +1489,7 @@ function centralLastYearDivision(d,v,m){
   for(const [k,v] of [['mo','MO'],['parcel','PARCEL'],['irgb','IRGB']]){
    let sum=0,valid=true;
    for(const d of ds){const a=centralLastYearDivision(d,v,month);if(a==null){valid=false;break}sum+=a}
-   out[k]=valid?sum:'';
+   out[k]=valid?sum:'—';
   }
   return out;
 }}
@@ -1661,6 +1657,12 @@ function renderReport(){
     h+='</tr>';
   }
   h+='</table>';
+  if(rows.some(r=>r.cls==='base'&&r.cells.slice(2,5).some(x=>x==='—'))){
+    h='<div class="msg err" style="margin-bottom:10px"><b>Last Year Article Count source unavailable.</b> '+
+      'The selected Old/New Mapping last-year Sub Division Google Sheet was not loaded or is missing divisions. '+
+      'Click <button class="b sm" onclick="LYCOMPARE.refresh(false).then(()=>renderReport())">Refresh Last Year Sheets</button>. '+
+      'Missing values are not treated as zero.</div>'+h;
+  }
   document.getElementById('reportBox').innerHTML=h;
 }
 function setSO(date,v){
@@ -4657,6 +4659,27 @@ const LYCOMPARE=(()=>{
  const key=(d,s,v,m)=>[div(d),sub(s),vertical(v),m].join('|');
  const parse=t=>{const grid=irGrid(t),ix=grid.findIndex(r=>r.some(x=>/^division$/i.test(String(x).trim())));if(ix<0)throw Error('Division header not found');const h=grid[ix].map(x=>norm(x));const dc=h.indexOf('DIVISION'),sc=h.indexOf('SUB DIVISION'),vc=h.indexOf('VERTICAL');if(dc<0||sc<0||vc<0)throw Error('Division, Sub Division, Vertical missing');const monthCols=h.map((n,i)=>{let z=n.match(/^(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*[- /]*(25|26|2025|2026)$/),rev=n.match(/^(25|26|2025|2026)[- /]*(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*$/);if(!z&&!rev)return null;const yearPart=z?z[2]:rev[1],monthPart=z?z[1]:rev[2];const y=yearPart.length===2?+('20'+yearPart):+yearPart,m=({JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12})[monthPart];return [i,`${y}-${String(m).padStart(2,'0')}`]}).filter(Boolean);if(monthCols.length!==12||!['2025-04','2025-05','2025-06','2025-07','2025-08','2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03'].every(m=>monthCols.some(x=>x[1]===m)))throw Error('Expected 25-Apr through 26-Mar (or Apr-25 through Mar-26) columns');const out=[];for(const r of grid.slice(ix+1)){const d=div(r[dc]),s=sub(r[sc]),v=vertical(r[vc]);if(!d||!s||!v)continue;for(const [i,m] of monthCols){const val=Number(String(r[i]??'').replace(/,/g,''));if(Number.isFinite(val))out.push([d,s,v,m,val])}}if(!out.length)throw Error('No valid last-year numbers found');return out};
  const merge=mode=>{const data={};for(const r of rows(mode))data[key(r[0],r[1],r[2],r[3])]=Number(r[4])||0;return data};
+ // Last-year booking baseline is sourced ONLY from the selected official old/new SD count Sheet.
+ // Count the 2025-26 rows directly by division and vertical, rather than the legacy built-in LYN.
+ const divisionBaseline=(division,vertical,month)=>{
+  const mode=NM?'n':'o'; if(!rows(mode).length)return null;
+  const d=div(division),v=vertical==='MAIL'?'MO':vertical;
+  const yearMonth=fyPrev(month);
+  const matched=rows(mode).filter(r=>div(r[0])===d&&verticalName(r[2])===verticalName(v)&&r[3]===yearMonth);
+  if(!matched.length)return null;
+  return matched.reduce((sum,r)=>sum+(Number(r[4])||0),0);
+ };
+ const verticalName=v=>vertical(v);
+ const savedKey=m=>'indoreLastYearSDCount_'+m+'_v1';
+ const restoreSaved=()=>{let count=0;for(const mode of MODES){try{
+   const raw=DBLS.getItem(savedKey(mode));if(!raw)continue;
+   const parsed=JSON.parse(raw);if(!Array.isArray(parsed)||!parsed.length)continue;
+   if(!parsed.every(r=>Array.isArray(r)&&r.length===5&&typeof r[3]==='string'&&Number.isFinite(+r[4])))continue;
+   SRC[mode]=parsed;ORIGIN[mode]='Saved official Google Sheet ('+parsed.length+' month cells)';count+=parsed.length;
+  }catch(e){console.warn('Last year saved source invalid',mode,e)}}
+  if(count)rebuild();return count;
+ };
+
  const data={o:{},n:{}};const rebuild=()=>MODES.forEach(m=>data[m]=merge(m));rebuild();
  const actualByMonth=(ym)=>{const o={},p=CENTRAL_ARTICLES.get(ym);if(!p.present)return o;for(const row of p.byOffice.values())for(const [v,value] of [['PARCEL',row.par],['MO',row.mo],['IRGB',row.irgb]]){const k=key(row.dv,row.sd,v,ym);o[k]=(o[k]||0)+value}return o;};
  const CACHED={};const actual=m=>CACHED[m]|| (CACHED[m]=actualByMonth(m));
@@ -4689,15 +4712,17 @@ const LYCOMPARE=(()=>{
  e.innerHTML=`<div class="row noprint" style="gap:10px"><b>Month / FY:</b><select onchange="LYCOMPARE.selectPeriod(this.value)">${periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')}</select><b>Division:</b><select onchange="LYCOMPARE.selectDiv(this.value)">${option('','All Divisions',STATE.div)}${divisions.map(d=>option(d,d,STATE.div)).join('')}</select><b>Sub Division:</b><select onchange="LYCOMPARE.selectSub(this.value)">${option('','All Sub Divisions',STATE.sd)}${sds.map(s=>option(s,s,STATE.sd)).join('')}</select><button class="b alt" onclick="LYCOMPARE.download()">Download Last Year Comparison PDF</button> <button class="b alt" onclick="LYCOMPARE.download(true)">Download Last Year Comparison PPT</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Sheets</button></div><div class="hint noprint">${esc(ORIGIN[NM?'n':'o'])} · ${all.length} pages total. FY 2025–26 article counts come exclusively from SDACCOM / SDACCNM Google Sheets. The online Sheet is never edited.</div><div class="row noprint"><b>Preview page:</b><select id="lycompPage" onchange="LYCOMPARE.preview()" style="max-width:660px">${filtered.map((x,i)=>option(String(i),x.t,'0')).join('')}</select></div><div id="lycompView" class="wrap"></div><div id="lycompIssues" class="noprint"></div>`;
  window.__lycompPreview=filtered;preview();let issues=[];for(const d of divisions)for(const sd of allSubs(d))for(const v of VERT)for(const m of periodMonths(STATE.period))issues.push(...reduce(d,sd,v,[m]).adjust);const warn=document.getElementById('lycompIssues');if(warn)warn.innerHTML=issueHTML(issues)};
  const preview=()=>{const box=document.getElementById('lycompView'),p=(window.__lycompPreview||[])[+(document.getElementById('lycompPage')||{}).value||0];if(box)box.innerHTML=p?p.html():'<div class="msg warn">No page available for this selection.</div>'};
- const refresh=async(show=true)=>{const results=[];for(const m of MODES){try{const newRows=parse(await irFetchCSV(URL[m],`Last year ${m==='o'?'Old':'New'} mapping count`));SRC[m]=newRows;data[m]=merge(m);ORIGIN[m]=`Live published Google Sheet (${newRows.length} month cells)`;results.push(`${m}: ${newRows.length} cells loaded`)}catch(e){ORIGIN[m]=`${rows(m).length?'Previously loaded live data retained':'Google Sheet unavailable'}: ${e.message}`;results.push(`${m}: ${rows(m).length?'current-session live data retained':'no comparison data'} (${e.message})`)}try{window.RF&&RF.inc('ref',5)}catch(e){}}invalidate();try{applyLyCnt();rpRender()}catch(e){console.error(e)}if(show){toast(results.join(' | '));render()}try{if(typeof SDH!=='undefined'&&document.getElementById('p-sdh')?.style.display!=='none')SDH.render()}catch(e){console.error('SD hub last-year refresh',e)}return results};
+ const refresh=async(show=true)=>{const results=[];for(const m of MODES){try{const newRows=parse(await irFetchCSV(URL[m],`Last year ${m==='o'?'Old':'New'} mapping count`));SRC[m]=newRows;data[m]=merge(m);try{DBLS.setItem(savedKey(m),JSON.stringify(newRows))}catch(e){console.warn('Last year cache unavailable',e)}ORIGIN[m]=`Live published Google Sheet (${newRows.length} month cells)`;results.push(`${m}: ${newRows.length} cells loaded`)}catch(e){ORIGIN[m]=`${rows(m).length?'Previously loaded live data retained':'Google Sheet unavailable'}: ${e.message}`;results.push(`${m}: ${rows(m).length?'current-session live data retained':'no comparison data'} (${e.message})`)}try{window.RF&&RF.inc('ref',5)}catch(e){}}invalidate();try{applyLyCnt();rpRender()}catch(e){console.error(e)}if(show){toast(results.join(' | '));render()}try{if(typeof SDH!=='undefined'&&document.getElementById('p-sdh')?.style.display!=='none')SDH.render()}catch(e){console.error('SD hub last-year refresh',e)}return results};
 
  const divisionData=()=>{const out={};for(const v of VERT){const k=v==='MO'?'MAIL':v;out[k]={}}for(const d of allDiv())for(const v of VERT)for(const m of M24){const z=group(d,v,[m]),x=fyPrev(m),t=v==='MO'?'MAIL':v;const n=norm(d).split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ');if(z.last!==null){out[t][n]=out[t][n]||{};out[t][n][x]=z.last}}return out};
  const download=async(ppt)=>{const x=CENTRAL_ARTICLES.audit({months:CENTRAL_ARTICLES.available(),sehore:true,rms:true});if(x.issues.length){alert('Last Year Comparison export blocked: '+x.issues.length+' Central Count audit errors.');return;}const all=buildPages();if(!all.length)return alert('No last-year comparison data');await rpOut(ppt,all,'Sub_Division_Last_Year_Compare_'+STATE.period,'Sub Division Last Year Comparison')};
- return {divisionData,buildPages,sourceDivisions:allDiv,sourceSubs:allSubs,sourceStatus:()=>ORIGIN[NM?'n':'o'],sourceReady:()=>rows(NM?'n':'o').length>0,render,preview,refresh,download,selectPeriod(v){STATE.period=v;render()},selectDiv(v){STATE.div=v;STATE.sd='';render()},selectSub(v){STATE.sd=v;render()},get,invalidate,period:()=>STATE.period,setMega(v){STATE.period=v;rpRender()},megaControl(){return '<b>Last Year Compare Period:</b> <select onchange="LYCOMPARE.setMega(this.value)">'+periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')+'</select>'}};
+ return {divisionBaseline,restoreSaved,divisionData,buildPages,sourceDivisions:allDiv,sourceSubs:allSubs,sourceStatus:()=>ORIGIN[NM?'n':'o'],sourceReady:()=>rows(NM?'n':'o').length>0,render,preview,refresh,download,selectPeriod(v){STATE.period=v;render()},selectDiv(v){STATE.div=v;STATE.sd='';render()},selectSub(v){STATE.sd=v;render()},get,invalidate,period:()=>STATE.period,setMega(v){STATE.period=v;rpRender()},megaControl(){return '<b>Last Year Compare Period:</b> <select onchange="LYCOMPARE.setMega(this.value)">'+periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')+'</select>'}};
 })();
+// Restore official Last Year old/new mapping baseline before Report's first render.
+try{LYCOMPARE.restoreSaved()}catch(e){console.warn('Last Year cache restore',e)}
 RP.G.sdly='Sub Division Last Year Compare (FY 2025–26 vs 2026–27)';
 {const oldPages=RP.pages;RP.pages=function(){const p=oldPages.apply(this,arguments);try{LYCOMPARE.buildPages().forEach(x=>p.push(x))}catch(e){console.error('Last-year pages',e)}return p}}
-{const oldRefresh=loadIndoreReferenceSheets;loadIndoreReferenceSheets=async function(){const r=await oldRefresh.apply(this,arguments);await LYCOMPARE.refresh(false);return r}}
+{const oldRefresh=loadIndoreReferenceSheets;loadIndoreReferenceSheets=async function(){const r=await oldRefresh.apply(this,arguments);await LYCOMPARE.refresh(false);try{if(document.getElementById('p-report').style.display!=='none')renderReport()}catch(e){console.warn(e)}return r}}
 {const oldR=rpRender;rpRender=function(){oldR.apply(this,arguments);const el=document.getElementById('sdMegaPeriodBox');if(el&&!el.querySelector('#sdLYmega'))el.insertAdjacentHTML('beforeend',' <span id="sdLYmega">'+LYCOMPARE.megaControl()+'</span>')};}
 // Render saved sheet data immediately; replace it with fresh online data when available.
 // A temporary Google Sheets failure must not remove last-year comparison pages.
@@ -5570,7 +5595,7 @@ const RF=(()=>{
   const step=async(k,fn)=>{cur=k;msg='';paint();await yieldUI();try{const m=await fn();log.push(['ok',LBL[k],m||''])}catch(e){log.push(['warn',LBL[k],(e&&e.message)||String(e)])}P[k]=1;paint();await yieldUI()};
   try{
    if(opt.cachedOnly){
-    await step('ref',async()=>{const old=DBLS.getItem('dwOldMapCsv'),newmap=DBLS.getItem('dwNewMapCsv');if(old)oldMapApply(old);if(newmap)irApplyOfficeMap(newmap);if(typeof SDTGT!=='undefined'&&SDTGT.restoreSaved)SDTGT.restoreSaved();window.__BV=(window.__BV||0)+1;return 'Saved old/new office mapping restored';});
+    await step('ref',async()=>{const old=DBLS.getItem('dwOldMapCsv'),newmap=DBLS.getItem('dwNewMapCsv');if(old)oldMapApply(old);if(newmap)irApplyOfficeMap(newmap);LYCOMPARE.restoreSaved();if(!LYCOMPARE.sourceReady()){await LYCOMPARE.refresh(false);if(!LYCOMPARE.sourceReady())throw Error('Last Year Sub Division booking Sheet for selected mapping could not be loaded.')}if(typeof SDTGT!=='undefined'&&SDTGT.restoreSaved)SDTGT.restoreSaved();window.__BV=(window.__BV||0)+1;return 'Saved old/new office mapping restored';});
    }
    if(!opt.cachedOnly){
     await step('ref',async()=>{const s=await loadIndoreReferenceSheets(false);window.__BV=(window.__BV||0)+1;const bad=(s||[]).filter(x=>/^⚠/.test(x));if(bad.length)throw Error(bad.join(' | '));did.ly=true;return (s||[]).length+' sources loaded'});
