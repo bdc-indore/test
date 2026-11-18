@@ -366,8 +366,8 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
     <td><div class="row"><select id="aadCsvM"></select> <select id="aadCsvMap"><option value="n">New mapping</option><option value="o">Old mapping</option></select> <button class="b sm" onclick="aadCsv()">&#11015; Download Aadhaar CSV</button></div><div id="aadCsvMsg" class="hint"></div></td></tr>
    <tr><td class="l">D+0 report<small>Office-wise "table" file. Date is asked after upload.</small></td>
     <td><div class="dzs"><label class="dz" data-h="d0"><b>D+0 table file</b><span>click or drop file</span><input type="file" id="d0File"  accept=".csv,.xlsx,.xls" hidden></label></div><div id="d0UpMsg"></div></td></tr>
-   <tr><td class="l">POSB reports<small>Up to 14 files (Open + Close), any order. Details in the POSB Upload tab.</small></td>
-    <td><div class="dzs"><label class="dz" data-h="posb"><b>POSB files (up to 14)</b><span>click or drop files</span><input type="file" id="posbFile" multiple accept=".csv,.xlsx,.xls" hidden></label></div><div class="hint" id="upPosbStat" style="margin-top:6px"></div></td></tr>
+   <tr><td class="l">POSB reports<small>Any number of files (Open + Close), any order, mixed divisions supported. Duplicate files are rejected.</small></td>
+    <td><div class="dzs"><label class="dz" data-h="posb"><b>POSB files (unlimited)</b><span>click or drop files</span><input type="file" id="posbFile" multiple accept=".csv,.xlsx,.xls" hidden></label></div><div class="hint" id="upPosbStat" style="margin-top:6px"></div></td></tr>
   </table>
   <details style="margin-top:8px"><summary class="hint" style="cursor:pointer">File format help</summary><div class="hint">
    Division-wise file: only the <b>division-name</b> column is read. Post-office-wise file: the division column is ignored; only the <b>office-id</b> is read and the division comes from the Office ID master (unknown offices appear in Settings &rarr; Unknown offices). Any product containing "International" is counted as IRGB.<br>
@@ -387,8 +387,8 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
     <h3>POSB (SB) &ndash; Account Open / Close upload &amp; Net Addition reports</h3>
     <div id="sbStat"></div>
     <label id="sbDrop" style="display:block;cursor:pointer;text-align:center;border:2px dashed #b3121b;border-radius:10px;padding:18px;margin:8px 0;background:#fffafa" ondragover="event.preventDefault();this.style.background='#fdeaea'" ondragleave="this.style.background='#fffafa'" ondrop="event.preventDefault();this.style.background='#fffafa';SBX.add(event.dataTransfer.files)">
-      <b>Select / drag &amp; drop all POSB files here (up to 14 &ndash; 7 Open + 7 Close, any order)</b>
-      <div class="hint">Account OPEN or CLOSE is detected from the product columns, the division from the BO ID / SOL ID mapping sheet. You can correct either in the list below.</div>
+      <b>Select / drag &amp; drop POSB files (no file limit; Open/Close auto-detected; mixed divisions supported)</b>
+      <div class="hint">Account OPEN or CLOSE is detected from the product columns, the division from the BO ID / SOL ID mapping sheet. Division/Sub Division always follows mapped BO ID / SOL ID, even when files contain multiple divisions. You can correct the file type below.</div>
       <input type="file" multiple accept=".xlsx,.xls,.csv" hidden onchange="SBX.add(this.files);this.value=''">
     </label>
     <div id="sbFiles2"></div>
@@ -670,7 +670,7 @@ const LYX=()=>NM?LYN:LY;
 function setMap(v){NM=v==='n';DBLS.setItem('dwMapNew',NM?'1':'0');DIVS=NM?DIVS_NEW:DIVS_OLD;curDiv='Region Total';try{SDR.dv=''}catch(e){}
  document.querySelectorAll('select.csvRg option,select.sbRg option,#dlRegion option,#tgtRegion option').forEach(o=>{if(o.dataset.t==null)o.dataset.t=o.textContent;o.textContent=NM?o.dataset.t.replace('Indore Region','Indore Region (New Mapping)'):o.dataset.t});
  try{RP.DV=(NM?DV_N:DV_O).slice();RP.DV0=RP.DV.slice();RP.build()}catch(e){}try{SBX.useMap()}catch(e){}
- try{renderReport()}catch(e){}try{renderTgt()}catch(e){}try{rpRender()}catch(e){}}
+ try{renderReport()}catch(e){}try{if(typeof LYCOMPARE!=='undefined'&&!LYCOMPARE.sourceReady())LYCOMPARE.ensureLoaded().then(()=>renderReport())}catch(e){}try{renderTgt()}catch(e){}try{rpRender()}catch(e){}}
 const DEF_CENTRES={'Indore City':21,'Indore Mfl':21,'Indore RMS':1,'Khandwa':20,'Mandsaur':21,'Ratlam':18,'Sehore':16,'Ujjain':24};
 /* New mapping: Aadhaar machines (centres) per new division, from the Aadhaar Txn report. Sehore is not in that report, so it keeps its old-mapping count. */
 const DEF_CENTRES_N={'Indore':27,'Indore RMS':1,'Dewas':12,'Dhar':11,'Khandwa':8,'Khargone':12,'Mandsaur':21,'Ratlam':16,'Sehore':16,'Ujjain':18};
@@ -1657,11 +1657,23 @@ function renderReport(){
     h+='</tr>';
   }
   h+='</table>';
-  if(rows.some(r=>r.cls==='base'&&r.cells.slice(2,5).some(x=>x==='—'))){
-    h='<div class="msg err" style="margin-bottom:10px"><b>Last Year Article Count source unavailable.</b> '+
-      'The selected Old/New Mapping last-year Sub Division Google Sheet was not loaded or is missing divisions. '+
-      'Click <button class="b sm" onclick="LYCOMPARE.refresh(false).then(()=>renderReport())">Refresh Last Year Sheets</button>. '+
-      'Missing values are not treated as zero.</div>'+h;
+  const needsLY=rows.some(r=>r.cls==='base'&&r.cells.slice(2,5).some(x=>x==='—'));
+  if(needsLY){
+    const ly=LYCOMPARE.baselineStatus(curDiv,month);
+    const safeText=x=>esc(x||'');
+    if(!LYCOMPARE.sourceReady()){
+      h='<div class="msg warn" style="margin-bottom:10px"><b>Last Year Google Sheet loading…</b> '+
+       'Report and Sub Division Report use the same official Last Year source. '+
+       '<button class="b sm" onclick="LYCOMPARE.ensureLoaded().then(()=>renderReport())">Retry now</button></div>'+h;
+      if(!window.__lastYearReportLoading&&!window.__lyReportAutoAttempted?.[NM?'n':'o']){window.__lastYearReportLoading=true;(window.__lyReportAutoAttempted||(window.__lyReportAutoAttempted={}))[NM?'n':'o']=true;
+        LYCOMPARE.ensureLoaded().then(()=>{window.__lastYearReportLoading=false;renderReport()}).catch(e=>{window.__lastYearReportLoading=false;console.warn(e)});}
+    }else{
+      h='<div class="msg err" style="margin-bottom:10px"><b>Last Year Source Mismatch — exact missing rows:</b> '+
+        safeText(ly.missing.join('; '))+' for '+safeText(month)+'. '+
+        'Source: '+safeText(ly.source)+'. '+
+        '<button class="b sm" onclick="LYCOMPARE.refresh(false).then(()=>renderReport())">Reload official sheets</button> '+
+        'No missing row is silently treated as zero.</div>'+h;
+    }
   }
   document.getElementById('reportBox').innerHTML=h;
 }
@@ -3669,6 +3681,12 @@ function parseDat(t){const r=rowsOf(t);const h=r.findIndex((x,i)=>i<20&&x.some(v
  months=months.filter(y=>rows.some(r=>r.m[y].o||r.m[y].c||r.m[y].n));
  const a1=String(r[0][0]||'').match(/\d{1,2}/);return{rows,months,day:a1?String(+a1[0]):''}}
 function parseLY(t){const r=rowsOf(t),ly={};for(let i=1;i<r.length;i++){const x=r[i],d=/RO|REGION/i.test(String(x[0]))&&!/CITY|MOF/i.test(String(x[0]))?'REGION':dk(x[0]),m=String(x[5]).match(/([A-Za-z]+)\D*(\d{4})/);if(!m||!mcode(m[1]))continue;const ym=m[2]+'-'+pad(CN[mcode(m[1])]);(ly[d]=ly[d]||{})[ym]={o:num(x[2]),c:num(x[3]),n:num(x[4])}}return ly}
+/* Stable byte fingerprint: detects an identical Excel/CSV even when renamed.
+   Two independent 32-bit hashes + length. Kept browser-compatible for file:// as well. */
+function posbFingerprint(buf){const a=new Uint8Array(buf);let h1=2166136261>>>0,h2=2246822519>>>0;for(let i=0;i<a.length;i++){h1=Math.imul(h1^a[i],16777619)>>>0;h2=Math.imul(h2^(a[i]+i%251),3266489917)>>>0}return a.length.toString(16)+':'+h1.toString(16)+':'+h2.toString(16)}
+function posbSameContent(a,b){if(a.fingerprint&&b.fingerprint)return a.fingerprint===b.fingerprint;
+  return a.side===b.side&&Object.keys(a.ent||{}).length===Object.keys(b.ent||{}).length&&
+  Object.keys(a.ent||{}).every(id=>Object.prototype.hasOwnProperty.call(b.ent||{},id)&&a.ent[id]===b.ent[id]);}
 /* ---------- upload files (open / close Excel) ---------- */
 const MIXMIN=1; /* new mapping: files me jis division ka koi bhi office mile, wo division report me shamil (office-wise mapping) */
 const hnorm=h=>String(h==null?'':h).toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -3693,7 +3711,16 @@ function calc(){if(!S.ok)return;const s=sb(),offs={};
  const mk=(oid,name,cls,div,sd,ids)=>{if(NM&&NEW_DSD[oid]){div=NEW_DSD[oid][0];sd=NEW_DSD[oid][1]}return offs[oid]={oid,name,cls,div,sd,ids,m:{}}};
  Object.values(S.mst.byOff).forEach(o=>mk(o.oid,o.name,o.cls,o.div,o.sd,o.ids));
  S.dat.rows.forEach(d=>{let o=offs[d.oid];if(!o){const dv=dk(d.div);o=mk(d.oid,d.name,d.cls,dv,sdCanon(dv,d.sd),d.bo?[d.bo]:[])}Object.assign(o.m,JSON.parse(JSON.stringify(d.m)))});
- const files=s.files;const fdN=f=>{const c={};Object.keys(f.ent).forEach(id=>{const o=(S.mst.byId[s.alias[id]||id]||[])[0];if(!o)return;const q=NEW_DSD[o.oid],d=q?q[0]:o.div;if(d)c[d]=(c[d]||0)+1});const big=Object.entries(c).filter(t=>t[1]>=MIXMIN&&DK.includes(t[0])).map(t=>t[0]);const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];f.fdivN=big.length>1?'MIX':(top?top[0]:'');return big.length>1?big:(top?[top[0]]:[])};S.covered=new Set();files.forEach(f=>{const dv=NM?(f.man&&f.fdiv&&f.fdiv!=='MIX'?[f.fdiv]:fdN(f)):[f.fdiv];dv.filter(Boolean).forEach(x=>S.covered.add(x))});S.unm=[];
+ const files=s.files;
+ // Every row is assigned by BO ID/SOL ID; a file may contain all divisions.
+ // Never use the file name or a manually chosen file division for coverage.
+ S.covered=new Set();
+ files.forEach(f=>{const divs=new Set();Object.keys(f.ent||{}).forEach(id=>{
+  const canonical=s.alias[id]||id;
+  (S.mst.byId[canonical]||[]).forEach(o=>{const q=NM&&NEW_DSD[o.oid];const dv=q?q[0]:o.div;if(dv&&DK0.includes(dv))divs.add(dv)});
+  if(s.extra[canonical]&&DK0.includes(s.extra[canonical].div))divs.add(s.extra[canonical].div);
+ });f.fdivN=divs.size>1?'MIX':([...divs][0]||'');divs.forEach(d=>S.covered.add(d))});
+ S.unm=[];
  const alloc=side=>{const per={};files.filter(f=>f.side===side).forEach(f=>Object.keys(f.ent).forEach(id=>(per[id]=per[id]||[]).push(f.ent[id])));const o={};for(const id in per)o[id]=Math.round(per[id].reduce((a,b)=>a+b,0)/per[id].length*100)/100;return o};
  const O=alloc('open'),C=alloc('close'),got={};
  new Set([...Object.keys(O),...Object.keys(C)]).forEach(id0=>{const id=s.alias[id0]||id0;let of=(S.mst.byId[id]||[]).slice();
@@ -3860,7 +3887,13 @@ const VIEWS=[['dm','Division (month)'],['sm','Sub-Division (month)'],['dp','Divi
 function render(){const el=$('sbStat');if(!el)return;const s=sb();setX(false);document.querySelectorAll('.sbRg').forEach(e=>e.value=S.rx?'x':'w');
  el.innerHTML=S.ok?`<div class="msg">Mapping: ${Object.keys(S.mst.byOff).length} offices | FY data: ${S.dat.months.map(rpMn).join(', ')||'-'}${S.dat.day?' (till '+S.dat.day+')':''} | Last year: ${Object.keys(S.ly).length?'loaded':'not loaded'} | Uploads: ${s.files.filter(f=>f.side==='open').length} open, ${s.files.filter(f=>f.side==='close').length} close</div>`:`<div class="msg ${S.err?'err':'warn'}">${S.err?esc(S.err):'Google sheets load ho rahi hain...'}</div>`;
  const ud=$('sbUpD');if(ud)ud.value=s.upDay||'';const um=$('sbUpM');if(um){const cur=s.upMonth||S.up||RP.FY[Math.min(11,Math.max(0,...S.dat.months.map(m=>RP.FY.indexOf(m)))+1)];um.innerHTML=RP.FY.map(y=>`<option value="${y}" ${y===cur?'selected':''}>${mFull(y)}</option>`).join('')}
- const fl=$('sbFiles2');if(fl){const dup={};s.files.forEach(f=>{const k=f.side+'|'+f.fdiv;dup[k]=(dup[k]||0)+1});fl.innerHTML=s.files.length?'<table class="s2"><tr><th>#</th><th>File</th><th>Type (auto)</th><th>Division (from mapping)</th><th>Rows</th><th>Matched</th><th></th></tr>'+s.files.map((f,i)=>`<tr><td>${i+1}</td><td>${esc(f.name)}</td><td><select onchange="SBX.setSide(${i},this.value)"><option value="open" ${f.side==='open'?'selected':''}>Account OPEN</option><option value="close" ${f.side==='close'?'selected':''}>Account CLOSE</option></select></td><td><select onchange="SBX.setDiv(${i},this.value)"><option value="">?</option>${DK.map(d=>`<option value="${d}" ${(NM&&f.fdivN&&!f.man?f.fdivN:f.fdiv)===d?'selected':''}>${LBL[d]}</option>`).join('')}<option value="MIX" ${(NM&&f.fdivN&&!f.man?f.fdivN:f.fdiv)==='MIX'?'selected':''}>Mix (kai division)</option></select>${dup[f.side+'|'+f.fdiv]>1?' <span title="same type + division twice">&#9888;</span>':''}</td><td>${f.rows}</td><td class="${f.matched<f.rows?'bad':''}">${f.matched}/${f.rows}</td><td><button class="b sm gray" onclick="SBX.del(${i})">&#10006;</button></td></tr>`).join('')+'</table>':'<div class="hint">No files yet.</div>'}
+ const fl=$('sbFiles2');if(fl){
+ const idCoverage=f=>{const counts={};Object.keys(f.ent||{}).forEach(id=>{const k=s.alias[id]||id;const v=(S.mst.byId[k]||[])[0];if(!v)return;const q=NM&&NEW_DSD[v.oid],d=q?q[0]:v.div;if(d)counts[d]=(counts[d]||0)+1});return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([d,n])=>esc(LBL[d]||d)+' ('+n+')').join(', ')||'Unmapped IDs only'};
+ const seen={};s.files.forEach(f=>{Object.keys(f.ent||{}).forEach(id=>{const k=f.side+'|'+id;(seen[k]=seen[k]||[]).push(f.name)})});
+ const overlaps=Object.entries(seen).filter(([,names])=>names.length>1);
+ const note=overlaps.length?'<div class="msg warn"><b>Review overlapping BO/SOL IDs:</b> '+overlaps.length+' same-type ID(s) found across different files. Example: '+overlaps.slice(0,5).map(([k,n])=>esc(k)+' ('+n.length+' files)').join('; ')+' . Verify these are not duplicate data. The existing aggregation rule is still used.</div>':'';
+ fl.innerHTML=s.files.length?'<div class="hint">'+s.files.length+' POSB files accepted. Each BO/SOL ID is mapped individually; mixed-division Excel files are allowed.</div>'+note+'<div class="wrap"><table class="s2"><tr><th>#</th><th>File</th><th>Type (auto)</th><th>Divisions by mapped BO/SOL ID</th><th>Rows</th><th>Matched</th><th></th></tr>'+s.files.map((f,i)=>`<tr><td>${i+1}</td><td>${esc(f.name)}</td><td><select onchange="SBX.setSide(${i},this.value)"><option value="open" ${f.side==='open'?'selected':''}>Account OPEN</option><option value="close" ${f.side==='close'?'selected':''}>Account CLOSE</option></select></td><td style="max-width:360px;text-align:left">${idCoverage(f)}</td><td>${f.rows}</td><td class="${f.matched<f.rows?'bad':''}">${f.matched}/${f.rows}</td><td><button class="b sm gray" onclick="SBX.del(${i})">&#10006;</button></td></tr>`).join('')+'</table></div>':'<div class="hint">No files yet.</div>'}
+
  const ms=$('sbMonth');if(ms){ms.innerHTML=S.months.map(y=>`<option value="${y}" ${y===selM()?'selected':''}>${mFull(y)}</option>`).join('')}
  const vt=$('sbTabs');if(vt)vt.innerHTML=VIEWS.map(([k,l])=>`<button class="${S.view===k?'on':''}" onclick="SBX.setView('${k}')">${l}</button>`).join('');
  const vw=$('sbView');if(!vw)return;if(!S.ok||!S.months.length){vw.innerHTML='<div class="hint">Data load hone ke baad reports yahan dikhengi.</div>';return}
@@ -3870,10 +3903,34 @@ function setRender(){const el=$('sbMapBox');if(!el)return;const s=sb();
  let h=S.unm.length?'<table class="s2"><tr><th>BO ID / SOL ID</th><th>Division (file)</th><th>Name in file</th><th>Open</th><th>Close</th><th>Add as new office (name / class / sub division)</th><th>OR add its numbers to another ID</th></tr>'+S.unm.map((u,i)=>`<tr><td><b>${esc(u.id)}</b></td><td><b>${esc(LBL[u.div]||u.div)}</b></td><td>${esc(u.name)}</td><td>${u.o}</td><td>${u.c}</td><td><input id="sbn_${i}" value="${esc(u.name)}" style="width:130px"> <select id="sbc_${i}"><option>BO</option><option>SO</option><option>HO</option></select> <select id="sbs_${i}">${(SDT[u.div]||[]).map(x=>`<option>${x[0]}</option>`).join('')}</select> <button class="b sm" onclick="SBX.addOff(${i})">Add</button></td><td><input id="sbi_${i}" placeholder="BO ID / SOL ID" style="width:110px"> <button class="b sm alt" onclick="SBX.merge(${i})">Add numbers</button></td></tr>`).join('')+'</table>':'<div class="hint">No unmapped office in the uploaded files.</div>';
  const ex=Object.keys(s.extra),al=Object.keys(s.alias);if(ex.length||al.length)h+='<div style="margin-top:8px"><b>Saved:</b> '+ex.map(id=>`${esc(id)} &rarr; new office "${esc(s.extra[id].name)}" (${esc(s.extra[id].sd)}) <button class="b sm gray" onclick="SBX.delX('e','${esc(id)}')">&#10006;</button>`).join(' | ')+(ex.length&&al.length?' | ':'')+al.map(id=>`${esc(id)} &rarr; ${esc(s.alias[id])} <button class="b sm gray" onclick="SBX.delX('a','${esc(id)}')">&#10006;</button>`).join(' | ')+'</div>';
  el.innerHTML=h}
-async function add(list){try{await S.ready}catch(e){}if(!S.ok)return alert('Mapping sheet abhi load nahi hui. Thodi der baad try karein.');const s=sb(),fs=[...list].filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));if(!fs.length)return alert('Excel / CSV files select karein.');let skip=0;
- for(const f of fs){const buf=await f.arrayBuffer();const r=parseFile(buf,f.name);if(r.error){alert(f.name+': '+r.error);continue}const i=s.files.findIndex(x=>x.name===f.name);if(i>=0)s.files[i]=r;else if(s.files.length>=14){skip++;continue}else s.files.push(r)}
- if(!s.upDay&&typeof prompt==='function'){const up=s.upMonth||S.up||'',d=prompt('Uploaded POSB data kis date tak ka hai? (sirf date likhein, jaise 15)'+(up?'  ['+mFull(up)+']':''),String(new Date().getDate()));if(d&&+d>=1&&+d<=31)s.upDay=String(+d)}
- if(skip)alert('Maximum 14 files - '+skip+' extra file(s) skip hui.');save();calc();render();rpRefresh()}
+async function add(list){try{await S.ready}catch(e){}if(!S.ok)return alert('Mapping sheet abhi load nahi hui. Thodi der baad try karein.');
+ const s=sb(),fs=[...list].filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));if(!fs.length)return alert('Excel / CSV files select karein.');
+ const duplicates=[],bad=[],added=[];
+ // Run in small chunks so large multi-file batches do not freeze the UI unnecessarily.
+ for(let fi=0;fi<fs.length;fi++){
+  const f=fs[fi];try{
+   const buf=await f.arrayBuffer(),fingerprint=posbFingerprint(buf);
+   const duplicate=s.files.find(x=>x.fingerprint===fingerprint);
+   if(duplicate){duplicates.push(f.name+' = '+duplicate.name);continue}
+   const r=parseFile(buf,f.name);if(r.error){bad.push(f.name+': '+r.error);continue}
+   r.fingerprint=fingerprint;
+   const same=s.files.find(x=>posbSameContent(x,r));
+   if(same){duplicates.push(f.name+' = '+same.name);continue}
+   s.files.push(r);added.push(f.name);
+  }catch(err){bad.push(f.name+': '+(err&&err.message||err))}
+  if(fi%3===2)await new Promise(resolve=>setTimeout(resolve,0));
+ }
+ if(added.length&&!s.upDay&&typeof prompt==='function'){
+  const up=s.upMonth||S.up||'',d=prompt('Uploaded POSB data kis date tak ka hai? (sirf date likhein, jaise 15)'+(up?'  ['+mFull(up)+']':''),String(new Date().getDate()));
+  if(d&&+d>=1&&+d<=31)s.upDay=String(+d)
+ }
+ save();calc();render();rpRefresh();
+ const info=[];if(added.length)info.push(added.length+' new file(s) added');
+ if(duplicates.length)info.push('DUPLICATE file(s) rejected (not counted twice):\n'+duplicates.join('\n'));
+ if(bad.length)info.push('Unable to read:\n'+bad.join('\n'));
+ if(info.length)alert(info.join('\n\n'));
+ return{added,duplicates,bad};
+}
 function setX(on){DK.length=0;(on?DK0.filter(d=>d!=='SEHORE'):DK0).forEach(d=>DK.push(d))}
 function setRx(v){S.rx=!!v;render()}
 function useMap(){if(NM&&S.mstNew)S.mst=S.mstNew;else if(!NM&&S.mstOld)S.mst=S.mstOld;sbUse();calc();setX(S.rx);render()}
@@ -4422,13 +4479,13 @@ const UPM=(()=>{
  const dm=s=>s.slice(8)+'.'+s.slice(5,7);
  function render(){
   const el=document.getElementById('upMeter'),nav=document.getElementById('t-upload');
-  const pn=fresh('posb')?Math.min(14,S.posb.names.length):0;
-  let done=0,frac=0;IT.forEach(([k])=>{if(k==='posb'){frac+=pn/14;if(pn>=14)done++}else if(fresh(k)){done++;frac++}});
+  const pn=fresh('posb')?S.posb.names.length:0;
+  let done=0,frac=0;IT.forEach(([k])=>{if(k==='posb'){if(pn>0){frac++;done++}}else if(fresh(k)){done++;frac++}});
   if(nav)nav.innerHTML='Upload <span style="background:'+(done===4?'#1b7a3c':'#e67e00')+';color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px">'+done+'/4</span>';
-  try{const n=SBX.data().files.length,e=document.getElementById('upPosbStat');if(e)e.textContent=n+'/14 POSB files stored'+(pn?' - '+pn+' uploaded today':'')}catch(e){}
+  try{const n=SBX.data().files.length,e=document.getElementById('upPosbStat');if(e)e.textContent=n+' POSB files stored'+(pn?' - '+pn+' uploaded today':'')}catch(e){}
   if(!el)return;
   const chip=([k,l])=>{let c,txt;
-    if(k==='posb'){if(pn>=14){c='#1b7a3c';txt='&#10004; 14/14 today'}else if(pn>0){c='#e67e00';txt=pn+'/14 today'}else if(S.posb){c='#999';txt='0/14 today (last '+dm(S.posb.d)+')'}else{c='#c00';txt='0/14 - not uploaded'}}
+    if(k==='posb'){if(pn>0){c='#1b7a3c';txt='&#10004; '+pn+' file(s) today'}else if(S.posb){c='#999';txt='none today (last '+dm(S.posb.d)+')'}else{c='#c00';txt='not uploaded'}}
     else if(fresh(k)){c='#1b7a3c';txt='&#10004; today '+S[k].t+(S[k].w?' ('+S[k].w+')':'')}else if(S[k]){c='#999';txt='old data - last '+dm(S[k].d)}else{c='#c00';txt='not uploaded'}
     return `<span style="display:inline-block;border:2px solid ${c};border-radius:8px;padding:5px 10px;margin:3px 6px 3px 0;font-size:13px"><b>${l}</b><br><span style="color:${c};font-weight:600">${txt}</span></span>`};
   el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font:700 22px Arial;color:${done===4?'#1b7a3c':'#b3121b'}">${done} / 4</div><div style="flex:1;min-width:200px;background:#e8eaef;border-radius:8px;height:16px;overflow:hidden"><div style="height:100%;width:${Math.round(frac*25)}%;background:${done===4?'#1b7a3c':'#fdb913'}"></div></div><button class="b sm gray" onclick="UPM.reset()">Reset</button></div><div style="margin-top:6px">${IT.map(chip).join('')}</div><div class="hint">Green = uploaded today &bull; grey = older data still stored (not fresh) &bull; resets every day. Built-in data needs no upload.</div>`;
@@ -4439,7 +4496,7 @@ const UPM=(()=>{
 window.UPM=UPM;
 {const _h=handleCSV;handleCSV=async function(file,mode){await _h.apply(this,arguments);const b=document.getElementById(mode==='off'?'csvMsgOff':'csvMsg');if(file&&b&&!b.querySelector('.err'))UPM.mark('src',mode==='off'?'Post-office-wise':'Division-wise')}}
 {const _i=importAad;importAad=function(){const r=_i.apply(this,arguments);const b=document.getElementById('aadMsg');if(b&&!b.querySelector('.err')&&!/No sheet selected/.test(b.textContent))UPM.mark('aad');return r}}
-{const _a=SBX.add;SBX.add=async function(list){const names=[...list].map(f=>f.name);await _a.apply(this,arguments);const have=new Set(SBX.data().files);UPM.mark('posb',names.filter(n=>have.has(n)))}}
+{const _a=SBX.add;SBX.add=async function(list){const result=await _a.apply(this,arguments);if(result&&result.added&&result.added.length)UPM.mark('posb',result.added)}}
 
 /* ---- Post-office-wise CSV: several files -> side panel, month-wise combine ---- */
 const MF=(()=>{
@@ -4661,13 +4718,41 @@ const LYCOMPARE=(()=>{
  const merge=mode=>{const data={};for(const r of rows(mode))data[key(r[0],r[1],r[2],r[3])]=Number(r[4])||0;return data};
  // Last-year booking baseline is sourced ONLY from the selected official old/new SD count Sheet.
  // Count the 2025-26 rows directly by division and vertical, rather than the legacy built-in LYN.
+ // Indexed totals sourced from the same SRC rows used by SD Last Year Comparison.
+ // Avoid a separate legacy baseline source and avoid repeatedly scanning all rows per page.
+ const LY_INDEX={o:new Map(),n:new Map()};
+ const canonicalDivision=d=>{
+   const x=div(d);
+   if(['INDORE MOUFFSIL','INDORE MOFUSSIL','INDORE MFL'].includes(x))return 'INDORE MFL';
+   if(x==='INDORE CITY DIVISION')return 'INDORE CITY';
+   if(['INDORE RMS','ID DIVISION INDORE','ID DIVISION','RMS INDORE'].includes(x))return 'INDORE RMS';
+   return x;
+ };
+ const rebuildDivisionIndex=()=>{for(const mode of MODES){const idx=new Map();
+   for(const r of rows(mode)){
+     const k=[canonicalDivision(r[0]),verticalName(r[2]),r[3]].join('|');
+     idx.set(k,(idx.get(k)||0)+(Number(r[4])||0));
+   }
+   LY_INDEX[mode]=idx;
+ }};
  const divisionBaseline=(division,vertical,month)=>{
-  const mode=NM?'n':'o'; if(!rows(mode).length)return null;
-  const d=div(division),v=vertical==='MAIL'?'MO':vertical;
-  const yearMonth=fyPrev(month);
-  const matched=rows(mode).filter(r=>div(r[0])===d&&verticalName(r[2])===verticalName(v)&&r[3]===yearMonth);
-  if(!matched.length)return null;
-  return matched.reduce((sum,r)=>sum+(Number(r[4])||0),0);
+   const mode=NM?'n':'o',target=fyPrev(month),d=canonicalDivision(division),v=verticalName(vertical);
+   if(!rows(mode).length)return null;
+   const idx=LY_INDEX[mode];const k=[d,v,target].join('|');
+   return idx.has(k)?idx.get(k):null;
+ };
+ const baselineStatus=(dv,month)=>{
+   const selected=listOf(dv),mode=NM?'n':'o',missing=[];
+   if(!rows(mode).length)return {ready:false,source:ORIGIN[mode],missing:selected.slice(),detail:'Google Sheet not loaded'};
+   for(const d of selected){for(const v of ['MO','PARCEL','IRGB'])if(divisionBaseline(d,v,month)===null){missing.push(d+' / '+v)}}
+   return {ready:!missing.length,source:ORIGIN[mode],missing,detail:missing.length?'Missing Division + Vertical month rows':'OK'};
+ };
+ let refreshing=null;
+ const ensureLoaded=()=>{
+   if(rows(NM?'n':'o').length)return Promise.resolve(true);
+   if(refreshing)return refreshing;
+   refreshing=refresh(false).then(()=>rows(NM?'n':'o').length>0).finally(()=>refreshing=null);
+   return refreshing;
  };
  const verticalName=v=>vertical(v);
  const savedKey=m=>'indoreLastYearSDCount_'+m+'_v1';
@@ -4680,7 +4765,7 @@ const LYCOMPARE=(()=>{
   if(count)rebuild();return count;
  };
 
- const data={o:{},n:{}};const rebuild=()=>MODES.forEach(m=>data[m]=merge(m));rebuild();
+ const data={o:{},n:{}};const rebuild=()=>{MODES.forEach(m=>data[m]=merge(m));rebuildDivisionIndex()};rebuild();
  const actualByMonth=(ym)=>{const o={},p=CENTRAL_ARTICLES.get(ym);if(!p.present)return o;for(const row of p.byOffice.values())for(const [v,value] of [['PARCEL',row.par],['MO',row.mo],['IRGB',row.irgb]]){const k=key(row.dv,row.sd,v,ym);o[k]=(o[k]||0)+value}return o;};
  const CACHED={};const actual=m=>CACHED[m]|| (CACHED[m]=actualByMonth(m));
  const invalidate=()=>{for(const m in CACHED)delete CACHED[m]};
@@ -4712,11 +4797,11 @@ const LYCOMPARE=(()=>{
  e.innerHTML=`<div class="row noprint" style="gap:10px"><b>Month / FY:</b><select onchange="LYCOMPARE.selectPeriod(this.value)">${periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')}</select><b>Division:</b><select onchange="LYCOMPARE.selectDiv(this.value)">${option('','All Divisions',STATE.div)}${divisions.map(d=>option(d,d,STATE.div)).join('')}</select><b>Sub Division:</b><select onchange="LYCOMPARE.selectSub(this.value)">${option('','All Sub Divisions',STATE.sd)}${sds.map(s=>option(s,s,STATE.sd)).join('')}</select><button class="b alt" onclick="LYCOMPARE.download()">Download Last Year Comparison PDF</button> <button class="b alt" onclick="LYCOMPARE.download(true)">Download Last Year Comparison PPT</button><button class="b gray" onclick="LYCOMPARE.refresh()">Refresh Last Year Sheets</button></div><div class="hint noprint">${esc(ORIGIN[NM?'n':'o'])} · ${all.length} pages total. FY 2025–26 article counts come exclusively from SDACCOM / SDACCNM Google Sheets. The online Sheet is never edited.</div><div class="row noprint"><b>Preview page:</b><select id="lycompPage" onchange="LYCOMPARE.preview()" style="max-width:660px">${filtered.map((x,i)=>option(String(i),x.t,'0')).join('')}</select></div><div id="lycompView" class="wrap"></div><div id="lycompIssues" class="noprint"></div>`;
  window.__lycompPreview=filtered;preview();let issues=[];for(const d of divisions)for(const sd of allSubs(d))for(const v of VERT)for(const m of periodMonths(STATE.period))issues.push(...reduce(d,sd,v,[m]).adjust);const warn=document.getElementById('lycompIssues');if(warn)warn.innerHTML=issueHTML(issues)};
  const preview=()=>{const box=document.getElementById('lycompView'),p=(window.__lycompPreview||[])[+(document.getElementById('lycompPage')||{}).value||0];if(box)box.innerHTML=p?p.html():'<div class="msg warn">No page available for this selection.</div>'};
- const refresh=async(show=true)=>{const results=[];for(const m of MODES){try{const newRows=parse(await irFetchCSV(URL[m],`Last year ${m==='o'?'Old':'New'} mapping count`));SRC[m]=newRows;data[m]=merge(m);try{DBLS.setItem(savedKey(m),JSON.stringify(newRows))}catch(e){console.warn('Last year cache unavailable',e)}ORIGIN[m]=`Live published Google Sheet (${newRows.length} month cells)`;results.push(`${m}: ${newRows.length} cells loaded`)}catch(e){ORIGIN[m]=`${rows(m).length?'Previously loaded live data retained':'Google Sheet unavailable'}: ${e.message}`;results.push(`${m}: ${rows(m).length?'current-session live data retained':'no comparison data'} (${e.message})`)}try{window.RF&&RF.inc('ref',5)}catch(e){}}invalidate();try{applyLyCnt();rpRender()}catch(e){console.error(e)}if(show){toast(results.join(' | '));render()}try{if(typeof SDH!=='undefined'&&document.getElementById('p-sdh')?.style.display!=='none')SDH.render()}catch(e){console.error('SD hub last-year refresh',e)}return results};
+ const refresh=async(show=true)=>{const results=[];for(const m of MODES){try{const newRows=parse(await irFetchCSV(URL[m],`Last year ${m==='o'?'Old':'New'} mapping count`));SRC[m]=newRows;data[m]=merge(m);try{DBLS.setItem(savedKey(m),JSON.stringify(newRows))}catch(e){console.warn('Last year cache unavailable',e)}ORIGIN[m]=`Live published Google Sheet (${newRows.length} month cells)`;results.push(`${m}: ${newRows.length} cells loaded`)}catch(e){ORIGIN[m]=`${rows(m).length?'Previously loaded live data retained':'Google Sheet unavailable'}: ${e.message}`;results.push(`${m}: ${rows(m).length?'current-session live data retained':'no comparison data'} (${e.message})`)}try{window.RF&&RF.inc('ref',5)}catch(e){}}rebuild();invalidate();try{applyLyCnt();rpRender()}catch(e){console.error(e)}try{if(document.getElementById('p-report')?.style.display!=='none')renderReport()}catch(e){console.warn(e)}if(show){toast(results.join(' | '));render()}try{if(typeof SDH!=='undefined'&&document.getElementById('p-sdh')?.style.display!=='none')SDH.render()}catch(e){console.error('SD hub last-year refresh',e)}return results};
 
  const divisionData=()=>{const out={};for(const v of VERT){const k=v==='MO'?'MAIL':v;out[k]={}}for(const d of allDiv())for(const v of VERT)for(const m of M24){const z=group(d,v,[m]),x=fyPrev(m),t=v==='MO'?'MAIL':v;const n=norm(d).split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ');if(z.last!==null){out[t][n]=out[t][n]||{};out[t][n][x]=z.last}}return out};
  const download=async(ppt)=>{const x=CENTRAL_ARTICLES.audit({months:CENTRAL_ARTICLES.available(),sehore:true,rms:true});if(x.issues.length){alert('Last Year Comparison export blocked: '+x.issues.length+' Central Count audit errors.');return;}const all=buildPages();if(!all.length)return alert('No last-year comparison data');await rpOut(ppt,all,'Sub_Division_Last_Year_Compare_'+STATE.period,'Sub Division Last Year Comparison')};
- return {divisionBaseline,restoreSaved,divisionData,buildPages,sourceDivisions:allDiv,sourceSubs:allSubs,sourceStatus:()=>ORIGIN[NM?'n':'o'],sourceReady:()=>rows(NM?'n':'o').length>0,render,preview,refresh,download,selectPeriod(v){STATE.period=v;render()},selectDiv(v){STATE.div=v;STATE.sd='';render()},selectSub(v){STATE.sd=v;render()},get,invalidate,period:()=>STATE.period,setMega(v){STATE.period=v;rpRender()},megaControl(){return '<b>Last Year Compare Period:</b> <select onchange="LYCOMPARE.setMega(this.value)">'+periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')+'</select>'}};
+ return {divisionBaseline,baselineStatus,ensureLoaded,restoreSaved,divisionData,buildPages,sourceDivisions:allDiv,sourceSubs:allSubs,sourceStatus:()=>ORIGIN[NM?'n':'o'],sourceReady:()=>rows(NM?'n':'o').length>0,render,preview,refresh,download,selectPeriod(v){STATE.period=v;render()},selectDiv(v){STATE.div=v;STATE.sd='';render()},selectSub(v){STATE.sd=v;render()},get,invalidate,period:()=>STATE.period,setMega(v){STATE.period=v;rpRender()},megaControl(){return '<b>Last Year Compare Period:</b> <select onchange="LYCOMPARE.setMega(this.value)">'+periods().map(p=>option(p,periodLabel(p),STATE.period)).join('')+'</select>'}};
 })();
 // Restore official Last Year old/new mapping baseline before Report's first render.
 try{LYCOMPARE.restoreSaved()}catch(e){console.warn('Last Year cache restore',e)}
