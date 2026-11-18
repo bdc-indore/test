@@ -2779,16 +2779,18 @@ const SD_AUDIT={
  norm(s){return String(s||'').toUpperCase().trim().replace(/\s+/g,' ').replace(/ DIVISION$/,'')},
  div(s){const x=this.norm(s);return x==='INDORE CITY DIVISION'?'INDORE CITY':x==='ID DIVISION INDORE'?'INDORE RMS':x},
  counts(a){return {Parcel:+a[4]||0,MO:(+a[2]||0)+(+a[6]||0),IRGB:+a[0]||0}},
- scope(d){const n=this.div(d);if(!n)return false;if(NM&&!((typeof SDH==='undefined')||SDH.allowed(n)))return false;return true},
+ scope(d){const n=this.div(d);if(!n)return false;if(typeof SDH!=='undefined'&&!SDH.allowed(n))return false;return true},
  scan(period){const months=period==='OVERALL'||period==='ALL'||/^FY/.test(period)?NB.months().filter(m=>m>='2026-04'&&m<='2027-03'):NB.months().filter(m=>m===period);
- const offices=sdrOffs(),unassigned={},raw={},mapped={},missing={},records=[];
+ const offices=typeof CENTRAL_ARTICLES!=='undefined'?CENTRAL_ARTICLES.master():sdrOffs(),unassigned={},raw={},mapped={},missing={},records=[];
  const bump=(dest,d,v,n)=>{const k=d+'|'+v;dest[k]=(dest[k]||0)+n};
  for(const m of months){const vals=NB.vals(m);for(const id in vals){const c=this.counts(vals[id]);if(!Object.values(c).some(Boolean))continue;const info=offices[id],ref=NB_OFF[id]||[],unknown=NB.S.unk[id]||{},baseDiv=info?.dv||ref[3]||unknown.d||'',d=this.div(baseDiv);
   // Source totals by effective mapped division (or uploaded office hint when missing); report totals only for valid sub-divisions.
   const rawDiv=this.div(info?.dv||unknown.d||ref[3]||'');
   const entry={id,name:this.name(id),month:m,rawDiv,mappedDiv:d,sd:info?.sd||'',counts:c};records.push(entry);
   for(const v of ['Parcel','MO','IRGB']){if(rawDiv)bump(raw,rawDiv,v,c[v]);if(info&&info.dv&&info.sd&&NB.act(id))bump(mapped,d,v,c[v]);else if(rawDiv)bump(missing,rawDiv,v,c[v])}
-  if(!info||!info.dv||!info.sd||!NB.act(id)){
+  // A known Sehore or RMS office is never a mapping-correction request merely
+  // because that division is outside this report's scope.
+  if((!info||!info.dv||!info.sd||!NB.act(id))&&rawDiv!=='SEHORE'&&rawDiv!=='INDORE RMS'){
    const e=unassigned[id]=unassigned[id]||{id,name:this.name(id),source:rawDiv,reason:!info?'Office ID absent from mapping':!info.sd?'Sub Division not mapped':!NB.act(id)?'Office marked alias/inactive':'Division missing',counts:{Parcel:0,MO:0,IRGB:0}};
    for(const v in c)e.counts[v]+=c[v];
   }
@@ -2819,7 +2821,7 @@ const SD_FULL_AUDIT={
  last:null,
  run(){
   const months=NB.months().filter(m=>m>='2026-04'&&m<='2027-03').sort();
-  const mapping=sdrOffs(), issues=[], rows=[], fmt=n=>Number(n||0).toLocaleString('en-IN');
+  const mapping=typeof CENTRAL_ARTICLES!=='undefined'?CENTRAL_ARTICLES.master():sdrOffs(), issues=[], rows=[], fmt=n=>Number(n||0).toLocaleString('en-IN');
   const fields=['MO','Parcel','IRGB'], zeros=()=>({MO:0,Parcel:0,IRGB:0});
   const put=(obj,k,v,c)=>{const t=obj[k]=obj[k]||zeros();t[v]+=c};
   const count=a=>({MO:(+a[2]||0)+(+a[6]||0),Parcel:(+a[4]||0),IRGB:+a[0]||0});
@@ -2832,10 +2834,11 @@ const SD_FULL_AUDIT={
     const sourceD=dv||SD_NAME_RESOLVE.d((NB_OFF[id]||[])[3]||(NB.S.unk[id]||{}).d||'');
     for(const v of fields){if(!sourceD||typeof SDH==='undefined'||SDH.allowed(sourceD))rawRegion[v]+=c[v];if(sourceD)put(srcDv,sourceD,v,c[v]);if(sourceD&&sd)put(srcSd,sourceD+'|'+SD_NAME_RESOLVE.norm(sd),v,c[v])}
     if(!e||!dv||!sd||!active){
+     if(sourceD==='SEHORE'||sourceD==='INDORE RMS')continue;
      if(Object.values(c).some(Boolean))offices.push({m,id,name:SD_AUDIT.name(id),division:sourceD||'UNKNOWN',sd:sd||'UNMAPPED',counts:c,reason:!e?'Office ID absent from new/old mapping':!dv?'Division not mapped':!sd?'Sub Division not mapped':'Office inactive/alias excluded'});
      continue;
     }
-    if(SD_NAME_RESOLVE.known(e.dv,sd)===false&&Object.values(c).some(Boolean))unknownSd.push({m,id,name:SD_AUDIT.name(id),division:dv,sd,counts:c,reason:'SD name missing from published authoritative SD directory'});
+    if(sourceD!=='SEHORE'&&sourceD!=='INDORE RMS'&&SD_NAME_RESOLVE.known(e.dv,sd)===false&&Object.values(c).some(Boolean))unknownSd.push({m,id,name:SD_AUDIT.name(id),division:dv,sd,counts:c,reason:'SD name missing from published authoritative SD directory'});
    }
    for(const [d,groups] of Object.entries(detail))for(const [sd,records] of Object.entries(groups)){
     const dn=SD_NAME_RESOLVE.d(d),sn=SD_NAME_RESOLVE.norm(SD_NAME_RESOLVE.sd(d,sd));
@@ -4731,7 +4734,7 @@ const SDH=(()=>{
  const E=v=>esc(String(v==null?'':v));
  const key=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim().replace(/ DIVISION$/,'');
  const rms=d=>/^(INDORE RMS|ID DIVISION|ID DIVISION INDORE|RMS|INDORE RMS DIVISION)$/.test(key(d));
- const allowed=d=>!NM||!(key(d)==='SEHORE'&&!S.allowSehore)&&!(rms(d)&&!S.allowRMS);
+ const allowed=d=>(key(d)!=='SEHORE'||S.allowSehore)&&(!rms(d)||S.allowRMS);
  const isRegion=p=>/^INDORE REGION|^REGION TOTAL$/.test(key(p.d||p.pd||''));
  const pDiv=p=>String(p.sdDiv||p.pd||p.d||'');
  const kind=p=>p.g==='sdtarget'?'sdtarget':p.g==='sdly'?'sdly':p.g==='sdrep'?(String(p.t).startsWith('Month-wise Summary:')?'sdsum':'sdrep'):'';
@@ -4964,7 +4967,7 @@ const SDH=(()=>{
   const option=(v,t,s)=>`<option value="${E(v)}" ${v===s?'selected':''}>${E(t)}</option>`;
   let html=`<div class="sdh-controls"><label><b>Month / FY / Overall</b><select onchange="SDH.period(this.value)">${periods().map(x=>option(x,label(x),S.period)).join('')}</select></label></div>`;
   html+=`<div class="card" style="background:#f8fafc;border:1px solid #d4dce6"><div class="row" style="justify-content:space-between"><div><b style="font-size:16px">Common Division / Sub Division Selection</b><div class="hint">Selection affects only Selected SD reports. ALL Division and ALL Region reports always include complete data. Click Done to preview.</div></div><div class="row"><button class="b sm gray" onclick="SDH.commonAll(true)">Select All</button><button class="b sm gray" onclick="SDH.commonAll(false)">Clear All</button><button class="b sm gray" onclick="SDH.commonOpen()">${common.expanded?'Hide':'Show'} List</button></div></div><b id="sdhSelectedCount" class="hint">${selectedCount()} Sub Divisions selected</b>${common.expanded?commonMatrix():''}</div>`;
-  if(NM)html+=`<div class="sdh-exclusions"><b>Region total inclusion:</b> <label><input type="checkbox" ${S.allowSehore?'checked':''} onchange="SDH.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${S.allowRMS?'checked':''} onchange="SDH.extra('rms',this.checked)"> Include RMS / ID Division</label><small>Only these two switches affect Region totals. Division / Sub Division page selection does not.</small></div>`;
+  html+=`<div class="sdh-exclusions"><b>Region total inclusion:</b> <label><input type="checkbox" ${S.allowSehore?'checked':''} onchange="SDH.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${S.allowRMS?'checked':''} onchange="SDH.extra('rms',this.checked)"> Include RMS / ID Division</label><small>Only these two switches affect Region totals. Division / Sub Division page selection does not.</small></div>`;
   html+='<div class="sdh-selector-table"><table class="sdh-main-table"><thead><tr><th style="width:29%">Report group</th><th>Report pages to include (common selection applies)</th></tr></thead><tbody>';
   const section=(k,title,desc,body)=>`<tr class="sdh-group-head"><th><label><input type="checkbox" ${S.enabled[k]?'checked':''} onchange="SDH.group('${k}',this.checked)"> ${E(title)}</label><small>${E(desc)}</small></th><td>${body}</td></tr>`;
   html+=section('sdrep','Sub Division Report','Individual SD office-wise pages',checkbox('reportSub','Selected Sub Divisions · detailed PDFs','','sdrep')+checkbox('reportAll','ALL Sub Divisions · detailed PDFs','','sdrep'));
@@ -5111,7 +5114,7 @@ const FY_SHEETS=(()=>{
  }
  function sums(m,dvSel){
   const list={},unmapped=[];if(!hasMonth(m))return {D:list,unmapped};
-  const O=sdrOffs(),lookup=Object.create(null);
+  const O=typeof CENTRAL_ARTICLES!=='undefined'?CENTRAL_ARTICLES.master():sdrOffs(),lookup=Object.create(null);
   const selected=dvSel?SD_NAME_RESOLVE.d(dvSel):null;
   for(const [raw,c] of INDEX.get(m)){
    const id=resolve(raw),info=O[id]||O[raw];
@@ -5338,11 +5341,27 @@ const CENTRAL_ARTICLES=(()=>{
  let cacheVersion='',monthly=new Map(),daily=new Map(),directory=null,roster=null;
  function reset(){cacheVersion='';monthly.clear();daily.clear();directory=null;roster=null}
  function check(){const v=version();if(v!==cacheVersion){cacheVersion=v;monthly.clear();daily.clear();directory=null;roster=null}}
- // Keep the SOURCE mappings in Sheets. Store no embedded office directory here.
- function master(){check();return directory||(directory=sdrOffs())}
+ // Both mapping spreadsheets remain authoritative. The New SD target/last-year master
+ // deliberately has no Sehore/RMS rows, so those exclusions must NOT be considered
+ // unmapped or an invented sub division. Recover ONLY their Office IDs from the
+ // official OLD office mapping if the selected mapping omits them. Never guess from
+ // an uploaded CSV's office name, ID prefix or division text.
+ const specialDivision=d=>{const x=n(d);return x==='SEHORE'||x==='INDORE RMS'?x:''};
+ function master(){check();if(directory)return directory;
+  const chosen=sdrOffs(),map=Object.assign(Object.create(null),chosen);
+  for(const [id,old] of Object.entries(NB_OFF)){
+   if(map[id])continue;const d=specialDivision(old&&old[3]);
+   if(!d)continue;
+   map[id]={nm:String(old[0]||id),cl:String(old[1]||'').toUpperCase(),sd:String(old[2]||''),dv:d};
+  }
+  return directory=map;
+ }
  function fixedRoster(){check();if(roster)return roster;
   const map=master(),dirs=new Map(),published=LYCOMPARE.sourceDivisions()||[];
   const ds=published.length?published.map(n):[...new Set(Object.values(map).map(x=>n(x.dv)).filter(Boolean))];
+  // Only these two additional divisions are allowed beyond the published
+  // last-year target directory, and only if present in the Office ID master.
+  for(const o of Object.values(map)){const x=specialDivision(o.dv);if(x&&!ds.includes(x))ds.push(x)}
   for(const d of ds)if(d&&!dirs.has(d))dirs.set(d,new Map());
   for(const [d,subs] of dirs){const official=LYCOMPARE.sourceSubs(d)||[];
    // If last-year SD master is unavailable, the current official OFFICE mapping is the fallback directory.
@@ -5446,10 +5465,10 @@ const CENTRAL_ARTICLES=(()=>{
  function audit(opts={}){
   const ms=[...new Set([...FY_SHEETS.MONTHS.filter(m=>m<=curr()),...(opts.months||available())])].sort(),issues=[],reports=[],sum=val(),byDiv=new Map(),bySD=new Map();
   for(const m of ms){const p=get(m);if(!p.present){issues.push(...p.issues);continue}
-   const src=val(),allocated=val();
+   const src=val(),allocated=val(),excluded=val();
    for(const [id,a] of Object.entries(source(m).values||{})){
     const o=master()[resolve(id,m)]||master()[id],v=fromArr(a);
-    if(o&&((!opts.sehore&&n(o.dv)==='SEHORE')||(!opts.rms&&n(o.dv)==='INDORE RMS')))continue;
+    if(o&&((!opts.sehore&&n(o.dv)==='SEHORE')||(!opts.rms&&n(o.dv)==='INDORE RMS'))){add(excluded,v);continue}
     add(src,v);
    }
    for(const o of p.byOffice.values()){
@@ -5465,7 +5484,7 @@ const CENTRAL_ARTICLES=(()=>{
    if(dates.length){const dailyTotal=val();for(const dt of dates){const a=historical(m)?FY_SHEETS.daily().get(dt):NB.S.offD[dt];if(Array.isArray(a)){for(let i=0;i<a.length;i+=4){const v={mo:+a[i+1]||0,par:+a[i+2]||0,irgb:+a[i+3]||0};v.total=v.mo+v.par+v.irgb;add(dailyTotal,v)}}else for(const v of Object.values(a))add(dailyTotal,fromArr(v))}
     for(const f of ['mo','par','irgb'])if(dailyTotal[f]!==p.raw[f])issues.push(m+' '+f.toUpperCase()+': daily office source '+dailyTotal[f]+' differs from monthly source '+p.raw[f]);
    }
-   reports.push({month:m,type:p.type,source:src,mapped:allocated});add(sum,src);
+   reports.push({month:m,type:p.type,source:src,mapped:allocated,excluded});add(sum,src);
   }
   if(!LYCOMPARE.sourceReady())issues.push('LAST YEAR Article Count ('+(NM?'New':'Old')+' Mapping) Google Sheet missing; last-year comparisons cannot be reconciled');
   if(FY_SHEETS.errors().length)issues.push(...FY_SHEETS.errors());
@@ -5475,8 +5494,9 @@ const CENTRAL_ARTICLES=(()=>{
  function show(panelId,opts={}){const el=document.getElementById(panelId);if(!el)return;
   const months=[...new Set([...FY_SHEETS.MONTHS.filter(m=>m<=curr()),...(opts.months||available())])].sort(),r=audit({...opts,months});
   let h='<div class="msg '+(r.issues.length?'err':'')+'"><b>Central Article Count Audit: '+(r.issues.length?r.issues.length+' errors — PDF should not be issued':'All loaded source totals reconcile')+'</b></div>';
-  h+='<div class="wrap"><table class="s2" style="width:100%"><tr><th>Month</th><th>Source</th><th>MO Source / Mapped</th><th>Parcel Source / Mapped</th><th>IRGB Source / Mapped</th><th>Total Source / Mapped</th></tr>';
-  for(const x of r.rows)h+='<tr><td>'+E(x.month)+'</td><td>'+E(x.type)+'</td>'+['mo','par','irgb','total'].map(k=>'<td style="text-align:center">'+fmt(x.source[k])+' / '+fmt(x.mapped[k])+'</td>').join('')+'</tr>';
+  h+='<div class="hint" style="margin:7px 0">Sehore and ID/RMS offices are identified using official Office-ID mappings. When excluded, their counts are left OUT of both Source and PDF totals; they are not mapping errors.</div>';
+  h+='<div class="wrap"><table class="s2" style="width:100%"><tr><th>Month</th><th>Source</th><th>MO Source / Mapped</th><th>Parcel Source / Mapped</th><th>IRGB Source / Mapped</th><th>Total Source / Mapped</th><th>Excluded Sehore/RMS (Articles)</th></tr>';
+  for(const x of r.rows)h+='<tr><td>'+E(x.month)+'</td><td>'+E(x.type)+'</td>'+['mo','par','irgb','total'].map(k=>'<td style="text-align:center">'+fmt(x.source[k])+' / '+fmt(x.mapped[k])+'</td>').join('')+'<td style="text-align:center">'+fmt(x.excluded.total)+'</td></tr>';
   h+='</table></div>';
   if(r.issues.length)h+='<details open style="margin-top:10px"><summary><b>See '+r.issues.length+' detailed errors</b></summary><div class="msg err" style="max-height:240px;overflow:auto">'+r.issues.map(E).join('<hr>')+'</div></details>';
   const bad=new Map();for(const m of months){const s=get(m);if(!s.present)continue;for(const [id,v] of Object.entries(source(m).values||{})){
