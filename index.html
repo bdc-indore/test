@@ -398,10 +398,38 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
       <button class="b" onclick="SBX.xlsx()">Combined POSB Excel (7 sheets)</button></div>
     <div class="hint">New Sub-Division POSB targets are fetched from Google Sheet. Previous months use published FY achievement CSV; current month uses uploaded Open/Close files. Offices whose code is not in the mapping are listed in <b>Settings &rarr; SB office not mapped</b>. All POSB pages are included in the mega PPT / PDF (Reports, PPT &amp; PDF tab).</div>
   </div>
-  <div class="card noprint"><div class="row"><b>Month:</b> <select id="sbMonth" onchange="SBX.setM(this.value)"></select> <b>Indore Region:</b> <select class="sbRg" onchange="SBX.setRx(this.value==='x')"><option value="w">with Sehore</option><option value="x">without Sehore</option></select> <span class="hint">Latest month is shown by default &ndash; pick an earlier month (e.g. October) to see that month.</span></div><div class="row"><label><input type="checkbox" id="sbMainSelected" checked> Include POSB Progressive Table</label><button class="b sm alt" onclick="SBX.mainDone()">Done &amp; Preview</button><button class="b sm" onclick="SBX.mainPdf()">PDF Download</button><button class="b sm" onclick="SBX.mainPpt()">PPT Download</button></div><div class="hint">One Sub Division Progressive table. Exports keep each Division together and repeat column headings on continuation pages.</div></div>
+  <div class="card noprint" id="sbUnifiedControls">
+    <div class="row"><b>Month:</b> <select id="sbMonth" onchange="SBX.setM(this.value)"></select>
+    <label><input type="checkbox" id="sbIncludeSehore" onchange="SBX.setRx(!this.checked)"> Include Sehore in POSB reports</label>
+    <span class="hint">New mapping defaults to without Sehore. Select with Sehore only when required.</span></div>
+    <div class="row"><b>Report:</b><select id="sbRepType" onchange="SBX.repView()">
+    <option value="prog_sd">Sub Division Progressive (complete table)</option>
+    <option value="prog_div">Division Progressive (complete table)</option>
+    <option value="summary">Sub Division Account Open / Close, BO &gt;10, NIL and Percentages</option>
+    <option value="status_sd">FY Target / Previous Months / Current Month / Shortfall — Sub Division</option>
+    <option value="status_div">FY Target / Previous Months / Current Month / Shortfall — Division</option>
+    <option value="monthly_div">Current Month Division Target / Achievement / %</option>
+    <option value="monthly_sd">Current Month Sub Division Target / Achievement / %</option>
+    <option value="matrix_div">Division Month-wise Target / Achievement / % / Shortfall</option>
+    <option value="matrix_region">Indore Region Month-wise Target / Achievement / % / Shortfall</option>
+    <option value="SD_net_top">Sub Division Top 10 — Net Addition</option>
+    <option value="SD_net_bottom">Sub Division Bottom 10 — Net Addition</option>
+    <option value="SD_pct_top">Sub Division Top 10 — Target Achievement %</option>
+    <option value="SD_pct_bottom">Sub Division Bottom 10 — Target Achievement %</option>
+    <option value="BO_net_top">BO Top 10 — Net Addition</option>
+    <option value="BO_net_bottom">BO Bottom 10 — Net Addition</option>
+    <option value="SO_net_top">SO Top 10 — Net Addition</option>
+    <option value="SO_net_bottom">SO Bottom 10 — Net Addition</option>
+    <option value="HO_net_bottom">All HO — Net Addition</option>
+    </select><b>Period:</b><select id="sbRepPeriod" onchange="SBX.repView()"><option value="month">Selected Month</option><option value="cum">Cumulative April to Selected Month</option></select>
+    <label><input type="checkbox" id="sbMainSelected" checked> Include selected report</label>
+    <button class="b sm alt" onclick="SBX.mainDone()">Done &amp; Preview</button>
+    <button class="b sm" onclick="SBX.repOneDownload()">Excel</button>
+    <button class="b sm" onclick="SBX.mainPdf()">PDF Download</button>
+    <button class="b sm" onclick="SBX.mainPpt()">PPT Download</button></div>
+    <div class="hint">One report selector and one colorful preview. Division / Sub-Division tables show division subtotals and Indore Region grand total. NIL BO office list is only in combined Excel sheet 7.</div>
+  </div>
   <div class="card wrap" id="sbView"></div>
-     <div class="card noprint" id="sbDetailedPanel"><h3>POSB Detailed Reports</h3><div class="row"><b>Report:</b><select id="sbRepType" onchange="SBX.repView()"><option value="summary">Sub Division Account Opening / Closing, BO &gt;10, NIL &amp; Percentages</option><option value="status_sd">FY Target / Previous Months / Current Month / Shortfall — Sub Division</option><option value="status_div">FY Target / Previous Months / Current Month / Shortfall — Division</option><option value="monthly_div">Current Month Division Target / Achievement / %</option><option value="monthly_sd">Current Month Sub Division Target / Achievement / %</option><option value="matrix_div">Division Month-wise Net Addition Target / Achievement / % / Shortfall</option><option value="matrix_region">Indore Region Month-wise Net Addition Target / Achievement / % / Shortfall</option><option value="SD_net_top">Sub Division Top 10 — Net Addition</option><option value="SD_net_bottom">Sub Division Bottom 10 — Net Addition</option><option value="SD_pct_top">Sub Division Top 10 — Target Achievement %</option><option value="SD_pct_bottom">Sub Division Bottom 10 — Target Achievement %</option><option value="BO_net_top">BO Top 10 — Net Addition</option><option value="BO_net_bottom">BO Bottom 10 — Net Addition</option><option value="SO_net_top">SO Top 10 — Net Addition</option><option value="SO_net_bottom">SO Bottom 10 — Net Addition</option><option value="HO_net_bottom">All HO — Net Addition</option></select><b>Period:</b><select id="sbRepPeriod" onchange="SBX.repView()"><option value="month">Selected Month</option><option value="cum">Cumulative April to Selected Month</option></select><button class="b sm" onclick="SBX.repOneDownload()">Excel</button><button class="b sm" onclick="SBX.repPdf()">PDF</button><button class="b sm alt" onclick="SBX.repPpt()">PPT</button></div><div class="hint">NIL opening BO office list is supplied only in sheet 7 of the Combined POSB Excel. Office-wise FY data is supplied in Excel, not PDF/PPT.</div><div id="sbDetailedView"></div></div>
-
 </section>
 
 <!-- ============ PRESENTATION MAKER ============ -->
@@ -514,7 +542,7 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
       <span id="dlMsg" class="hint"></span>
     </div>
     </div>
-<div style="margin-top:10px;padding-top:10px;border-top:1px solid #e3e3e3"><b>POSB (SB) net addition:</b> <select class="sbRg d0sel" onchange="SBX.setRx(this.value==='x')"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option></select> <button class="b alt" onclick="SBX.xlsx()">Combined POSB Excel (6 sheets)</button> <span class="hint">Division, Sub-Division, Office (selected month), Office (April-to-latest data), Division progressive and SD progressive sheets. All POSB report pages are also in the mega PPT / PDF below.</span></div>
+<div style="margin-top:10px;padding-top:10px;border-top:1px solid #e3e3e3"><b>POSB (SB) net addition:</b> <select class="sbRg d0sel" onchange="SBX.setRx(this.value==='x')"><option value="w">Indore Region (with Sehore)</option><option value="x">Indore Region (without Sehore)</option></select> <button class="b alt" onclick="SBX.xlsx()">Combined POSB Excel (7 sheets)</button> <span class="hint">Division, Sub-Division, Office (selected month), Office (April-to-latest data), Division progressive, SD progressive and NIL-opening BO sheets. All POSB report pages are also in the mega PPT / PDF below.</span></div>
 <div style="margin-top:8px"><b>Aadhaar upload format:</b> <button class="b sm" onclick="downloadAadTemplate()">Download sample format</button></div><div id="rpInfo"></div></div>
 <div class="card" id="rpSecCard"></div>
 <div class="card"><h3>Mega report - preview &amp; download</h3>Nil Booking month: <select id="rpMonth" onchange="NB.S.month=this.value;NB.saveLite();rpRender()"></select> <select id="rpSel" onchange="rpShow()" style="max-width:420px"></select>
@@ -3919,7 +3947,7 @@ function posbOff(y){const k=FYI(y),ms=S.months.filter(m=>m<=y);
   pc:[],neg:[7,10],fw:[1.3,1.9],span:true,rows,
   note:'Total BO = number of Branch Offices  |  BOs opening >10 = BOs that opened MORE than 10 POSB accounts in the month (gross opening)  |  NIL = BOs with 0 accounts opened (only BOs counted in these 3 columns)  |  Net = Opened - Closed  |  Monthly target = FY target / 12, Shortfall = Target - Net (0 if achieved)  |  Cumulative = April to '+mFull(y)+', cumulative target = FY target x '+k+'/12'}}
 /* ---------- Excel (5 sheets) ---------- */
-function xlsx(){setX(S.rx);try{xlsx0()}finally{setX(false)}}
+function xlsx(){setX(S.rx);try{xlsx0()}finally{setX(S.rx)}}
 
 /* Detailed POSB quality reports – all values from office-month source, never invented. */
 function repMonths(sel,period){return period==='cum'?RP.FY.filter(m=>m<=sel&&S.months.includes(m)):[sel]}
@@ -3983,30 +4011,46 @@ function repTable(kind,sel,period){
  const a=kind.split('_');return repRank(sel,period,a[0],a[1]==='pct'?'pct':'net',a[2]==='bottom');
 }
 function repPage(kind,sel,period){
- const rows=repTable(kind,sel,period),title='POSB '+kind.replace(/_/g,' ').toUpperCase()+' — '+rpMn(sel)+' ('+(['status_sd','status_div','fy'].includes(kind)?'FY to Date':period==='cum'?'FY Cumulative':'Monthly')+')';
+ const rows=repTable(kind,sel,period),title='POSB '+kind.replace(/_/g,' ').toUpperCase()+' — '+(period==='cum'?'April to ':'')+rpMn(sel);
  const esc0=x=>String(x==null?'':x).replace(/[&<>"']/g,v=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));
- const h=kind==='fy'?rows[1]:rows[0],data=rows.slice(kind==='fy'?2:1);
- const html=()=>'<div class="sdh-region-page"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>'+esc0(title)+'</h1></div><div class="sdh-note">Official target: '+(NM?'New mapping published CSV':'Old mapping POSB PDF')+' · Blank means unavailable</div><table class="sdh-region-table ess-table"><thead><tr>'+h.map(x=>'<th>'+esc0(x)+'</th>').join('')+'</tr></thead><tbody>'+data.map(r=>'<tr>'+r.map(v=>'<td>'+esc0(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
- return {g:'sb',t:title,d:'Indore Region',pd:'Indore Region',html};
+ const h=rows[0]||[],data=rows.slice(1),isSD=['summary','status_sd','monthly_sd'].includes(kind),isGrouped=isSD;
+ let groups=[];if(isGrouped){let current=[],key='';for(const r of data){const div=String(r[0]||'').replace(/^TOTAL\s+/i,'').trim();const isTotal=/^TOTAL /i.test(String(r[0]||''))||/INDORE REGION/i.test(String(r[0]||''));if(isTotal){if(current.length){groups.push({key,rows:current});current=[]}groups.push({key:div,rows:[r],total:true});key='';continue}if(key&&div!==key){groups.push({key,rows:current});current=[]}key=div;current.push(r)}if(current.length)groups.push({key,rows:current})}
+ else groups=[{key:'',rows:data}];
+ const html=()=>'<div class="sdh-region-page" style="width:1200px;max-width:none"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>'+esc0(title)+'</h1></div><div class="sdh-note">Mapping: '+(NM?'New':'Old')+' · '+(S.rx?'Sehore excluded':'Sehore included')+' · '+(period==='cum'?'Cumulative April to '+rpMn(sel):rpMn(sel))+' · Blank means source unavailable</div><table class="sdh-region-table ess-table ess-target-table"><thead><tr>'+h.map(x=>'<th>'+esc0(x)+'</th>').join('')+'</tr></thead><tbody>'+groups.map(gr=>gr.total?gr.rows.map(r=>'<tr class="sdh-grand">'+r.map((v,i)=>'<td'+(i===0&&isSD?' colspan="2"':'')+'>'+esc0(v)+'</td>').filter((v,i)=>!isSD||i!==1).join('')+'</tr>').join(''):gr.rows.map((r,i)=>'<tr>'+(isGrouped?(i===0?'<td rowspan="'+gr.rows.length+'" class="ess-merged-division">'+esc0(r[0])+'</td>':'')+r.slice(1).map(v=>'<td>'+esc0(v)+'</td>').join(''):r.map(v=>'<td>'+esc0(v)+'</td>').join(''))+'</tr>').join('')).join('')+'</tbody></table></div>';
+ const native=()=>{
+   const isSpan=isGrouped,body=data.map(row=>{
+     const name=String(row[0]||''),total=/^(TOTAL |INDORE REGION)/i.test(name);
+     return {k:total?(/INDORE REGION/i.test(name)?'grand':'tot'):'',g:total?'':(isSpan?name:''),c:row};
+   });
+   return {title,sub:(period==='cum'?'April to ':'')+rpMn(sel)+' · '+(NM?'New':'Old')+' Mapping',head:h,pc:[],neg:[],rows:body,span:isSpan,fw:isSpan?[1.5,1.6]:[2.1],note:'POSB Open - Close = Net Addition · Data from published FY CSV and POSB uploads.'};
+ };
+ return {g:'sb',sb:'tbl',t:title,d:'Indore Region',pd:'Indore Region',html,build:native};
 }
-function mainDone(){const b=$('sbView');if(!b)return;const checked=$('sbMainSelected')?.checked;if(!checked){b.innerHTML='<div class="hint">POSB table not selected. Tick the checkbox and click Done & Preview.</div>';return}render()}
-function mainPdf(){if(!$('sbMainSelected')?.checked)return alert('Select POSB Progressive Table first');return rpPDF(mainPages(),'POSB_SubDivision_Progressive_'+selM())}
-function mainPpt(){if(!$('sbMainSelected')?.checked)return alert('Select POSB Progressive Table first');return rpPPT(mainPages(),'POSB_SubDivision_Progressive_'+selM(),rpCov('POSB Sub Division Progressive'))}
-function mainPages(monthOverride){const sel=monthOverride||selM(),T=build('prog','sd',sel),out=[];let group=[],last=null;const groups=[];for(const r of T.rows){const d=r.g||((r.k==='tot')?last:null);if(r.k==='grand'){if(group.length)groups.push(group);group=[];groups.push([r]);break}if(r.k==='tot'){group.push(r);groups.push(group);group=[];last=null;continue}if(last!==null&&d!==last&&group.length){groups.push(group);group=[]}last=d;group.push(r)}if(group.length)groups.push(group);const esc0=s=>String(s==null?'':s).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));for(const g of groups){if(!g.length)continue;const div=g.find(x=>x.g)?.g||'INDORE REGION';const p={...T,rows:g,span:false};p.head=T.head;p.title='POSB Sub Division Progressive — '+(LBL[div]||div)+' — '+rpMn(sel);const html=()=>'<div class="sdh-region-page" style="width:1300px"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>'+esc0(p.title)+'</h1></div><table class="sdh-region-table ess-table"><thead><tr>'+p.head.map(x=>'<th>'+esc0(x)+'</th>').join('')+'</tr></thead><tbody>'+g.map(r=>'<tr>'+r.c.map(x=>'<td>'+esc0(x==null?'':typeof x==='number'?Math.round(x*100)/100:x)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';out.push({g:'sb',t:p.title,pd:LBL[div]||div,html,build:()=>p,sb:'tbl'})}return out}
-function repPages(kind,sel,period){const raw=repTable(kind,sel,period);if(!raw.length)return [repPage(kind,sel,period)];const groupKinds=['summary','status_sd','status_div','monthly_sd','monthly_div','matrix_div'];if(!groupKinds.includes(kind))return[repPage(kind,sel,period)];
- const head=raw[0],rows=raw.slice(1),groups=[],keyOf=r=>{const d=String(r[0]||'').replace(/^TOTAL\s+/i,'');return d==='INDORE REGION'||d==='INDORE REGION TOTAL'?'INDORE REGION':d};let cur=[],last='';for(const r of rows){const d=keyOf(r),isGrand=/INDORE REGION/i.test(d);if(isGrand){if(cur.length)groups.push([last,cur]);cur=[];groups.push(['INDORE REGION',[r]]);last='';continue}if(last&&d!==last){groups.push([last,cur]);cur=[]}last=d;cur.push(r)}if(cur.length)groups.push([last,cur]);
- const esc0=x=>String(x==null?'':x).replace(/[&<>"']/g,v=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[v]));return groups.map(([d,rr])=>{const title='POSB '+kind.replace(/_/g,' ').toUpperCase()+' — '+d+' — '+rpMn(sel)+' ('+(period==='cum'?'April to selected month':'selected month')+')';return{g:'sb',t:title,d,pd:d,html:()=>'<div class="sdh-region-page" style="width:1200px"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>'+esc0(title)+'</h1></div><table class="sdh-region-table ess-table"><thead><tr>'+head.map(x=>'<th>'+esc0(x)+'</th>').join('')+'</tr></thead><tbody>'+rr.map(r=>'<tr>'+r.map(v=>'<td>'+esc0(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}})}
-function repPdf(){if(!S.ok||!S.months.length)return alert('POSB achievement data unavailable');const kind=$('sbRepType')?.value||'summary',period=$('sbRepPeriod')?.value||'month',sel=selM();return rpPDF(repPages(kind,sel,period),'POSB_'+kind+'_'+sel)}
-function repPpt(){if(!S.ok||!S.months.length)return alert('POSB achievement data unavailable');const kind=$('sbRepType')?.value||'summary',period=$('sbRepPeriod')?.value||'month',sel=selM();return rpPPT(repPages(kind,sel,period),'POSB_'+kind+'_'+sel,rpCov('POSB '+kind+' · '+rpMn(sel)))}
+function mainDone(){unifiedPreview()}
+function mainPdf(){if(!$('sbMainSelected')?.checked)return alert('Select POSB Report first');const kind=$('sbRepType')?.value||'prog_sd',sel=selM(),per=$('sbRepPeriod')?.value||'month';return rpPDF(kind.startsWith('prog_')?mainPages(sel,kind):repPages(kind,sel,per),'POSB_'+kind+'_'+sel)}
+function mainPpt(){if(!$('sbMainSelected')?.checked)return alert('Select POSB Report first');const kind=$('sbRepType')?.value||'prog_sd',sel=selM(),per=$('sbRepPeriod')?.value||'month';return rpPPT(kind.startsWith('prog_')?mainPages(sel,kind):repPages(kind,sel,per),'POSB_'+kind+'_'+sel,rpCov('POSB '+kind+' · '+rpMn(sel)))}
+function mainPages(monthOverride,kind){const sel=monthOverride||selM(),by=kind==='prog_div'?'div':'sd',T=build('prog',by,sel);
+ return [{g:'sb',t:T.title,pd:'Indore Region',sb:'tbl',build:()=>build('prog',by,sel),html:()=>tblHTML(build('prog',by,sel))}];}
+function repPages(kind,sel,period){return [repPage(kind,sel,period)];}
+function repPdf(){if(!S.ok||!S.months.length)return alert('POSB achievement data unavailable');const kind=$('sbRepType')?.value||'prog_sd',period=$('sbRepPeriod')?.value||'month',sel=selM();return rpPDF(kind.startsWith('prog_')?mainPages(sel,kind):repPages(kind,sel,period),'POSB_'+kind+'_'+sel)}
+function repPpt(){if(!S.ok||!S.months.length)return alert('POSB achievement data unavailable');const kind=$('sbRepType')?.value||'prog_sd',period=$('sbRepPeriod')?.value||'month',sel=selM();return rpPPT(kind.startsWith('prog_')?mainPages(sel,kind):repPages(kind,sel,period),'POSB_'+kind+'_'+sel,rpCov('POSB '+kind+' · '+rpMn(sel)))}
 function essentialPages(kind,sel,period){if(kind==='main_progressive')return mainPages(sel||selM());return repPages(kind,sel||selM(),period||'month')}
 function repAll(sel){const out=[];out.push(['FY_Office_CSV',repFYCols(sel)]);out.push(['POSB_Status_SD',repStatus(sel,'sd')],['POSB_Status_Div',repStatus(sel,'div')],['POSB_Monthly_Div',repTable('monthly_div',sel,'month')]);['month','cum'].forEach(period=>{
  const label=period==='month'?'Monthly':'Cumulative';out.push(['SD_'+label,repSD(sel,period)]);out.push(['NIL_BO_'+label,repNil(sel,period)]);
  for(const kind of ['SD','BO','SO','HO']){out.push([kind+'_Bottom_'+(period==='month'?'M':'C'),repRank(sel,period,kind,'net',true)]);if(kind!=='HO')out.push([kind+'_Top_'+(period==='month'?'M':'C'),repRank(sel,period,kind,'net',false)])}
  out.push(['SD_Pct_Bottom_'+(period==='month'?'M':'C'),repRank(sel,period,'SD','pct',true)]);out.push(['SD_Pct_Top_'+(period==='month'?'M':'C'),repRank(sel,period,'SD','pct',false)])});return out}
 function repDownload(){if(!S.ok||!S.months.length)return alert('POSB achievement data not available.');const wb=XLSX.utils.book_new(),sel=selM();repAll(sel).forEach(([name,rows])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),name.slice(0,31)));XLSX.writeFile(wb,'POSB_Detailed_Office_Rankings_'+rpMn(sel)+'.xlsx')}
-function repView(){const sel=selM(),box=$('sbDetailedView');if(!box)return;const period=$('sbRepPeriod')?.value||'month',kind=$('sbRepType')?.value||'summary',rows=repTable(kind,sel,period);
- const header=kind==='fy'?(rows[1]||[]):(rows[0]||[]),body=rows.slice(kind==='fy'?2:1);const escT=s=>String(s==null?'':s).replace(/[&<>"']/g,v=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));box.innerHTML='<div class="hint">'+body.length+' rows | '+(period==='cum'?'April to '+rpMn(sel):rpMn(sel))+' | Blank = source data unavailable, not zero</div><div class="wrap" style="max-height:570px"><table class="s2"><thead><tr>'+header.map(v=>'<th>'+escT(v)+'</th>').join('')+'</tr></thead><tbody>'+body.map(r=>'<tr>'+r.map(v=>'<td style="text-align:center">'+escT(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
-function repOneDownload(){const kind=$('sbRepType')?.value||'summary',period=$('sbRepPeriod')?.value||'month',sel=selM();const rows=repTable(kind,sel,period),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'POSB Report');XLSX.writeFile(wb,'POSB_'+kind+'_'+period+'_'+rpMn(sel)+'.xlsx')}
+function unifiedPreview(){const box=$('sbView');if(!box)return;
+ if(!$('sbMainSelected')?.checked){box.innerHTML='<div class="hint">Select a report and click Done & Preview.</div>';return}
+ if(!S.ok||!S.months.length){box.innerHTML='<div class="hint">POSB source is loading.</div>';return}
+ const kind=$('sbRepType')?.value||'prog_sd',sel=selM(),period=$('sbRepPeriod')?.value||'month';setX(S.rx);
+ try{if(kind==='prog_sd'||kind==='prog_div'){const T=build('prog',kind==='prog_sd'?'sd':'div',sel);box.innerHTML=tblHTML(T);return}
+ const page=repPage(kind,sel,period);box.innerHTML=page.html();}
+ catch(e){box.innerHTML='<div class="msg err">Report generation failed: '+String(e.message||e)+'</div>'}
+ finally{setX(S.rx)}
+}
+function repView(){/* Apply selection only on Done & Preview, avoiding unintended heavy rerenders. */}
+function repOneDownload(){const kind=$('sbRepType')?.value||'summary',period=$('sbRepPeriod')?.value||'month',sel=selM();const rows=kind==='prog_sd'||kind==='prog_div'?(()=>{const T=build('prog',kind==='prog_sd'?'sd':'div',sel);return[T.head,...T.rows.map(r=>r.c)]})():repTable(kind,sel,period),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'POSB Report');XLSX.writeFile(wb,'POSB_'+kind+'_'+period+'_'+rpMn(sel)+'.xlsx')}
 
 function xlsx0(){if(!S.months.length)return alert('Pehle POSB data Google Sheet se load karein ya POSB files upload karein.');const sel=selM(),wb=XLSX.utils.book_new(),r1=x=>Math.round(x*10)/10,v=g=>(g&&g.m[sel])||null;
  const mkSheet=(by)=>{const G=agg(by),L=[];const addRow=(d,sd,g,fy)=>{const x=v(g),t=Math.round(fy/12);L.push(by==='sd'?[LBL[d],cap(sd),g?g.n:0,t,x?x.o:'',x?x.c:'',x?x.n:'',x&&t?r1(x.n*100/t):'',x?Math.max(t-x.n,0):'']:[LBL[d],g?g.n:0,t,x?x.o:'',x?x.c:'',x?x.n:'',x&&t?r1(x.n*100/t):'',x?Math.max(t-x.n,0):''])};
@@ -4023,7 +4067,7 @@ function xlsx0(){if(!S.months.length)return alert('Pehle POSB data Google Sheet 
  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(repNil(sel,'month')),'NIL_Opening_BO');XLSX.writeFile(wb,'POSB_Combined_Detailed_'+rpMn(sel)+(S.rx?'_without_Sehore':'')+'.xlsx')}
 /* ---------- UI ---------- */
 const VIEWS=[['dm','Division (month)'],['sm','Sub-Division (month)'],['dp','Division progressive'],['sp','Sub-Division progressive'],['op','Accounts opened'],['om','Offices >10 / NIL'],['yoy','vs Last year'],['ch','Graph']];
-function render(){const el=$('sbStat');if(!el)return;const s=sb();setX(false);document.querySelectorAll('.sbRg').forEach(e=>e.value=S.rx?'x':'w');
+function render(){const el=$('sbStat');if(!el)return;const s=sb();if(NM&&!S.sehoreExplicit)S.rx=true;setX(S.rx);document.querySelectorAll('.sbRg').forEach(e=>e.value=S.rx?'x':'w');const extra=$('sbIncludeSehore');if(extra)extra.checked=!S.rx;
  el.innerHTML=S.ok?`<div class="msg">Mapping: ${Object.keys(S.mst.byOff).length} offices | ${NM?"New target CSV: "+esc(S.targetStatus):"Old mapping: official POSB PDF targets"+(S.oldPdfAudit?.length?' | PDF source total discrepancy: '+S.oldPdfAudit.map(x=>x.d+' SD '+x.subSum+' vs division '+x.division).join('; '):'')} | Achievement: ${esc(S.historyStatus||'Historical data not loaded')} + uploads | FY data: ${S.dat.months.map(rpMn).join(', ')||'not supplied'}${S.dat.day?' (till '+S.dat.day+')':''} | Last year: ${Object.keys(S.ly).length?'loaded':'not loaded'} | Uploads: ${s.files.filter(f=>f.side==='open').length} open, ${s.files.filter(f=>f.side==='close').length} close</div>`:`<div class="msg ${S.err?'err':'warn'}">${S.err?esc(S.err):'Google sheets load ho rahi hain...'}</div>`;
  const ud=$('sbUpD');if(ud)ud.value=s.upDay||'';const um=$('sbUpM');if(um){const cur=s.upMonth||S.up||(RP.FY.includes(new Date().toISOString().slice(0,7))?new Date().toISOString().slice(0,7):RP.FY[0]);um.innerHTML=RP.FY.map(y=>`<option value="${y}" ${y===cur?'selected':''}>${mFull(y)}</option>`).join('')}
  const fl=$('sbFiles2');if(fl){
@@ -4034,10 +4078,9 @@ function render(){const el=$('sbStat');if(!el)return;const s=sb();setX(false);do
  fl.innerHTML=s.files.length?'<div class="hint">'+s.files.length+' POSB files accepted. Each BO/SOL ID is mapped individually; mixed-division Excel files are allowed.</div>'+note+'<div class="wrap"><table class="s2"><tr><th>#</th><th>File</th><th>Type (auto)</th><th>Divisions by mapped BO/SOL ID</th><th>Rows</th><th>Matched</th><th></th></tr>'+s.files.map((f,i)=>`<tr><td>${i+1}</td><td>${esc(f.name)}</td><td><select onchange="SBX.setSide(${i},this.value)"><option value="open" ${f.side==='open'?'selected':''}>Account OPEN</option><option value="close" ${f.side==='close'?'selected':''}>Account CLOSE</option></select></td><td style="max-width:360px;text-align:left">${idCoverage(f)}</td><td>${f.rows}</td><td class="${f.matched<f.rows?'bad':''}">${f.matched}/${f.rows}</td><td><button class="b sm gray" onclick="SBX.del(${i})">&#10006;</button></td></tr>`).join('')+'</table></div>':'<div class="hint">No files yet.</div>'}
 
  const ms=$('sbMonth');if(ms){ms.innerHTML=S.months.map(y=>`<option value="${y}" ${y===selM()?'selected':''}>${mFull(y)}</option>`).join('')}
- try{repView()}catch(e){const b=$('sbDetailedView');if(b)b.textContent='Report error: '+e.message}
- const vw=$('sbView');if(!vw)return;if(!S.ok||!S.months.length){vw.innerHTML='<div class="hint">Data load hone ke baad progressive report yahan dikhegi.</div>';return}
- setX(S.rx);const sel=selM(),h=tblHTML(build('prog','sd',sel));
- setX(false);vw.innerHTML=($('sbMainSelected')&&!$('sbMainSelected').checked)?'<div class="hint">Tick the Progressive Table and press Done &amp; Preview.</div>':(S.rx?RGX.str(h):h);setRender()}
+ /* POSB unified preview is rendered below. */
+ const vw=$('sbView');if(!vw)return;if(!S.ok||!S.months.length){vw.innerHTML='<div class="hint">Data load hone ke baad report yahan dikhegi.</div>';return}
+ unifiedPreview();setRender()}
 function setRender(){const el=$('sbMapBox');if(!el)return;const s=sb();
  let h=S.unm.length?'<table class="s2"><tr><th>BO ID / SOL ID</th><th>Division (file)</th><th>Name in file</th><th>Open</th><th>Close</th><th>Add as new office (name / class / sub division)</th><th>OR add its numbers to another ID</th></tr>'+S.unm.map((u,i)=>`<tr><td><b>${esc(u.id)}</b></td><td><b>${esc(LBL[u.div]||u.div)}</b></td><td>${esc(u.name)}</td><td>${u.o}</td><td>${u.c}</td><td><input id="sbn_${i}" value="${esc(u.name)}" style="width:130px"> <select id="sbc_${i}"><option>BO</option><option>SO</option><option>HO</option></select> <select id="sbs_${i}">${(SDT[u.div]||[]).map(x=>`<option>${x[0]}</option>`).join('')}</select> <button class="b sm" onclick="SBX.addOff(${i})">Add</button></td><td><input id="sbi_${i}" placeholder="BO ID / SOL ID" style="width:110px"> <button class="b sm alt" onclick="SBX.merge(${i})">Add numbers</button></td></tr>`).join('')+'</table>':'<div class="hint">No unmapped office in the uploaded files.</div>';
  const ex=Object.keys(s.extra),al=Object.keys(s.alias);if(ex.length||al.length)h+='<div style="margin-top:8px"><b>Saved:</b> '+ex.map(id=>`${esc(id)} &rarr; new office "${esc(s.extra[id].name)}" (${esc(s.extra[id].sd)}) <button class="b sm gray" onclick="SBX.delX('e','${esc(id)}')">&#10006;</button>`).join(' | ')+(ex.length&&al.length?' | ':'')+al.map(id=>`${esc(id)} &rarr; ${esc(s.alias[id])} <button class="b sm gray" onclick="SBX.delX('a','${esc(id)}')">&#10006;</button>`).join(' | ')+'</div>';
@@ -4070,15 +4113,15 @@ async function add(list){try{await S.ready}catch(e){}if(!S.ok)return alert('Mapp
  if(info.length)alert(info.join('\n\n'));
  return{added,duplicates,bad};
 }
-function setX(on){DK.length=0;(on?DK0.filter(d=>d!=='SEHORE'):DK0).forEach(d=>DK.push(d))}
-function setRx(v){S.rx=!!v;render()}
-function useMap(){mapTargetSkeleton();
+function setX(on){DK.length=0;((on||(NM&&!S.sehoreExplicit))?DK0.filter(d=>d!=='SEHORE'):DK0).forEach(d=>DK.push(d))}
+function setRx(v){S.rx=!!v;S.sehoreExplicit=!S.rx;render()}
+function useMap(){if(NM&&!S.sehoreExplicit)S.rx=true;mapTargetSkeleton();
  if(S.rawTargetCSV){try{parseTargetCSV(S.rawTargetCSV)}catch(e){S.targetStatus='Target CSV: '+e.message}}
  S.mst=NM?(S.mstNew||{byId:{},byOff:{}}):(S.mstOld||{byId:{},byOff:{}});
  sbUse();calc();setX(S.rx);render()}
 function rpRefresh(){try{if($('p-rp').style.display!=='none')rpRender()}catch(e){}}
 const upd=()=>{save();calc();render();rpRefresh()};
-async function init(){S.ready=(async()=>{try{
+async function init(){if(NM&&!S.sehoreExplicit)S.rx=true;S.ready=(async()=>{try{
  const [mapping,target,history]=await Promise.allSettled([fetchTxt(U_MAP,'Office mapping'),fetchTxt(U_TARGET,'New Sub Division POSB targets'),fetchTxt(U_DAT,'FY POSB achievement')]);
  if(mapping.status!=='fulfilled')throw mapping.reason;
  S.mstOld=parseMap(mapping.value);S.mst=NM?(S.mstNew||{byId:{},byOff:{}}):S.mstOld;
@@ -5741,13 +5784,14 @@ const CENTRAL_ARTICLES=(()=>{
  function forDate(date){check();if(daily.has(date))return daily.get(date);
   const m=date.slice(0,7),hist=historical(m),record=hist?FY_SHEETS.daily().get(date):NB.S.offD?.[date],D=new Map(),unmapped=[];
   if(!record){daily.set(date,null);return null}
+  const SD=new Map();
   const isArray=Array.isArray(record);
   const each=isArray?Array.from({length:record.length/4},(_,i)=>[record[i*4],{mo:+record[i*4+1]||0,par:+record[i*4+2]||0,irgb:+record[i*4+3]||0}]):Object.entries(record).map(([id,a])=>[id,fromArr(a)]);
   for(const [rawID,v] of each){const id=resolve(rawID,m),office=master()[id]||master()[rawID];if(!office){unmapped.push(id);continue}
    const d=n(office.dv),sd=SD_NAME_RESOLVE.sd(d,office.sd);if(!fixedRoster().get(d)?.has(sn(sd))){unmapped.push(id);continue}
-   const z=D.get(d)||val();add(z,v);D.set(d,z);
+   const z=D.get(d)||val();add(z,v);D.set(d,z);const sk=d+'\u001f'+sd,sv=SD.get(sk)||val();add(sv,v);SD.set(sk,sv);
   }
-  const result={date,D,unmapped};daily.set(date,result);return result;
+  const result={date,D,SD,unmapped};daily.set(date,result);return result;
  }
  function day(date,division){const a=forDate(date);if(!a)return null;const x=a.D.get(n(division))||val();return {mo:x.mo,parcel:x.par,irgb:x.irgb}}
  function targetRows(){return typeof SDTGT.essentialRows==='function'?SDTGT.essentialRows():[]}
@@ -5929,7 +5973,12 @@ const ESS=(()=>{
  ['ly_sd','Last Year Comparison — Sub Division-wise'],
  ['fy_div','Cumulative FY Target vs Achievement — Division-wise'],
  ['fy_sd','Cumulative FY Target vs Achievement — Sub Division-wise'],
- ['growth_mom','Current Month to Date versus Previous Month Same Dates — MO / Parcel / IRGB'],
+ ['growth_mom_div_mo','MO — Current vs Previous Month — Division-wise'],
+ ['growth_mom_sd_mo','MO — Current vs Previous Month — Sub Division-wise'],
+ ['growth_mom_div_par','Parcel — Current vs Previous Month — Division-wise'],
+ ['growth_mom_sd_par','Parcel — Current vs Previous Month — Sub Division-wise'],
+ ['growth_mom_div_irgb','IRGB — Current vs Previous Month — Division-wise'],
+ ['growth_mom_sd_irgb','IRGB — Current vs Previous Month — Sub Division-wise'],
  ['daily','Current Month Day-wise MO / Parcel / IRGB Summary'],
  ['monthly','April to Current Month — MO / Parcel / IRGB Monthly Summary'] ];
  const special=[
@@ -5971,7 +6020,7 @@ const ESS=(()=>{
  ['division_bottom4_fy','Common List — Bottom 4 SO per Division, Cumulative FY (All Articles)'],
  ['bo_nil_fy','BO Nil Parcel Booking — Cumulative FY to Date'] ];
  const posbItems=[
- ['posb_main_progressive','POSB — Sub Division Progressive (single selected table; division-wise pages)'],
+ ['posb_main_progressive','POSB — Sub Division Progressive (complete combined table, Division totals & Region total)'],
  ['posb_status_div','POSB — Division Shortfall / Progressive (Screenshot Format)'],
  ['posb_status_sd','POSB — Sub Division FY Target / Prior and Current Month / Shortfall'],
  ['posb_monthly_div','POSB — Current Month Division Target and Achievement %'],
@@ -6119,27 +6168,56 @@ const ESS=(()=>{
   const html=wrapper(names[id],table(hdr,rows)+`<p class="sdh-note">${parcel?'Parcel only':'All Articles = MO + Parcel + IRGB'}. Threshold strictly greater than ${cut}. Office lists: use the download controls beside the report preview.</p>`,isFY?'FY cumulative through '+mFull(m):mFull(m));
   return pg(id,names[id],html,{lists:list.map(g=>({label:g.d+' / '+g.sd,rows:[['Office ID','Office Name','Class','Division','Sub Division','MO','Parcel','IRGB','All Articles'],...g.zero.map(o=>[o.id,o.name,o.cl,o.div,o.sd,metric(o,'mo',isFY?null:m),metric(o,'par',isFY?null:m),metric(o,'irgb',isFY?null:m),metric(o,'total',isFY?null:m)])]})),groups:list,listingFY:isFY});
  };
- const growth=()=>{
-  const m=current(),[yr,mn]=m.split('-').map(Number),pm=new Date(yr,mn-2,1),prior=pm.getFullYear()+'-'+String(pm.getMonth()+1).padStart(2,'0');
-  const day=Math.min(new Date().getDate(),new Date(+m.slice(0,4),+m.slice(5),0).getDate()),D=new Map(),missing=[];
-  const periods=[prior,m];for(const [ix,mo] of periods.entries()){
-   let count=0;for(let d=1;d<=day;d++){
-    const days=new Date(+mo.slice(0,4),+mo.slice(5),0).getDate();if(d>days)break;
-    const date=mo+'-'+String(d).padStart(2,'0'),rec=CENTRAL_ARTICLES.forDate(date);
-    if(!rec){missing.push(date);continue}count++;
-    for(const [dv,v] of rec.D){const key=norm(dv);if(ignore(key))continue;const a=D.get(key)||{prior:{mo:0,par:0,irgb:0},now:{mo:0,par:0,irgb:0}};for(const k of ['mo','par','irgb'])a[ix===0?'prior':'now'][k]+=Number(v[k]||0);D.set(key,a)}
+ const growth=(id)=>{
+  const m=current(),[yr,mn]=m.split('-').map(Number),pd=new Date(yr,mn-2,1),prior=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
+  const vert=id.endsWith('_mo')?'mo':id.endsWith('_par')?'par':'irgb',sd=id.includes('_sd_');
+  // Only actual uploaded daily dates determine the comparison period; never assume today's day.
+  const keys=[...FY_SHEETS.daily().keys(),...Object.keys(NB.S.offD||{})].filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&d.startsWith(m+'-')).sort();
+  const nowDay=keys.length?Math.min(31,Number(keys[keys.length-1].slice(-2))):null;
+  const fromDay=keys.length?Math.max(1,Number(keys[0].slice(-2))):null;
+  const maxPrior=new Date(+prior.slice(0,4),+prior.slice(5),0).getDate();
+  const endDay=nowDay?Math.min(nowDay,maxPrior):null;
+  const startDay=fromDay||1;
+  const labelDate=(mo,d)=>String(d).padStart(2,'0')+'.'+mo.slice(5,7)+'.'+mo.slice(0,4);
+  const first=startDay<=endDay?startDay:1,last=endDay||0;
+  const fmtRange=mo=>last?labelDate(mo,first)+' to '+labelDate(mo,last):'No daily data available';
+  const buckets=new Map(),missing=[];
+  for(let d=first;d<=last;d++)for(const [ix,mo] of [prior,m].entries()){
+   const date=mo+'-'+String(d).padStart(2,'0'),rec=CENTRAL_ARTICLES.forDate(date);
+   if(!rec){missing.push(date);continue}
+   const collection=sd?rec.SD:rec.D;
+   if(!collection){missing.push(date+' (SD mapping not available)');continue}
+   for(const [raw,value] of collection){let div='',sub='';
+    if(sd){const pos=raw.indexOf('\u001f');if(pos<0)continue;div=raw.slice(0,pos);sub=raw.slice(pos+1)}else div=raw;
+    if(ignore(div))continue;
+    const k=div+'\u001f'+(sd?sub:''),x=buckets.get(k)||{div,sub,prior:0,now:0};x[ix===0?'prior':'now']+=Number(value[vert]||0);buckets.set(k,x);
    }
-   if(!count)missing.push(mo+' (no daily rows)');
   }
-  const hdr=['Division','Vertical',prior+' through day '+day,m+' through day '+day,'Growth %'];const rows=[],tot={prior:{mo:0,par:0,irgb:0},now:{mo:0,par:0,irgb:0}};
-  for(const [dv,x] of [...D].sort((a,b)=>a[0].localeCompare(b[0])))for(const k of ['mo','par','irgb']){
-   const before=x.prior[k],now=x.now[k];rows.push({cells:[dv,k.toUpperCase(),before,now,before>0?(missing.length?'—':((now-before)*100/before).toFixed(2)+'%'):'—']});tot.prior[k]+=before;tot.now[k]+=now;
+  const hdr=['Division',...(sd?['Sub Division']:[]),fmtRange(prior),fmtRange(m),'Growth %'];
+  const growthPercent=(a,b)=>!last?'—':a>0?((b-a)*100/a).toFixed(2)+'%':b===0?'0.00%':'New (baseline 0)';
+  const groups=new Map();for(const x of buckets.values()){(groups.get(x.div)||groups.set(x.div,[]).get(x.div)).push(x)}
+  const rows=[],grand={prior:0,now:0};
+  for(const div of [...groups.keys()].sort()){
+   const group=groups.get(div).sort((a,b)=>a.sub.localeCompare(b.sub)),subtot={prior:0,now:0};
+   group.forEach(x=>{subtot.prior+=x.prior;subtot.now+=x.now;if(sd)rows.push({cells:[div,x.sub,x.prior,x.now,growthPercent(x.prior,x.now)],_group:div});});
+   if(sd)rows.push({_total:true,cells:[div,'DIVISION TOTAL',subtot.prior,subtot.now,growthPercent(subtot.prior,subtot.now)]});
+   else rows.push({cells:[div,subtot.prior,subtot.now,growthPercent(subtot.prior,subtot.now)]});
+   grand.prior+=subtot.prior;grand.now+=subtot.now;
   }
-  for(const k of ['mo','par','irgb']){const a=tot.prior[k],b=tot.now[k];rows.push({_total:true,cells:['INDORE REGION TOTAL',k.toUpperCase(),a,b,a>0?(missing.length?'—':((b-a)*100/a).toFixed(2)+'%'):'—']})}
-  const warn=missing.length?'<div class="msg warn">Comparison incomplete: '+missing.length+' missing dates. Growth cannot be certified until both periods have all daily records; these dates are not zero. '+missing.slice(0,12).join(', ')+'</div>':'';
-  return pg('growth_mom',names.growth_mom,wrapper(names.growth_mom,warn+table(hdr,rows),'Matching day-of-month periods '+prior+' / '+m));
+  rows.push({_total:true,cells:['INDORE REGION TOTAL',...(sd?['']:[]),grand.prior,grand.now,growthPercent(grand.prior,grand.now)]});
+  const th=sd?'<th>Division</th><th>Sub Division</th>':'<th>Division</th>',remain={},seen=new Set();
+  if(sd)for(const r of rows)if(r._group)remain[r._group]=(remain[r._group]||0)+1;
+  const body=rows.map(r=>{if(r._total)return '<tr class="sdh-grand">'+r.cells.map((v,i)=>'<td'+(sd&&i===0?' colspan="2"':'')+'>'+escv(v)+'</td>').filter((_,i)=>!sd||i!==1).join('')+'</tr>';
+   if(!sd)return '<tr>'+r.cells.map(v=>'<td>'+escv(v)+'</td>').join('')+'</tr>';
+   const div=r.cells[0],col=!seen.has(div)?'<td rowspan="'+remain[div]+'" class="ess-merged-division">'+escv(div)+'</td>':'';seen.add(div);
+   return '<tr>'+col+r.cells.slice(1).map(v=>'<td>'+escv(v)+'</td>').join('')+'</tr>'}).join('');
+  const title=vert.toUpperCase()+' — Current vs Previous Month — '+(sd?'Sub Division':'Division')+' wise';
+  const warning=missing.length?'<div class="msg warn">'+missing.length+' source date(s) missing. Growth % is calculated from available dates only and is provisional. Missing: '+missing.slice(0,18).map(escv).join(', ')+'</div>':'';
+  const empty=!keys.length?'<div class="msg warn">No daily CSV records available for '+escv(m)+'. Upload current-month office-wise CSV to generate comparison.</div>':'';
+  const html='<table class="sdh-region-table ess-table ess-target-table"><thead><tr>'+th+'<th>'+escv(fmtRange(prior))+'</th><th>'+escv(fmtRange(m))+'</th><th>Growth %</th></tr></thead><tbody>'+body+'</tbody></table>';
+  return pg(id,title,wrapper(title,empty+warning+html,'Compared actual date ranges: '+fmtRange(prior)+' versus '+fmtRange(m)));
  };
- const create=id=>{if(id==='growth_mom')return [growth()];if(id.startsWith('posb_')){const kind=id.slice(5);return SBX.essentialPages(kind,current(),posbPeriod)};if(id.startsWith('target_')||id.startsWith('fy_'))return target(id);if(id.startsWith('ly_'))return ly(id);if(id==='daily'||id==='monthly')return [summaries(id)];if(id==='division_bottom4_now'||id==='division_bottom4_fy')return [divisionBottom4(id)];if(['bo_mo','bo_all_fy','so_mo','so_all_fy','so_par','so_par_fy','bo_nil_fy'].includes(id))return [nil(id)];return [rank(id)]};
+ const create=id=>{if(id.startsWith('growth_mom_'))return [growth(id)];if(id.startsWith('posb_')){const kind=id.slice(5);return SBX.essentialPages(kind,current(),posbPeriod)};if(id.startsWith('target_')||id.startsWith('fy_'))return target(id);if(id.startsWith('ly_'))return ly(id);if(id==='daily'||id==='monthly')return [summaries(id)];if(id==='division_bottom4_now'||id==='division_bottom4_fy')return [divisionBottom4(id)];if(['bo_mo','bo_all_fy','so_mo','so_all_fy','so_par','so_par_fy','bo_nil_fy'].includes(id))return [nil(id)];return [rank(id)]};
  // AUTHORITATIVE reconciliation. Raw source totals are independently read from FY_SHEETS.values / NB.vals.
  // PDF allocations are independently read from the mapping-based aggregate; unmapped IDs never become new subdivisions.
   const fixedRoster=()=>CENTRAL_ARTICLES.fixedRoster();
@@ -6235,7 +6313,7 @@ const ESS=(()=>{
      (issues.length?'<details open style="margin:12px 0"><summary><b>Exact errors and reasons ('+issues.length+')</b></summary><div class="msg err" style="max-height:360px;overflow:auto">'+issues.map(escv).join('<hr>')+'</div></details>':'')+mappingHelp(missing);
    return issues;
  };
- const checked=id=>all.some(x=>x[0]===id)&&(selected[id]===true||(selected[id]===undefined&&!id.startsWith('posb_')&&id!=='growth_mom'));
+ const checked=id=>all.some(x=>x[0]===id)&&(selected[id]===true||(selected[id]===undefined&&!id.startsWith('posb_')&&!id.startsWith('growth_mom_')));
  const item=([id,title])=>`<tr><td style="width:58px;text-align:center"><input type="checkbox" ${checked(id)?'checked':''} onchange="ESS.tick('${id}',this.checked)"></td><td>${escv(title)}${id.startsWith('import_')?` <button class="b sm gray" onclick="ESS.remove(${Number(id.slice(7))})">Remove</button>`:''}</td></tr>`;
  const box=(title,items,desc)=>`<div class="card"><h3>${title}</h3><div class="row"><button class="b sm gray" onclick="ESS.sectionTick('${title.replace(/[^A-Za-z0-9]/g,'_')}',true)">Select All</button><button class="b sm gray" onclick="ESS.sectionTick('${title.replace(/[^A-Za-z0-9]/g,'_')}',false)">Clear All</button><button class="b sm" onclick="ESS.sectionDownload('${title.replace(/[^A-Za-z0-9]/g,'_')}','pdf')">PDF</button><button class="b sm alt" onclick="ESS.sectionDownload('${title.replace(/[^A-Za-z0-9]/g,'_')}','ppt')">PPT</button></div><p class="hint">${desc}</p><div class="wrap"><table class="ess-picker"><thead><tr><th>PDF</th><th>Report Name</th></tr></thead><tbody>${items.map(item).join('')}</tbody></table></div></div>`;
  const draw=()=>{const root=document.getElementById('essentialBody');if(!root)return;const m=current();root.innerHTML=`<div class="card"><h3>Essential Reports — PDF Builder</h3><div class="row"><label>Month <select onchange="ESS.setMonth(this.value)">${avail().map(x=>`<option value="${x}" ${x===m?'selected':''}>${escv(mFull(x))}</option>`).join('')}</select></label><label><input type="checkbox" ${options.sehore?'checked':''} onchange="ESS.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${options.rms?'checked':''} onchange="ESS.extra('rms',this.checked)"> Include RMS / ID Division</label></div><div class="hint">Both divisions excluded by default (including in all totals/rankings). Essential reports remain listed permanently. Unticking only removes a page from the combined PDF.</div></div>`+
@@ -6244,7 +6322,7 @@ const ESS=(()=>{
    box('Essential Report — Main',main,'Targets, previous year comparison, day-wise and monthly summaries.')+
   box('Essential Report — Top / Bottom / Nil',special,'Top and Bottom 10 lists, subdivision performance, and zero-booking office counts.')+
   `<div class="card"><h3>POSB Report Period</h3><select id="essPosbPeriod" onchange="ESS.posbPeriod(this.value)"><option value="month" ${posbPeriod==='month'?'selected':''}>Selected Month</option><option value="cum" ${posbPeriod==='cum'?'selected':''}>April to Selected Month (Cumulative)</option></select></div>`+
-  box('Essential Report — POSB',posbItems,'All POSB monthly, progressive, rankings and NIL-opening reports.')+
+  box('Essential Report — POSB',posbItems,'POSB monthly and progressive reports, division totals, ranking reports; office-wise NIL lists are Excel-only.')+
   box('Essential Report — Imported from Other Sections',imported.map((p,i)=>['import_'+i,p.title]),'Saved report pages sent from Sub Division Reports or the Report section. You can remove an imported entry without affecting permanent reports.')+
   `<div class="card"><div class="row"><button class="b gray sm" onclick="ESS.all(true)">Select All</button><button class="b gray sm" onclick="ESS.all(false)">Deselect All</button><button class="b alt" onclick="ESS.done()">Done — Generate Preview</button><button class="b" onclick="ESS.pdf()">Download Selected PDF</button><span id="essStatus" class="hint"></span></div><div class="hint">Preview builds only when Done is clicked; this avoids recalculating all reports on every checkbox change.</div></div>`;
  };
