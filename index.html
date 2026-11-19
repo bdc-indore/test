@@ -3432,26 +3432,76 @@ const _rs=renderSettings;renderSettings=function(){_rs();nbSettingsRender();nbIn
 async function rpSB(file){if(!file)return;const t=await file.text();NB.S.sbText=t;NB.save();document.getElementById('rpSBf').value='';rpRender();toast('SB / PLI / CCS file loaded')}
 function rpSBreset(){delete NB.S.sbText;NB.save();rpRender()}
 function rpCover(){const c=rpCfg();return `<div class="rpPg" style="width:1100px;height:620px;background:#b3121b;color:#fff;font-family:Arial;padding:90px 80px;box-sizing:border-box"><div style="font:700 20px Arial;color:#fdb913;letter-spacing:3px">INDIA POST</div><div style="font:700 44px Arial;margin:24px 0">${esc(c.title)}</div><div style="font:20px Arial">${esc(c.sub)}</div><div style="display:inline-block;background:#fdb913;color:#222;font:700 16px Arial;padding:12px 24px;margin-top:60px">${esc(c.badge)}</div></div>`}
-async function rpPDF(sel,fn){if(!rpInit())return;if(!(await needLib2('html2canvas'))||!(await needLib2('jspdf')))return;
- const L=(sel?[]:[{html:rpCover}]).concat(sel||RP.sel()),host=document.createElement('div');host.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(host);let doc=null;
- EXPORT_UI.show('Mega PDF',0,'Preparing '+L.length+' pages');await exportFrame();
+/* Long POSB/Essential tables are broken into bounded row batches before rasterizing.
+   The existing Mega PDF engine is retained, but never makes a giant single canvas. */
+function rpPDFParts(page,maxRows=36){
+ if(page.canvas)return [page];
+ let original;try{original=page.html();if(page.rx){RGX.set(true);try{original=RGX.str(original)}finally{RGX.set(false)}}}catch(e){throw Error('Could not build report '+page.t+': '+e.message)}
+ const tmp=document.createElement('template');tmp.innerHTML=original.trim();
+ const root=tmp.content.firstElementChild;
+ if(!root)return [{...page,html:()=>original}];
+ const tables=[...root.querySelectorAll('table')];
+ if(tables.length!==1)return [{...page,html:()=>original}];
+ const main=tables[0],body=main.tBodies[0];
+ // Keep the actual column headers in every physical PDF page.
+ const headers=main.tHead?[...main.tHead.rows]:(main.rows.length&&main.rows[0].querySelector('th')?[main.rows[0]]:[]);
+ const dataRows=(body?[...body.rows]:[...main.rows]).filter(row=>!headers.includes(row));
+ if(dataRows.length<=maxRows)return [{...page,html:()=>original}];
+ const out=[];
+ for(let start=0;start<dataRows.length;start+=maxRows){
+   const clone=root.cloneNode(true),old=clone.querySelector('table');
+   const table=main.cloneNode(false);
+   if(main.caption)table.appendChild(main.caption.cloneNode(true));
+   if(main.tHead)table.appendChild(main.tHead.cloneNode(true));
+   const newBody=document.createElement('tbody');
+   if(!main.tHead&&headers.length)headers.forEach(x=>newBody.appendChild(x.cloneNode(true)));
+   dataRows.slice(start,start+maxRows).forEach(x=>newBody.appendChild(x.cloneNode(true)));
+   table.appendChild(newBody);
+   if(main.tFoot&&start+maxRows>=dataRows.length)table.appendChild(main.tFoot.cloneNode(true));
+   old.replaceWith(table);
+   // Avoid repeating large footer/notes on every intermediate physical page.
+   if(start+maxRows<dataRows.length)clone.querySelectorAll('.sdh-note').forEach(el=>el.remove());
+   const index=out.length+1;
+   out.push({g:page.g,t:page.t+' (part '+index+')',html:()=>clone.outerHTML});
+ }
+ return out;
+}
+async function rpPDF(sel,fn){
+ if(!rpInit())return;
+ if(!(await needLib2('html2canvas'))||!(await needLib2('jspdf')))return;
+ const base=(sel?[]:[{html:rpCover}]).concat(sel||RP.sel());
+ const host=document.createElement('div');host.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(host);
+ let doc=null,canvas=null;
+ EXPORT_UI.show('Mega PDF',0,'Preparing '+base.length+' reports');await exportFrame();
  try{
-  for(let i=0;i<L.length;i++){
-   setBusy(true,`PDF page ${i+1}/${L.length}…`);
-   EXPORT_UI.show('Mega PDF',Math.round(94*i/L.length),'Rendering '+(i+1)+' / '+L.length+' pages');await exportFrame();
-   // PDF-specific raster size reduces work; HTML geometry and columns are unchanged.
-   const cv=await rpCv(L[i],host,1.12),w=cv.width,h=cv.height,im=await exportJpeg(cv,.86);
-   if(!doc)doc=new window.jspdf.jsPDF({orientation:w>h?'l':'p',unit:'px',format:[w,h],hotfixes:['px_scaling'],compress:true});
-   else doc.addPage([w,h],w>h?'l':'p');
-   doc.addImage(im,'JPEG',0,0,w,h);
-   host.replaceChildren();EXPORT_UI.show('Mega PDF',Math.round(94*(i+1)/L.length),'Completed '+(i+1)+' / '+L.length+' pages');
-   if(i%2===1)await exportFrame();
+  // Expand only as each report is processed to avoid keeping hundreds of DOM copies in memory.
+  for(let i=0;i<base.length;i++){
+   const parts=rpPDFParts(base[i]);
+   for(let j=0;j<parts.length;j++){
+    setBusy(true,'PDF report '+(i+1)+'/'+base.length+', part '+(j+1)+'/'+parts.length);
+    const pct=Math.round(94*(i+(j/parts.length))/base.length);
+    EXPORT_UI.show('Mega PDF',pct,'Rendering report '+(i+1)+' / '+base.length+' · page '+(j+1)+' / '+parts.length);
+    await exportFrame();
+    // Lower resolution of large tables substantially cuts peak memory but leaves all rows readable.
+    canvas=await rpCv(parts[j],host,1.08);
+    const w=canvas.width,h=canvas.height;
+    if(w<1||h<1||w*h>25000000)throw Error('PDF page is too large: '+w+' × '+h+' in '+base[i].t);
+    const im=await exportJpeg(canvas,.84);
+    if(!doc)doc=new window.jspdf.jsPDF({orientation:w>h?'l':'p',unit:'px',format:[w,h],hotfixes:['px_scaling'],compress:true});
+    else doc.addPage([w,h],w>h?'l':'p');
+    doc.addImage(im,'JPEG',0,0,w,h);
+    // Free canvas pixel memory before the next report/part; jsPDF owns the JPEG bytes.
+    canvas.width=0;canvas.height=0;canvas=null;host.replaceChildren();
+    if(j%2===1)await exportFrame();
+   }
+   EXPORT_UI.show('Mega PDF',Math.round(94*(i+1)/base.length),'Completed '+(i+1)+' / '+base.length+' reports');
+   await exportFrame();
   }
   EXPORT_UI.show('Mega PDF',97,'Finalizing PDF file…');await exportFrame();
-  saveBlob(doc.output('blob'),(fn||'Indore_Region_Mega_Report')+'.pdf');
+  const blob=doc.output('blob');saveBlob(blob,(fn||'Indore_Region_Mega_Report')+'.pdf');
   EXPORT_UI.show('Mega PDF',100,'Download prepared');setBusy(false,'Done');
- }catch(e){console.error(e);setBusy(false,'');alert('PDF error: '+e.message)}
- finally{host.remove();setTimeout(()=>EXPORT_UI.hide(),1400)}
+ }catch(e){console.error(e);setBusy(false,'');EXPORT_UI.show('Mega PDF',0,'Export failed: '+e.message);alert('PDF error: '+e.message)}
+ finally{if(canvas){canvas.width=0;canvas.height=0}host.remove();setTimeout(()=>EXPORT_UI.hide(),2000)}
 }
 async function rpPPT(sel,fn,cov){if(!rpInit())return;if(!(await needLib2('PptxGenJS')))return;const full=!sel,Lp=sel||RP.sel(),c=rpCfg(),p=new PptxGenJS(),cT=cov&&cov.title||c.title,cS=cov&&cov.sub||c.sub;p.layout='LAYOUT_WIDE';p.title=c.title;
  EXPORT_UI.show('Mega PPT',0,'Preparing '+Lp.length+' report sections');await exportFrame();
@@ -3671,7 +3721,7 @@ function parseTargetCSV(txt){
  for(let i=0;i<Math.min(rows.length,35);i++){
   const h=rows[i].map(key),dv=h.findIndex(x=>x==='DIVISION'||x==='DIVISIONNAME'||x==='NEWDIVISION'||x==='NAMEOFDIVISION'),sd=h.findIndex(x=>/SUBDIVISION|SUBDIV|SUBDN|SUBDIVISIONNAME|^SDNAME$/.test(x));
   if(dv<0||sd<0)continue;
-  let tg=h.findIndex(x=>/(^TARGET$|ANNUALTARGET|YEARLYTARGET|FYTARGET|NETADDITIONTARGET|TARGET2627|TARGET202627|NEWTARGET)/.test(x));
+  let tg=h.findIndex(x=>/(^TARGET$|ANNUALTARGET|YEARLYTARGET|YEARLYNETTARGET|FYNETTARGET|FYTARGET|NETADDITIONTARGET|TARGET2627|TARGET202627|NEWTARGET|TOTALNETTARGET|TARGETNETADDITION)/.test(x));
   if(tg<0)tg=h.findIndex(x=>x.includes('TARGET')&&!/MONTH|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|JAN|FEB|MAR/.test(x));
   const months=h.map((x,j)=>/^(APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|JAN|FEB|MAR)/.test(x)?j:-1).filter(j=>j>=0);
   if(tg<0&&months.length===0)continue;
@@ -3682,7 +3732,7 @@ function parseTargetCSV(txt){
  for(const r of rows.slice(hd+1)){
   const givenDiv=clean(r[cols.dv]);if(givenDiv&&!/^(TOTAL|GRAND TOTAL|REGION|INDORE REGION)$/i.test(givenDiv))lastDivision=givenDiv;
   const rawDiv=givenDiv||lastDivision,rawSD=clean(r[cols.sd]);if(!rawDiv||!rawSD||/^(TOTAL|GRAND TOTAL|REGION|INDORE REGION)$/i.test(rawSD))continue;
-  const dvKey=key(rawDiv);let dv=Object.keys(LBL_N).find(d=>key(d)===dvKey||key(LBL_N[d])===dvKey);
+  const dvKey=key(rawDiv).replace(/(POSTAL)?DIVISION$/,'');let dv=Object.keys(LBL_N).find(d=>key(d)===dvKey||key(LBL_N[d])===dvKey);
   if(!dv){unknown.push(rawDiv+' / '+rawSD);continue}
   let value=cols.tg>=0?num(r[cols.tg]):NaN;
   if((cols.tg<0||clean(r[cols.tg])==='')&&cols.months.length)value=cols.months.reduce((acc,j)=>acc+num(r[j]),0);
@@ -3692,7 +3742,7 @@ function parseTargetCSV(txt){
   const identity=dv+'|'+sd;if(seen.has(identity)){unknown.push(identity+' (duplicate target)');continue}seen.add(identity);
   (totals[dv]=totals[dv]||{})[sd]=value;accepted++;
  }
- if(!accepted)throw Error('New POSB target CSV aur RDN/SBN office mapping match nahi hui; mapping sheets load hone ke baad retry karein.');
+ if(!accepted)throw Error('Target CSV downloaded, but 0 SD rows matched. CSV headers/Division labels or RDN/SBN mapping check karein. Samples: '+unknown.slice(0,5).join('; '));
  Object.keys(SDT_N).forEach(d=>{SDT_N[d]=SDT_N[d].map(([sd])=>[sd,Object.prototype.hasOwnProperty.call(totals[d]||{},sd)?totals[d][sd]:null]);DT_N[d]=SDT_N[d].some(x=>x[1]===null)?null:SDT_N[d].reduce((a,x)=>a+x[1],0)});
  S.targetStatus=accepted+' new Sub Division targets loaded'+(unknown.length?' | '+unknown.length+' unrecognised / duplicate rows':'');S.targetProblems=unknown;
  return accepted;
@@ -3965,7 +4015,7 @@ function repStatus(sel,by){
  return rows;
 }
 function repTable(kind,sel,period){
- if(NM&&!Object.values(DT_N).some(x=>x>0))return [['Target Source Error'],['New POSB target CSV was not loaded or mapped; reload the published sheet.']];
+ if(NM&&!Object.values(DT_N).some(x=>x>0))return [['Target Source Error'],['New POSB target data unavailable. '+(S.targetStatus||'Reload Google Sheet and New SB mapping.')]];
  if(kind==='status_sd')return repStatus(sel,'sd');
  if(kind==='status_div')return repStatus(sel,'div');
  if(kind==='monthly_div')return repSD(sel,'month').filter((r,i)=>i===0||r[1]==='DIVISION TOTAL'||r[1]==='REGION TOTAL');
