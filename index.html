@@ -6499,6 +6499,7 @@ const ESS=(()=>{
  const wrapper=(title,body,subtitle='')=>`<div class="sdh-region-page ess-paper"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>${escv(title)}</h1></div><div class="sdh-report-subtitle"><strong>INDORE REGION</strong><span>${escv(subtitle||'FY 2026–27')}</span></div>${body}<div class="sdh-note">Data: uploaded / published office-wise booking source · Mapping: ${NM?'New':'Old'} · Sehore ${options.sehore?'included':'excluded'} · RMS ${options.rms?'included':'excluded'}</div></div>`;
  const table=(headers,rows,opts={})=>`<table class="sdh-region-table ess-table"><thead><tr>${headers.map(x=>'<th>'+escv(x)+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map((r,i)=>`<tr class="${r._total?'sdh-grand':''}">${r.cells.map((c,j)=>`<td>${typeof c==='number'?fmt(c):escv(c)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}">No data available in the selected period</td></tr>`}</tbody></table>`;
  const pg=(id,title,html,meta={})=>({g:'essential',t:title,d:'Indore Region',pd:'Indore Region',eid:id,html:()=>String(typeof html==='function'?html():html).replace(/\bPAR\b/g,'Parcel'),...meta});
+ const artLbl=v=>{v=String(v).toUpperCase();return (v==='PAR'||v==='PARCEL')?'PARCEL':v}; const artTitle=(v,base)=>artLbl(v)+' ARTICLE COUNT REPORT \u2014 '+base;
  const metric=(o,v,m)=>m?(o.monthly[m]?.[v]||0):(o[v]||0);
  const eligibleSO=o=>!CENTRAL_ARTICLES.isNonBooking(o)&&String(o.cl||'').toUpperCase().replace(/[^A-Z]/g,'')==='SO'&&SD_NAME_RESOLVE.known(o.div,o.sd)!==false;
  // Each cumulative page has previous FY months, current month, and cumulative totals separately.
@@ -6533,7 +6534,7 @@ const ESS=(()=>{
    const head=['Division',...(sd?['Sub Division']:[]),...columns];
    // rowspan appears only on the Division heading, not on its subtotal.
    const tableHtml=`<table class="sdh-region-table ess-table ess-target-table"><thead><tr>${head.map(h=>'<th>'+escv(h)+'</th>').join('')}</tr></thead><tbody>${r.map(row=>'<tr class="'+(row._total?'sdh-grand':'')+'">'+row.cells.map((c,ci)=>c===null?'':(c&&typeof c==='object'&&c._merge?'<td rowspan="'+c.rows+'" class="ess-merged-division">'+escv(c._merge)+'</td>':'<td'+(sd&&ci===1&&!row._total?' class="ess-sdname"':'')+'>'+(typeof c==='number'?fmt(c):escv(c))+'</td>')).join('')+'</tr>').join('')}</tbody></table>`;
-   return pg(id,names[id]+' · '+v,wrapper(names[id]+' · '+v,tableHtml,fy?'Cumulative April through '+mFull(m):mFull(m)),{targetAudit:{v,sd,groups:vr,t:all.t,a:all.a}});
+   return pg(id,artTitle(v,names[id]),wrapper(artTitle(v,names[id]),tableHtml,fy?'Cumulative April through '+mFull(m):mFull(m)),{targetAudit:{v,sd,groups:vr,t:all.t,a:all.a}});
   });
   return verticalPages;
  };
@@ -6547,7 +6548,7 @@ const ESS=(()=>{
     else {const last=child.every(x=>x.last!==null)?child.reduce((n,x)=>n+x.last,0):null,now=child.every(x=>x.now!==null)?child.reduce((n,x)=>n+x.now,0):null;rows.push({cells:[d,last===null?'—':last,now===null?'—':now,last>0&&now!==null?((now-last)*100/last).toFixed(2)+'%':'—']});}
    }
    {let tl=0,tn=0,validL=true,validN=true;for(const r of rows){if(r._total&&detailed)continue;const v1=r.cells[detailed?2:1],v2=r.cells[detailed?3:2];if(typeof v1==='number')tl+=v1;else validL=false;if(typeof v2==='number')tn+=v2;else validN=false;}rows.push({_total:true,cells:['INDORE REGION GRAND TOTAL',...(detailed?['']:[]),validL?tl:'—',validN?tn:'—',validL&&validN&&tl>0?(100*(tn-tl)/tl).toFixed(2)+'%':'—']});}
-   pages.push(pg(id,names[id]+' · '+vert,wrapper(names[id]+' · '+vert,table(['Division',...(detailed?['Sub Division']:[]),'FY 2025–26','FY 2026–27','Growth / Decline'],rows),mFull(m)+' versus '+mFull(String(+m.slice(0,4)-1)+m.slice(4)))));
+   pages.push(pg(id,artTitle(vert,names[id]),wrapper(artTitle(vert,names[id]),table(['Division',...(detailed?['Sub Division']:[]),mFull(String(+m.slice(0,4)-1)+m.slice(4))+' (FY 2025–26)',mFull(m)+' (FY 2026–27)','Growth / Decline'],rows),mFull(m)+' versus '+mFull(String(+m.slice(0,4)-1)+m.slice(4)))));
   }return pages;
  };
   const summaries=id=>{
@@ -6688,7 +6689,7 @@ const ESS=(()=>{
    if(!sd)return '<tr>'+r.cells.map(v=>'<td>'+escv(v)+'</td>').join('')+'</tr>';
    const div=r.cells[0],col=!seen.has(div)?'<td rowspan="'+remain[div]+'" class="ess-merged-division">'+escv(div)+'</td>':'';seen.add(div);
    return '<tr>'+col+r.cells.slice(1).map(v=>'<td>'+escv(v)+'</td>').join('')+'</tr>'}).join('');
-  const title=vert.toUpperCase()+' — Current vs Previous Month — '+(sd?'Sub Division':'Division')+' wise';
+  const title=artTitle(vert,'Current vs Previous Month \u2014 '+(sd?'Sub Division':'Division')+' wise');
   const warning=missing.length?'<div class="msg warn">'+missing.length+' source date(s) missing. Growth % is calculated from available dates only and is provisional. Missing: '+missing.slice(0,18).map(escv).join(', ')+'</div>':'';
   const empty=!keys.length?'<div class="msg warn">No daily CSV records available for '+escv(m)+'. Upload current-month office-wise CSV to generate comparison.</div>':'';
   const html='<table class="sdh-region-table ess-table ess-target-table"><thead><tr>'+th+'<th>'+escv(fmtRange(prior))+'</th><th>'+escv(fmtRange(m))+'</th><th>Growth %</th></tr></thead><tbody>'+body+'</tbody></table>';
