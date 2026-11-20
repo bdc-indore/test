@@ -324,7 +324,6 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
   </div>
   <div id="pendBanner" class="noprint"></div>
    <div class="card noprint" id="centralReportCard"><h3>Central Article Count · Data Control</h3><div class="row"><button class="b sm alt" onclick="CENTRAL_ARTICLES.show('centralReportAudit',{months:CENTRAL_ARTICLES.available(),sehore:true,rms:true})">Verify source, office mapping and all MO / Parcel / IRGB totals</button><span class="hint">All reports use the same central office-date dataset. Missing data is never treated as zero.</span></div><div id="centralReportAudit"></div></div>
-  <div class="card noprint"><button class="b alt" onclick="ESS.showGrowth()">Current Month vs Previous Month — Division Growth</button><div id="articleGrowthBox" class="wrap"></div></div>
   <div class="card wrap" id="reportBox"></div>
 </section>
 
@@ -410,7 +409,10 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
     <option value="status_div">FY Target / Previous Months / Current Month / Shortfall — Division</option>
     <option value="monthly_div">Current Month Division Target / Achievement / %</option>
     <option value="monthly_sd">Current Month Sub Division Target / Achievement / %</option>
-    <option value="matrix_div">Division Month-wise Target / Achievement / % / Shortfall</option>
+    <option value="matrix_div">Month-wise Summary — Each Division Separate Page</option>
+    <option value="matrix_div_all">Month-wise Summary — All Divisions One Page</option>
+    <option value="bottom4_bo">Bottom 4 BO per Division — Net Addition</option>
+    <option value="bottom4_so">Bottom 4 SO per Division — Net Addition</option>
     <option value="matrix_region">Indore Region Month-wise Target / Achievement / % / Shortfall</option>
     <option value="SD_net_top">Sub Division Top 10 — Net Addition</option>
     <option value="SD_net_bottom">Sub Division Bottom 10 — Net Addition</option>
@@ -3228,7 +3230,7 @@ async function nbIngest(file){const box=document.getElementById('csvMsgOff');let
   if(u.length){cls='msg warn';note+=`\n${u.length} office-id not in the office master: their data is NOT counted in the office reports. Settings -> "Nil Booking / office-wise settings" -> section 2: add it as a NEW office or include its data in an existing office-id.`}
  }catch(e){cls='msg err';note='Office-wise store: '+e.message}
  if(box)box.insertAdjacentHTML('beforeend',`<div class="${cls}">${esc(note)}</div>`)}
-const _hc=handleCSV;handleCSV=async function(file,mode){try{await _hc(file,mode);if(mode==='off'&&file)await nbIngest(file);const e=document.getElementById(mode==='off'?'csvMsgOff':'csvMsg');bookingProgress(100,e&&e.querySelector('.err')?'Completed with warnings / errors':'Import finished')}finally{bookingRelease(file)}};
+const _hc=handleCSV;handleCSV=async function(file,mode){try{await _hc(file,mode);if(mode==='off'&&file)await nbIngest(file);const e=document.getElementById(mode==='off'?'csvMsgOff':'csvMsg');bookingProgress(100,e&&e.querySelector('.err')?'Completed with warnings / errors':'Import finished');if(file&&!e?.querySelector('.err'))window.dispatchEvent(new Event('indore-source-updated'))}finally{bookingRelease(file)}};
 function nbCSV(ym){if(!ym)return alert('No post-office-wise data uploaded yet');const V=NB.vals(ym),L=['office-id,OFFICE NAME,CLASS,SD,DIVISION,CATEGORY,Booking_Count,Revenue'],q=s=>'"'+String(s).replace(/"/g,'""')+'"';
  for(const id in NB_OFF){if(!NB.act(id))continue;if(csvEx(NB_OFF[id][3]))continue;const [nm,cl,sd,dv]=NB_OFF[id],v=V[id]||[0,0,0,0,0,0,0,0];NB.CATS.forEach((c,i)=>L.push([id,q(nm),cl,q(sd),dv,c,v[i*2],Math.round(v[i*2+1])].join(',')))}
  Object.keys(V).filter(id=>!NB_OFF[id]).forEach(id=>NB.CATS.forEach((c,i)=>L.push([id,'""','','""','NOT IN MASTER',c,V[id][i*2],Math.round(V[id][i*2+1])].join(','))));
@@ -3997,13 +3999,40 @@ function repStatus(sel,by){
 function repMonthTargets(sel,by){const all=repOffices(),out=[by==='div'?['Division','Monthly Target','Net Addition Achievement','Achievement %']:['Division','Sub Division','Monthly Target','Net Addition Achievement','Achievement %']];const calc=(list,fy,d,sd)=>{const valid=list.filter(r=>r.m[sel]),net=valid.reduce((z,r)=>z+r.m[sel].n,0),t=fy==null?null:fy/12;return by==='div'?[d,repFmt(t),valid.length?net:'',valid.length&&t>0?repPct(net,t):'']:[d,sd,repFmt(t),valid.length?net:'',valid.length&&t>0?repPct(net,t):'']};DK.forEach(d=>{const allD=all.filter(r=>r.div===d);if(by==='sd')(SDT[d]||[]).forEach(([sd,fy])=>out.push(calc(allD.filter(r=>r.sd===sd),fy,LBL[d],cap(sd))));out.push(calc(allD,DT[d],by==='div'?LBL[d]:'TOTAL '+LBL[d],by==='sd'?'DIVISION TOTAL':null))});out.push(calc(all,DK.every(d=>DT[d]!=null)?DK.reduce((z,d)=>z+DT[d],0):null,'INDORE REGION TOTAL',by==='sd'?'REGION TOTAL':null));return out}
 function repMatrix(sel,regionOnly){const all=repOffices(),ms=RP.FY.filter(m=>m<=sel),out=[['Division','Month','Monthly Target','Net Addition Achievement','% Achievement','Shortfall']];const divs=regionOnly?['REGION']:DK;const sum=(d,m)=>{const os=all.filter(r=>(d==='REGION'||r.div===d)&&r.m[m]),v=os.reduce((z,r)=>z+r.m[m].n,0);return os.length?v:null};const annual=d=>d==='REGION'?DK.reduce((a,k)=>a+(DT[k]||0),0):DT[d];
  for(const d of divs){let targetTotal=0,achTotal=0,complete=true;for(const m of ms){const fy=annual(d),t=fy==null?null:fy/12,a=sum(d,m);out.push([d==='REGION'?'INDORE REGION':LBL[d],rpMn(m),repFmt(t),a==null?'':a,t>0&&a!=null?repPct(a,t):'',t!=null&&a!=null?repFmt(t-a):'']);if(t!=null)targetTotal+=t;else complete=false;if(a!=null)achTotal+=a;else complete=false}out.push(['TOTAL '+(d==='REGION'?'INDORE REGION':LBL[d]),'April to '+rpMn(sel),complete?repFmt(targetTotal):'',complete?achTotal:'',complete&&targetTotal>0?repPct(achTotal,targetTotal):'',complete?repFmt(targetTotal-achTotal):''])}return out}
+ function repBottom4(sel,period,cls){
+  const ms=repMonths(sel,period),out=[['Division','Rank','Sub Division','Office Name','Office ID','BO ID/SOL ID','Account Open','Account Close','Net Addition']];
+  const all=repOffices();
+  DK.forEach(d=>{
+   const a=all.filter(r=>r.div===d&&r.cls===cls&&repAvailable(r,ms)).map(r=>({r,v:repTotals(r,ms)}));
+   a.sort((a,b)=>a.v.n-b.v.n||a.r.sd.localeCompare(b.r.sd)||a.r.name.localeCompare(b.r.name));
+   a.slice(0,4).forEach(({r,v},i)=>out.push([LBL[d]||d,i+1,cap(r.sd),r.name,r.oid,(r.ids||[])[0]||'',v.o,v.c,v.n]));
+  });
+  return out;
+ }
+ function repMatrixOverall(sel){
+  const ms=RP.FY.filter(m=>m<=sel),all=repOffices();
+  const out=[['Division',...ms.map(rpMn),'Cumulative Target','Net Addition','Achievement %','Shortfall']];
+  let grandTarget=0,grandNet=0,grandComplete=true;
+  DK.forEach(d=>{
+   const list=all.filter(r=>r.div===d),values=ms.map(m=>{const v=list.filter(r=>r.m[m]);return v.length?v.reduce((t,r)=>t+r.m[m].n,0):null});
+   const total=values.every(x=>x!==null)?values.reduce((a,b)=>a+b,0):null;
+   const target=DT[d]==null?null:DT[d]*ms.length/12;
+   if(total===null||target===null)grandComplete=false;
+   else {grandNet+=total;grandTarget+=target;}
+   out.push([LBL[d]||d,...values.map(v=>v===null?'':v),repFmt(target),total===null?'':total,target>0&&total!==null?repPct(total,target):'',target!==null&&total!==null?repFmt(target-total):'']);
+  });
+  out.push(['INDORE REGION TOTAL',...ms.map((m,i)=>{const z=out.slice(1).map(r=>r[i+1]);return z.some(x=>x==='')?'':z.reduce((a,b)=>a+Number(b),0)}),grandComplete?repFmt(grandTarget):'',grandComplete?grandNet:'',grandComplete&&grandTarget>0?repPct(grandNet,grandTarget):'',grandComplete?repFmt(grandTarget-grandNet):'']);
+  return out;
+ }
 function repTable(kind,sel,period){
  if(NM&&!Object.values(DT_N).some(x=>x>0))return [['Target Source Error'],['New POSB target data unavailable. '+(S.targetStatus||'Reload Google Sheet and New SB mapping.')]];
  if(kind==='status_sd')return repStatus(sel,'sd');
  if(kind==='status_div')return repStatus(sel,'div');
  if(kind==='monthly_div')return repMonthTargets(sel,'div');
  if(kind==='monthly_sd')return repMonthTargets(sel,'sd');
- if(kind==='matrix_div')return repMatrix(sel,false);
+  if(kind==='matrix_div')return repMatrix(sel,false);
+  if(kind==='matrix_div_all')return repMatrixOverall(sel);
+  if(kind==='bottom4_bo'||kind==='bottom4_so')return repBottom4(sel,period,kind==='bottom4_bo'?'BO':'SO');
  if(kind==='matrix_region')return repMatrix(sel,true);
  if(kind==='summary')return repSD(sel,period);
  if(kind==='nil')return [['NIL BO office list is available in Combined POSB Excel — sheet 7']];
@@ -4024,14 +4053,28 @@ function repPage(kind,sel,period){
    });
    return {title,sub:(period==='cum'?'April to ':'')+rpMn(sel)+' · '+(NM?'New':'Old')+' Mapping',head:h,pc:[],neg:[],rows:body,span:isSpan,fw:isSpan?[1.5,1.6]:[2.1],note:'POSB Open - Close = Net Addition · Data from published FY CSV and POSB uploads.'};
  };
- return {g:'sb',sb:'tbl',t:title,d:'Indore Region',pd:'Indore Region',html,build:native};
+ return {g:'sb',sb:'tbl',t:title,d:'Indore Region',pd:'Indore Region',html:()=>html().replace(/\bPAR\b/g,'Parcel'),build:native};
 }
 function mainDone(){unifiedPreview()}
 function mainPdf(){if(!$('sbMainSelected')?.checked)return alert('Select POSB Report first');const kind=$('sbRepType')?.value||'prog_sd',sel=selM(),per=$('sbRepPeriod')?.value||'month';return rpPDF(kind.startsWith('prog_')?mainPages(sel,kind):repPages(kind,sel,per),'POSB_'+kind+'_'+sel)}
 function mainPpt(){if(!$('sbMainSelected')?.checked)return alert('Select POSB Report first');const kind=$('sbRepType')?.value||'prog_sd',sel=selM(),per=$('sbRepPeriod')?.value||'month';return rpPPT(kind.startsWith('prog_')?mainPages(sel,kind):repPages(kind,sel,per),'POSB_'+kind+'_'+sel,rpCov('POSB '+kind+' · '+rpMn(sel)))}
 function mainPages(monthOverride,kind){const sel=monthOverride||selM(),by=kind==='prog_div'?'div':'sd',T=build('prog',by,sel);
  return [{g:'sb',t:T.title,pd:'Indore Region',sb:'tbl',build:()=>build('prog',by,sel),html:()=>tblHTML(build('prog',by,sel))}];}
-function repPages(kind,sel,period){return [repPage(kind,sel,period)];}
+ function repPages(kind,sel,period){
+  if(kind!=='matrix_div')return [repPage(kind,sel,period)];
+  const all=repMatrix(sel,false),head=all[0],list=[],parts=[];
+  for(const row of all.slice(1)){
+   const name=String(row[0]||''),isTotal=name.startsWith('TOTAL ');
+   if(isTotal){if(parts.length){parts.push(row);list.push(parts);parts=[]}}
+   else parts.push(row);
+  }
+  return list.map(rows=>{
+   const div=String(rows[0][0]||''),title='POSB Month-wise — '+div+' — April to '+rpMn(sel);
+   const html=()=>'<div class="sdh-region-page ess-paper"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>'+title+'</h1></div><table class="sdh-region-table ess-table ess-target-table"><thead><tr>'+head.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map((r,i)=>'<tr class="'+(i===rows.length-1?'sdh-grand':'')+'">'+r.map(v=>'<td>'+String(v??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+   return {g:'sb',t:title,d:div,pd:div,html,build:()=>({title,head,rows:rows.map((r,i)=>({k:i===rows.length-1?'tot':'',c:r})),fw:[1.7],pc:[],neg:[]})};
+  });
+ }
+
 function repPdf(){if(!S.ok||!S.months.length)return alert('POSB achievement data unavailable');const kind=$('sbRepType')?.value||'prog_sd',period=$('sbRepPeriod')?.value||'month',sel=selM();return rpPDF(kind.startsWith('prog_')?mainPages(sel,kind):repPages(kind,sel,period),'POSB_'+kind+'_'+sel)}
 function repPpt(){if(!S.ok||!S.months.length)return alert('POSB achievement data unavailable');const kind=$('sbRepType')?.value||'prog_sd',period=$('sbRepPeriod')?.value||'month',sel=selM();return rpPPT(kind.startsWith('prog_')?mainPages(sel,kind):repPages(kind,sel,period),'POSB_'+kind+'_'+sel,rpCov('POSB '+kind+' · '+rpMn(sel)))}
 function essentialPages(kind,sel,period){if(kind==='main_progressive')return mainPages(sel||selM());return repPages(kind,sel||selM(),period||'month')}
@@ -4045,7 +4088,7 @@ function unifiedPreview(){const box=$('sbView');if(!box)return;
  if(!S.ok||!S.months.length){box.innerHTML='<div class="hint">POSB source is loading.</div>';return}
  const kind=$('sbRepType')?.value||'prog_sd',sel=selM(),period=$('sbRepPeriod')?.value||'month';setX(S.rx);
  try{if(kind==='prog_sd'||kind==='prog_div'){const T=build('prog',kind==='prog_sd'?'sd':'div',sel);box.innerHTML=tblHTML(T);return}
- const page=repPage(kind,sel,period);box.innerHTML=page.html();}
+  const selectedPages=repPages(kind,sel,period);box.innerHTML=selectedPages.map(p=>'<div class="sdh-sheet">'+p.html()+'</div>').join('');}
  catch(e){box.innerHTML='<div class="msg err">Report generation failed: '+String(e.message||e)+'</div>'}
  finally{setX(S.rx)}
 }
@@ -4106,8 +4149,8 @@ async function add(list){try{await S.ready}catch(e){}if(!S.ok)return alert('Mapp
   const up=s.upMonth||S.up||'',d=prompt('Uploaded POSB data kis date tak ka hai? (sirf date likhein, jaise 15)'+(up?'  ['+mFull(up)+']':''),String(new Date().getDate()));
   if(d&&+d>=1&&+d<=31)s.upDay=String(+d)
  }
- save();calc();render();rpRefresh();
- const info=[];if(added.length)info.push(added.length+' new file(s) added');
+ save();calc();render();rpRefresh();if(added.length)window.dispatchEvent(new Event('indore-source-updated'));
+  const info=[];if(added.length)info.push(added.length+' new file(s) added');
  if(duplicates.length)info.push('DUPLICATE file(s) rejected (not counted twice):\n'+duplicates.join('\n'));
  if(bad.length)info.push('Unable to read:\n'+bad.join('\n'));
  if(info.length)alert(info.join('\n\n'));
@@ -5979,7 +6022,8 @@ const ESS=(()=>{
  ['growth_mom_sd_par','Parcel — Current vs Previous Month — Sub Division-wise'],
  ['growth_mom_div_irgb','IRGB — Current vs Previous Month — Division-wise'],
  ['growth_mom_sd_irgb','IRGB — Current vs Previous Month — Sub Division-wise'],
- ['daily','Current Month Day-wise MO / Parcel / IRGB Summary'],
+ ['daily','Current Month Day-wise MO / Parcel / IRGB Summary — Indore Region'],
+  ['daily_div','Current Month Day-wise Summary — Each Division (Separate PDF Page)'],
  ['monthly','April to Current Month — MO / Parcel / IRGB Monthly Summary'] ];
  const special=[
  ['bottom_par_fy','Bottom 10 SO — Parcel, Cumulative (Month-wise)'],
@@ -6035,10 +6079,13 @@ const ESS=(()=>{
  ['posb_BO_net_top','POSB — Top 10 BO by Net Addition'],
  ['posb_BO_net_bottom','POSB — Bottom 10 BO by Net Addition'],
  ['posb_HO_net_bottom','POSB — All HO by Net Addition'],
- ['posb_matrix_div','POSB — Division Month-wise Target / Net Addition / % / Shortfall'],
+ ['posb_matrix_div','POSB — Month-wise Summary: One Page per Division'],
+  ['posb_matrix_div_all','POSB — Month-wise Summary: All Divisions One Page'],
+  ['posb_bottom4_bo','POSB — Bottom 4 BO per Division (Selected Month / Cumulative)'],
+  ['posb_bottom4_so','POSB — Bottom 4 SO per Division (Selected Month / Cumulative)'],
  ['posb_matrix_region','POSB — Indore Region Month-wise Target / Net Addition / % / Shortfall']];
  const all=main.concat(special,posbItems), names=Object.fromEntries(all);
- let posbPeriod='month';let selected={}, imported=[], options={sehore:false,rms:false},month='',pages=[],ready=false,viewer=null,building=false;
+ let posbPeriod='month';let selected={}, imported=[], options={sehore:false,rms:false},month='',pages=[],ready=false,viewer=null,building=false;let pendingRefresh=false;
  const storage='indore_essential_reports_v2';
  try{const s=JSON.parse(localStorage.getItem(storage)||'{}');selected=s.selected||{};imported=s.imported||[];options={...options,...(s.options||{})}}catch(e){}
  const save=()=>{try{localStorage.setItem(storage,JSON.stringify({selected,imported,options}))}catch(e){console.warn('Essential settings storage',e)}};
@@ -6054,7 +6101,7 @@ const ESS=(()=>{
  const aggregate=()=>CENTRAL_ARTICLES.offices({months:months(),sehore:options.sehore,rms:options.rms});
  const wrapper=(title,body,subtitle='')=>`<div class="sdh-region-page ess-paper"><div class="sdh-banner"><small>INDIA POST · INDORE REGION</small><h1>${escv(title)}</h1></div><div class="sdh-report-subtitle"><strong>INDORE REGION</strong><span>${escv(subtitle||'FY 2026–27')}</span></div>${body}<div class="sdh-note">Data: uploaded / published office-wise booking source · Mapping: ${NM?'New':'Old'} · Sehore ${options.sehore?'included':'excluded'} · RMS ${options.rms?'included':'excluded'}</div></div>`;
  const table=(headers,rows,opts={})=>`<table class="sdh-region-table ess-table"><thead><tr>${headers.map(x=>'<th>'+escv(x)+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map((r,i)=>`<tr class="${r._total?'sdh-grand':''}">${r.cells.map((c,j)=>`<td>${typeof c==='number'?fmt(c):escv(c)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}">No data available in the selected period</td></tr>`}</tbody></table>`;
- const pg=(id,title,html,meta={})=>({g:'essential',t:title,d:'Indore Region',pd:'Indore Region',eid:id,html:()=>html,...meta});
+ const pg=(id,title,html,meta={})=>({g:'essential',t:title,d:'Indore Region',pd:'Indore Region',eid:id,html:()=>String(typeof html==='function'?html():html).replace(/\bPAR\b/g,'Parcel'),...meta});
  const metric=(o,v,m)=>m?(o.monthly[m]?.[v]||0):(o[v]||0);
  const eligibleSO=o=>!CENTRAL_ARTICLES.isNonBooking(o)&&String(o.cl||'').toUpperCase().replace(/[^A-Z]/g,'')==='SO'&&SD_NAME_RESOLVE.known(o.div,o.sd)!==false;
  // Each cumulative page has previous FY months, current month, and cumulative totals separately.
@@ -6123,6 +6170,18 @@ const ESS=(()=>{
    if(!rows.length)return pg(id,names[id],wrapper(names[id],'<div class="msg err">Day-wise office data unavailable; upload the current-month office-wise CSV before using this report.</div>',mFull(m)));
    const total=[0,0,0,0];for(const r of rows)for(let i=1;i<5;i++)if(typeof r.cells[i]==='number')total[i-1]+=r.cells[i];
    rows.push({_total:true,cells:['GRAND TOTAL',...total]});return pg(id,names[id],wrapper(names[id],table(head,rows),mFull(m)));
+  };
+  const divisionDaily=()=>{
+   const m=current(),dates=[...new Set([...FY_SHEETS.daily().keys(),...Object.keys(NB.S.offD||{})])].filter(d=>d.startsWith(m)).sort();
+   const valid=dates.map(date=>({date,entry:CENTRAL_ARTICLES.forDate(date)})).filter(x=>x.entry);
+   const divisions=[...new Set(valid.flatMap(x=>[...x.entry.D.keys()]))].filter(d=>!ignore(d)).sort();
+   return divisions.map(d=>{
+    const rows=valid.map(({date,entry})=>{const v=entry.D.get(d);return {cells:[date,v?Number(v.mo||0):0,v?Number(v.par||0):0,v?Number(v.irgb||0):0,v?Number(v.total||0):0]};});
+    const totals=[0,0,0,0];rows.forEach(r=>{for(let j=1;j<=4;j++)totals[j-1]+=r.cells[j]});
+    rows.push({_total:true,cells:['DIVISION TOTAL',...totals]});
+    const title='Day-wise MO / Parcel / IRGB — '+d;
+    return pg('daily_div',title,wrapper(title,table(['Date','MO','Parcel','IRGB','Total'],rows),mFull(m)+' · '+d));
+   });
   };
   const excludedBooking=o=>CENTRAL_ARTICLES.isNonBooking(o);
  const reportOffice=o=>!excludedBooking(o)&&/^(SO|HO|OTHER|BPC|BNPL)$/.test(String(o.cl||'').toUpperCase().replace(/[^A-Z]/g,''))&&
@@ -6217,7 +6276,7 @@ const ESS=(()=>{
   const html='<table class="sdh-region-table ess-table ess-target-table"><thead><tr>'+th+'<th>'+escv(fmtRange(prior))+'</th><th>'+escv(fmtRange(m))+'</th><th>Growth %</th></tr></thead><tbody>'+body+'</tbody></table>';
   return pg(id,title,wrapper(title,empty+warning+html,'Compared actual date ranges: '+fmtRange(prior)+' versus '+fmtRange(m)));
  };
- const create=id=>{if(id.startsWith('growth_mom_'))return [growth(id)];if(id.startsWith('posb_')){const kind=id.slice(5);return SBX.essentialPages(kind,current(),posbPeriod)};if(id.startsWith('target_')||id.startsWith('fy_'))return target(id);if(id.startsWith('ly_'))return ly(id);if(id==='daily'||id==='monthly')return [summaries(id)];if(id==='division_bottom4_now'||id==='division_bottom4_fy')return [divisionBottom4(id)];if(['bo_mo','bo_all_fy','so_mo','so_all_fy','so_par','so_par_fy','bo_nil_fy'].includes(id))return [nil(id)];return [rank(id)]};
+ const create=id=>{if(id.startsWith('growth_mom_'))return [growth(id)];if(id.startsWith('posb_')){const kind=id.slice(5);return SBX.essentialPages(kind,current(),posbPeriod)};if(id.startsWith('target_')||id.startsWith('fy_'))return target(id);if(id.startsWith('ly_'))return ly(id);if(id==='daily_div')return divisionDaily();if(id==='daily'||id==='monthly')return [summaries(id)];if(id==='division_bottom4_now'||id==='division_bottom4_fy')return [divisionBottom4(id)];if(['bo_mo','bo_all_fy','so_mo','so_all_fy','so_par','so_par_fy','bo_nil_fy'].includes(id))return [nil(id)];return [rank(id)]};
  // AUTHORITATIVE reconciliation. Raw source totals are independently read from FY_SHEETS.values / NB.vals.
  // PDF allocations are independently read from the mapping-based aggregate; unmapped IDs never become new subdivisions.
   const fixedRoster=()=>CENTRAL_ARTICLES.fixedRoster();
@@ -6313,7 +6372,16 @@ const ESS=(()=>{
      (issues.length?'<details open style="margin:12px 0"><summary><b>Exact errors and reasons ('+issues.length+')</b></summary><div class="msg err" style="max-height:360px;overflow:auto">'+issues.map(escv).join('<hr>')+'</div></details>':'')+mappingHelp(missing);
    return issues;
  };
- const checked=id=>all.some(x=>x[0]===id)&&(selected[id]===true||(selected[id]===undefined&&!id.startsWith('posb_')&&!id.startsWith('growth_mom_')));
+  const dataChanged=()=>{
+   if(!ready)return;
+   if(building){pendingRefresh=true;return}
+   aggKey='';aggValue=null;
+   if(pages.length){
+    pages=[];const root=document.getElementById('essentialPreview');if(root)root.innerHTML='<div class="msg warn">New uploaded data received. Rebuilding selected Essential reports…</div>';
+    Promise.resolve().then(()=>done());
+   }else draw();
+  };
+  const checked=id=>all.some(x=>x[0]===id)&&(selected[id]===true||(selected[id]===undefined&&!id.startsWith('posb_')&&!id.startsWith('growth_mom_')&&id!=='daily_div'));
  const item=([id,title])=>`<tr><td style="width:58px;text-align:center"><input type="checkbox" ${checked(id)?'checked':''} onchange="ESS.tick('${id}',this.checked)"></td><td>${escv(title)}${id.startsWith('import_')?` <button class="b sm gray" onclick="ESS.remove(${Number(id.slice(7))})">Remove</button>`:''}</td></tr>`;
  const box=(title,items,desc)=>`<div class="card"><h3>${title}</h3><div class="row"><button class="b sm gray" onclick="ESS.sectionTick('${title.replace(/[^A-Za-z0-9]/g,'_')}',true)">Select All</button><button class="b sm gray" onclick="ESS.sectionTick('${title.replace(/[^A-Za-z0-9]/g,'_')}',false)">Clear All</button><button class="b sm" onclick="ESS.sectionDownload('${title.replace(/[^A-Za-z0-9]/g,'_')}','pdf')">PDF</button><button class="b sm alt" onclick="ESS.sectionDownload('${title.replace(/[^A-Za-z0-9]/g,'_')}','ppt')">PPT</button></div><p class="hint">${desc}</p><div class="wrap"><table class="ess-picker"><thead><tr><th>PDF</th><th>Report Name</th></tr></thead><tbody>${items.map(item).join('')}</tbody></table></div></div>`;
  const draw=()=>{const root=document.getElementById('essentialBody');if(!root)return;const m=current();root.innerHTML=`<div class="card"><h3>Essential Reports — PDF Builder</h3><div class="row"><label>Month <select onchange="ESS.setMonth(this.value)">${avail().map(x=>`<option value="${x}" ${x===m?'selected':''}>${escv(mFull(x))}</option>`).join('')}</select></label><label><input type="checkbox" ${options.sehore?'checked':''} onchange="ESS.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${options.rms?'checked':''} onchange="ESS.extra('rms',this.checked)"> Include RMS / ID Division</label></div><div class="hint">Both divisions excluded by default (including in all totals/rankings). Essential reports remain listed permanently. Unticking only removes a page from the combined PDF.</div></div>`+
@@ -6334,8 +6402,8 @@ const ESS=(()=>{
    label.textContent=pages.length+' report pages selected';audit();root.innerHTML=`<div class="msg">${pages.length} pages ready for PDF. Click Download Selected PDF.</div>`+pages.map((p,i)=>`<article class="sdh-sheet"><div class="sdh-page-title">${i+1}. ${escv(p.t)}</div>${p.lists?`<div class="row noprint"><button class="b sm alt" onclick="ESS.list(${i},'zero')">Download Nil / Zero Booking Office Lists (CSV)</button>${p.eid!=='bo_nil_fy'?`<button class="b sm gray" onclick="ESS.list(${i},'above')">Download Above-Threshold Office Lists (CSV)</button>`:''}</div>`:''}<div class="sdh-page-content" data-ess="${i}"></div></article>`).join('');
    if(viewer)viewer.disconnect();const render=el=>{if(el.dataset.loaded)return;el.dataset.loaded='1';try{el.innerHTML=pages[+el.dataset.ess].html()}catch(e){el.innerHTML='<div class="msg err">'+escv(e.message)+'</div>'}};
    const els=root.querySelectorAll('[data-ess]');if('IntersectionObserver' in window){viewer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){render(e.target);viewer.unobserve(e.target)}}),{rootMargin:'500px'});els.forEach(el=>viewer.observe(el))}else els.forEach(render);
-  }catch(e){root.innerHTML='<div class="msg err">Essential report preview error: '+escv(e.message)+'</div>'}finally{building=false}
- },30)};
+  }catch(e){root.innerHTML='<div class="msg err">Essential report preview error: '+escv(e.message)+'</div>'}finally{building=false;if(pendingRefresh){pendingRefresh=false;dataChanged()}}
+  },30)};
  const pdf=async()=>{const issues=[...new Set(audit())];if(issues.length){alert('PDF DOWNLOAD BLOCKED: '+issues.length+' data/mapping errors. Fix Audit findings before generating an official PDF.\n\n'+issues.slice(0,8).join('\n'));return;}if(building)return alert('Report generation is in progress');if(!pages.length)return alert('Click Done — Generate Preview first.');await rpOut(false,pages,'Indore_Essential_Reports_'+current(),'Indore Region Essential Reports')};
  const list=(i,type)=>{const p=pages[i],m=current();if(!p||!p.groups)return;const data=[['Division','Sub Division','Office ID','Office Name','Class','MO','Parcel','IRGB','All Articles']];for(const g of p.groups)for(const o of (type==='above'?g.above:g.zero)){data.push([g.d,g.sd,o.id,o.name,o.cl,metric(o,'mo',p.listingFY?null:m),metric(o,'par',p.listingFY?null:m),metric(o,'irgb',p.listingFY?null:m),metric(o,'total',p.listingFY?null:m)])}csv(data,'Indore_'+p.eid+'_'+type+'_offices.csv')};
  const fromSD=()=>{const a=window.__sdhPages||[];if(!a.length)return alert('First click Done — Generate Preview in Sub Division Reports.');let count=0;for(const p of a){let html;try{html=p.html()}catch(e){continue}const title=p.t||'Imported Report';if(!imported.some(x=>x.title===title&&x.html===html)){imported.push({title,html});count++}}save();toast(count+' report(s) sent to Essential Reports');};
@@ -6346,10 +6414,11 @@ const ESS=(()=>{
  const sectionDownload=async(key,format)=>{const ids=sectionIds(key).filter(id=>checked(id));if(!ids.length)return alert('Please select at least one report in this section');const list=[];
   for(const id of ids){if(id.startsWith('import_')){const p=imported[Number(id.slice(7))];if(p)list.push(pg(id,p.title,p.html));continue}try{list.push(...create(id))}catch(e){console.error(e);alert('Report failed: '+id+' — '+e.message);return}}
   const name=key+'_'+current();return format==='ppt'?rpPPT(list,name,rpCov(key)):rpPDF(list,name)};
- return {open:show,done,pdf,audit,list,fromSD,fromReport,sectionTick,sectionDownload,posbPeriod(v){posbPeriod=v;},showGrowth(){const box=document.getElementById('articleGrowthBox');if(!box)return;const selectedMonth=document.getElementById('monthSel')?.value;if(selectedMonth&&avail().includes(selectedMonth))month=selectedMonth;const x=growth();box.innerHTML=x.html();},
+ return {open:show,done,pdf,audit,list,fromSD,fromReport,sectionTick,sectionDownload,dataChanged,posbPeriod(v){posbPeriod=v;},
   chooseMapping(id){const d=document.getElementById('ess-fix-d-'+id),s=document.getElementById('ess-fix-s-'+id);if(!d||!s)return;const choices=[...(fixedRoster().get(d.value)?.values()||[])].sort();s.innerHTML='<option value="">Select existing Sub Division</option>'+choices.map(v=>'<option value="'+escv(v)+'">'+escv(v)+'</option>').join('')},
   saveMapping(id){const d=document.getElementById('ess-fix-d-'+id),s=document.getElementById('ess-fix-s-'+id);if(!d?.value||!s?.value)return alert('Please choose a division and existing sub division');const sd=SD_NAME_RESOLVE.norm(s.value);if(!fixedRoster().get(d.value)?.has(sd))return alert('Invalid Sub Division: select an existing official Sub Division only');SD_AUDIT.fixes[(NM?'n:':'o:')+id]={dv:d.value,sd:s.value,cl:(allOff()[id]?.cl||'OTHER')};SD_AUDIT.save();aggKey='';aggValue=null;SD_AUDIT.changed();audit()},all(v){all.forEach(([id])=>selected[id]=v);imported.forEach((_,i)=>selected['import_'+i]=v);save();draw()},tick(id,v){selected[id]=v;save();const status=document.getElementById('essStatus');if(status)status.textContent='Selection changed — click Done to update preview'},setMonth(m){month=m;draw()},extra(k,v){options[k]=v;save();draw()},remove(i){imported.splice(i,1);save();draw()}};
 })();
+window.addEventListener('indore-source-updated',()=>{try{ESS.dataChanged()}catch(e){console.warn('Essential refresh failed',e)}});
 
 </script>
 </body>
