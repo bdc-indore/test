@@ -277,6 +277,29 @@ table.sdp-sum.sdp-sum tr.sdp-sumt td{background:#f2f5f9;font-weight:700}
 .ess-target-table .ess-merged-division{font-weight:800;color:#173451;background:#e7eef7!important;border-right:2px solid #b8c7d9}
 .ess-target-table tr.sdh-grand td{background:#d9edcf!important;font-weight:800;color:#14502c}
 </style>
+<style id="ip-pro-theme">
+/* ===== India Post · Professional report theme (screen preview + PDF + image export) ===== */
+.sdh-region-page{font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;color:#1f2937;background:#fff;border-top:9px solid #c8102e;padding:26px 40px 30px}
+.sdh-region-page .sdh-banner{background:#fff!important;color:#111827!important;border:0!important;border-bottom:3px solid #f2b705!important;padding:0 0 14px!important;text-align:left!important}
+.sdh-region-page .sdh-banner small{display:block;font-size:12px;font-weight:700;letter-spacing:3px;color:#6b7280;text-transform:uppercase}
+.sdh-region-page .sdh-banner h1{font-size:26px;line-height:1.25;font-weight:700;color:#1f2937;margin:8px 0 0;letter-spacing:-.2px}
+.sdh-region-page .sdh-report-subtitle{display:flex;align-items:center;justify-content:space-between!important;gap:20px;background:#f6f7f9!important;border:0!important;border-left:7px solid #c8102e!important;border-radius:6px;margin:18px 0 22px!important;padding:13px 22px!important;text-align:left!important}
+.sdh-region-page .sdh-report-subtitle strong{font-size:30px!important;line-height:1.1;font-weight:800!important;color:#c8102e!important;letter-spacing:.5px}
+.sdh-region-page .sdh-report-subtitle span{background:#fff4d6;border:1px solid #f2b705;color:#7a5b00!important;font-size:16px!important;font-weight:700!important;padding:8px 20px;border-radius:999px;white-space:nowrap}
+.sdh-region-page h2{font-size:20px;font-weight:700;color:#c8102e;border-bottom:3px solid #f2b705;padding-bottom:7px;margin-top:28px}
+.sdh-region-page .sdh-region-table{border-collapse:collapse;width:100%;font-size:15px;border:1px solid #d9e0ea;margin-bottom:16px}
+.sdh-region-page .sdh-region-table th{background:#1f3a5f;color:#fff;padding:14px 12px;border:1px solid #2c4a70;font-size:14px;font-weight:700;letter-spacing:.3px;line-height:1.25}
+.sdh-region-page .sdh-region-table td{padding:11px 12px;border:1px solid #e3e8ef;color:#1f2937;font-variant-numeric:tabular-nums}
+.sdh-region-page .sdh-region-table tbody td:first-child{text-align:left;padding-left:18px;font-weight:800;font-size:17px;color:#1f3a5f}
+.sdh-region-page .sdh-region-table tbody td.ess-sdname{text-align:left;padding-left:18px;font-weight:600;font-size:15px;color:#1f2937}
+.sdh-region-page .sdh-region-table td.ess-merged-division{background:#eaf0f7!important;text-align:left;font-size:18px}
+.sdh-region-page .sdh-region-table:not(.sdh-sdsum) tbody tr:nth-child(even):not(.sdh-grand) td{background:#f7f9fc}
+.sdh-region-page .sdh-region-table tbody tr.sdh-grand td{background:#fff4d6!important;color:#1f2937!important;font-weight:800;font-size:16px;border-top:2px solid #f2b705;border-bottom:2px solid #f2b705}
+.sdh-region-page .sdh-region-table tbody tr.sdh-grand:last-child td{background:#c8102e!important;color:#fff!important;border-top:3px solid #f2b705;font-size:17px}
+.sdh-region-page .sdh-sdsum tr.sdh-division-total td{background:#fff4d6!important;color:#1f2937!important;border-top:2px solid #f2b705;border-bottom:2px solid #f2b705}
+.sdh-region-page .sdh-sdsum tr.sdh-final td{background:#c8102e!important;border-top:4px solid #f2b705}
+.sdh-region-page .sdh-note{font-size:12px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:10px;margin-top:22px}
+</style>
 </head>
 <body>
 <header>
@@ -3461,7 +3484,7 @@ function nbInitCh(){['src','dst'].forEach(p=>{if(document.getElementById('nbc_'+
 const _rs=renderSettings;renderSettings=function(){_rs();nbSettingsRender();nbInitCh()};
 async function rpSB(file){if(!file)return;const t=await file.text();NB.S.sbText=t;NB.save();document.getElementById('rpSBf').value='';rpRender();toast('SB / PLI / CCS file loaded')}
 function rpSBreset(){delete NB.S.sbText;NB.save();rpRender()}
-function rpCover(){const c=rpCfg();return `<div class="rpPg" style="width:1100px;height:620px;background:#b3121b;color:#fff;font-family:Arial;padding:90px 80px;box-sizing:border-box"><div style="font:700 20px Arial;color:#fdb913;letter-spacing:3px">INDIA POST</div><div style="font:700 44px Arial;margin:24px 0">${esc(c.title)}</div><div style="font:20px Arial">${esc(c.sub)}</div><div style="display:inline-block;background:#fdb913;color:#222;font:700 16px Arial;padding:12px 24px;margin-top:60px">${esc(c.badge)}</div></div>`}
+function rpCover(){const c=rpCfg();return `<div class="rpPg" style="width:1100px;height:620px;background:#fff;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box;border-top:16px solid #c8102e;position:relative"><div style="height:6px;background:#f2b705"></div><div style="position:absolute;left:80px;top:150px;width:8px;height:230px;background:#c8102e"></div><div style="position:absolute;left:120px;top:140px;right:80px"><div style="font:700 16px 'Segoe UI',Arial;color:#6b7280;letter-spacing:4px">INDIA POST  ·  DEPARTMENT OF POSTS</div><div style="font:800 46px 'Segoe UI',Arial;color:#1f2937;margin:26px 0 14px">${esc(c.title)}</div><div style="font:700 22px 'Segoe UI',Arial;color:#c8102e">${esc(c.sub)}</div><div style="display:inline-block;background:#fff4d6;border:1px solid #f2b705;color:#7a5b00;font:700 17px 'Segoe UI',Arial;padding:12px 28px;border-radius:999px;margin-top:56px">${esc(c.badge)}</div></div></div>`}
 async function rpPDF(sel,fn){if(!rpInit())return;if(!(await needLib2('html2canvas'))||!(await needLib2('jspdf')))return;
  const L=(sel?[]:[{html:rpCover}]).concat(sel||RP.sel()),host=document.createElement('div');host.style.cssText='position:fixed;left:-5000px;top:0';document.body.appendChild(host);let doc=null;
  EXPORT_UI.show('Mega PDF',0,'Preparing '+L.length+' pages');await exportFrame();
@@ -3483,6 +3506,171 @@ async function rpPDF(sel,fn){if(!rpInit())return;if(!(await needLib2('html2canva
  }catch(e){console.error(e);setBusy(false,'');alert('PDF error: '+e.message)}
  finally{host.remove();setTimeout(()=>EXPORT_UI.hide(),1400)}
 }
+/* ===== Essential Reports -> NATIVE (editable) PowerPoint slides · India Post professional theme =====
+   - Reads the same HTML page that the PDF uses (title, region, month, tables, notes) and builds real PPT tables.
+   - A Division block (its sub-division rows + Division Total) is NEVER split between two slides; it moves whole to the next slide.
+   - Heading (India Post line, Region, report title, month badge) and the table header row are repeated on every continued slide.
+   - Only a block taller than one full slide is split (row-wise, Division name repeated). Returns false -> caller falls back to image. */
+function essPptNative(p,html,fallbackTitle){
+ let doc;try{doc=new DOMParser().parseFromString('<body>'+html+'</body>','text/html')}catch(e){return false}
+ const root=doc.querySelector('.sdh-region-page')||doc.body;
+ if(root.querySelector('.msg.err,.msg.warn'))return false;
+ const tx=n=>(n&&n.textContent||'').replace(/\s+/g,' ').trim();
+ const NAVY='1F3A5F',RED='C8102E',GOLD='F2B705',GTINT='FFF4D6',GRID='D9E0EA',INK='1F2937',MUTE='6B7280',DIVF='EAF0F7',GRN='1E7A4C',FONT='Arial';
+ const banner=root.querySelector('.sdh-banner'),st=root.querySelector('.sdh-report-subtitle');
+ const title=tx(banner&&banner.querySelector('h1'))||fallbackTitle||'Report';
+ const over=(tx(banner&&banner.querySelector('small'))||'INDIA POST · INDORE REGION').replace(/\s*·\s*/g,'  ·  ');
+ const region=tx(st&&st.querySelector('strong'))||'INDORE REGION';
+ const pill=tx(st&&st.querySelector('span'));
+ /* ---- collect sections (optional h2 caption + table) and notes in document order ---- */
+ const secs=[],notes=[];let cap='';
+ root.querySelectorAll('h2,table,.sdh-note,p').forEach(n=>{
+  if(n.tagName!=='TABLE'&&n.closest('table'))return;
+  if(n.closest('.sdh-banner')||n.closest('.sdh-report-subtitle'))return;
+  if(n.tagName==='H2')cap=tx(n);
+  else if(n.tagName==='TABLE'){if(!n.closest('table')||n.closest('table')===n){secs.push({cap,t:n});cap=''}}
+  else{const s=tx(n);if(s&&!notes.includes(s))notes.push(s)}
+ });
+ if(!secs.length)return false;
+ const num=s=>/^[-+−]?\s*[\d,]+(\.\d+)?\s*%?$/.test(s)||/^(—|–|-|NA|N\/A)$/i.test(s);
+ /* ---- table -> grid model with real column index for every cell ---- */
+ const build=rs=>{const occ=[],out=[];let nc=0;
+  rs.forEach((r,ri)=>{const cells=[];let c=0;
+   [...r.cells].forEach(td=>{while(occ[c]!==undefined&&occ[c]>ri)c++;
+    const cs=Math.max(1,+td.getAttribute('colspan')||1),rsn=Math.max(1,+td.getAttribute('rowspan')||1);
+    cells.push({t:tx(td),cs,rs:rsn,c,th:td.tagName==='TH',cls:td.className||''});
+    for(let k=0;k<cs;k++)occ[c+k]=ri+rsn;c+=cs;nc=Math.max(nc,c)});
+   const cls=(r.className||'')+'';
+   out.push({ri,cells,cls,first:tx(r.cells[0]),all:cells.map(x=>x.t).join(' ')})});
+  return{rows:out,nc}};
+ const kind=r=>{const c=r.cls;
+  if(/sdh-final/.test(c))return'final';
+  if(/sdh-division-band/.test(c))return'band';
+  if(/sdh-grand|sdh-division-total|sdh-total/.test(c)||/\btotal\b/i.test(r.cells.slice(0,2).map(x=>x.t).join(' ')))
+   return/grand|region total|indore region|^total$/i.test(r.cells.slice(0,2).map(x=>x.t).join(' '))?'grand':'tot';
+  return'row'};
+ let made=0;const slidesPlan=[];
+ secs.forEach(sec=>{
+  const rowsAll=[...sec.t.rows];if(!rowsAll.length)return;
+  const isHead=r=>r.parentElement&&r.parentElement.tagName==='THEAD';
+  let hr=rowsAll.filter(isHead),br=rowsAll.filter(r=>!isHead(r));
+  if(!hr.length&&br.length&&[...br[0].cells].every(c=>c.tagName==='TH')){hr=[br[0]];br=br.slice(1)}
+  if(!br.length)return;
+  const H=build(hr),B=build(br),nc=Math.max(H.nc,B.nc);if(!nc||nc>16)return;
+  B.rows.forEach(r=>r.k=kind(r));
+  B.rows.forEach(r=>{if(r.k==='row')return;const a=r.cells[0],b=r.cells[1];
+   if(a&&b&&a.cs===1&&a.rs===1&&b.rs===1&&b.c===a.c+1&&!b.t&&r.k!=='band'){a.cs=2;r.cells.splice(1,1)}});
+  /* ---- fonts / column widths: every column is at least wide enough for its longest word / number; fonts shrink only if needed ---- */
+  const TWid=12.15,X0=.6;
+  let fs=nc<=4?14:nc<=6?13:nc<=8?12:nc<=10?11:nc<=12?10:9;
+  const colNum=[];
+  for(let c=0;c<nc;c++){let n=0,t=0;B.rows.forEach(r=>r.cells.forEach(x=>{if(x.c===c&&x.cs===1&&x.t&&r.k==='row'){t++;if(num(x.t))n++}}));colNum[c]=t>0&&n/t>=.7}
+  const wl=t=>{t=String(t);const up=(t.match(/[A-Z]/g)||[]).length/Math.max(1,t.replace(/[^A-Za-z]/g,'').length);return t.length*(up>.6?1.25:1)};
+  const need=(f,wrapNames)=>{const out=[];
+   for(let c=0;c<nc;c++){let bodyMax=0,bodyWord=0,hWord=0;
+    B.rows.forEach(r=>r.cells.forEach(x=>{if(x.c<=c&&c<x.c+x.cs&&x.t){const L=x.cs>1?wl(x.t)/x.cs*.9:wl(x.t);
+      if(r.k==='row'||c===0){bodyMax=Math.max(bodyMax,L);bodyWord=Math.max(bodyWord,x.t.split(/\s+/).reduce((m,w)=>Math.max(m,wl(w)),0)/(x.cs>1?x.cs:1))}}}));
+    H.rows.forEach(r=>r.cells.forEach(x=>{if(x.c<=c&&c<x.c+x.cs)hWord=Math.max(hWord,x.t.split(/[\s\-–]+/).reduce((m,w)=>Math.max(m,wl(w)),0)/(x.cs>1?x.cs:1))}));
+    const textLen=colNum[c]?bodyMax:(wrapNames?bodyWord:Math.min(bodyMax,26));
+    const f2=(c===0&&!colNum[c])?f+1:f;
+    out.push(Math.max(textLen*f2*.58/72,hWord*f*.62/72,.55)+.26)}
+   const nm=Math.max(0,...out.filter((_,i)=>colNum[i]));for(let c=0;c<nc;c++)if(colNum[c])out[c]=nm;
+   return out};
+  let colW,ok=false;
+  for(;fs>=8&&!ok;){let q=need(fs,false);if(q.reduce((a,b)=>a+b,0)>TWid)q=need(fs,true);
+   const sm=q.reduce((a,b)=>a+b,0);if(sm<=TWid||fs===8){const ex=Math.max(0,TWid-sm);colW=q.map(w=>w+ex*w/sm);if(sm>TWid)colW=q.map(w=>w*TWid/sm);ok=true}else fs--}
+  const lines=(t,w,bold,f)=>Math.max(1,Math.ceil((String(t).length*f*(bold?.56:.52)/72)/Math.max(.3,w-.2)));
+  const spanW=x=>{let w=0;for(let k=0;k<x.cs;k++)w+=colW[x.c+k]||0;return w};
+  const baseH=fs/72*1.25+.13;
+  const rowH=r=>{let h=baseH;r.cells.forEach(x=>{if(x.rs===1){const f=(x.c<2&&!num(x.t))?fs+1:fs;h=Math.max(h,lines(x.t,spanW(x),r.k!=='row'||x.c===0,f)*f/72*1.22+.13)}});return h};
+  const hH=H.rows.map(r=>{let h=baseH+.05;r.cells.forEach(x=>{h=Math.max(h,lines(x.t,spanW(x),true,fs)*fs/72*1.22+.16)});return h});
+  const hTot=hH.reduce((a,b)=>a+b,0);
+  const hasTot=B.rows.some(r=>r.k==='tot'||r.k==='grand'||r.k==='final');
+  const rh=B.rows.map(rowH);
+  /* ---- atomic groups (rowspan cells never cut) -> division blocks ---- */
+  const groups=[];{let gs=0,ge=-1;B.rows.forEach((r,i)=>{r.cells.forEach(x=>{ge=Math.max(ge,i+x.rs-1)});if(i>=ge){groups.push({a:gs,b:i+1});gs=i+1;ge=i}})}
+  const blocks=[];{let cur=null;
+   groups.forEach(g=>{const first=B.rows[g.a],last=B.rows[g.b-1];
+    if(!hasTot){blocks.push({a:g.a,b:g.b});return}
+    if(first.k==='band'&&cur){blocks.push(cur);cur=null}
+    if(!cur)cur={a:g.a,b:g.b};else cur.b=g.b;
+    if(['tot','grand','final'].includes(last.k)){blocks.push(cur);cur=null}});
+   if(cur)blocks.push(cur)}
+  blocks.forEach(b=>{b.h=0;for(let i=b.a;i<b.b;i++)b.h+=rh[i]});
+  /* ---- header area / available height ---- */
+  const capH=sec.cap?.34:0,top=1.62+capH,bottom=6.88,AV=(bottom-top-hTot)*.965;
+  /* ---- pack whole blocks into slides ---- */
+  const slides=[];let cur=[],used=0;const flush=()=>{if(cur.length)slides.push({a:cur[0].a,b:cur[cur.length-1].b,bl:cur.slice()});cur=[];used=0};
+  blocks.forEach(bl=>{
+   if(bl.h>AV){flush();let start=bl.a,h=0;
+    for(let r=bl.a;r<bl.b;r++){if(h+rh[r]>AV&&r>start){slides.push({a:start,b:r,bl:[{a:start,b:r,h}]});start=r;h=0}h+=rh[r]}
+    cur=[{a:start,b:bl.b,h}];used=h;return}
+   if(used+bl.h>AV&&cur.length)flush();
+   cur.push(bl);used+=bl.h});
+  flush();
+  /* grand total must not sit alone on a slide: bring the last division block with it */
+  if(slides.length>1){const L=slides[slides.length-1],P=slides[slides.length-2];
+   const only=L.bl.length===1&&L.b-L.a===1&&B.rows[L.a].k!=='row';
+   if(only&&P.bl.length>1){const mv=P.bl[P.bl.length-1];if(mv.h+L.bl[0].h<=AV){P.bl.pop();P.b=P.bl[P.bl.length-1].b;L.bl.unshift(mv);L.a=mv.a}}}
+  slides.forEach((S,i)=>slidesPlan.push({S,i,n:slides.length,sec,H,B,nc,fs,colW,colNum,rh,hH,hTot,top,X0,TWid}))});
+ if(!slidesPlan.length)return false;
+ /* ---- draw ---- */
+ const slice=(B,a,b)=>{const rows=[];
+  for(let ri=a;ri<b;ri++){const r=B.rows[ri],cells=[];
+   r.cells.forEach(x=>cells.push(Object.assign({},x,{rs:Math.min(ri+x.rs,b)-ri})));
+   if(ri===a)B.rows.slice(0,a).forEach(q=>q.cells.forEach(x=>{if(q.ri+x.rs>a)cells.push(Object.assign({},x,{rs:Math.min(q.ri+x.rs,b)-a}))}));
+   cells.sort((m,n)=>m.c-n.c);rows.push({r,cells})}
+  return rows};
+ const ptxt=notes.join('   ·   ').slice(0,300);
+ slidesPlan.forEach(P=>{
+  const{S,i,n,sec,H,B,nc,fs,colW,colNum,rh,hH,top,X0,TWid}=P;
+  const s=p.addSlide();s.background={color:'FFFFFF'};
+  const pw=Math.min(3.7,Math.max(2.4,(pill||'').length*.115+.7)),px=X0+TWid-pw;
+  s.addShape(p.ShapeType.rect,{x:0,y:0,w:13.333,h:.14,fill:{color:RED},line:{color:RED,width:0}});
+  s.addShape(p.ShapeType.rect,{x:0,y:.14,w:13.333,h:.045,fill:{color:GOLD},line:{color:GOLD,width:0}});
+  s.addText(over,{x:X0,y:.3,w:8,h:.22,fontSize:9.5,bold:true,color:MUTE,charSpacing:2,fontFace:FONT,margin:0});
+  s.addText(region,{x:X0,y:.52,w:Math.max(6,px-X0-.15),h:.5,fontSize:26,bold:true,color:RED,fontFace:FONT,margin:0,valign:'middle'});
+  s.addText(title,{x:X0,y:1.03,w:Math.max(7,px-X0-.15),h:.36,fontSize:title.length>78?14:title.length>56?16:18,bold:true,color:INK,fontFace:FONT,margin:0,valign:'middle',fit:'shrink'});
+  if(pill){s.addShape(p.ShapeType.roundRect,{x:px,y:.45,w:pw,h:.42,fill:{color:GTINT},line:{color:GOLD,width:1},rectRadius:.2});
+   s.addText(pill,{x:px,y:.45,w:pw,h:.42,fontSize:pill.length>30?11:13,bold:true,color:'7A5B00',align:'center',valign:'middle',fontFace:FONT,margin:0,fit:'shrink'})}
+  if(n>1)s.addText((i?'Contd.  ':'')+(i+1)+' / '+n,{x:px,y:.98,w:pw,h:.3,fontSize:11,color:MUTE,align:'center',fontFace:FONT,margin:0});
+  s.addShape(p.ShapeType.line,{x:X0,y:1.48,w:TWid,h:0,line:{color:'E5E7EB',width:1}});
+  if(sec.cap)s.addText(sec.cap,{x:X0,y:1.54,w:TWid,h:.3,fontSize:13,bold:true,color:RED,fontFace:FONT,margin:0,valign:'middle'});
+  /* header rows */
+  const rows=[],heights=[];
+  H.rows.forEach((r,ri)=>{const cs=r.cells.slice().sort((m,k)=>m.c-k.c).map(x=>{
+    const al=x.cs>1?'center':(colNum[x.c]?'right':'left');
+    return{text:x.t,options:{colspan:x.cs>1?x.cs:undefined,rowspan:x.rs>1?x.rs:undefined,bold:true,color:'FFFFFF',fill:{color:NAVY},fontSize:fs,fontFace:FONT,align:al,valign:'middle',margin:[.03,.1,.03,.1],border:{type:'solid',color:'2C4A70',pt:.5}}}});
+   rows.push(cs);heights.push(hH[ri])});
+  const gcol=c=>{const t=H.rows.map(r=>r.cells.filter(x=>x.c<=c&&c<x.c+x.cs).map(x=>x.t).join(' ')).join(' ');return/growth|decline|vs previous|change/i.test(t)};
+  slice(B,S.a,S.b).forEach(({r,cells})=>{
+   const k=r.k,tot=k==='tot',gr=k==='grand',fin=k==='final',band=k==='band';
+   const cs=cells.map(x=>{const isNum=num(x.t),first=x.c===0&&!isNum;
+    let fill='FFFFFF',color=INK,bold=false,f=fs,al=isNum?'right':'left';
+    if(band){fill=NAVY;color='FFFFFF';bold=true;al='left';f=fs+1}
+    else if(fin||gr){fill=RED;color='FFFFFF';bold=true;f=fs+1;al=isNum?'right':'left'}
+    else if(tot){fill=GTINT;bold=true;color=INK;f=fs+.5}
+    else if(first){bold=true;color=NAVY;f=fs+1;if(x.rs>1)fill=DIVF}
+    else if(x.c===1&&!isNum){f=fs+.5}
+    if(x.rs>1){al='left'}
+    if(!band&&!fin&&!gr&&isNum&&gcol(x.c)&&/^[-+−]/.test(x.t)){color=/^[-−]/.test(x.t)?RED:GRN;bold=true}
+    else if(!band&&!fin&&!gr&&isNum&&gcol(x.c)&&/\d/.test(x.t)&&!/^0(\.0+)?%?$/.test(x.t)){color=GRN;bold=true}
+    const o={fill:{color:fill},color,bold,fontSize:f,fontFace:FONT,align:al,valign:'middle',margin:[.03,.1,.03,.1],border:{type:'solid',color:GRID,pt:.5}};
+    if(x.cs>1)o.colspan=x.cs;if(x.rs>1)o.rowspan=x.rs;
+    if(tot)o.border=[{type:'solid',color:GOLD,pt:1.5},{type:'solid',color:GRID,pt:.5},{type:'solid',color:GOLD,pt:1.5},{type:'solid',color:GRID,pt:.5}];
+    return{text:x.t,options:o}});
+   rows.push(cs);heights.push(rh[r.ri])});
+  /* stretch rows when a short table leaves free room (rows never taller than ~.5in) */
+  const bodyH=heights.slice(H.rows.length).reduce((a,b)=>a+b,0),avail=6.85-top-P.hTot,cnt=heights.length-H.rows.length;
+  if(cnt>0&&bodyH<avail&&n===1){const k2=Math.max(1,Math.min(.52/(bodyH/cnt),avail/bodyH));for(let q=H.rows.length;q<heights.length;q++)heights[q]*=k2}
+  s.addTable(rows,{x:X0,y:top,w:TWid,colW,rowH:heights});
+  s.addShape(p.ShapeType.line,{x:X0,y:7.0,w:TWid,h:0,line:{color:'E5E7EB',width:1}});
+  if(ptxt)s.addText(ptxt,{x:X0,y:7.04,w:10.9,h:.36,fontSize:8.5,color:MUTE,fontFace:FONT,margin:0,valign:'top',fit:'shrink'});
+  s.slideNumber={x:12.0,y:7.06,w:.75,h:.28,fontSize:9,color:MUTE,fontFace:FONT,align:'right'};
+  made++});
+ return made>0;
+}
+
 async function rpPPT(sel,fn,cov){if(!rpInit())return;if(!(await needLib2('PptxGenJS')))return;const full=!sel,Lp=sel||RP.sel(),c=rpCfg(),p=new PptxGenJS(),cT=cov&&cov.title||c.title,cS=cov&&cov.sub||c.sub;p.layout='LAYOUT_WIDE';p.title=c.title;
  EXPORT_UI.show('Mega PPT',0,'Preparing '+Lp.length+' report sections');await exportFrame();
  {const _as=p.addSlide.bind(p),mt=t=>typeof t==='string'?RGX.str(t):t,mo_=x=>(x&&typeof x==='object'&&!Array.isArray(x)&&'text' in x)?Object.assign({},x,{text:mt(x.text)}):mt(x);
@@ -3501,7 +3689,13 @@ async function rpPPT(sel,fn,cov){if(!rpInit())return;if(!(await needLib2('PptxGe
  const bd=(t,i,o={})=>cell(String(t),Object.assign({fill:{color:i%2?ZEB:'FFFFFF'}},o));
  const tt=(t,o={})=>cell(String(t),Object.assign({fill:{color:TOT},bold:true},o));
  const bandO=b=>b?{fill:{color:b.fill},color:b.color,bold:true}:{};
- const s0=(full||cov)?p.addSlide():{addText(){},addShape(){},background:{}};s0.background={color:'B3121B'};s0.addText('INDIA POST',{x:.9,y:1.4,w:8,h:.4,fontSize:18,bold:true,color:'FDB913',charSpacing:4,fontFace:'Arial'});s0.addText(cT,{x:.9,y:2,w:11,h:1.2,fontSize:cT.length>40?32:40,fit:'shrink',bold:true,color:'FFFFFF',fontFace:'Arial'});s0.addText(cS,{x:.9,y:3.3,w:11,h:.5,fontSize:20,color:'FFFFFF',fontFace:'Arial'});s0.addShape(p.ShapeType.rect,{x:.9,y:4.8,w:4.6,h:.55,fill:{color:'FDB913'}});s0.addText(c.badge,{x:.9,y:4.8,w:4.6,h:.55,fontSize:15,bold:true,color:'222222',align:'center',fontFace:'Arial'});
+ const s0=(full||cov)?p.addSlide():{addText(){},addShape(){},background:{}};s0.background={color:'FFFFFF'};
+  s0.addShape(p.ShapeType.rect,{x:0,y:0,w:13.333,h:.28,fill:{color:'C8102E'},line:{color:'C8102E',width:0}});s0.addShape(p.ShapeType.rect,{x:0,y:.28,w:13.333,h:.08,fill:{color:'F2B705'},line:{color:'F2B705',width:0}});
+  s0.addShape(p.ShapeType.rect,{x:.9,y:1.55,w:.09,h:2.3,fill:{color:'C8102E'},line:{color:'C8102E',width:0}});
+  s0.addText('INDIA POST  ·  DEPARTMENT OF POSTS',{x:1.2,y:1.5,w:10,h:.35,fontSize:14,bold:true,color:'6B7280',charSpacing:3,fontFace:'Arial'});
+  s0.addText(cT,{x:1.2,y:1.95,w:11,h:1.2,fontSize:cT.length>40?32:40,fit:'shrink',bold:true,color:'1F2937',fontFace:'Arial'});
+  s0.addText(cS,{x:1.2,y:3.2,w:11,h:.5,fontSize:20,bold:true,color:'C8102E',fontFace:'Arial'});
+  s0.addShape(p.ShapeType.roundRect,{x:1.2,y:4.5,w:4.6,h:.55,fill:{color:'FFF4D6'},line:{color:'F2B705',width:1},rectRadius:.25});s0.addText(c.badge,{x:1.2,y:4.5,w:4.6,h:.55,fontSize:15,bold:true,color:'7A5B00',align:'center',valign:'middle',fontFace:'Arial'});
  const sl=(t,sub)=>{const s=p.addSlide();s.background={color:'FFFFFF'};s.addText(t,{x:TX,y:.3,w:TW,h:.65,fontSize:t.length>58?22:26,bold:true,color:RED,fontFace:F,valign:'middle',margin:0});s.addShape(p.ShapeType.rect,{x:TX,y:.98,w:1.3,h:.06,fill:{color:YEL},line:{color:YEL,width:0}});if(sub)s.addText(sub,{x:TX,y:1.1,w:TW,h:.28,fontSize:11,color:'777777',fontFace:F,margin:0,valign:'middle'});s.slideNumber={x:12.1,y:7.0,w:.6,h:.3,fontSize:10,color:'777777',fontFace:F,align:'right'};return s};
  const note=(s,y,t)=>s.addText(t,{x:TX,y,w:TW,h:.28,fontSize:10,color:'777777',fontFace:F,margin:0,valign:'middle'});
  const grid=(s,rows,colW,hH,rH,y)=>{s.addTable(rows,{x:TX,y,w:colW.reduce((a,b)=>a+b,0),colW,rowH:rows.map((r,i)=>i?rH:hH)});return y+hH+(rows.length-1)*rH};
@@ -3531,7 +3725,8 @@ async function rpPPT(sel,fn,cov){if(!rpInit())return;if(!(await needLib2('PptxGe
      s.addTable([g1,g2,...body],{x:x0,y:1.5,w:tw,colW:cw,rowH:[.3,.42,...body.map(()=>rH)]})});
     note(s,7.02,(hasBase?'Yellow row = same month last year  |  ':'')+'Red date = very few SOs reported that day  |  Per day average = Total transactions ÷ Machines ÷ days')}
    continue}
-  if(pg.g==='sdrep'||pg.g==='sdtarget'||pg.g==='sdsum'||pg.g==='sdly'||(pg.html&&!pg.canvas&&!pg.build&&!pg.sb&&!['day','sum','mon','cnt','q','yoy','yoyc','bo'].includes(pg.g))){
+  if(pg.g==='essential'&&pg.html){let _ok=false;try{_ok=essPptNative(p,pg.html(),pg.t)}catch(e){console.warn('Native Essential PPT failed, using image fallback',e)}if(_ok)continue}
+   if(pg.g==='sdrep'||pg.g==='sdtarget'||pg.g==='sdsum'||pg.g==='sdly'||(pg.html&&!pg.canvas&&!pg.build&&!pg.sb&&!['day','sum','mon','cnt','q','yoy','yoyc','bo'].includes(pg.g))){
    if(!(await needLib2('html2canvas')))throw Error('html2canvas is required for this PPT');
    const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:1100px';document.body.appendChild(host);
    try{const cv=await H2C.shot(pg.html(),1.5),W=cv.width,Hh=cv.height,kw=12.6/W,ttl=String(pg.t||'').slice(0,95);
@@ -6135,7 +6330,7 @@ const ESS=(()=>{
    r.push({_total:true,cells:['INDORE REGION GRAND TOTAL',...(sd?['']:[]),...asCells(all)]});
    const head=['Division',...(sd?['Sub Division']:[]),...columns];
    // rowspan appears only on the Division heading, not on its subtotal.
-   const tableHtml=`<table class="sdh-region-table ess-table ess-target-table"><thead><tr>${head.map(h=>'<th>'+escv(h)+'</th>').join('')}</tr></thead><tbody>${r.map(row=>'<tr class="'+(row._total?'sdh-grand':'')+'">'+row.cells.map(c=>c===null?'':(c&&typeof c==='object'&&c._merge?'<td rowspan="'+c.rows+'" class="ess-merged-division">'+escv(c._merge)+'</td>':'<td>'+ (typeof c==='number'?fmt(c):escv(c))+'</td>')).join('')+'</tr>').join('')}</tbody></table>`;
+   const tableHtml=`<table class="sdh-region-table ess-table ess-target-table"><thead><tr>${head.map(h=>'<th>'+escv(h)+'</th>').join('')}</tr></thead><tbody>${r.map(row=>'<tr class="'+(row._total?'sdh-grand':'')+'">'+row.cells.map((c,ci)=>c===null?'':(c&&typeof c==='object'&&c._merge?'<td rowspan="'+c.rows+'" class="ess-merged-division">'+escv(c._merge)+'</td>':'<td'+(sd&&ci===1&&!row._total?' class="ess-sdname"':'')+'>'+(typeof c==='number'?fmt(c):escv(c))+'</td>')).join('')+'</tr>').join('')}</tbody></table>`;
    return pg(id,names[id]+' · '+v,wrapper(names[id]+' · '+v,tableHtml,fy?'Cumulative April through '+mFull(m):mFull(m)),{targetAudit:{v,sd,groups:vr,t:all.t,a:all.a}});
   });
   return verticalPages;
@@ -6384,7 +6579,7 @@ const ESS=(()=>{
   const checked=id=>all.some(x=>x[0]===id)&&(selected[id]===true||(selected[id]===undefined&&!id.startsWith('posb_')&&!id.startsWith('growth_mom_')&&id!=='daily_div'));
  const item=([id,title])=>`<tr><td style="width:58px;text-align:center"><input type="checkbox" ${checked(id)?'checked':''} onchange="ESS.tick('${id}',this.checked)"></td><td>${escv(title)}${id.startsWith('import_')?` <button class="b sm gray" onclick="ESS.remove(${Number(id.slice(7))})">Remove</button>`:''}</td></tr>`;
  const box=(title,items,desc)=>`<div class="card"><h3>${title}</h3><div class="row"><button class="b sm gray" onclick="ESS.sectionTick('${title.replace(/[^A-Za-z0-9]/g,'_')}',true)">Select All</button><button class="b sm gray" onclick="ESS.sectionTick('${title.replace(/[^A-Za-z0-9]/g,'_')}',false)">Clear All</button><button class="b sm" onclick="ESS.sectionDownload('${title.replace(/[^A-Za-z0-9]/g,'_')}','pdf')">PDF</button><button class="b sm alt" onclick="ESS.sectionDownload('${title.replace(/[^A-Za-z0-9]/g,'_')}','ppt')">PPT</button></div><p class="hint">${desc}</p><div class="wrap"><table class="ess-picker"><thead><tr><th>PDF</th><th>Report Name</th></tr></thead><tbody>${items.map(item).join('')}</tbody></table></div></div>`;
- const draw=()=>{const root=document.getElementById('essentialBody');if(!root)return;const m=current();root.innerHTML=`<div class="card"><h3>Essential Reports — PDF Builder</h3><div class="row"><label>Month <select onchange="ESS.setMonth(this.value)">${avail().map(x=>`<option value="${x}" ${x===m?'selected':''}>${escv(mFull(x))}</option>`).join('')}</select></label><label><input type="checkbox" ${options.sehore?'checked':''} onchange="ESS.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${options.rms?'checked':''} onchange="ESS.extra('rms',this.checked)"> Include RMS / ID Division</label></div><div class="hint">Both divisions excluded by default (including in all totals/rankings). Essential reports remain listed permanently. Unticking only removes a page from the combined PDF.</div></div>`+
+ const draw=()=>{const root=document.getElementById('essentialBody');if(!root)return;const m=current();root.innerHTML=`<div class="card"><h3>Essential Reports — PDF &amp; PPT Builder</h3><div class="row"><label>Month <select onchange="ESS.setMonth(this.value)">${avail().map(x=>`<option value="${x}" ${x===m?'selected':''}>${escv(mFull(x))}</option>`).join('')}</select></label><label><input type="checkbox" ${options.sehore?'checked':''} onchange="ESS.extra('sehore',this.checked)"> Include Sehore</label><label><input type="checkbox" ${options.rms?'checked':''} onchange="ESS.extra('rms',this.checked)"> Include RMS / ID Division</label></div><div class="hint">Both divisions excluded by default (including in all totals/rankings). Essential reports remain listed permanently. Unticking only removes a page from the combined PDF.</div></div>`+
   `<div class="card"><h3>Essential Data Audit — Source / PDF Cross-check</h3><div id="essAudit" class="hint">Run audit before official PDF export.</div><button class="b alt" onclick="ESS.audit()">Reconcile RAW CSV / Google Sheets against PDF totals + Fix Office Mapping</button></div>`+
   `<div class="card"><h3>Central Article Count Audit</h3><button class="b sm alt" onclick="CENTRAL_ARTICLES.show('centralESSAudit',{months:months(),sehore:options.sehore,rms:options.rms})">Check all sources and fixed mapping</button><div id="centralESSAudit"></div></div>`+
    box('Essential Report — Main',main,'Targets, previous year comparison, day-wise and monthly summaries.')+
@@ -6392,19 +6587,20 @@ const ESS=(()=>{
   `<div class="card"><h3>POSB Report Period</h3><select id="essPosbPeriod" onchange="ESS.posbPeriod(this.value)"><option value="month" ${posbPeriod==='month'?'selected':''}>Selected Month</option><option value="cum" ${posbPeriod==='cum'?'selected':''}>April to Selected Month (Cumulative)</option></select></div>`+
   box('Essential Report — POSB',posbItems,'POSB monthly and progressive reports, division totals, ranking reports; office-wise NIL lists are Excel-only.')+
   box('Essential Report — Imported from Other Sections',imported.map((p,i)=>['import_'+i,p.title]),'Saved report pages sent from Sub Division Reports or the Report section. You can remove an imported entry without affecting permanent reports.')+
-  `<div class="card"><div class="row"><button class="b gray sm" onclick="ESS.all(true)">Select All</button><button class="b gray sm" onclick="ESS.all(false)">Deselect All</button><button class="b alt" onclick="ESS.done()">Done — Generate Preview</button><button class="b" onclick="ESS.pdf()">Download Selected PDF</button><span id="essStatus" class="hint"></span></div><div class="hint">Preview builds only when Done is clicked; this avoids recalculating all reports on every checkbox change.</div></div>`;
+  `<div class="card"><div class="row"><button class="b gray sm" onclick="ESS.all(true)">Select All</button><button class="b gray sm" onclick="ESS.all(false)">Deselect All</button><button class="b alt" onclick="ESS.done()">Done — Generate Preview</button><button class="b" onclick="ESS.pdf()">Download Selected PDF</button><button class="b" onclick="ESS.ppt()">Download Selected PPT</button><span id="essStatus" class="hint"></span></div><div class="hint">Preview builds only when Done is clicked; this avoids recalculating all reports on every checkbox change.</div></div>`;
  };
  const show=()=>{showTab('essential');if(!ready){ready=true;FY_SHEETS.ensure().then(()=>{draw();audit()})}draw()};
  const done=async()=>{if(building)return;building=true;try{if(!FY_SHEETS.ready())await FY_SHEETS.ensure()}catch(e){console.warn(e)}const root=document.getElementById('essentialPreview'),label=document.getElementById('essStatus');label.textContent='Preparing preview…';root.innerHTML='';setTimeout(async()=>{
   try{pages=[];let progress=0;for(const [id] of all){if(!checked(id))continue;try{pages.push(...create(id))}catch(err){console.error(id,err);pages.push(pg(id,names[id],wrapper(names[id],'<div class="msg err">Report unavailable: '+escv(err.message)+'</div>')))}if(++progress%3===0){label.textContent="Building reports: "+progress+" / "+all.length;await new Promise(ok=>setTimeout(ok,0))}}
    for(let i=0;i<imported.length;i++)if(checked('import_'+i)){
     const p=imported[i];pages.push(pg('import_'+i,p.title,p.html));}
-   label.textContent=pages.length+' report pages selected';audit();root.innerHTML=`<div class="msg">${pages.length} pages ready for PDF. Click Download Selected PDF.</div>`+pages.map((p,i)=>`<article class="sdh-sheet"><div class="sdh-page-title">${i+1}. ${escv(p.t)}</div>${p.lists?`<div class="row noprint"><button class="b sm alt" onclick="ESS.list(${i},'zero')">Download Nil / Zero Booking Office Lists (CSV)</button>${p.eid!=='bo_nil_fy'?`<button class="b sm gray" onclick="ESS.list(${i},'above')">Download Above-Threshold Office Lists (CSV)</button>`:''}</div>`:''}<div class="sdh-page-content" data-ess="${i}"></div></article>`).join('');
+   label.textContent=pages.length+' report pages selected';audit();root.innerHTML=`<div class="msg">${pages.length} pages ready. Click Download Selected PDF or Download Selected PPT.</div>`+pages.map((p,i)=>`<article class="sdh-sheet"><div class="sdh-page-title">${i+1}. ${escv(p.t)}</div>${p.lists?`<div class="row noprint"><button class="b sm alt" onclick="ESS.list(${i},'zero')">Download Nil / Zero Booking Office Lists (CSV)</button>${p.eid!=='bo_nil_fy'?`<button class="b sm gray" onclick="ESS.list(${i},'above')">Download Above-Threshold Office Lists (CSV)</button>`:''}</div>`:''}<div class="sdh-page-content" data-ess="${i}"></div></article>`).join('');
    if(viewer)viewer.disconnect();const render=el=>{if(el.dataset.loaded)return;el.dataset.loaded='1';try{el.innerHTML=pages[+el.dataset.ess].html()}catch(e){el.innerHTML='<div class="msg err">'+escv(e.message)+'</div>'}};
    const els=root.querySelectorAll('[data-ess]');if('IntersectionObserver' in window){viewer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){render(e.target);viewer.unobserve(e.target)}}),{rootMargin:'500px'});els.forEach(el=>viewer.observe(el))}else els.forEach(render);
   }catch(e){root.innerHTML='<div class="msg err">Essential report preview error: '+escv(e.message)+'</div>'}finally{building=false;if(pendingRefresh){pendingRefresh=false;dataChanged()}}
   },30)};
  const pdf=async()=>{const issues=[...new Set(audit())];if(issues.length){alert('PDF DOWNLOAD BLOCKED: '+issues.length+' data/mapping errors. Fix Audit findings before generating an official PDF.\n\n'+issues.slice(0,8).join('\n'));return;}if(building)return alert('Report generation is in progress');if(!pages.length)return alert('Click Done — Generate Preview first.');await rpOut(false,pages,'Indore_Essential_Reports_'+current(),'Indore Region Essential Reports')};
+ const ppt=async()=>{const issues=[...new Set(audit())];if(issues.length){alert('PPT DOWNLOAD BLOCKED: '+issues.length+' data/mapping errors. Fix Audit findings before generating an official PPT.\n\n'+issues.slice(0,8).join('\n'));return;}if(building)return alert('Report generation is in progress');if(!pages.length)return alert('Click Done — Generate Preview first.');await rpOut(true,pages,'Indore_Essential_Reports_'+current(),'Indore Region Essential Reports')};
  const list=(i,type)=>{const p=pages[i],m=current();if(!p||!p.groups)return;const data=[['Division','Sub Division','Office ID','Office Name','Class','MO','Parcel','IRGB','All Articles']];for(const g of p.groups)for(const o of (type==='above'?g.above:g.zero)){data.push([g.d,g.sd,o.id,o.name,o.cl,metric(o,'mo',p.listingFY?null:m),metric(o,'par',p.listingFY?null:m),metric(o,'irgb',p.listingFY?null:m),metric(o,'total',p.listingFY?null:m)])}csv(data,'Indore_'+p.eid+'_'+type+'_offices.csv')};
  const fromSD=()=>{const a=window.__sdhPages||[];if(!a.length)return alert('First click Done — Generate Preview in Sub Division Reports.');let count=0;for(const p of a){let html;try{html=p.html()}catch(e){continue}const title=p.t||'Imported Report';if(!imported.some(x=>x.title===title&&x.html===html)){imported.push({title,html});count++}}save();toast(count+' report(s) sent to Essential Reports');};
  const fromReport=()=>{const report=document.querySelector('#reportBox');if(!report||!report.querySelector('table'))return alert('Generate a report first.');const title='Main Report · '+mFull(document.getElementById('monthSel')?.value||current());imported.push({title,html:wrapper(title,report.innerHTML)});save();toast('Report sent to Essential Reports')};
@@ -6414,7 +6610,7 @@ const ESS=(()=>{
  const sectionDownload=async(key,format)=>{const ids=sectionIds(key).filter(id=>checked(id));if(!ids.length)return alert('Please select at least one report in this section');const list=[];
   for(const id of ids){if(id.startsWith('import_')){const p=imported[Number(id.slice(7))];if(p)list.push(pg(id,p.title,p.html));continue}try{list.push(...create(id))}catch(e){console.error(e);alert('Report failed: '+id+' — '+e.message);return}}
   const name=key+'_'+current();return format==='ppt'?rpPPT(list,name,rpCov(key)):rpPDF(list,name)};
- return {open:show,done,pdf,audit,list,fromSD,fromReport,sectionTick,sectionDownload,dataChanged,posbPeriod(v){posbPeriod=v;},
+ return {open:show,done,pdf,ppt,audit,list,fromSD,fromReport,sectionTick,sectionDownload,dataChanged,posbPeriod(v){posbPeriod=v;},
   chooseMapping(id){const d=document.getElementById('ess-fix-d-'+id),s=document.getElementById('ess-fix-s-'+id);if(!d||!s)return;const choices=[...(fixedRoster().get(d.value)?.values()||[])].sort();s.innerHTML='<option value="">Select existing Sub Division</option>'+choices.map(v=>'<option value="'+escv(v)+'">'+escv(v)+'</option>').join('')},
   saveMapping(id){const d=document.getElementById('ess-fix-d-'+id),s=document.getElementById('ess-fix-s-'+id);if(!d?.value||!s?.value)return alert('Please choose a division and existing sub division');const sd=SD_NAME_RESOLVE.norm(s.value);if(!fixedRoster().get(d.value)?.has(sd))return alert('Invalid Sub Division: select an existing official Sub Division only');SD_AUDIT.fixes[(NM?'n:':'o:')+id]={dv:d.value,sd:s.value,cl:(allOff()[id]?.cl||'OTHER')};SD_AUDIT.save();aggKey='';aggValue=null;SD_AUDIT.changed();audit()},all(v){all.forEach(([id])=>selected[id]=v);imported.forEach((_,i)=>selected['import_'+i]=v);save();draw()},tick(id,v){selected[id]=v;save();const status=document.getElementById('essStatus');if(status)status.textContent='Selection changed — click Done to update preview'},setMonth(m){month=m;draw()},extra(k,v){options[k]=v;save();draw()},remove(i){imported.splice(i,1);save();draw()}};
 })();
